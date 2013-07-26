@@ -177,3 +177,22 @@ function turretMountCallback(%turret, %player, %mounted)
       turretMap.pop();
    }
 }
+
+// ----------------------------------------------------------------------------
+// simple Object Interaction
+// ----------------------------------------------------------------------------
+
+function clientCmdtoggleInteractPrompt(%val)
+{
+	guiInteractPrompt.setVisible(%val);
+}
+
+function clientCmdsetInteractCommand(%val)
+{
+	moveMap.bind(keyboard, "e", %val);
+}
+
+function placebo()
+{
+
+}

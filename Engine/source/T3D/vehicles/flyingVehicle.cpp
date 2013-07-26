@@ -142,14 +142,14 @@ bool FlyingVehicleData::preload(bool server, String &errorStr)
    }
 
    // Extract collision planes from shape collision detail level
-   if (collisionDetails[0] != -1)
+   if (collisionDetails[0][0] != -1)
    {
       MatrixF imat(1);
       PlaneExtractorPolyList polyList;
       polyList.mPlaneList = &rigidBody.mPlaneList;
       polyList.setTransform(&imat, Point3F(1,1,1));
-      si->animate(collisionDetails[0]);
-      si->buildPolyList(&polyList,collisionDetails[0]);
+      si->animate(collisionDetails[0][0]);
+      si->buildPolyList(&polyList,collisionDetails[0][0]);
    }
 
    // Resolve jet nodes

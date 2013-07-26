@@ -62,3 +62,6 @@ exec("./aiPlayer.cs");
 
 // Load the vehicle datablocks
 exec("./vehicles/cheetahCar.cs");
+
+//interactables
+exec("./interactables/controlable_bridge.cs");

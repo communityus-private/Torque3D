@@ -299,7 +299,7 @@ bool RigidShapeData::preload(bool server, String &errorStr)
       return false;
 
    // RigidShape objects must define a collision detail
-   if (!collisionDetails.size() || collisionDetails[0] == -1)
+   if (!collisionDetails[0].size() || collisionDetails[0][0] == -1)
    {
       Con::errorf("RigidShapeData::preload failed: Rigid shapes must define a collision-1 detail");
       return false;

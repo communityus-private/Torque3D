@@ -190,9 +190,18 @@ ShapeBaseData::ShapeBaseData()
    computeCRC( false ),
    inheritEnergyFromMount( false ),
    mCRC( 0 ),
-   debrisDetail( -1 )
+   debrisDetail( -1 ),
+   mColSets(-1),
+   mColSetReport(0)
 {      
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
+
+   for (int n=0;n<ShapeStates;n++)
+   {
+       collisionDetails[n] = NULL;
+       collisionBounds[n] = NULL;
+       LOSDetails[n] = NULL;
+   }
 }
 
 struct ShapeBaseDataProto
@@ -318,44 +327,47 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
       }
       // Resolve details and camera node indexes.
       static const String sCollisionStr( "collision-" );
-
+      mColSets = -1;
       for (i = 0; i < mShape->details.size(); i++)
       {
          const String &name = mShape->names[mShape->details[i].nameIndex];
 
          if (name.compare( sCollisionStr, sCollisionStr.length(), String::NoCase ) == 0)
          {
-            collisionDetails.push_back(i);
-            collisionBounds.increment();
+             mColSets++;
+             if (mColSets>ShapeStates-1) mColSets = ShapeStates-1;
+            collisionDetails[mColSets].push_back(i);
+            collisionBounds[mColSets].increment();
 
-            mShape->computeBounds(collisionDetails.last(), collisionBounds.last());
-            mShape->getAccelerator(collisionDetails.last());
+            mShape->computeBounds(collisionDetails[mColSets].last(), collisionBounds[mColSets].last());
+            mShape->getAccelerator(collisionDetails[mColSets].last());
 
-            if (!mShape->bounds.isContained(collisionBounds.last()))
+            if (!mShape->bounds.isContained(collisionBounds[mColSets].last()))
             {
-               Con::warnf("Warning: shape %s collision detail %d (Collision-%d) bounds exceed that of shape.", shapeName, collisionDetails.size() - 1, collisionDetails.last());
-               collisionBounds.last() = mShape->bounds;
+               Con::warnf("Warning: shape %s collision detail %d (Collision-%d) bounds exceed that of shape.", shapeName, collisionDetails[mColSets].size() - 1, collisionDetails[mColSets].last());
+               collisionBounds[mColSets].last() = mShape->bounds;
             }
-            else if (collisionBounds.last().isValidBox() == false)
+            else if (collisionBounds[mColSets].last().isValidBox() == false)
             {
-               Con::errorf("Error: shape %s-collision detail %d (Collision-%d) bounds box invalid!", shapeName, collisionDetails.size() - 1, collisionDetails.last());
-               collisionBounds.last() = mShape->bounds;
+               Con::errorf("Error: shape %s-collision detail %d (Collision-%d) bounds box invalid!", shapeName, collisionDetails[mColSets].size() - 1, collisionDetails[mColSets].last());
+               collisionBounds[mColSets].last() = mShape->bounds;
             }
 
             // The way LOS works is that it will check to see if there is a LOS detail that matches
             // the the collision detail + 1 + MaxCollisionShapes (this variable name should change in
             // the future). If it can't find a matching LOS it will simply use the collision instead.
             // We check for any "unmatched" LOS's further down
-            LOSDetails.increment();
+            LOSDetails[mColSets].increment();
 
             String   buff = String::ToString("LOS-%d", i + 1 + MaxCollisionShapes);
             U32 los = mShape->findDetail(buff);
             if (los == -1)
-               LOSDetails.last() = i;
+               LOSDetails[mColSets].last() = i;
             else
-               LOSDetails.last() = los;
+               LOSDetails[mColSets].last() = los;
          }
       }
+      mColSetReport = mColSets+1;
 
       // Snag any "unmatched" LOS details
       static const String sLOSStr( "LOS-" );
@@ -368,9 +380,9 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
          {
             // See if we already have this LOS
             bool found = false;
-            for (U32 j = 0; j < LOSDetails.size(); j++)
+            for (U32 j = 0; j < LOSDetails[mColSets].size(); j++)
             {
-               if (LOSDetails[j] == i)
+               if (LOSDetails[mColSets][j] == i)
                {
                      found = true;
                      break;
@@ -378,7 +390,7 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
             }
 
             if (!found)
-               LOSDetails.push_back(i);
+               LOSDetails[mColSets].push_back(i);
          }
       }
 
@@ -502,6 +514,8 @@ void ShapeBaseData::initPersistFields()
          "Drag factor.\nReduces velocity of moving objects." );
       addField( "density", TypeF32, Offset(density, ShapeBaseData),
          "Shape density.\nUsed when computing buoyancy when in water.\n" );
+      addField( "ColSetCount", TypeS32, Offset(mColSetReport, ShapeBaseData),
+         "How many collisionsets do we have for this model?" );
 
    endGroup( "Physics" );
 
@@ -673,6 +687,9 @@ void ShapeBaseData::packData(BitStream* stream)
    stream->write(shadowProjectionDistance);
    stream->write(shadowSphereAdjust);
 
+   stream->write(mColSets);
+   stream->write(mColSetReport);
+
 
    stream->writeString(shapeName);
    stream->writeString(cloakTexName);
@@ -748,6 +765,9 @@ void ShapeBaseData::unpackData(BitStream* stream)
    stream->read(&shadowMaxVisibleDistance);
    stream->read(&shadowProjectionDistance);
    stream->read(&shadowSphereAdjust);
+
+   stream->read(&mColSets);
+   stream->read(&mColSetReport);
 
    shapeName = stream->readSTString();
    cloakTexName = stream->readSTString();
@@ -2809,10 +2829,10 @@ bool ShapeBase::castRay(const Point3F &start, const Point3F &end, RayInfo* info)
       shortest.t = 1e8;
 
       info->object = NULL;
-      for (U32 i = 0; i < mDataBlock->LOSDetails.size(); i++)
+      for (U32 i = 0; i < mDataBlock->LOSDetails[mActiveCollisionset].size(); i++)
       {
-         mShapeInstance->animate(mDataBlock->LOSDetails[i]);
-         if (mShapeInstance->castRay(start, end, info, mDataBlock->LOSDetails[i]))
+         mShapeInstance->animate(mDataBlock->LOSDetails[mActiveCollisionset][i]);
+         if (mShapeInstance->castRay(start, end, info, mDataBlock->LOSDetails[mActiveCollisionset][i]))
          {
             info->object = this;
             if (info->t < shortest.t)
@@ -2881,9 +2901,9 @@ bool ShapeBase::buildPolyList(PolyListContext context, AbstractPolyList* polyLis
    else
    {
       bool ret = false;
-      for (U32 i = 0; i < mDataBlock->collisionDetails.size(); i++)
+      for (U32 i = 0; i < mDataBlock->collisionDetails[mActiveCollisionset].size(); i++)
       {
-         mShapeInstance->buildPolyList(polyList,mDataBlock->collisionDetails[i]);
+         mShapeInstance->buildPolyList(polyList,mDataBlock->collisionDetails[mActiveCollisionset][i]);
          ret = true;
       }
 
@@ -2907,9 +2927,9 @@ void ShapeBase::buildConvex(const Box3F& box, Convex* convex)
    if (realBox.isOverlapped(getObjBox()) == false)
       return;
 
-   for (U32 i = 0; i < mDataBlock->collisionDetails.size(); i++)
+   for (U32 i = 0; i < mDataBlock->collisionDetails[mActiveCollisionset].size(); i++)
    {
-         Box3F newbox = mDataBlock->collisionBounds[i];
+         Box3F newbox = mDataBlock->collisionBounds[mActiveCollisionset][i];
          newbox.minExtents.convolve(mObjScale);
          newbox.maxExtents.convolve(mObjScale);
          mObjToWorld.mul(newbox);
@@ -2937,12 +2957,11 @@ void ShapeBase::buildConvex(const Box3F& box, Convex* convex)
          cp->mObject    = this;
          cp->pShapeBase = this;
          cp->hullId     = i;
-         cp->box        = mDataBlock->collisionBounds[i];
+         cp->box        = mDataBlock->collisionBounds[mActiveCollisionset][i];
          cp->transform = 0;
          cp->findNodeTransform();
    }
 }
-
 
 //----------------------------------------------------------------------------
 
@@ -3204,7 +3223,10 @@ U32 ShapeBase::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       }
 
       if ( stream->writeFlag( mask & MeshHiddenMask ) )
+      {
+         stream->write(mActiveCollisionset);
          stream->writeBits( mMeshHidden );
+      }
 
       if (stream->writeFlag(mask & SkinMask))
          con->packNetStringHandleU(stream, mSkinNameHandle);
@@ -3465,6 +3487,7 @@ void ShapeBase::unpackUpdate(NetConnection *con, BitStream *stream)
       
       if ( stream->readFlag() ) // MeshHiddenMask
       {
+         stream->read(&mActiveCollisionset);
          stream->readBits( &mMeshHidden );
          _updateHiddenMeshes();
       }
@@ -3534,7 +3557,7 @@ void ShapeBase::setHidden( bool hidden )
 
 void ShapeBaseConvex::findNodeTransform()
 {
-   S32 dl = pShapeBase->mDataBlock->collisionDetails[hullId];
+    S32 dl = pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()][hullId];
 
    TSShapeInstance* si = pShapeBase->getShapeInstance();
    TSShape* shape = si->getShape();
@@ -3594,7 +3617,7 @@ Box3F ShapeBaseConvex::getBoundingBox(const MatrixF& mat, const Point3F& scale) 
 Point3F ShapeBaseConvex::support(const VectorF& v) const
 {
    TSShape::ConvexHullAccelerator* pAccel =
-      pShapeBase->mShapeInstance->getShape()->getAccelerator(pShapeBase->mDataBlock->collisionDetails[hullId]);
+      pShapeBase->mShapeInstance->getShape()->getAccelerator(pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()][hullId]);
    AssertFatal(pAccel != NULL, "Error, no accel!");
 
    F32 currMaxDP = mDot(pAccel->vertexList[0], v);
@@ -3610,14 +3633,13 @@ Point3F ShapeBaseConvex::support(const VectorF& v) const
    return pAccel->vertexList[index];
 }
 
-
 void ShapeBaseConvex::getFeatures(const MatrixF& mat, const VectorF& n, ConvexFeature* cf)
 {
    cf->material = 0;
    cf->object = mObject;
 
    TSShape::ConvexHullAccelerator* pAccel =
-      pShapeBase->mShapeInstance->getShape()->getAccelerator(pShapeBase->mDataBlock->collisionDetails[hullId]);
+      pShapeBase->mShapeInstance->getShape()->getAccelerator(pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()][hullId]);
    AssertFatal(pAccel != NULL, "Error, no accel!");
 
    F32 currMaxDP = mDot(pAccel->vertexList[0], n);
@@ -3665,8 +3687,8 @@ void ShapeBaseConvex::getPolyList(AbstractPolyList* list)
    list->setTransform(&pShapeBase->getTransform(), pShapeBase->getScale());
    list->setObject(pShapeBase);
 
-   pShapeBase->mShapeInstance->animate(pShapeBase->mDataBlock->collisionDetails[hullId]);
-   pShapeBase->mShapeInstance->buildPolyList(list,pShapeBase->mDataBlock->collisionDetails[hullId]);
+   pShapeBase->mShapeInstance->animate(pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()][hullId]);
+   pShapeBase->mShapeInstance->buildPolyList(list,pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()][hullId]);
 }
 
 
@@ -5048,6 +5070,24 @@ DefineEngineMethod( ShapeBase, dumpMeshVisibility, void, (),,
 }
 
 #endif // #ifndef TORQUE_SHIPPING
+
+void ShapeBase::setActiveCollision(S32 _ActiveCollisionset)
+{
+    if ((_ActiveCollisionset >= 0)&&(_ActiveCollisionset <= mDataBlock->mColSets))
+        mActiveCollisionset = _ActiveCollisionset;
+    else
+    {
+        Con::errorf("Attempting to set an active collision lod for object %s outside of range. Tried: %i, Max: %i",mDataBlock->getName(), _ActiveCollisionset,mDataBlock->mColSets);
+        mActiveCollisionset = 0;
+    }
+   setMaskBits( MeshHiddenMask );
+}
+
+DefineEngineMethod( ShapeBase, setActiveCollision, void, ( S32 activeColset ),,
+   "@brief Set the active collision detail chain\n\n")
+{
+   object->setActiveCollision(activeColset);
+}
 
 //------------------------------------------------------------------------
 //These functions are duplicated in tsStatic and shapeBase.

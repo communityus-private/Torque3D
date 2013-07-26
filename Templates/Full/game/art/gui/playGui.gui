@@ -377,5 +377,23 @@
          canSaveDynamicFields = "0";
       };
    };
+   new GuiBitmapCtrl(guiInteractPrompt) {
+      bitmap = "art/gui/playgui/hit_E.png";
+      wrap = "0";
+      position = "430 358";
+      extent = "163 51";
+      minExtent = "8 2";
+      horizSizing = "center";
+      vertSizing = "center";
+      profile = "GuiDefaultProfile";
+      visible = "0";
+      active = "1";
+      tooltipProfile = "GuiToolTipProfile";
+      hovertime = "1000";
+      isContainer = "0";
+      hidden = "1";
+      canSave = "1";
+      canSaveDynamicFields = "0";
+   };
 };
 //--- OBJECT WRITE END ---
