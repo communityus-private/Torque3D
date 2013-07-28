@@ -191,9 +191,10 @@ ShapeBaseData::ShapeBaseData()
    inheritEnergyFromMount( false ),
    mCRC( 0 ),
    debrisDetail( -1 ),
+   mUseCollisonLods(false),
    mColSets(-1),
-   mColSetReport(0)
-{      
+   mColSetReport(1)
+{
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
 
    for (int n=0;n<ShapeStates;n++)
@@ -334,7 +335,8 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
 
          if (name.compare( sCollisionStr, sCollisionStr.length(), String::NoCase ) == 0)
          {
-             mColSets++;
+             if (mUseCollisonLods) mColSets++;
+             else mColSets = 0;
              if (mColSets>ShapeStates-1) mColSets = ShapeStates-1;
             collisionDetails[mColSets].push_back(i);
             collisionBounds[mColSets].increment();
@@ -513,7 +515,9 @@ void ShapeBaseData::initPersistFields()
       addField( "drag", TypeF32, Offset(drag, ShapeBaseData),
          "Drag factor.\nReduces velocity of moving objects." );
       addField( "density", TypeF32, Offset(density, ShapeBaseData),
-         "Shape density.\nUsed when computing buoyancy when in water.\n" );
+         "Shape density.\nUsed when computing buoyancy when in water.\n" );      
+      addField( "useCollisonLods", TypeS32, Offset(mUseCollisonLods, ShapeBaseData),
+         "Do we use multiple collision levels of detail for this object?" );
       addField( "ColSetCount", TypeS32, Offset(mColSetReport, ShapeBaseData),
          "How many collisionsets do we have for this model?" );
 
@@ -686,11 +690,12 @@ void ShapeBaseData::packData(BitStream* stream)
    stream->write(shadowMaxVisibleDistance);
    stream->write(shadowProjectionDistance);
    stream->write(shadowSphereAdjust);
-
-   stream->write(mColSets);
-   stream->write(mColSetReport);
-
-
+   stream->writeFlag(mUseCollisonLods);
+   if (mUseCollisonLods)
+   {
+       stream->write(mColSets);
+       stream->write(mColSetReport);
+   }
    stream->writeString(shapeName);
    stream->writeString(cloakTexName);
    if(stream->writeFlag(mass != gShapeBaseDataProto.mass))
@@ -765,11 +770,12 @@ void ShapeBaseData::unpackData(BitStream* stream)
    stream->read(&shadowMaxVisibleDistance);
    stream->read(&shadowProjectionDistance);
    stream->read(&shadowSphereAdjust);
-
-   stream->read(&mColSets);
-   stream->read(&mColSetReport);
-
-   shapeName = stream->readSTString();
+   mUseCollisonLods = stream->readFlag();
+   if (mUseCollisonLods)
+   {
+       stream->read(&mColSets);
+       stream->read(&mColSetReport);
+   }   shapeName = stream->readSTString();
    cloakTexName = stream->readSTString();
    if(stream->readFlag())
       stream->read(&mass);

@@ -518,6 +518,7 @@ public:
       AIRepairNode = 31
    };
 
+   bool mUseCollisonLods;
    S32 mColSets;        //track how many collision-# a given model's got.
    S32 mColSetReport;   //strictly for reporting via game editor. does nothing else
 

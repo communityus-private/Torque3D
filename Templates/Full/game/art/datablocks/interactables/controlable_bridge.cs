@@ -6,6 +6,7 @@ datablock RigidShapeData( Controlable_Bridge )
    //go ahead and use defaults. We're locking it physically anyway.
    named = false;
    isInvincible = true;
+   UseCollisonLods = true;
 };
 
 function Controlable_Bridge::onAdd(%this,%obj)
