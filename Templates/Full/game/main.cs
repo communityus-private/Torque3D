@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 // Set the name of our application
-$appName = "Full";
+$appName = "GREED";
 
 // The directory it is run from
 $defaultGame = "scripts";

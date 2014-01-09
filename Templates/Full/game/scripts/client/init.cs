@@ -84,6 +84,7 @@ function initClient()
    exec("art/gui/endGameGui.gui");
    exec("art/gui/StartupGui.gui");
    exec("art/gui/chooseLevelDlg.gui");
+   exec("art/gui/chooseSaveDlg.gui");
    exec("art/gui/loadingGui.gui");
    exec("art/gui/optionsDlg.gui");
    exec("art/gui/remapDlg.gui");
@@ -95,6 +96,7 @@ function initClient()
    exec("scripts/gui/playGui.cs");
    exec("scripts/gui/startupGui.cs");
    exec("scripts/gui/chooseLevelDlg.cs");
+   exec("scripts/gui/chooseSaveDlg.cs");
    exec("scripts/gui/loadingGui.cs");
    exec("scripts/gui/optionsDlg.cs");
 
@@ -110,8 +112,18 @@ function initClient()
    // Default player key bindings
    exec("./default.bind.cs");
 
-   if (isFile("./config.cs"))
-      exec("./config.cs");
+	// Load the preferences saved from the last  
+	// game execution if they exist.  
+	if(isFile("./config.cs"))//check for local prefs first  
+		$prefpath = "scripts/client";  
+	else  
+	{  
+		getPrefpath();
+	}  
+  
+	//and finally execute prefs if the file already exists  
+	if(isFile($prefPath @ "/client/config.cs"))
+		exec($prefPath @ "/client/config.cs");
 
    loadMaterials();
 
@@ -124,7 +136,7 @@ function initClient()
    setDefaultFov( $pref::Player::defaultFov );
    setZoomSpeed( $pref::Player::zoomSpeed );
 
-   if( isScriptFile( expandFilename("./audioData.cs") ) )
+   if( isFile( "./audioData.cs" ) )
       exec( "./audioData.cs" );
 
    // Start up the main menu... this is separated out into a

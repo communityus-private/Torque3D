@@ -553,7 +553,9 @@ function JoinServerDlg::join(%this)
       Canvas.repaint();
 
       %conn = new GameConnection(ServerConnection);
-      %conn.setConnectArgs($pref::Player::Name);
+	  readSave($pref::Player::Name);
+	  $PlayerStats = $saveRecord.getKey(0);
+	  %conn.setConnectArgs($pref::Player::Name,$connectionData);
       %conn.setJoinPassword($Client::Password);
       %conn.connect($ServerInfo::Address);
    }

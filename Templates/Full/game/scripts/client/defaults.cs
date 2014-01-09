@@ -30,14 +30,17 @@ $PhysXLogWarnings = false;
 
 
 
-// Finally load the preferences saved from the last
-// game execution if they exist.
-if ( $platform !$= "xenon" )
+// Finally load the preferences saved from the last  
+// game execution if they exist.  
+if(isFile("./prefs.cs"))//check for local prefs first  
+   $prefpath = "scripts/client";  
+else  
 {
-   if ( isFile( "./prefs.cs" ) )
-      exec( "./prefs.cs" );
-}
-else
-{
-   echo( "Not loading client prefs.cs on Xbox360" );
-}
+	getPrefpath();
+}  
+  
+echo("path for preferences = " @ $prefPath);  
+  
+//and finally execute prefs if the file already exists  
+if(isFile($prefPath @ "/client/prefs.cs"))
+   exec($prefPath @ "/client/prefs.cs");  

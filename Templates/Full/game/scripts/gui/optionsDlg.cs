@@ -230,7 +230,7 @@ function OptionsDlg::onWake(%this)
 function OptionsDlg::onSleep(%this)
 {
    // write out the control config into the rw/config.cs file
-   moveMap.save( "scripts/client/config.cs" );
+   moveMap.save( getPrefpath() @ "/client/config.cs" );
 }
 
 function OptGraphicsDriverMenu::onSelect( %this, %id, %text )

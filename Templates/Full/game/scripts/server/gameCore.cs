@@ -246,8 +246,9 @@ package GameCore
    // "core/scripts/server/clientConnection.cs" in order to initialize, reset,
    // and pass some client scoring variables to playerList.gui -- the scoreHUD.
 
-   function GameConnection::onConnect(%client, %name)
+   function GameConnection::onConnect(%client, %name, %connectionData)
    {
+	  readSave(%name,%client);
       // Send down the connection error info, the client is responsible for
       // displaying this message if a connection error occurs.
       messageClient(%client, 'MsgConnectionError',"",$Pref::Server::ConnectionError);
@@ -276,6 +277,7 @@ package GameCore
          %client.isSuperAdmin = false;
       }
 
+	  %client.saveName = %name;
       // Save client preferences on the connection object for later use.
       %client.gender = "Male";
       %client.armor = "Light";

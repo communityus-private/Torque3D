@@ -60,7 +60,7 @@ function createAndConnectToLocalServer( %serverType, %level )
    %conn = new GameConnection( ServerConnection );
    RootGroup.add( ServerConnection );
 
-   %conn.setConnectArgs( $pref::Player::Name );
+   %conn.setConnectArgs( $pref::Player::Name,$connectionData);
    %conn.setJoinPassword( $Client::Password );
    
    %result = %conn.connectLocal();

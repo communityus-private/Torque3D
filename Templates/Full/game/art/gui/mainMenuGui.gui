@@ -40,7 +40,7 @@
    };
    new GuiControl() {
       position = "359 157";
-      extent = "306 454";
+      extent = "306 588";
       minExtent = "8 2";
       horizSizing = "center";
       vertSizing = "center";
@@ -78,7 +78,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "9 90";
+         position = "9 92";
          extent = "289 75";
          minExtent = "8 8";
          horizSizing = "relative";
@@ -98,7 +98,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "9 162";
+         position = "7 240";
          extent = "289 75";
          minExtent = "8 8";
          horizSizing = "relative";
@@ -118,7 +118,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "9 234";
+         position = "7 314";
          extent = "289 75";
          minExtent = "8 8";
          horizSizing = "relative";
@@ -140,7 +140,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "9 306";
+         position = "7 388";
          extent = "289 75";
          minExtent = "8 8";
          horizSizing = "relative";
@@ -162,7 +162,7 @@
          groupNum = "-1";
          buttonType = "PushButton";
          useMouseEvents = "0";
-         position = "9 378";
+         position = "5 462";
          extent = "289 75";
          minExtent = "8 8";
          horizSizing = "relative";
@@ -178,6 +178,26 @@
          canSave = "1";
          canSaveDynamicFields = "0";
       };
+      new GuiButtonCtrl() {
+         text = "Saves";
+         groupNum = "-1";
+         buttonType = "PushButton";
+         useMouseEvents = "1";
+         position = "7 166";
+         extent = "289 75";
+         minExtent = "8 8";
+         horizSizing = "relative";
+         vertSizing = "bottom";
+         profile = "GuiMenuButtonProfile";
+         visible = "1";
+         active = "1";
+         command = "Canvas.pushDialog(ChooseSaveDlg);";
+         tooltipProfile = "GuiToolTipProfile";
+         hovertime = "1000";
+         isContainer = "0";
+         canSave = "1";
+         canSaveDynamicFields = "0";
+      };
    };
 };
 //--- OBJECT WRITE END ---
@@ -188,4 +208,14 @@ function MainMenuGui::onWake(%this)
        getWebDeployment() &&
        isObject(%this-->ExitButton))
       %this-->ExitButton.setVisible(false);
+	  
+	%this.setStatDisplay();
+}
+
+function MainMenuGui::setStatDisplay(%this)
+{
+	readSave($pref::Player::Name);
+	//line 0, word 0
+	$PlayerType = getword($saveRecord.getKey(0),0);
+	$connectionData = $saveRecord.getKey(0);
 }

@@ -30,14 +30,16 @@ exec( "core/scripts/server/defaults.cs" );
 
 
 
-// Finally load the preferences saved from the last
-// game execution if they exist.
-if ( $platform !$= "xenon" )
-{
-   if ( isFile( "./prefs.cs" ) )
-      exec( "./prefs.cs" );
+// Finally load the preferences saved from the last  
+// game execution if they exist.  
+if(isFile("./prefs.cs"))//check for local prefs first  
+   $prefpath = "scripts/server";  
+else  
+{  
+	getPrefpath();
 }
-else
-{
-   echo( "Not loading server prefs.cs on Xbox360" );
-}
+echo("path for preferences = " @ $prefPath);  
+  
+//and finally execute prefs if the file already exists  
+if(isFile($prefPath @ "/server/prefs.cs"))
+   exec($prefPath @ "/server/prefs.cs");
