@@ -135,6 +135,7 @@ GuiTextEditCtrl::GuiTextEditCtrl()
    mHistoryLast = -1;
    mHistoryIndex = 0;
    mHistoryBuf = NULL;
+   mAcceptableChars = StringTable->insert("");
 
 #if defined(__MACOSX__)
    UTF8	bullet[4] = { 0xE2, 0x80, 0xA2, 0 };
@@ -163,6 +164,7 @@ void GuiTextEditCtrl::initPersistFields()
    addGroup( "Text Input" );
    
       addField("validate",          TypeRealString,Offset(mValidateCommand,   GuiTextEditCtrl), "Script command to be called when the first validater is lost.\n");
+	  addField("acceptableChars",          TypeString,    Offset(mAcceptableChars, GuiTextEditCtrl));
       addField("escapeCommand",     TypeRealString,Offset(mEscapeCommand,     GuiTextEditCtrl), "Script command to be called when the Escape key is pressed.\n");
       addField("historySize",       TypeS32,       Offset(mHistorySize,       GuiTextEditCtrl), "How large of a history buffer to maintain.\n");
       addField("tabComplete",       TypeBool,      Offset(mTabComplete,       GuiTextEditCtrl), "If true, when the 'tab' key is pressed, it will act as if the Enter key was pressed on the control.\n");
@@ -1540,7 +1542,23 @@ void GuiTextEditCtrl::handleCharInput( U16 ascii )
          return;
       }
    }
-
+   if ( mAcceptableChars[0] )
+   {
+	   bool isAcceptableChar = false;
+	   for(int iii = 0; iii < dStrlen(mAcceptableChars); iii++)
+	   {
+		   if (ascii == mAcceptableChars[iii])
+		   {
+			   isAcceptableChar = true;
+			   break;
+		   }
+	   }
+	   if (!isAcceptableChar)
+	   {
+		   playDeniedSound();
+		   return;
+	   }
+   }
    //save the current state
    saveUndoState();
 
@@ -1595,6 +1613,7 @@ void GuiTextEditCtrl::handleCharInput( U16 ascii )
    //execute the console command if it exists
    execConsoleCallback();
 }
+
 
 S32 GuiTextEditCtrl::findPrevWord()
 {   

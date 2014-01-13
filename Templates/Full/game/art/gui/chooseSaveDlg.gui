@@ -253,6 +253,7 @@
             isContainer = "1";
             canSave = "1";
             canSaveDynamicFields = "0";
+			acceptableChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_";
          };
       };
       new GuiBitmapButtonCtrl(scrollSavesUpbtn) {
