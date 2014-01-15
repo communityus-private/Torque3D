@@ -1,10 +1,21 @@
 $serializeActions = true;
 
-function startAIManager()
+function createAIManager()
 {
-	new ScriptObject(AIManager){};
-	MissionCleanup.add(AIManager);
-	AIManager.think(0);
+	%AIManager = new ScriptObject(AIManager){};
+	MissionCleanup.add(%AIManager);
+	%AIManager.targetList = new arrayobject();
+	return %AIManager;
+}
+
+function AIManager::Start(%this)
+{
+	%this.think(0);
+}
+
+function AIManager::onDelete(%this, %manager)
+{
+	%manager.targetList.delete();
 }
 
 function AIManager::think(%this,%botnum)  
@@ -28,13 +39,23 @@ function AIManager::think(%this,%botnum)
 			}
 		}
 	}
-	if ($serializeActions) %this.schedule(64, think ,%botnum);
+	if ($serializeActions) %this.schedule(32, think ,%botnum);
 	else %this.schedule(500, think ,%botnum);
 }
 
 function AIManager::addBot(%this,%bot)
 {
-	if (!isObject(%this.bots))  
+	if (!isObject(%this.bots))
 		%this.bots = new SimSet();
 	%this.bots.add(%bot);
+}
+
+function AIManager::addTarget(%this,%targ)
+{
+	%this.targetList.add(%targ);
+}
+
+function AIManager::clearTargets(%this)
+{
+	%this.targetList.empty();
 }
