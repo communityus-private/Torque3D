@@ -192,9 +192,9 @@ ShapeBaseData::ShapeBaseData()
    mCRC( 0 ),
    debrisDetail( -1 ),
    mUseCollisonLods(false),
-   mColSets(-1),
+   mColSets(0),
    mColSetReport(1)
-{
+{      
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
 
    for (int n=0;n<ShapeStates;n++)
@@ -328,16 +328,19 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
       }
       // Resolve details and camera node indexes.
       static const String sCollisionStr( "collision-" );
-      mColSets = -1;
       for (i = 0; i < mShape->details.size(); i++)
       {
          const String &name = mShape->names[mShape->details[i].nameIndex];
 
          if (name.compare( sCollisionStr, sCollisionStr.length(), String::NoCase ) == 0)
          {
-             if (mUseCollisonLods) mColSets++;
+             if (mUseCollisonLods)
+			 {
+				 if (collisionDetails[mColSets].size())
+					 mColSets++;
+			 }
              else mColSets = 0;
-             if (mColSets>ShapeStates-1) mColSets = ShapeStates-1;
+             if (mColSets>(ShapeStates-1)) mColSets = ShapeStates-1;
             collisionDetails[mColSets].push_back(i);
             collisionBounds[mColSets].increment();
 
@@ -515,10 +518,12 @@ void ShapeBaseData::initPersistFields()
       addField( "drag", TypeF32, Offset(drag, ShapeBaseData),
          "Drag factor.\nReduces velocity of moving objects." );
       addField( "density", TypeF32, Offset(density, ShapeBaseData),
-         "Shape density.\nUsed when computing buoyancy when in water.\n" );      
-      addField( "useCollisonLods", TypeS32, Offset(mUseCollisonLods, ShapeBaseData),
+         "Shape density.\nUsed when computing buoyancy when in water.\n" );
+      addField( "useCollisonLods", TypeBool, Offset(mUseCollisonLods, ShapeBaseData),
          "Do we use multiple collision levels of detail for this object?" );
-      addField( "ColSetCount", TypeS32, Offset(mColSetReport, ShapeBaseData),
+      addField( "ColSetCount", TypeS8, Offset(mColSetReport, ShapeBaseData),
+         "How many collisionsets do we have for this model?" );
+      addField( "UseHitboxes", TypeBool, Offset(mUseHitboxes, ShapeBaseData),
          "How many collisionsets do we have for this model?" );
 
    endGroup( "Physics" );
@@ -691,11 +696,9 @@ void ShapeBaseData::packData(BitStream* stream)
    stream->write(shadowProjectionDistance);
    stream->write(shadowSphereAdjust);
    stream->writeFlag(mUseCollisonLods);
-   if (mUseCollisonLods)
-   {
-       stream->write(mColSets);
-       stream->write(mColSetReport);
-   }
+   stream->writeInt(mColSets, 8);
+   stream->writeInt(mColSetReport, 8);
+
    stream->writeString(shapeName);
    stream->writeString(cloakTexName);
    if(stream->writeFlag(mass != gShapeBaseDataProto.mass))
@@ -771,12 +774,8 @@ void ShapeBaseData::unpackData(BitStream* stream)
    stream->read(&shadowProjectionDistance);
    stream->read(&shadowSphereAdjust);
    mUseCollisonLods = stream->readFlag();
-   if (mUseCollisonLods)
-   {
-       stream->read(&mColSets);
-       stream->read(&mColSetReport);
-   }   shapeName = stream->readSTString();
-   cloakTexName = stream->readSTString();
+   mColSets = stream->readInt(8);
+   mColSetReport = stream->readInt(8);
    if(stream->readFlag())
       stream->read(&mass);
    else
@@ -947,7 +946,8 @@ ShapeBase::ShapeBase()
    mMass( 1.0f ),
    mOneOverMass( 1.0f ),
    mMoveMotion( false ),
-   mIsAiControlled( false )
+   mIsAiControlled( false ),
+   mActiveCollisionset(0)
 {
    mTypeMask |= ShapeBaseObjectType | LightObjectType;   
 
@@ -2835,10 +2835,12 @@ bool ShapeBase::castRay(const Point3F &start, const Point3F &end, RayInfo* info)
       shortest.t = 1e8;
 
       info->object = NULL;
-      for (U32 i = 0; i < mDataBlock->LOSDetails[mActiveCollisionset].size(); i++)
+	  Vector<S32> collisionLOD = mDataBlock->LOSDetails[mActiveCollisionset];
+
+      for (U32 i = 0; i < collisionLOD.size(); i++)
       {
-         mShapeInstance->animate(mDataBlock->LOSDetails[mActiveCollisionset][i]);
-         if (mShapeInstance->castRay(start, end, info, mDataBlock->LOSDetails[mActiveCollisionset][i]))
+         mShapeInstance->animate(collisionLOD[i]);
+         if (mShapeInstance->castRay(start, end, info, collisionLOD[i]))
          {
             info->object = this;
             if (info->t < shortest.t)
@@ -3692,9 +3694,12 @@ void ShapeBaseConvex::getPolyList(AbstractPolyList* list)
 {
    list->setTransform(&pShapeBase->getTransform(), pShapeBase->getScale());
    list->setObject(pShapeBase);
-
-   pShapeBase->mShapeInstance->animate(pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()][hullId]);
-   pShapeBase->mShapeInstance->buildPolyList(list,pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()][hullId]);
+   Vector<S32> collisionLOD = pShapeBase->mDataBlock->collisionDetails[pShapeBase->getActiveCollision()];
+   if (collisionLOD.size())
+   {
+	   pShapeBase->mShapeInstance->animate(collisionLOD[hullId]);
+	   pShapeBase->mShapeInstance->buildPolyList(list,collisionLOD[hullId]);
+   }
 }
 
 
@@ -5079,20 +5084,20 @@ DefineEngineMethod( ShapeBase, dumpMeshVisibility, void, (),,
 
 void ShapeBase::setActiveCollision(S32 _ActiveCollisionset)
 {
-    if ((_ActiveCollisionset >= 0)&&(_ActiveCollisionset <= mDataBlock->mColSets))
+    if ((_ActiveCollisionset >= 0)&&(_ActiveCollisionset < mDataBlock->mColSets))
         mActiveCollisionset = _ActiveCollisionset;
     else
     {
         Con::errorf("Attempting to set an active collision lod for object %s outside of range. Tried: %i, Max: %i",mDataBlock->getName(), _ActiveCollisionset,mDataBlock->mColSets);
-        mActiveCollisionset = 0;
+        mActiveCollisionset = mDataBlock->mColSets;
     }
    setMaskBits( MeshHiddenMask );
 }
 
-DefineEngineMethod( ShapeBase, setActiveCollision, void, ( S32 activeColset ),,
+DefineEngineMethod( ShapeBase, setActiveCollision, void, ( S8 activeColset ),,
    "@brief Set the active collision detail chain\n\n")
 {
-   object->setActiveCollision(activeColset);
+   object->setActiveCollision(U8(activeColset));
 }
 
 //------------------------------------------------------------------------

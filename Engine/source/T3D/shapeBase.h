@@ -82,7 +82,7 @@ class SFXProfile;
 
 typedef void* Light;
 
-#define ShapeStates 64
+#define ShapeStates 16
 //--------------------------------------------------------------------------
 
 extern void collisionFilter(SceneObject* object,S32 key);
@@ -517,11 +517,9 @@ public:
       MaxCollisionShapes = 8,
       AIRepairNode = 31
    };
-
    bool mUseCollisonLods;
-   S32 mColSets;        //track how many collision-# a given model's got.
-   S32 mColSetReport;   //strictly for reporting via game editor. does nothing else
-
+   U8 mColSets;        //track how many collision-# a given model's got.
+   U8 mColSetReport;   //strictly for reporting via game editor. does nothing else
    // TODO: These are only really used in Basic Lighting
    // mode... we should probably move them somewhere else.
    bool shadowEnable;
@@ -607,12 +605,12 @@ public:
 
    /// @name Collision Data
    /// @{
-   Vector<S32>   collisionDetails[ShapeStates];  ///< Detail levels used to collide with.
+   Vector<S32>   collisionDetails[ShapeStates];  ///< Detail level used to collide with.
                                     ///
                                     /// These are detail IDs, see TSShape::findDetail()
    Vector<Box3F> collisionBounds[ShapeStates];   ///< Detail level bounding boxes.
 
-   Vector<S32>   LOSDetails[ShapeStates];        ///< Detail levels used to perform line-of-sight queries against.
+   Vector<S32>   LOSDetails[ShapeStates];        ///< Detail level used to perform line-of-sight queries against.
                                     ///
                                     /// These are detail IDs, see TSShape::findDetail()
    /// @}
@@ -712,7 +710,7 @@ protected:
    //GameConnection*   mControllingClient;        ///< Controlling client
    ShapeBase*        mControllingObject;        ///< Controlling object
    bool              mTrigger[MaxTriggerKeys];  ///< What triggers are set, if any.
-   S32 mActiveCollisionset;
+   U8 mActiveCollisionset;
 
    /// @name Scripted Sound
    /// @{
@@ -1226,8 +1224,8 @@ public:
                         
    /// Set the force hidden state on a named mesh.
    void setMeshHidden( const char *meshName, bool forceHidden ); 
-   void setActiveCollision(S32 _ActiveCollisionset);  
-   S32 getActiveCollision(){ return mActiveCollisionset;}
+   void setActiveCollision(U8 _ActiveCollisionset);
+   U8 getActiveCollision(){ return mActiveCollisionset;}
 #ifndef TORQUE_SHIPPING
 
    /// Prints the list of meshes and their visibility state
