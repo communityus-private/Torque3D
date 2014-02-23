@@ -25,11 +25,18 @@ private:
 	StringTableEntry mPlayerBitmap;
 	GFXTexHandle mPlayerTextureHandle;
 
+
 	StringTableEntry mBotBitmap;
 	GFXTexHandle mBotTextureHandle;
 
 	StringTableEntry mVehicleBitmap;
 	GFXTexHandle mVehicleTextureHandle;
+
+	StringTableEntry mUpOverlayBitmap;
+	GFXTexHandle mUpOverlayTextureHandle;
+
+	StringTableEntry mDownOverlayBitmap;
+	GFXTexHandle mDownOverlayTextureHandle;
 
 	S32			mSphereDetail;
 
@@ -39,11 +46,14 @@ private:
 	ColorF   mStemColor;       // color for the stems of the blips
 	F32      mRange;           // range of the radar
 	F32      mBlipSize;        // base size for the blips
+    F32      mOverlayGive;  // how much distance do we give before we draw an overlay
 
 	bool mShowVehicles;
 	bool mShowPlayers;
 	bool mShowBots;
-
+    S8 flashPace;
+    S8 nextFlash;
+    bool flipColors;
 	char		mTargetShapeName[32]; //This keeps the name of the locked target
 
 public:
@@ -51,6 +61,10 @@ public:
 
 	bool processCameraQuery(CameraQuery *query);
 	void renderWorld(const RectI &updateRect);
+	void renderRadarGround(const RectI &updateRect);
+	void renderRadarSphere(const RectI &updateRect);
+	void renderRadarBlip(const RectI &updateRect,GameConnection* conn,GameBase * control);
+	void renderRadarOverlay(const RectI &updateRect,GameConnection* conn,GameBase * control);
 
 	static void initPersistFields();
 	bool onWake();
@@ -59,6 +73,8 @@ public:
 	// gets and sets
 	void setEllipticBitmap(const char *name);
 	void setBlipBitmap(const char *name);
+	void setUpOverlayBitmap(const char *name);
+	void setDownOverlayBitmap(const char *name);
 	void setRange(F32 range) { mRange = range; }
 	F32 getRange() { return mRange; }
 	void setEllipticColor(ColorF color) { mEllipticColor = color; }

@@ -29,9 +29,8 @@
 #include "console/consoleTypes.h"
 #include "T3D/gameBase/gameConnection.h"
 #include "T3D/shapeBase.h"
-#include "T3D/sphere.h"
 #include "gfx/primBuilder.h"
-
+#include "math/util/sphereMesh.h"
 IMPLEMENT_CONOBJECT(GuiRadarTSCtrl);
 
 // vertices for the quad used for rendering the elliptic plane
@@ -62,7 +61,7 @@ static const Point2F quadTexCoords[4] =
 };
 
 // sphere
-static Sphere sphere(Sphere::Icosahedron);
+static SphereMesh sphere(SphereMesh::Icosahedron);
 
 //--------------------------------------------------------------------------
 GuiRadarTSCtrl::GuiRadarTSCtrl()
@@ -71,17 +70,23 @@ GuiRadarTSCtrl::GuiRadarTSCtrl()
 	mSphereDetail = 2;
 
 	// textures
-	mEllipticBitmap = StringTable->insert("data/gui/images/radar/radar3D.png");
+	mEllipticBitmap = StringTable->insert("art/gui/playgui/radar3D.png");
 	mEllipticTextureHandle = NULL;
 
-	mPlayerBitmap = StringTable->insert("data/gui/images/radar/player.png");
+	mPlayerBitmap = StringTable->insert("art/gui/playgui/player.png");
 	mPlayerTextureHandle = NULL;
 
-	mBotBitmap = StringTable->insert("data/gui/images/radar/bot.png");
+	mBotBitmap = StringTable->insert("art/gui/playgui/bot.png");
 	mPlayerTextureHandle = NULL;
 
-	mVehicleBitmap = StringTable->insert("data/gui/images/radar/vehicle.png");
+	mVehicleBitmap = StringTable->insert("art/gui/playgui/vehicle.png");
 	mPlayerTextureHandle = NULL;
+
+	mUpOverlayBitmap = StringTable->insert("art/gui/playgui/vehicle.png");
+	mUpOverlayTextureHandle = NULL;
+	
+	mDownOverlayBitmap = StringTable->insert("art/gui/playgui/vehicle.png");
+	mDownOverlayTextureHandle = NULL;
 
 	strcpy(mTargetShapeName,"");
 
@@ -93,6 +98,7 @@ GuiRadarTSCtrl::GuiRadarTSCtrl()
 
 	// range
 	mRange = 250.0f;
+	mOverlayGive = 0.25;
 
 	// blip size
 	mBlipSize = 1.0f;
@@ -101,6 +107,8 @@ GuiRadarTSCtrl::GuiRadarTSCtrl()
 	mShowVehicles = true;
 	mShowPlayers = true;
 	mShowBots = true;
+    flashPace = nextFlash = 100;
+    flipColors = false;
 }
 
 //---------------------------------------------------------------------------
@@ -109,26 +117,30 @@ void GuiRadarTSCtrl::initPersistFields()
 	Parent::initPersistFields();
 
 	addGroup("Radar");
-	addField("PlaneBitmap",		TypeFilename,	   Offset(mEllipticBitmap,    GuiRadarTSCtrl));
-	addField("PlaneColor",     TypeColorF,       Offset(mEllipticColor,     GuiRadarTSCtrl));
-	addField("BlipColor",	   TypeColorF,       Offset(mBlipColor,         GuiRadarTSCtrl));
-	addField("BlipSize",       TypeF32,          Offset(mBlipSize,          GuiRadarTSCtrl));
-	addField("StemColor",      TypeColorF,       Offset(mStemColor,         GuiRadarTSCtrl));
-	addField("SphereColor",    TypeColorF,       Offset(mSphereColor,       GuiRadarTSCtrl));
-	addField("SphereDetail",    TypeS32,       Offset(mSphereDetail,       GuiRadarTSCtrl));
-	addField("Range",          TypeF32,          Offset(mRange,             GuiRadarTSCtrl));
+	addField("PlaneBitmap",		TypeFilename,	Offset(mEllipticBitmap,		GuiRadarTSCtrl));
+	addField("PlaneColor",		TypeColorF,		Offset(mEllipticColor,		GuiRadarTSCtrl));
+	addField("BlipColor",		TypeColorF,		Offset(mBlipColor,			GuiRadarTSCtrl));
+	addField("BlipSize",		TypeF32,		Offset(mBlipSize,			GuiRadarTSCtrl));
+	addField("StemColor",		TypeColorF,		Offset(mStemColor,			GuiRadarTSCtrl));
+	addField("SphereColor",		TypeColorF,		Offset(mSphereColor,		GuiRadarTSCtrl));
+	addField("SphereDetail",	TypeS32,		Offset(mSphereDetail,		GuiRadarTSCtrl));
+	addField("Range",			TypeF32,		Offset(mRange,				GuiRadarTSCtrl));
+	addField("OverlayGive",		TypeF32,		Offset(mOverlayGive,		GuiRadarTSCtrl));
+	addField("FlashPace",		TypeS8,			Offset(flashPace,			GuiRadarTSCtrl));
 	endGroup("Radar");
 
 	addGroup("Bitmaps");
-	addField("Players",		TypeFilename,     Offset(mPlayerBitmap,         GuiRadarTSCtrl));
-	addField("Bots",		TypeFilename,     Offset(mBotBitmap,      GuiRadarTSCtrl));
-	addField("Vehicles",		TypeFilename,     Offset(mVehicleBitmap,      GuiRadarTSCtrl));
+	addField("Players",		TypeFilename,	Offset(mPlayerBitmap,		GuiRadarTSCtrl));
+	addField("Bots",		TypeFilename,	Offset(mBotBitmap,			GuiRadarTSCtrl));
+	addField("Vehicles",	TypeFilename,	Offset(mVehicleBitmap,		GuiRadarTSCtrl));
+	addField("UpOverlay",	TypeFilename,	Offset(mUpOverlayBitmap,	GuiRadarTSCtrl));
+	addField("DownOverlay",	TypeFilename,	Offset(mDownOverlayBitmap,	GuiRadarTSCtrl));
 	endGroup("Bitmaps");
 
 	addGroup("ShowObjects");
-	addField("Players",	TypeBool,     Offset(mShowPlayers,     GuiRadarTSCtrl),"Show Players on Radar");
-	addField("Vehicles",	TypeBool,     Offset(mShowVehicles,    GuiRadarTSCtrl),"Show Vehicles on Radar");
-	addField("Bots",		TypeBool,     Offset(mShowBots,        GuiRadarTSCtrl),"Show Bots on Radar");
+	addField("Players",		TypeBool,	Offset(mShowPlayers,     GuiRadarTSCtrl),"Show Players on Radar");
+	addField("Vehicles",	TypeBool,	Offset(mShowVehicles,    GuiRadarTSCtrl),"Show Vehicles on Radar");
+	addField("Bots",		TypeBool,	Offset(mShowBots,        GuiRadarTSCtrl),"Show Bots on Radar");
 	endGroup("ShowObject");
 }
 
@@ -166,6 +178,8 @@ bool GuiRadarTSCtrl::onWake()
 	setPlayerBitmap(mPlayerBitmap);
 	setBotBitmap(mBotBitmap);
 	setVehicleBitmap(mVehicleBitmap);
+	setUpOverlayBitmap(mUpOverlayBitmap);
+	setDownOverlayBitmap(mDownOverlayBitmap);
 
 	return true;
 }
@@ -177,6 +191,8 @@ void GuiRadarTSCtrl::onSleep()
 	mPlayerTextureHandle = NULL;
 	mBotTextureHandle = NULL;
 	mVehicleTextureHandle = NULL;
+	mUpOverlayTextureHandle = NULL;
+	mDownOverlayTextureHandle = NULL;
 
 	Parent::onSleep();
 }
@@ -209,25 +225,31 @@ void GuiRadarTSCtrl::renderWorld(const RectI &updateRect)
 	GameBase * control = dynamic_cast<GameBase*>(conn->getControlObject());
 	if (!control) return;
 
-	// get the camera transform for the connection
-	MatrixF camMat;
-	conn->getControlCameraTransform(0,&camMat);
-	// get the position for use later
-	Point3F camPos = camMat.getPosition();
+	// first draw the elliptic plane if we need to
+	renderRadarGround(updateRect);
+	// then the sphere
+	renderRadarSphere(updateRect);
+	//then, the blips
+	renderRadarBlip(updateRect,conn,control);
+	//finally, the directional markers
+	renderRadarOverlay(updateRect,conn,control);
+	// all done
+	GFX->setClipRect(updateRect);
+}
 
-	// invert the camera transform - 
-	// this will then allow us to transform other objects into our own object space
-	camMat.inverse();
-
+void GuiRadarTSCtrl::renderRadarGround(const RectI &updateRect)
+{
 	GFXStateBlockDesc desc;
 	desc.zEnable = false;
 	desc.ffLighting = false;  
 	desc.setCullMode( GFXCullNone );  
 	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
-	desc.samplers[0].textureColorOp = GFXTOPModulate;  
-	desc.samplers[1].textureColorOp = GFXTOPDisable;
-	GFXStateBlockRef myState = GFX->createStateBlock(desc);  
-	GFX->setStateBlock(myState);
+	desc.samplers[0].textureColorOp = GFXTOPModulate;
+	desc.samplers[1].textureColorOp = GFXTOPDisable; 
+
+	GFXStateBlockRef elipseState = GFX->createStateBlock(desc);  
+	GFX->setStateBlock(elipseState);
+
 	// first draw the elliptic plane if we need to
 	if(mEllipticTextureHandle)
 	{
@@ -244,11 +266,14 @@ void GuiRadarTSCtrl::renderWorld(const RectI &updateRect)
 		PrimBuild::end();
 	}
 
+}
+
+void GuiRadarTSCtrl::renderRadarSphere(const RectI &updateRect)
+{
 	if (mSphereDetail > 4)
 		mSphereDetail = 4;
 
-	// then the sphere
-	const Sphere::TriangleMesh *sphereMesh = sphere.getMesh(mSphereDetail); // sphere.getMesh(2) gives a slighty 'chunky' sphere - go higher if you can handle the framerate hit
+	const SphereMesh::TriangleMesh *sphereMesh = sphere.getMesh(mSphereDetail); // sphere.getMesh(2) gives a slighty 'chunky' sphere - go higher if you can handle the framerate hit
 	S32 numPoly = sphereMesh->numPoly;
 	S32 totalPoly = 0;
 
@@ -273,18 +298,41 @@ void GuiRadarTSCtrl::renderWorld(const RectI &updateRect)
 	}
 	verts.unlock();
 
-	GFXStateBlockDesc desc2;
-	desc2.setCullMode(GFXCullNone);
-	desc2.zEnable = false;
-	desc2.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
+	GFXStateBlockDesc sphereDesc;
+	sphereDesc.setCullMode(GFXCullNone);
+	sphereDesc.zEnable = false;
+	sphereDesc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
 
-	GFX->setStateBlockByDesc( desc2 );
+	GFX->setStateBlockByDesc( sphereDesc );
 	GFX->setupGenericShaders( GFXDevice::GSColor );
 
 	GFX->setVertexBuffer( verts );
 	GFX->drawPrimitive( GFXTriangleList, 0, totalPoly );
+}
 
-	GFX->setStateBlockByDesc( desc );
+void GuiRadarTSCtrl::renderRadarBlip(const RectI &updateRect, GameConnection* conn, GameBase * control)
+{
+	// get the camera transform for the connection
+    MatrixF camMat;
+    camMat = control->getTransform();
+	//conn->getControlCameraTransform(0,&camMat);
+	// get the position for use later
+	Point3F camPos = camMat.getPosition();
+
+	// invert the camera transform - 
+	// this will then allow us to transform other objects into our own object space
+	camMat.inverse();
+
+	GFXStateBlockDesc desc;
+	desc.zEnable = false;
+	desc.ffLighting = false;  
+	desc.setCullMode( GFXCullNone );  
+	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
+	desc.samplers[0].textureColorOp = GFXTOPModulate;
+	desc.samplers[1].textureColorOp = GFXTOPDisable; 
+
+	GFXStateBlockRef blipState = GFX->createStateBlock(desc);  
+	GFX->setStateBlock(blipState);
 	GFX->setupGenericShaders();
 
 	// Now do the radar signatures
@@ -300,7 +348,7 @@ void GuiRadarTSCtrl::renderWorld(const RectI &updateRect)
 	// then build the coordinates that we'll use for the billboards
 	// oops, another hard coded value, ah well...
 	right *= mBlipSize * 0.05f;
-	up    *= mBlipSize * 0.05f; 
+	up    *= mBlipSize * 0.1f; 
 
 	// set up the texture that we'll use for the blips
 	// is this the correct way to do it???
@@ -312,85 +360,228 @@ void GuiRadarTSCtrl::renderWorld(const RectI &updateRect)
 	// Go through all ghosted objects on connection (client-side)
 	for (SimSetIterator itr(conn); *itr; ++itr) 
 	{
-		// Make sure that the object is a shapebase object
-		if ((*itr)->getTypeMask() && ShapeBaseObjectType) 
-		{
-			ShapeBase* shape = static_cast<ShapeBase*>(*itr);
+		//if (SO->getTypeMask() && ShapeBaseObjectType)
+		//{
+			//ShapeBase* shape = static_cast<ShapeBase*>(*itr);
+        ShapeBase* shape = dynamic_cast<ShapeBase*>(*itr);
+        if(shape)
+        {
 			// Make sure that the object isn't the client
 			if ( shape != control )
 			{
 				// Make sure the shapebase object is a player (or Vehicle)
 				if (shape->getTypeMask() & ( PlayerObjectType | AIObjectType | VehicleObjectType ) ) 
 				{
-					// get position of object
-					Point3F objPos = shape->getPosition();
+				   // get position of object
+				   Point3F objPos = shape->getPosition();
+				                     
+				   // transform it into the coordinate space of the viewer
+				   camMat.mulP(objPos);
+				   // scale it according to the current radar range
+				   objPos /= mRange;
 
-					// get vector between object and observer
-					Point3F objVec = objPos - camPos;
-
-					// don't draw if outside of current radar range
-					if(objVec.lenSquared() > (mRange * mRange))
-						continue;
-
-					// transform it into the coordinate space of the viewer
-					camMat.mulP(objPos);
-
-					// scale it according to the current radar range
-					objPos /= mRange;
+				   // don't draw if outside of current radar range
+				   if (objPos.len() > 1)
+				   {
+						if (shape->getTypeMask() & ( VehicleObjectType )) continue;
+						objPos *= 1/objPos.len();
+				   }
 
 					// compress the z transform a bit, just for looks
 					//objPos.z *= 0.5f;
 
-					if (shape->getTypeMask() & ( PlayerObjectType ))
-						GFX->setTexture(0, mRadarPlayer);
+                    ShapeBaseData* DB = dynamic_cast<ShapeBaseData*>(shape->getDataBlock());
+                    if (DB)
+                    {
+                        if (DB->mHideIcon) continue;
+						if ((DB->mIcon)&&(DB->mIcon[0])&&(DB->mIconHandle))
+                        {
+                            GFXTextureObject* mRadarObject = (GFXTextureObject*)(DB->mIconHandle);
+                            if(mRadarObject) GFX->setTexture(0, mRadarObject);
+                        }
+                        else
+                        {
+                            if (shape->getTypeMask()&(PlayerObjectType)) GFX->setTexture(0, mRadarPlayer);
+                            if (shape->getTypeMask()&(VehicleObjectType)) GFX->setTexture(0, mRadarVehicle);
+                            if (shape->getTypeMask()&(AIObjectType)) GFX->setTexture(0, mRadarBot);
+                        }
+					    GFX->disableShaders();
+                        // draw a line from the blip to the elliptic - will have to use quads if you want a line thicker than 1px
+                        // end point of line
+                        Point3F endPos = objPos;
+                        endPos.z = 0;
 
-					if (shape->getTypeMask() & ( VehicleObjectType ))
-						GFX->setTexture(0, mRadarVehicle);
+                        nextFlash--;
+                        if (nextFlash < 0)
+                        {
+                            nextFlash = flashPace;
+                            flipColors = !flipColors;
+                        }
 
-					if (shape->getTypeMask() & ( AIObjectType ))
-						GFX->setTexture(0, mRadarBot);
+					    // draw the blip
+					    // unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
+					    // SO, lets build a quad using the view aligned coordinates we generated earlier....
+	                    GFX->setStateBlockByDesc( desc );
 
-					GFX->disableShaders();
+					    if ((flipColors)&&(shape->getDamageValue()>0.05f))
+                        {
+                            ColorF tBlipColor;
+                            tBlipColor.set(1.0f, 0.0f, 0.0f, 1.0f);
+                            PrimBuild::color(tBlipColor);
+                        }
+                        else PrimBuild::color(mBlipColor);
 
-					// draw the blip
-					// unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
-					// SO, lets build a quad using the view aligned coordinates we generated earlier....
-					desc.samplers[0].textureColorOp = GFXTOPModulate;
-					//GFX->setTextureStageColorOp(0, GFXTOPModulate);
-					PrimBuild::color(mBlipColor);
-					PrimBuild::begin(GFXTriangleStrip, 4);
-					PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
-					PrimBuild::vertex3fv(objPos - right + up);
-					PrimBuild::texCoord2f(quadTexCoords[1].x, quadTexCoords[1].y);
-					PrimBuild::vertex3fv(objPos + right + up);
-					PrimBuild::texCoord2f(quadTexCoords[2].x, quadTexCoords[2].y);
-					PrimBuild::vertex3fv(objPos - right - up);
-					PrimBuild::texCoord2f(quadTexCoords[3].x, quadTexCoords[3].y);
-					PrimBuild::vertex3fv(objPos + right - up);
-					PrimBuild::end();
-
-					// draw a line from the blip to the elliptic - will have to use quads if you want a line thicker than 1px
-					// end point of line
-					Point3F endPos = objPos;
-					endPos.z = 0;
-
-					// draw the line
-					desc.samplers[1].textureColorOp = GFXTOPDisable;
-					//GFX->setTextureStageColorOp(0, GFXTOPDisable);
-					PrimBuild::color(mStemColor);
-					PrimBuild::begin(GFXLineList, 2);
-					PrimBuild::vertex3fv(objPos);
-					PrimBuild::vertex3fv(endPos);
-					PrimBuild::end();
+					    PrimBuild::begin(GFXTriangleStrip, 4);
+					    PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
+					    PrimBuild::vertex3fv(objPos - right + up);
+					    PrimBuild::texCoord2f(quadTexCoords[1].x, quadTexCoords[1].y);
+					    PrimBuild::vertex3fv(objPos + right + up);
+					    PrimBuild::texCoord2f(quadTexCoords[2].x, quadTexCoords[2].y);
+					    PrimBuild::vertex3fv(objPos - right);
+					    PrimBuild::texCoord2f(quadTexCoords[3].x, quadTexCoords[3].y);
+					    PrimBuild::vertex3fv(objPos + right);
+					    PrimBuild::end();						
+                    }
 				}
 			}
 		}
 	}
-
-	// all done
-	GFX->setClipRect(updateRect);
 }
 
+void GuiRadarTSCtrl::renderRadarOverlay(const RectI &updateRect, GameConnection* conn, GameBase * control)
+{
+	// get the camera transform for the connection
+    MatrixF camMat;
+    camMat = control->getTransform();
+	//conn->getControlCameraTransform(0,&camMat);
+	// get the position for use later
+	Point3F camPos = camMat.getPosition();
+
+	// invert the camera transform - 
+	// this will then allow us to transform other objects into our own object space
+	camMat.inverse();
+
+	GFXStateBlockDesc desc;
+	desc.zEnable = false;
+	desc.ffLighting = false;  
+	desc.setCullMode( GFXCullNone );  
+	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
+	desc.samplers[0].textureColorOp = GFXTOPModulate;
+	desc.samplers[1].textureColorOp = GFXTOPDisable; 
+
+	GFXStateBlockRef blipState = GFX->createStateBlock(desc);  
+	GFX->setStateBlock(blipState);
+	GFX->setupGenericShaders();
+
+	// Now do the radar signatures
+	// firstly, we will be drawing billboards, so get the current world transform matrix
+	MatrixF worldMat = GFX->getWorldMatrix();
+	// extract the up and right vectors
+	Point3F up;
+	Point3F right;
+	worldMat.getRow(0,&right);
+	worldMat.getRow(2,&up);
+	right.normalize();
+	up.normalize();
+	// then build the coordinates that we'll use for the billboards
+	// oops, another hard coded value, ah well...
+	right *= mBlipSize * 0.05f;
+	up    *= mBlipSize * 0.1f; 
+
+	// set up the texture that we'll use for the blips
+	// is this the correct way to do it???
+	GFX->getDrawUtil()->clearBitmapModulation();
+
+	// Go through all ghosted objects on connection (client-side)
+	for (SimSetIterator itr(conn); *itr; ++itr) 
+	{
+		//if (SO->getTypeMask() && ShapeBaseObjectType)
+		//{
+			//ShapeBase* shape = static_cast<ShapeBase*>(*itr);
+        ShapeBase* shape = dynamic_cast<ShapeBase*>(*itr);
+        if(shape)
+        {
+			// Make sure that the object isn't the client
+			if ( shape != control )
+			{
+				// Make sure the shapebase object is a player (or Vehicle)
+				if (shape->getTypeMask() & ( PlayerObjectType | AIObjectType | VehicleObjectType ) ) 
+				{
+				   // get position of object
+				   Point3F objPos = shape->getPosition();
+				                     
+				   // transform it into the coordinate space of the viewer
+				   camMat.mulP(objPos);
+				   // scale it according to the current radar range
+				   objPos /= mRange;
+
+				   // don't draw if outside of current radar range
+				   if (objPos.len() > 1)
+				   {
+						if (shape->getTypeMask() & ( VehicleObjectType )) continue;
+						objPos *= 1/objPos.len();
+				   }
+
+					// compress the z transform a bit, just for looks
+					//objPos.z *= 0.5f;
+
+                    ShapeBaseData* DB = dynamic_cast<ShapeBaseData*>(shape->getDataBlock());
+                    if (DB)
+                    {
+                        if (DB->mHideIcon) continue;
+						if (mFabs(objPos.z)<mOverlayGive) continue;
+
+						bool drawUp = false;
+						if (objPos.z>0) drawUp = true;
+
+						GFXTextureObject* overlay = NULL;
+						if (drawUp) overlay = (GFXTextureObject*) mUpOverlayTextureHandle;
+						else overlay = (GFXTextureObject*) mDownOverlayTextureHandle;
+
+						if (overlay)
+						{
+							GFX->setTexture(0, overlay);
+
+							// draw the blip
+							// unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
+							// SO, lets build a quad using the view aligned coordinates we generated earlier....
+							GFX->setStateBlockByDesc( desc );
+							PrimBuild::color(mBlipColor);
+							PrimBuild::begin(GFXTriangleStrip, 4);
+							PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
+							PrimBuild::vertex3fv(objPos - right + up);
+							PrimBuild::texCoord2f(quadTexCoords[1].x, quadTexCoords[1].y);
+							PrimBuild::vertex3fv(objPos + right + up);
+							PrimBuild::texCoord2f(quadTexCoords[2].x, quadTexCoords[2].y);
+							PrimBuild::vertex3fv(objPos - right);
+							PrimBuild::texCoord2f(quadTexCoords[3].x, quadTexCoords[3].y);
+							PrimBuild::vertex3fv(objPos + right);
+							PrimBuild::end();
+						}
+						else
+						{
+							// draw a line from the blip to the elliptic - will have to use quads if you want a line thicker than 1px
+							// end point of line
+							Point3F endPos = objPos;
+							endPos.z = 0;
+							GFXStateBlockDesc desc3;
+							desc3.addDesc(desc);
+							GFXStateBlockRef lineState = GFX->createStateBlock(desc3); 
+							GFX->setStateBlock(lineState);
+							// draw the line
+							PrimBuild::begin(GFXLineList, 2);
+							if (drawUp) PrimBuild::color(mStemColor);
+							else PrimBuild::color(mStemColor/2);
+							PrimBuild::vertex3fv(objPos);
+							PrimBuild::vertex3fv(endPos);
+							PrimBuild::end();
+						}
+                    }
+				}
+			}
+		}
+	}
+}
 //---------------------------------------------------------------------------
 void GuiRadarTSCtrl::setPlayerBitmap(const char *name)
 {
@@ -433,6 +624,33 @@ void GuiRadarTSCtrl::setVehicleBitmap(const char *name)
 	setUpdate();
 }
 
+//---------------------------------------------------------------------------
+void GuiRadarTSCtrl::setUpOverlayBitmap(const char *name)
+{
+	mUpOverlayBitmap = StringTable->insert(name);
+
+	if (*mUpOverlayBitmap) 
+		mUpOverlayTextureHandle = GFXTexHandle(mUpOverlayBitmap, &GFXDefaultStaticDiffuseProfile, "Adescription");
+	else 
+		// Reset handles if UI object is hidden
+		mUpOverlayTextureHandle = NULL;
+
+	setUpdate();
+}
+
+//---------------------------------------------------------------------------
+void GuiRadarTSCtrl::setDownOverlayBitmap(const char *name)
+{
+	mDownOverlayBitmap = StringTable->insert(name);
+
+	if (*mDownOverlayBitmap) 
+		mDownOverlayTextureHandle = GFXTexHandle(mDownOverlayBitmap, &GFXDefaultStaticDiffuseProfile, "Adescription");
+	else 
+		// Reset handles if UI object is hidden
+		mDownOverlayTextureHandle = NULL;
+
+	setUpdate();
+}
 //------------------------------------------------------------------------
 // script interface
 ConsoleMethod( GuiRadarTSCtrl, setEllipticBitmap, void, 3, 3, "(string filename)"
