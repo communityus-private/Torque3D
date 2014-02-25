@@ -518,8 +518,8 @@ public:
       AIRepairNode = 31
    };
    bool mUseCollisonLods;
-   U8 mColSets;        //track how many collision-# a given model's got.
-   U8 mColSetReport;   //strictly for reporting via game editor. does nothing else
+   S32 mColSets;        //track how many collision-# a given model's got.
+   S32 mColSetReport;   //strictly for reporting via game editor. does nothing else
    // TODO: These are only really used in Basic Lighting
    // mode... we should probably move them somewhere else.
    bool shadowEnable;

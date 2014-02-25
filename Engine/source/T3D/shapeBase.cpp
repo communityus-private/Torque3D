@@ -192,7 +192,7 @@ ShapeBaseData::ShapeBaseData()
    mCRC( 0 ),
    debrisDetail( -1 ),
    mUseCollisonLods(false),
-   mColSets(0),
+   mColSets(-1),
    mColSetReport(1)
 {      
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
@@ -328,6 +328,7 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
       }
       // Resolve details and camera node indexes.
       static const String sCollisionStr( "collision-" );
+	  mColSets = -1;
       for (i = 0; i < mShape->details.size(); i++)
       {
          const String &name = mShape->names[mShape->details[i].nameIndex];
@@ -335,10 +336,7 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
          if (name.compare( sCollisionStr, sCollisionStr.length(), String::NoCase ) == 0)
          {
              if (mUseCollisonLods)
-			 {
-				 if (collisionDetails[mColSets].size())
 					 mColSets++;
-			 }
              else mColSets = 0;
              if (mColSets>(ShapeStates-1)) mColSets = ShapeStates-1;
             collisionDetails[mColSets].push_back(i);
@@ -696,8 +694,8 @@ void ShapeBaseData::packData(BitStream* stream)
    stream->write(shadowProjectionDistance);
    stream->write(shadowSphereAdjust);
    stream->writeFlag(mUseCollisonLods);
-   stream->writeInt(mColSets, 8);
-   stream->writeInt(mColSetReport, 8);
+   stream->write(mColSets);
+   stream->write(mColSetReport);
 
    stream->writeString(shapeName);
    stream->writeString(cloakTexName);
@@ -774,8 +772,8 @@ void ShapeBaseData::unpackData(BitStream* stream)
    stream->read(&shadowProjectionDistance);
    stream->read(&shadowSphereAdjust);
    mUseCollisonLods = stream->readFlag();
-   mColSets = stream->readInt(8);
-   mColSetReport = stream->readInt(8);
+   stream->read(&mColSets);
+   stream->read(&mColSetReport);
    if(stream->readFlag())
       stream->read(&mass);
    else
