@@ -246,14 +246,15 @@ void GuiRadarTSCtrl::renderRadarGround(const RectI &updateRect)
 	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
 	desc.samplers[0].textureColorOp = GFXTOPModulate;
 	desc.samplers[1].textureColorOp = GFXTOPDisable; 
+   desc.samplersDefined = true;
 
 	GFXStateBlockRef elipseState = GFX->createStateBlock(desc);  
-	GFX->setStateBlock(elipseState);
+   GFX->setStateBlock(elipseState);
 
 	// first draw the elliptic plane if we need to
 	if(mEllipticTextureHandle)
 	{
-		GFXTextureObject *texture = mEllipticTextureHandle;
+		GFXTexHandle texture = mEllipticTextureHandle;
 		GFX->setTexture(0, texture);
 
 		PrimBuild::color(mEllipticColor);
@@ -302,9 +303,9 @@ void GuiRadarTSCtrl::renderRadarSphere(const RectI &updateRect)
 	sphereDesc.setCullMode(GFXCullNone);
 	sphereDesc.zEnable = false;
 	sphereDesc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
+   sphereDesc.samplersDefined = true;
 
 	GFX->setStateBlockByDesc( sphereDesc );
-	GFX->setupGenericShaders( GFXDevice::GSColor );
 
 	GFX->setVertexBuffer( verts );
 	GFX->drawPrimitive( GFXTriangleList, 0, totalPoly );
@@ -312,140 +313,140 @@ void GuiRadarTSCtrl::renderRadarSphere(const RectI &updateRect)
 
 void GuiRadarTSCtrl::renderRadarBlip(const RectI &updateRect, GameConnection* conn, GameBase * control)
 {
-	// get the camera transform for the connection
-    MatrixF camMat;
-    camMat = control->getTransform();
-	//conn->getControlCameraTransform(0,&camMat);
-	// get the position for use later
-	Point3F camPos = camMat.getPosition();
+   // get the camera transform for the connection
+   MatrixF camMat;
+   camMat = control->getTransform();
+   //conn->getControlCameraTransform(0,&camMat);
+   // get the position for use later
+   Point3F camPos = camMat.getPosition();
 
-	// invert the camera transform - 
-	// this will then allow us to transform other objects into our own object space
-	camMat.inverse();
+   // invert the camera transform - 
+   // this will then allow us to transform other objects into our own object space
+   camMat.inverse();
 
-	GFXStateBlockDesc desc;
-	desc.zEnable = false;
-	desc.ffLighting = false;  
-	desc.setCullMode( GFXCullNone );  
-	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
-	desc.samplers[0].textureColorOp = GFXTOPModulate;
-	desc.samplers[1].textureColorOp = GFXTOPDisable; 
+   GFXStateBlockDesc desc;
+   desc.zEnable = false;
+   desc.ffLighting = false;
+   desc.setCullMode(GFXCullNone);
+   desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
+   desc.samplers[0].textureColorOp = GFXTOPModulate;
+   desc.samplers[1].textureColorOp = GFXTOPDisable;
+   desc.samplersDefined = true;
 
-	GFXStateBlockRef blipState = GFX->createStateBlock(desc);  
-	GFX->setStateBlock(blipState);
-	GFX->setupGenericShaders();
+   GFXStateBlockRef blipState = GFX->createStateBlock(desc);
+   GFX->setStateBlock(blipState);
 
-	// Now do the radar signatures
-	// firstly, we will be drawing billboards, so get the current world transform matrix
-	MatrixF worldMat = GFX->getWorldMatrix();
-	// extract the up and right vectors
-	Point3F up;
-	Point3F right;
-	worldMat.getRow(0,&right);
-	worldMat.getRow(2,&up);
-	right.normalize();
-	up.normalize();
-	// then build the coordinates that we'll use for the billboards
-	// oops, another hard coded value, ah well...
-	right *= mBlipSize * 0.05f;
-	up    *= mBlipSize * 0.1f; 
+   // Now do the radar signatures
+   // firstly, we will be drawing billboards, so get the current world transform matrix
+   MatrixF worldMat = GFX->getWorldMatrix();
+   // extract the up and right vectors
+   Point3F up;
+   Point3F right;
+   worldMat.getRow(0, &right);
+   worldMat.getRow(2, &up);
+   right.normalize();
+   up.normalize();
+   // then build the coordinates that we'll use for the billboards
+   // oops, another hard coded value, ah well...
+   right *= mBlipSize * 0.05f;
+   up *= mBlipSize * 0.1f;
 
-	// set up the texture that we'll use for the blips
-	// is this the correct way to do it???
-	GFX->getDrawUtil()->clearBitmapModulation();
-	GFXTextureObject* mRadarPlayer = (GFXTextureObject*) mPlayerTextureHandle;
-	GFXTextureObject* mRadarBot = (GFXTextureObject*) mBotTextureHandle;
-	GFXTextureObject* mRadarVehicle = (GFXTextureObject*) mVehicleTextureHandle;
+   // set up the texture that we'll use for the blips
+   // is this the correct way to do it???
+   GFX->getDrawUtil()->clearBitmapModulation();
+   GFXTexHandle mRadarPlayer = mPlayerTextureHandle;
+   GFXTexHandle mRadarBot = mBotTextureHandle;
+   GFXTexHandle mRadarVehicle = mVehicleTextureHandle;
 
-	// Go through all ghosted objects on connection (client-side)
-	for (SimSetIterator itr(conn); *itr; ++itr) 
-	{
-		//if (SO->getTypeMask() && ShapeBaseObjectType)
-		//{
-			//ShapeBase* shape = static_cast<ShapeBase*>(*itr);
-        ShapeBase* shape = dynamic_cast<ShapeBase*>(*itr);
-        if(shape)
-        {
-			// Make sure that the object isn't the client
-			if ( shape != control )
-			{
-				// Make sure the shapebase object is a player (or Vehicle)
-				if (shape->getTypeMask() & ( PlayerObjectType | AIObjectType | VehicleObjectType ) ) 
-				{
-				   // get position of object
-				   Point3F objPos = shape->getPosition();
-				                     
-				   // transform it into the coordinate space of the viewer
-				   camMat.mulP(objPos);
-				   // scale it according to the current radar range
-				   objPos /= mRange;
+   // Go through all ghosted objects on connection (client-side)
+   for (SimSetIterator itr(conn); *itr; ++itr)
+   {
+      //if (SO->getTypeMask() && ShapeBaseObjectType)
+      //{
+      //ShapeBase* shape = static_cast<ShapeBase*>(*itr);
+      ShapeBase* shape = dynamic_cast<ShapeBase*>(*itr);
+      if (shape)
+      {
+         // Make sure that the object isn't the client
+         if (shape != control)
+         {
+            // Make sure the shapebase object is a player (or Vehicle)
+            if (shape->getTypeMask() & (PlayerObjectType | AIObjectType | VehicleObjectType))
+            {
+               // get position of object
+               Point3F objPos = shape->getPosition();
 
-				   // don't draw if outside of current radar range
-				   if (objPos.len() > 1)
-				   {
-						if (shape->getTypeMask() & ( VehicleObjectType )) continue;
-						objPos *= 1/objPos.len();
-				   }
+               // transform it into the coordinate space of the viewer
+               camMat.mulP(objPos);
+               // scale it according to the current radar range
+               objPos /= mRange;
 
-					// compress the z transform a bit, just for looks
-					//objPos.z *= 0.5f;
+               // don't draw if outside of current radar range
+               if (objPos.len() > 1)
+               {
+                  if (shape->getTypeMask() & (VehicleObjectType)) continue;
+                  objPos *= 1 / objPos.len();
+               }
 
-                    ShapeBaseData* DB = dynamic_cast<ShapeBaseData*>(shape->getDataBlock());
-                    if (DB)
-                    {
-                        if (DB->mHideIcon) continue;
-						if ((DB->mIcon)&&(DB->mIcon[0])&&(DB->mIconHandle))
-                        {
-                            GFXTextureObject* mRadarObject = (GFXTextureObject*)(DB->mIconHandle);
-                            if(mRadarObject) GFX->setTexture(0, mRadarObject);
-                        }
-                        else
-                        {
-                            if (shape->getTypeMask()&(PlayerObjectType)) GFX->setTexture(0, mRadarPlayer);
-                            if (shape->getTypeMask()&(VehicleObjectType)) GFX->setTexture(0, mRadarVehicle);
-                            if (shape->getTypeMask()&(AIObjectType)) GFX->setTexture(0, mRadarBot);
-                        }
-					    GFX->disableShaders();
-                        // draw a line from the blip to the elliptic - will have to use quads if you want a line thicker than 1px
-                        // end point of line
-                        Point3F endPos = objPos;
-                        endPos.z = 0;
+               // compress the z transform a bit, just for looks
+               //objPos.z *= 0.5f;
 
-                        nextFlash--;
-                        if (nextFlash < 0)
-                        {
-                            nextFlash = flashPace;
-                            flipColors = !flipColors;
-                        }
+               ShapeBaseData* DB = dynamic_cast<ShapeBaseData*>(shape->getDataBlock());
+               if (DB)
+               {
+                  if (DB->mHideIcon) continue;
+                  if ((DB->mIcon) && (DB->mIcon[0]) && (DB->mIconHandle))
+                  {
+                     GFXTexHandle mRadarObject = (GFXTexHandle)(DB->mIconHandle);
+                     if (mRadarObject) GFX->setTexture(0, mRadarObject);
+                  }
+                  else
+                  {
+                     if (shape->getTypeMask()&(PlayerObjectType)) GFX->setTexture(0, mRadarPlayer);
+                     if (shape->getTypeMask()&(VehicleObjectType)) GFX->setTexture(0, mRadarVehicle);
+                     if (shape->getTypeMask()&(AIObjectType)) GFX->setTexture(0, mRadarBot);
+                  }
+                  //GFX->setupGenericShaders();
+                  // draw a line from the blip to the elliptic - will have to use quads if you want a line thicker than 1px
+                  // end point of line
+                  Point3F endPos = objPos;
+                  endPos.z = 0;
 
-					    // draw the blip
-					    // unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
-					    // SO, lets build a quad using the view aligned coordinates we generated earlier....
-	                    GFX->setStateBlockByDesc( desc );
+                  nextFlash--;
+                  if (nextFlash < 0)
+                  {
+                     nextFlash = flashPace;
+                     flipColors = !flipColors;
+                  }
 
-					    if ((flipColors)&&(shape->getDamageValue()>0.05f))
-                        {
-                            ColorF tBlipColor;
-                            tBlipColor.set(1.0f, 0.0f, 0.0f, 1.0f);
-                            PrimBuild::color(tBlipColor);
-                        }
-                        else PrimBuild::color(mBlipColor);
+                  // draw the blip
+                  // unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
+                  // SO, lets build a quad using the view aligned coordinates we generated earlier....
+                  GFX->setStateBlockByDesc(desc);
 
-					    PrimBuild::begin(GFXTriangleStrip, 4);
-					    PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
-					    PrimBuild::vertex3fv(objPos - right + up);
-					    PrimBuild::texCoord2f(quadTexCoords[1].x, quadTexCoords[1].y);
-					    PrimBuild::vertex3fv(objPos + right + up);
-					    PrimBuild::texCoord2f(quadTexCoords[2].x, quadTexCoords[2].y);
-					    PrimBuild::vertex3fv(objPos - right);
-					    PrimBuild::texCoord2f(quadTexCoords[3].x, quadTexCoords[3].y);
-					    PrimBuild::vertex3fv(objPos + right);
-					    PrimBuild::end();						
-                    }
-				}
-			}
-		}
-	}
+                  if ((flipColors) && (shape->getDamageValue()>0.05f))
+                  {
+                     ColorF tBlipColor;
+                     tBlipColor.set(1.0f, 0.0f, 0.0f, 1.0f);
+                     PrimBuild::color(tBlipColor);
+                  }
+                  else PrimBuild::color(mBlipColor);
+
+                  PrimBuild::begin(GFXTriangleStrip, 4);
+                  PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
+                  PrimBuild::vertex3fv(objPos - right + up);
+                  PrimBuild::texCoord2f(quadTexCoords[1].x, quadTexCoords[1].y);
+                  PrimBuild::vertex3fv(objPos + right + up);
+                  PrimBuild::texCoord2f(quadTexCoords[2].x, quadTexCoords[2].y);
+                  PrimBuild::vertex3fv(objPos - right);
+                  PrimBuild::texCoord2f(quadTexCoords[3].x, quadTexCoords[3].y);
+                  PrimBuild::vertex3fv(objPos + right);
+                  PrimBuild::end();
+               }
+            }
+         }
+      }
+   }
 }
 
 void GuiRadarTSCtrl::renderRadarOverlay(const RectI &updateRect, GameConnection* conn, GameBase * control)
@@ -468,10 +469,10 @@ void GuiRadarTSCtrl::renderRadarOverlay(const RectI &updateRect, GameConnection*
 	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
 	desc.samplers[0].textureColorOp = GFXTOPModulate;
 	desc.samplers[1].textureColorOp = GFXTOPDisable; 
-
-	GFXStateBlockRef blipState = GFX->createStateBlock(desc);  
+   desc.samplersDefined = true;
+   GFXStateBlockRef blipState = GFX->createStateBlock(desc);
+   //GFX->setupGenericShaders();
 	GFX->setStateBlock(blipState);
-	GFX->setupGenericShaders();
 
 	// Now do the radar signatures
 	// firstly, we will be drawing billboards, so get the current world transform matrix
@@ -525,58 +526,59 @@ void GuiRadarTSCtrl::renderRadarOverlay(const RectI &updateRect, GameConnection*
 					// compress the z transform a bit, just for looks
 					//objPos.z *= 0.5f;
 
-                    ShapeBaseData* DB = dynamic_cast<ShapeBaseData*>(shape->getDataBlock());
-                    if (DB)
-                    {
-                        if (DB->mHideIcon) continue;
-						if (mFabs(objPos.z)<mOverlayGive) continue;
+               ShapeBaseData* DB = dynamic_cast<ShapeBaseData*>(shape->getDataBlock());
+               if (DB)
+               {
+                  if (DB->mHideIcon) continue;
+                  if (mFabs(objPos.z)<mOverlayGive) continue;
 
-						bool drawUp = false;
-						if (objPos.z>0) drawUp = true;
+                  bool drawUp = false;
+                  if (objPos.z>0) drawUp = true;
 
-						GFXTextureObject* overlay = NULL;
-						if (drawUp) overlay = (GFXTextureObject*) mUpOverlayTextureHandle;
-						else overlay = (GFXTextureObject*) mDownOverlayTextureHandle;
+                  GFXTexHandle overlay;
+                  if (drawUp) overlay = mUpOverlayTextureHandle;
+                  else overlay = mDownOverlayTextureHandle;
 
-						if (overlay)
-						{
-							GFX->setTexture(0, overlay);
+                  if (overlay)
+                  {
+                     GFX->setTexture(0, overlay);
 
-							// draw the blip
-							// unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
-							// SO, lets build a quad using the view aligned coordinates we generated earlier....
-							GFX->setStateBlockByDesc( desc );
-							PrimBuild::color(mBlipColor);
-							PrimBuild::begin(GFXTriangleStrip, 4);
-							PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
-							PrimBuild::vertex3fv(objPos - right + up);
-							PrimBuild::texCoord2f(quadTexCoords[1].x, quadTexCoords[1].y);
-							PrimBuild::vertex3fv(objPos + right + up);
-							PrimBuild::texCoord2f(quadTexCoords[2].x, quadTexCoords[2].y);
-							PrimBuild::vertex3fv(objPos - right);
-							PrimBuild::texCoord2f(quadTexCoords[3].x, quadTexCoords[3].y);
-							PrimBuild::vertex3fv(objPos + right);
-							PrimBuild::end();
-						}
-						else
-						{
-							// draw a line from the blip to the elliptic - will have to use quads if you want a line thicker than 1px
-							// end point of line
-							Point3F endPos = objPos;
-							endPos.z = 0;
-							GFXStateBlockDesc desc3;
-							desc3.addDesc(desc);
-							GFXStateBlockRef lineState = GFX->createStateBlock(desc3); 
-							GFX->setStateBlock(lineState);
-							// draw the line
-							PrimBuild::begin(GFXLineList, 2);
-							if (drawUp) PrimBuild::color(mStemColor);
-							else PrimBuild::color(mStemColor/2);
-							PrimBuild::vertex3fv(objPos);
-							PrimBuild::vertex3fv(endPos);
-							PrimBuild::end();
-						}
-                    }
+                     // draw the blip
+                     // unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
+                     // SO, lets build a quad using the view aligned coordinates we generated earlier....
+                     GFX->setStateBlockByDesc(desc);
+                     PrimBuild::color(mBlipColor);
+                     PrimBuild::begin(GFXTriangleStrip, 4);
+                     PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
+                     PrimBuild::vertex3fv(objPos - right + up);
+                     PrimBuild::texCoord2f(quadTexCoords[1].x, quadTexCoords[1].y);
+                     PrimBuild::vertex3fv(objPos + right + up);
+                     PrimBuild::texCoord2f(quadTexCoords[2].x, quadTexCoords[2].y);
+                     PrimBuild::vertex3fv(objPos - right);
+                     PrimBuild::texCoord2f(quadTexCoords[3].x, quadTexCoords[3].y);
+                     PrimBuild::vertex3fv(objPos + right);
+                     PrimBuild::end();
+                  }
+                  else
+                  {
+                     // draw a line from the blip to the elliptic - will have to use quads if you want a line thicker than 1px
+                     // end point of line
+                     Point3F endPos = objPos;
+                     endPos.z = 0;
+                     GFXStateBlockDesc desc3;
+                     desc3.addDesc(desc);
+                     desc3.samplersDefined = true;
+                     GFXStateBlockRef lineState = GFX->createStateBlock(desc3);
+                     GFX->setStateBlock(lineState);
+                     // draw the line
+                     PrimBuild::begin(GFXLineList, 2);
+                     if (drawUp) PrimBuild::color(mStemColor);
+                     else PrimBuild::color(mStemColor / 2);
+                     PrimBuild::vertex3fv(objPos);
+                     PrimBuild::vertex3fv(endPos);
+                     PrimBuild::end();
+                  }
+               }
 				}
 			}
 		}
