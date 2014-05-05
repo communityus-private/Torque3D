@@ -245,11 +245,11 @@ void GuiRadarTSCtrl::renderRadarGround(const RectI &updateRect)
 	desc.setCullMode( GFXCullNone );  
 	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
 	desc.samplers[0].textureColorOp = GFXTOPModulate;
-	desc.samplers[1].textureColorOp = GFXTOPDisable; 
-   desc.samplersDefined = true;
-
+   desc.samplers[1].textureColorOp = GFXTOPDisable;
+   //desc.samplersDefined = true;
 	GFXStateBlockRef elipseState = GFX->createStateBlock(desc);  
    GFX->setStateBlock(elipseState);
+   GFX->setupGenericShaders(GFXDevice::GSTexture);
 
 	// first draw the elliptic plane if we need to
 	if(mEllipticTextureHandle)
@@ -303,9 +303,8 @@ void GuiRadarTSCtrl::renderRadarSphere(const RectI &updateRect)
 	sphereDesc.setCullMode(GFXCullNone);
 	sphereDesc.zEnable = false;
 	sphereDesc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
-   sphereDesc.samplersDefined = true;
-
-	GFX->setStateBlockByDesc( sphereDesc );
+   GFX->setStateBlockByDesc(sphereDesc);
+   GFX->setupGenericShaders(GFXDevice::GSColor);
 
 	GFX->setVertexBuffer( verts );
 	GFX->drawPrimitive( GFXTriangleList, 0, totalPoly );
@@ -332,9 +331,9 @@ void GuiRadarTSCtrl::renderRadarBlip(const RectI &updateRect, GameConnection* co
    desc.samplers[0].textureColorOp = GFXTOPModulate;
    desc.samplers[1].textureColorOp = GFXTOPDisable;
    desc.samplersDefined = true;
-
    GFXStateBlockRef blipState = GFX->createStateBlock(desc);
    GFX->setStateBlock(blipState);
+   GFX->setupGenericShaders(GFXDevice::GSTexture);
 
    // Now do the radar signatures
    // firstly, we will be drawing billboards, so get the current world transform matrix
@@ -423,6 +422,7 @@ void GuiRadarTSCtrl::renderRadarBlip(const RectI &updateRect, GameConnection* co
                   // unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
                   // SO, lets build a quad using the view aligned coordinates we generated earlier....
                   GFX->setStateBlockByDesc(desc);
+                  GFX->setupGenericShaders(GFXDevice::GSTexture);
 
                   if ((flipColors) && (shape->getDamageValue()>0.05f))
                   {
@@ -468,11 +468,11 @@ void GuiRadarTSCtrl::renderRadarOverlay(const RectI &updateRect, GameConnection*
 	desc.setCullMode( GFXCullNone );  
 	desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);  
 	desc.samplers[0].textureColorOp = GFXTOPModulate;
-	desc.samplers[1].textureColorOp = GFXTOPDisable; 
+	desc.samplers[1].textureColorOp = GFXTOPDisable;
    desc.samplersDefined = true;
    GFXStateBlockRef blipState = GFX->createStateBlock(desc);
-   //GFX->setupGenericShaders();
-	GFX->setStateBlock(blipState);
+   GFX->setStateBlock(blipState);
+   GFX->setupGenericShaders(GFXDevice::GSTexture);
 
 	// Now do the radar signatures
 	// firstly, we will be drawing billboards, so get the current world transform matrix
@@ -547,6 +547,7 @@ void GuiRadarTSCtrl::renderRadarOverlay(const RectI &updateRect, GameConnection*
                      // unfortunately, DX doesn't appear to allow specification of point size or line width like opengl
                      // SO, lets build a quad using the view aligned coordinates we generated earlier....
                      GFX->setStateBlockByDesc(desc);
+                     GFX->setupGenericShaders(GFXDevice::GSTexture);
                      PrimBuild::color(mBlipColor);
                      PrimBuild::begin(GFXTriangleStrip, 4);
                      PrimBuild::texCoord2f(quadTexCoords[0].x, quadTexCoords[0].y);
@@ -567,9 +568,9 @@ void GuiRadarTSCtrl::renderRadarOverlay(const RectI &updateRect, GameConnection*
                      endPos.z = 0;
                      GFXStateBlockDesc desc3;
                      desc3.addDesc(desc);
-                     desc3.samplersDefined = true;
                      GFXStateBlockRef lineState = GFX->createStateBlock(desc3);
                      GFX->setStateBlock(lineState);
+                     GFX->setupGenericShaders(GFXDevice::GSColor);
                      // draw the line
                      PrimBuild::begin(GFXLineList, 2);
                      if (drawUp) PrimBuild::color(mStemColor);
