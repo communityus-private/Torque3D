@@ -330,6 +330,7 @@ void GuiRadarTSCtrl::renderRadarBlip(const RectI &updateRect, GameConnection* co
    desc.samplers[0].textureColorOp = GFXTOPModulate;
    desc.samplers[1].textureColorOp = GFXTOPDisable;
    desc.samplersDefined = true;
+   desc.vertexColorEnable = true;
    GFXStateBlockRef blipState = GFX->createStateBlock(desc);
    GFX->setStateBlock(blipState);
 
