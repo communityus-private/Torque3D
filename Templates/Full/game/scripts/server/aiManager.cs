@@ -2,7 +2,7 @@ $serializeActions = true;
 
 function createAIManager()
 {
-	%AIManager = new ScriptObject(AIManager){};
+	%AIManager = new ScriptObject(){class="AIManager";};
 	MissionCleanup.add(%AIManager);
 	%AIManager.targetList = new arrayobject();
 	return %AIManager;
