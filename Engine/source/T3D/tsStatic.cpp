@@ -49,6 +49,8 @@
 #include "materials/materialFeatureTypes.h"
 #include "console/engineAPI.h"
 
+using namespace Torque;
+
 extern bool gEditingMission;
 
 IMPLEMENT_CO_NETOBJECT_V1(TSStatic);
@@ -440,7 +442,7 @@ void TSStatic::reSkin()
       Vector<String> skins;
       String(mSkinNameHandle.getString()).split( ";", skins );
 
-      for (int i = 0; i < skins.size(); i++)
+      for (S32 i = 0; i < skins.size(); i++)
       {
          String oldSkin( mAppliedSkinName.c_str() );
          String newSkin( skins[i] );
@@ -523,7 +525,7 @@ void TSStatic::prepRenderImage( SceneRenderState* state )
    Frustum culler;
    if ( mMeshCulling )
    {
-      culler = state->getFrustum();
+      culler = state->getCullingFrustum();
       MatrixF xfm( true );
       xfm.scale( Point3F::One / getScale() );
       xfm.mul( getRenderWorldTransform() );

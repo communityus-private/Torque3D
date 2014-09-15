@@ -903,7 +903,7 @@ void Camera::_setPosition(const Point3F& pos, const Point3F& rot)
    
    MatrixF temp;
 
-   if(mDataBlock->cameraCanBank)
+   if(mDataBlock && mDataBlock->cameraCanBank)
    {
       // Take rot.y into account to bank the camera
       MatrixF imat;
@@ -932,7 +932,7 @@ void Camera::setRotation(const Point3F& rot)
 
    MatrixF temp;
 
-   if(mDataBlock->cameraCanBank)
+   if(mDataBlock && mDataBlock->cameraCanBank)
    {
       // Take rot.y into account to bank the camera
       MatrixF imat;
@@ -993,7 +993,7 @@ void Camera::writePacketData(GameConnection *connection, BitStream *bstream)
    bstream->setCompressionPoint(pos);
    mathWrite(*bstream, pos);
    bstream->write(mRot.x);
-   if(bstream->writeFlag(mDataBlock->cameraCanBank))
+   if(mDataBlock && bstream->writeFlag(mDataBlock->cameraCanBank))
    {
       // Include mRot.y to allow for camera banking
       bstream->write(mRot.y);
@@ -1546,7 +1546,7 @@ void Camera::_validateEyePoint(F32 pos, MatrixF *mat)
          float dot = mDot(dir, collision.normal);
          if (dot > 0.01f)
          {
-            float colDist = mDot(startPos - collision.point, dir) - (1 / dot) * CameraRadius;
+            F32 colDist = mDot(startPos - collision.point, dir) - (1 / dot) * CameraRadius;
             if (colDist > pos)
                colDist = pos;
             if (colDist < 0.0f)
