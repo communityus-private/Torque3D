@@ -30,6 +30,7 @@
 #include "console/consoleInternal.h"
 #include "console/engineAPI.h"
 
+// This was added from github editor.
 
 IMPLEMENT_CONOBJECT( AIClient );
 
