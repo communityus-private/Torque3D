@@ -168,14 +168,6 @@ public:
    virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget2; }
 };
 
-class DeferredSkyHLSL : public ShaderFeatureHLSL
-{
-public:
-   virtual String getName() { return "Deferred Shading: Sky"; }
-   virtual void processVert( Vector<ShaderComponent*> &componentList,
-                             const MaterialFeatureData &fd );
-};
-
 // Translucency Outputs
 class DeferredTranslucencyMapHLSL : public ShaderFeatureHLSL
 {

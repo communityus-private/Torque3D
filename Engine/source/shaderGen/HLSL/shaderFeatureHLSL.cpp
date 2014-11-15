@@ -1107,7 +1107,6 @@ void OverlayTexFeatHLSL::setTexData(   Material::StageData &stageDat,
       passData.mTexSlot[ texIndex++ ].texObject = tex;
    }
 }
-}
 
 
 //****************************************************************************

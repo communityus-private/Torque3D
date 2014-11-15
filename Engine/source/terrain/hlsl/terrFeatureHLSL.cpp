@@ -60,17 +60,6 @@ MODULE_BEGIN( TerrainFeatHLSL )
    MODULE_INIT_AFTER( ShaderGen )
 
    MODULE_INIT
-   {
-       SHADERGEN->getFeatureInitSignal().notify(&register_hlsl_shader_features_for_terrain);
-   }
-
-};
-
-MODULE_BEGIN( TerrainFeatHLSL )
-
-   MODULE_INIT_AFTER( ShaderGen )
-
-   MODULE_INIT
    {      
       SHADERGEN->getFeatureInitSignal().notify(&register_hlsl_shader_features_for_terrain);
    }

@@ -531,16 +531,3 @@ void DeferredTranslucencyEmptyHLSL::processPix( Vector<ShaderComponent*> &compon
    output = new GenOp( "   @.g = 0.0;\r\n", material );
    
 }
-
-//****************************************************************************
-// Vertex position
-//****************************************************************************
-void DeferredSkyHLSL::processVert( Vector<ShaderComponent*> &componentList, 
-                                    const MaterialFeatureData &fd )
-{
-   Var *outPosition = (Var*)LangElement::find( "hpos" );
-   MultiLine *meta = new MultiLine;
-   meta->addStatement( new GenOp( "   @.w = @.z;\r\n", outPosition, outPosition ) );
-
-   output = meta;
-}
