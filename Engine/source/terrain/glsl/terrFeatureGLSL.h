@@ -37,22 +37,21 @@ class TerrainFeatGLSL : public ShaderFeatureGLSL
 {
 
 protected:
-   
    ShaderIncludeDependency mTorqueDep;
 
 public:
    TerrainFeatGLSL();
    Var* _getInDetailCoord(Vector<ShaderComponent*> &componentList );
-   
+
    Var* _getInMacroCoord(Vector<ShaderComponent*> &componentList );
 
    Var* _getNormalMapTex();
-   
+
    static Var* _getUniformVar( const char *name, const char *type, ConstantSortPosition csp );
-   
+
    Var* _getDetailIdStrengthParallax();
    Var* _getMacroIdStrengthParallax();
-      
+
 };
 
 
@@ -69,6 +68,8 @@ public:
    virtual Resources getResources( const MaterialFeatureData &fd );
 
    virtual String getName() { return "Terrain Base Texture"; }
+
+   virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const;
 };
 
 
@@ -92,6 +93,8 @@ public:
    virtual Resources getResources( const MaterialFeatureData &fd );
 
    virtual String getName() { return "Terrain Detail Texture"; }
+
+   virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const;
 };
 
 
@@ -115,6 +118,8 @@ public:
    virtual Resources getResources( const MaterialFeatureData &fd );
 
    virtual String getName() { return "Terrain Macro Texture"; }
+
+   virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const;
 };
 
 
@@ -123,13 +128,13 @@ class TerrainNormalMapFeatGLSL : public TerrainFeatGLSL
 public:
 
    virtual void processVert(  Vector<ShaderComponent*> &componentList,
-                            const MaterialFeatureData &fd );
-   
+                              const MaterialFeatureData &fd );
+
    virtual void processPix(   Vector<ShaderComponent*> &componentList, 
-                           const MaterialFeatureData &fd );
-   
+                              const MaterialFeatureData &fd );
+
    virtual Resources getResources( const MaterialFeatureData &fd );
-   
+
    virtual String getName() { return "Terrain Normal Texture"; }
 };
 
