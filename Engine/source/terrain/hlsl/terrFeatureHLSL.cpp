@@ -26,6 +26,7 @@
 #include "terrain/terrFeatureTypes.h"
 #include "materials/materialFeatureTypes.h"
 #include "materials/materialFeatureData.h"
+#include "materials/processedMaterial.h"
 #include "gfx/gfxDevice.h"
 #include "shaderGen/langElement.h"
 #include "shaderGen/shaderOp.h"
@@ -63,6 +64,12 @@ MODULE_BEGIN( TerrainFeatHLSL )
 
 MODULE_END;
 
+
+TerrainFeatHLSL::TerrainFeatHLSL()
+   : mTorqueDep( "shaders/common/torque.hlsl" )
+   {      
+   addDependency( &mTorqueDep );
+   }
 
 Var* TerrainFeatHLSL::_getUniformVar( const char *name, const char *type, ConstantSortPosition csp )
 {
@@ -261,9 +268,12 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
    Var *baseColor = new Var;
    baseColor->setType( "float4" );
    baseColor->setName( "baseColor" );
-   meta->addStatement( new GenOp( "   @ = tex2D( @, @.xy );\r\n", new DecOp( baseColor ), diffuseMap, texCoord ) );
-   meta->addStatement( new GenOp( "   @;\r\n", assignColor( baseColor, Material::Mul ) ) );
+   meta->addStatement( new GenOp( "   @ = tex2DLinear( @, @.xy );\r\n", new DecOp( baseColor ), diffuseMap, texCoord ) );
 
+  ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
+
+      target= ShaderFeature::RenderTarget1;
+   meta->addStatement( new GenOp( "   @;\r\n", assignColor( baseColor, Material::Mul,NULL,target ) ) );
    output = meta;
 }
 

@@ -25,8 +25,8 @@ singleton ShaderData( GammaShader )
    DXVertexShaderFile 	= "shaders/common/postFx/postFxV.hlsl";
    DXPixelShaderFile 	= "shaders/common/postFx/gammaP.hlsl";
 
-   OGLVertexShaderFile  = "shaders/common/postFx/gl/postFxV.glsl";
-   OGLPixelShaderFile   = "shaders/common/postFx/gl/gammaP.glsl";
+   OGLVertexShaderFile 	= "shaders/common/postFx/gl/postFxV.glsl";
+   OGLPixelShaderFile 	= "shaders/common/postFx/gl/gammaP.glsl";
    
    samplerNames[0] = "$backBuffer";
    samplerNames[1] = "$colorCorrectionTex";
@@ -44,7 +44,7 @@ singleton GFXStateBlockData( GammaStateBlock : PFX_DefaultStateBlock )
 singleton PostEffect( GammaPostFX )
 {
    isEnabled = true;
-   allowReflectPass = false;
+   allowReflectPass = true;
    
    renderTime = "PFXBeforeBin";
    renderBin = "EditorBin";
@@ -65,6 +65,8 @@ function GammaPostFX::preProcess( %this )
 
 function GammaPostFX::setShaderConsts( %this )
 {
-   %clampedGamma  = mClamp( $pref::Video::Gamma, 0.001, 2.2);
+   %clampedGamma  = mClamp( $pref::Video::Gamma, 2.0, 2.5);
    %this.setShaderConst( "$OneOverGamma", 1 / %clampedGamma );
+   %this.setShaderConst( "$Brightness", $pref::Video::Brightness );
+   %this.setShaderConst( "$Contrast", $pref::Video::Contrast );
 }
