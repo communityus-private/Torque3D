@@ -131,9 +131,20 @@ public:
       S32 id;
    }; 
 
+   struct surfaceTexture
+   {
+      // The name of the Material we will use for rendering
+      String            materialName;
+
+      // The actual Material instance
+      BaseMatInstance*  materialInst;
+      Point2F offset;
+      Point2F scale;
+   };
+
 	struct Geometry
 	{  
-		void generate( const Vector< PlaneF > &planes, const Vector< Point3F > &tangents );   
+		void generate( const Vector< PlaneF > &planes, const Vector< Point3F > &tangents, const Vector< Point2F > texOffset, const Vector< Point2F > texScale);
 
 		Vector< Point3F > points;      
 		Vector< Face > faces;
@@ -212,6 +223,8 @@ protected:
    static S32 QSORT_CALLBACK _comparePlaneDist( const void *a, const void *b );
 
    static bool protectedSetSurface( void *object, const char *index, const char *data );
+
+   static bool protectedSetSurfaceTexture( void *object, const char *index, const char *data );
   
 protected:
    
@@ -235,6 +248,9 @@ protected:
    Vector< MatrixF > mSurfaces;
 
    Vector< Point3F > mFaceCenters;
+
+   //this is mostly for storage purposes, so we can save the texture mods
+   Vector< surfaceTexture > mSurfaceTextures;
 
    Convex *mConvexList;
 

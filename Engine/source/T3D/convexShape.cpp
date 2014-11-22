@@ -225,6 +225,28 @@ bool ConvexShape::protectedSetSurface( void *object, const char *index, const ch
    return false;
 }
 
+bool ConvexShape::protectedSetSurfaceTexture(void *object, const char *index, const char *data)
+{
+   ConvexShape *shape = static_cast< ConvexShape* >(object);
+
+   U32 surfaceID;
+   Point2F texOffset;
+   Point2F texScale;
+   //F32 texRot;
+   String material;
+
+   dSscanf(data, "%g %g %g %g %s", &texOffset.x, &texOffset.y, &texScale.x, &texScale.y, &material);
+
+   surfaceTexture surface;
+
+   surface.materialName = material;
+   surface.offset = texOffset;
+   surface.scale = texScale;
+
+   shape->mSurfaceTextures.push_back(surface);
+
+   return false;
+}
 
 ConvexShape::ConvexShape()
  : mMaterialInst( NULL ),   
@@ -247,6 +269,14 @@ ConvexShape::~ConvexShape()
    if ( mMaterialInst )
       SAFE_DELETE( mMaterialInst );
 
+   for(U32 i=0; i<mSurfaceTextures.size(); i++)
+   {
+      mSurfaceTextures[i].materialInst = NULL;
+
+      if(mSurfaceTextures[i].materialInst != NULL)
+         SAFE_DELETE(mSurfaceTextures[i].materialInst);
+   }
+
    delete mConvexList;
    mConvexList = NULL;
 }
@@ -262,6 +292,9 @@ void ConvexShape::initPersistFields()
    addGroup( "Internal" );
 
       addProtectedField( "surface", TypeRealString, NULL, &protectedSetSurface, &defaultProtectedGetFn, 
+         "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors );
+
+      addProtectedField( "surfaceTexture", TypeRealString, NULL, &protectedSetSurfaceTexture, &defaultProtectedGetFn, 
          "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors );
 
    endGroup( "Internal" );
@@ -338,6 +371,18 @@ bool ConvexShape::onAdd()
       }
    }
 
+   if ( mSurfaceTextures.empty() )
+   {      
+      for ( S32 i = 0; i < 6; i++ )
+      {
+         mSurfaceTextures.increment();
+         mSurfaceTextures[i].offset = Point2F(0,0);
+         mSurfaceTextures[i].scale = Point2F(1,1);
+         mSurfaceTextures[i].materialName = String::EmptyString;
+         mSurfaceTextures[i].materialInst = NULL;
+      }
+   }
+
    if ( isClientObject() )   
       _updateMaterial();      
    
@@ -391,11 +436,36 @@ void ConvexShape::writeFields( Stream &stream, U32 tabStop )
 
       stream.writeLine( (const U8*)buffer );
    }
+
+   for ( U32 i = 0; i < mSurfaceTextures.size(); i++ )
+   {  
+      stream.writeTabs(tabStop);
+
+      char buffer[1024];
+      dMemset( buffer, 0, 1024 );      
+      
+      String matName;
+      if(mSurfaceTextures[i].materialName.isEmpty())
+      {
+         dSprintf( buffer, 1024, "surfaceTexture = \"%g %g %g %g %s\";", 
+         mSurfaceTextures[i].offset.x, mSurfaceTextures[i].offset.y, mSurfaceTextures[i].scale.x, mSurfaceTextures[i].scale.y, " "); 
+      }
+      else
+      {
+         dSprintf( buffer, 1024, "surfaceTexture = \"%g %g %g %g %s\";", 
+         mSurfaceTextures[i].offset.x, mSurfaceTextures[i].offset.y, mSurfaceTextures[i].scale.x, mSurfaceTextures[i].scale.y, matName);      
+      }
+
+      stream.writeLine( (const U8*)buffer );
+   }
 }
 
 bool ConvexShape::writeField( StringTableEntry fieldname, const char *value )
 {   
    if ( fieldname == StringTable->insert("surface") )
+      return false;
+
+   if ( fieldname == StringTable->insert("surfaceTexture") )
       return false;
 
    return Parent::writeField( fieldname, value );
@@ -442,6 +512,19 @@ U32 ConvexShape::packUpdate( NetConnection *conn, U32 mask, BitStream *stream )
          mathWrite( *stream, quat );
          mathWrite( *stream, pos );                    
       }
+
+      const U32 surfaceTex = mSurfaceTextures.size();
+
+      stream->writeInt( surfaceTex, 32 );
+
+      //next check for any texture coord or scale mods
+      for(U32 i=0; i < surfaceTex; i++)
+      {
+         mathWrite( *stream, mSurfaceTextures[i].offset);
+         mathWrite( *stream, mSurfaceTextures[i].scale);
+
+         //stream->write( mSurfaceTextures[i].materialName );
+      }
    }
 
    return retMask;
@@ -483,6 +566,21 @@ void ConvexShape::unpackUpdate( NetConnection *conn, BitStream *stream )
 
          quat.setMatrix( &mat );
          mat.setPosition( pos );
+      }
+
+      //now fetch our text coord mods to store into the geometry data
+      mSurfaceTextures.clear();
+      const U32 surfaceTex = stream->readInt( 32 );
+
+      //next check for any texture coord or scale mods
+      for(U32 i=0; i < surfaceTex; i++)
+      {
+         mSurfaceTextures.increment();
+
+         mathRead( *stream, &mSurfaceTextures[i].offset);
+         mathRead( *stream, &mSurfaceTextures[i].scale);
+
+         //stream->read( &mSurfaceTextures[i].materialName );
       }
 
       if ( isProperlyAdded() )
@@ -1032,6 +1130,28 @@ void ConvexShape::_updateMaterial()
    {
       SAFE_DELETE( mMaterialInst );
    }
+
+   //update our custom surface materials
+   for(U32 i=0; i<mSurfaceTextures.size(); i++)
+   {
+      Material *material;
+   
+      if ( !Sim::findObject( mSurfaceTextures[i].materialName, material ) )
+         //bail
+         continue;
+
+
+      mSurfaceTextures[i].materialInst = material->createMatInstance();
+
+      FeatureSet features = MATMGR->getDefaultFeatures();
+
+      mSurfaceTextures[i].materialInst->init( features, getGFXVertexFormat<VertexType>() );
+
+      if ( !mSurfaceTextures[i].materialInst->isValid() )
+      {
+         SAFE_DELETE( mSurfaceTextures[i].materialInst );
+      }
+   }
 }
 
 void ConvexShape::_updateGeometry( bool updateCollision )
@@ -1045,7 +1165,39 @@ void ConvexShape::_updateGeometry( bool updateCollision )
 	for ( S32 i = 0; i < mSurfaces.size(); i++ )
 		tangents.push_back( mSurfaces[i].getRightVector() );
    
-   mGeometry.generate( mPlanes, tangents );
+   //prepping the texture info
+   Vector<Point2F> texOffset;
+   Vector<Point2F> texScale;
+   //step in here, and add new surfaceTextures if we don't match the count of surfaces, we use
+   //msurfaces as the counter, because we need to match it.
+
+   if(mSurfaceTextures.size() > mSurfaces.size())
+   { 
+      //catch us here, if we got rid of some faces
+      for(U32 x=mSurfaceTextures.size(); x > mSurfaces.size(); x--)
+         mSurfaceTextures.pop_front();
+   }
+   else if(mSurfaceTextures.size() < mSurfaces.size())
+   { 
+      //catch us here, if we add some faces
+      for(U32 x=mSurfaceTextures.size(); x <= mSurfaces.size(); x++)
+      {
+         mSurfaceTextures.increment();
+         mSurfaceTextures[x].offset = Point2F(0,0);
+         mSurfaceTextures[x].scale = Point2F(1,1);
+         mSurfaceTextures[x].materialName = String::EmptyString;
+         mSurfaceTextures[x].materialInst = NULL;
+      }
+   }
+
+   for ( S32 i = 0; i < mSurfaceTextures.size(); i++ )
+   {
+      //add our offsets/scales for passing to the geometry now
+      texOffset.push_back(mSurfaceTextures[i].offset);
+      texScale.push_back(mSurfaceTextures[i].scale);
+   }
+
+   mGeometry.generate( mPlanes, tangents, texOffset, texScale );
 
    AssertFatal( mGeometry.faces.size() <= mSurfaces.size(), "Got more faces than planes?" );
 
@@ -1453,7 +1605,7 @@ void ConvexShape::getSurfaceTriangles( S32 surfId, Vector< Point3F > *outPoints,
          objToWorld.mulP( (*outPoints)[i] );      
    }
 }
-void ConvexShape::Geometry::generate( const Vector< PlaneF > &planes, const Vector< Point3F > &tangents )
+void ConvexShape::Geometry::generate( const Vector< PlaneF > &planes, const Vector< Point3F > &tangents, const Vector< Point2F > texOffset, const Vector< Point2F > texScale)
 {
    PROFILE_SCOPE( Geometry_generate );
 
@@ -1723,6 +1875,18 @@ void ConvexShape::Geometry::generate( const Vector< PlaneF > &planes, const Vect
 		{
 			F32 x = planex.distToPlane( points[ newFace.points[ j ] ] );
 			F32 y = planey.distToPlane( points[ newFace.points[ j ] ] );
+
+         if(texOffset.size()>0 && !texOffset[i].isZero())
+         {
+            x += texOffset[i].x;
+            y += texOffset[i].y;
+         }
+         //now scale
+         if(texScale.size()>0 && !texScale[i].isZero())
+         {
+            x *= (texScale[i].x);
+            y *= (texScale[i].y);
+         }
 
 			newFace.texcoords[j].set( -x, -y );
 		}
