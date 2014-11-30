@@ -39,7 +39,6 @@ float calcBlend( float texId, vec2 layerCoord, float layerSize, vec4 layerSample
       if(layerSample[i] == texId)
          factors[i] = 1;
    
-
    // This is a custom bilinear filter.
 
    vec2 uv = layerCoord * layerSize;

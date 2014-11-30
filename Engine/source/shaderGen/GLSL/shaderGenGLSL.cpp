@@ -22,10 +22,9 @@
 
 #include "platform/platform.h"
 #include "shaderGen/GLSL/shaderGenGLSL.h"
-
 #include "shaderGen/GLSL/shaderCompGLSL.h"
 #include "shaderGen/featureMgr.h"
-
+#include "gfx/gl/tGL/tGL.h"
 
 void ShaderGenPrinterGLSL::printShaderHeader( Stream& stream )
 {
