@@ -45,8 +45,6 @@ uniform float g_fOneOverGamma;
 uniform float Brightness;
 uniform float Contrast;
 
-out vec4 OUT_FragColor0;
-
 void main()
 {
    vec4 _sample = hdrDecode( texture( sceneTex, IN_uv0 ) );

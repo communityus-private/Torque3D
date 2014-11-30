@@ -53,6 +53,7 @@ namespace
       FEATUREMGR->registerFeature( MFT_DeferredTerrainMacroMap, new TerrainMacroMapFeatGLSL );
       FEATUREMGR->registerFeature( MFT_DeferredTerrainDetailMap, new TerrainDetailMapFeatGLSL );
    }
+
 };
 
 MODULE_BEGIN( TerrainFeatGLSL )
@@ -206,7 +207,7 @@ void TerrainBaseMapFeatGLSL::processVert( Vector<ShaderComponent*> &componentLis
       // So instead i fixed this by flipping the base and detail
       // coord y scale to compensate when rendering.
       //
-      meta->addStatement( new GenOp( "   @ = @.xyz * vec3( @, @, -@ );\r\n", 
+      meta->addStatement( new GenOp( "   @ = @.xyz * float3( @, @, -@ );\r\n", 
          new DecOp( inTex ), inPos, oneOverTerrainSize, oneOverTerrainSize, oneOverTerrainSize ) );
    }
 
@@ -227,7 +228,7 @@ void TerrainBaseMapFeatGLSL::processVert( Vector<ShaderComponent*> &componentLis
    {
       Var *inNormal = (Var*)LangElement::find( "normal" );
       meta->addStatement( 
-         new GenOp( "   @.z = pow( abs( dot( normalize( vec3( @.x, @.y, 0 ) ), vec3( 0, 1, 0 ) ) ), 10.0 );\r\n", 
+         new GenOp( "   @.z = pow( abs( dot( normalize( float3( @.x, @.y, 0 ) ), float3( 0, 1, 0 ) ) ), 10.0 );\r\n", 
             outTex, inNormal, inNormal ) );
    }
    else
@@ -243,7 +244,7 @@ void TerrainBaseMapFeatGLSL::processVert( Vector<ShaderComponent*> &componentLis
    Var *inTangentZ = getVertTexCoord( "tcTangentZ" );
    Var *inTanget = new Var( "T", "vec3" );
    Var *squareSize = _getUniformVar( "squareSize", "float", cspPass );
-   meta->addStatement( new GenOp( "   @ = normalize( vec3( @, 0, @ ) );\r\n", 
+   meta->addStatement( new GenOp( "   @ = normalize( float3( @, 0, @ ) );\r\n", 
       new DecOp( inTanget ), squareSize, inTangentZ ) );
 }
 
@@ -338,7 +339,7 @@ void TerrainDetailMapFeatGLSL::processVert(  Vector<ShaderComponent*> &component
       outNegViewTS->setName( "outNegViewTS" );
       outNegViewTS->setStructName( "OUT" );
       outNegViewTS->setType( "vec3" );
-      meta->addStatement( new GenOp( "   @ = tMul( @, vec3( @ - @.xyz ) );\r\n", 
+      meta->addStatement( new GenOp( "   @ = tMul( @, float3( @ - @.xyz ) );\r\n", 
          outNegViewTS, objToTangentSpace, eyePos, inPos ) );
    }
 
@@ -392,9 +393,10 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
 {
    const U32 detailIndex = getProcessIndex();
    Var *inTex = getVertTexCoord( "texCoord" );
+
    // new terrain
    bool hasNormal = fd.features.hasFeature(MFT_TerrainNormalMap, detailIndex);
-
+   
    MultiLine *meta = new MultiLine;
 
    // We need the negative tangent space view vector
@@ -487,7 +489,12 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    }
 
    Var *baseColor = (Var*)LangElement::find("baseColor");
-   Var *outColor = (Var*)LangElement::find(getOutputTargetVarName(DefaultTarget));
+   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
+
+   if(fd.features.hasFeature( MFT_DeferredTerrainDetailMap ))
+      target= ShaderFeature::RenderTarget1;
+
+   Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
 
    if (!outColor)
    {
@@ -563,7 +570,7 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    }
 
    // Add to the blend total.
-   meta->addStatement( new GenOp( "   @ += @;\r\n", blendTotal, detailBlend ) );
+   meta->addStatement( new GenOp( "   @ = max( @, @ );\r\n", blendTotal, blendTotal, detailBlend ) );
 
    // New terrain
    Var *bumpNorm = (Var*)LangElement::find("bumpNormal");
@@ -662,16 +669,31 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
       Var *normalMap = _getNormalMapTex();
 
       // Call the library function to do the rest.
-      if(fd.features.hasFeature( MFT_IsDXTnm, detailIndex ) )
-      {
-         meta->addStatement( new GenOp( "   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n", 
+      meta->addStatement( new GenOp( "   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n", 
          inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
-      }
-      else
+   }
+
+   // If this is a prepass then we skip color.
+   if ( fd.features.hasFeature( MFT_PrePassConditioner ) )
+   {
+      // Check to see if we have a gbuffer normal.
+      Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
+
+      // If we have a gbuffer normal and we don't have a
+      // normal map feature then we need to lerp in a 
+      // default normal else the normals below this layer
+      // will show thru.
+      if (  gbNormal && 
+            !fd.features.hasFeature( MFT_TerrainNormalMap, detailIndex ) )
       {
-         meta->addStatement( new GenOp( "   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n", 
-            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
+         Var *viewToTangent = getInViewToTangent( componentList );
+
+         meta->addStatement( new GenOp( "   @ = lerp( @, tGetMatrix3Row(@, 2), min( @, @.w ) );\r\n", 
+            gbNormal, gbNormal, viewToTangent, detailBlend, inDet ) );
       }
+
+      output = meta;
+      return;
    }
 
    // used as texture unit num here
@@ -684,42 +706,10 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
 
    meta->addStatement( new GenOp( "   {\r\n" ) );
 
-   // Note that we're doing the standard greyscale detail 
-   // map technique here which can darken and lighten the 
-   // diffuse texture.
-   //
-   // We take two color samples and lerp between them for
-   // side projection layers... else a single sample.
-   //
-
-   //Sampled detail texture that is not expanded
-   Var *detailTex = new Var;
-   detailTex->setType("vec4");
-   detailTex->setName("detailTex");
-   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( detailTex ) ) );   
-
-   if ( fd.features.hasFeature( MFT_TerrainSideProject, detailIndex ) )
-   {
-      meta->addStatement( new GenOp("      @ =  mix( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z);\r\n",detailTex,detailMap,inDet,detailMap,inDet,inTex));
-      meta->addStatement( new GenOp( "      @ = ( @ * 2.0 ) - 1.0;\r\n", detailColor, detailTex) );
-   }
-   else
-   {
-      meta->addStatement( new GenOp("      @ = tex2D(@,@.xy);\r\n",detailTex,detailMap,inDet));
-      meta->addStatement( new GenOp( "      @ = ( @ * 2.0 ) - 1.0;\r\n", 
-                                       detailColor, detailTex) );
-   }
 
    meta->addStatement( new GenOp( "      @ *= @.y * @.w;\r\n",
                                     detailColor, detailInfo, inDet ) );
 
-   Var *baseColor = (Var*)LangElement::find( "baseColor" );
-   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
-
-   if(fd.features.hasFeature( MFT_DeferredTerrainDetailMap ))
-      target= ShaderFeature::RenderTarget1;
-
-   Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
    // New terrain
    if (hasNormal)
    {
@@ -934,7 +924,7 @@ void TerrainMacroMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentL
    }
 
    // Add to the blend total.
-   meta->addStatement( new GenOp( "   @ += @;\r\n", blendTotal, detailBlend ) );
+   meta->addStatement( new GenOp( "   @ = max( @, @ );\r\n", blendTotal, blendTotal, detailBlend ) );
 
    Var *detailColor = (Var*)LangElement::find( "macroColor" ); 
    if ( !detailColor )
@@ -981,8 +971,6 @@ void TerrainMacroMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentL
    meta->addStatement( new GenOp( "      @ *= @.y * @.w;\r\n",
                                     detailColor, detailInfo, inDet ) );
 
-   Var *baseColor = (Var*)LangElement::find( "baseColor" );
-
    ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
    if(fd.features.hasFeature(MFT_DeferredTerrainMacroMap))
@@ -995,6 +983,8 @@ void TerrainMacroMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentL
 
    output = meta;
 }
+
+
 
 ShaderFeature::Resources TerrainMacroMapFeatGLSL::getResources( const MaterialFeatureData &fd )
 {
@@ -1195,6 +1185,7 @@ ShaderFeature::Resources TerrainLightMapFeatGLSL::getResources( const MaterialFe
    res.numTex = 1;
    return res;
 }
+
 
 void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentList, 
                                           const MaterialFeatureData &fd )

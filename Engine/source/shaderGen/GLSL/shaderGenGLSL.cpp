@@ -75,15 +75,15 @@ void ShaderGenPrinterGLSL::printPixelShaderOutputStruct(Stream& stream, const Ma
 
    if (numMRTs>1)
    {
-      WRITESTR("layout (location = 0) out vec4 OUT_FragColor0;\r\n");
+      WRITESTR("layout (location = 0) out vec4 OUT_col;\r\n");
    }
    else
-      WRITESTR("out vec4 OUT_FragColor0;\r\n");
+      WRITESTR("out vec4 OUT_col;\r\n");
    for (U32 i = 1; i < 4; i++)
    {
       if (numMRTs & 1 << i)
       {
-         WRITESTR(avar("layout (location = %d) out vec4 OUT_FragColor%d;\r\n", i, i));
+         WRITESTR(avar("layout (location = %d) out vec4 OUT_col%d;\r\n", i, i));
          extraRTs[i - 1] = true;
       }
       else
@@ -97,14 +97,8 @@ void ShaderGenPrinterGLSL::printPixelShaderOutputStruct(Stream& stream, const Ma
 
 void ShaderGenPrinterGLSL::printPixelShaderCloser(Stream& stream)
 {
-   WRITESTR("   OUT_FragColor0 = col;\r\n");
-   for (U32 i = 1; i < 4; i++)
-   {
-      if (extraRTs[i - 1])
-         WRITESTR(avar("   OUT_FragColor%d = col%d;\r\n", i, i));
-   }
-
-   WRITESTR("}\r\n");
+    const char *closer = "   \r\n}\r\n";
+    stream.write(dStrlen(closer), closer);
 }
 
 void ShaderGenPrinterGLSL::printLine(Stream& stream, const String& line)

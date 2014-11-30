@@ -70,8 +70,6 @@ uniform mat4 viewToLightProj;
 uniform vec4 lightParams;
 uniform float shadowSoftness;
 
-out vec4 OUT_FragColor0;
-
 void main()
 {   
    // Compute scene UV

@@ -66,8 +66,6 @@ uniform vec4 farPlaneScalePSSM;
 uniform vec4 overDarkPSSM;
 uniform float shadowSoftness;
 
-out vec4 OUT_FragColor0;
-
 void main()             
 {
    // Emissive.

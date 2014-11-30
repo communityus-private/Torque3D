@@ -263,7 +263,7 @@ void DeferredSpecMapGLSL::processPix( Vector<ShaderComponent*> &componentList, c
       material = new Var;
       material->setType( "vec4" );
       material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-	  meta->addStatement(new GenOp("    @;\r\n", new DecOp(material)));
+      material->setStructName("OUT");
    }
 
    // create texture var
@@ -334,7 +334,7 @@ void DeferredSpecColorGLSL::processPix( Vector<ShaderComponent*> &componentList,
 	   material = new Var;
 	   material->setType("vec4");
 	   material->setName(getOutputTargetVarName(ShaderFeature::RenderTarget2));
-	   meta->addStatement(new GenOp("   @;\r\n", new DecOp(material)));
+       material->setStructName("OUT");
    }
    
    meta->addStatement(new GenOp("   @.b = dot(@.rgb, vec3(0.3, 0.59, 0.11));\r\n", material, specularColor));
@@ -389,7 +389,7 @@ void DeferredMatInfoFlagsGLSL::processPix( Vector<ShaderComponent*> &componentLi
       material = new Var;
       material->setType( "vec4" );
       material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-	  meta->addStatement(new GenOp("   @;\r\n", new DecOp(material)));
+      material->setStructName("OUT");
    }
 
    Var *matInfoFlags = new Var;
@@ -415,7 +415,7 @@ void DeferredSpecStrengthGLSL::processPix( Vector<ShaderComponent*> &componentLi
       material = new Var;
       material->setType( "vec4" );
       material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-	  meta->addStatement(new GenOp("   @;\r\n", new DecOp(material)));
+      material->setStructName("OUT");
    }
 
    Var *specStrength = new Var;
@@ -441,7 +441,7 @@ void DeferredSpecPowerGLSL::processPix( Vector<ShaderComponent*> &componentList,
       material = new Var;
       material->setType( "vec4" );
       material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-	  meta->addStatement(new GenOp("   @;\r\n", new DecOp(material)));
+      material->setStructName("OUT");
    }
 
    Var *specPower = new Var;
@@ -470,7 +470,7 @@ void DeferredEmptySpecGLSL::processPix( Vector<ShaderComponent*> &componentList,
       material = new Var;
       material->setType( "vec4" );
       material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-	  meta->addStatement(new GenOp("   @;\r\n", new DecOp(material)));
+      material->setStructName("OUT");
    }
    
    meta->addStatement(new GenOp( "   @.ba = vec2(0.0);\r\n", material ));
@@ -499,7 +499,7 @@ void DeferredTranslucencyMapGLSL::processPix( Vector<ShaderComponent*> &componen
       material = new Var;
       material->setType( "vec4" );
       material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-	  meta->addStatement(new GenOp("   @;\r\n", new DecOp(material)));
+      material->setStructName("OUT");
    }
 
    // create texture var

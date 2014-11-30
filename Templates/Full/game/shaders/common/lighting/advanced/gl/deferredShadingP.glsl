@@ -29,8 +29,6 @@ uniform sampler2D colorBufferTex;
 uniform sampler2D lightPrePassTex;
 uniform sampler2D matInfoTex;
 
-out vec4 OUT_FragColor0;
-
 void main()
 {        
    vec4 lightBuffer = texture( lightPrePassTex, uv0 );
