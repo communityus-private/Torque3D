@@ -70,6 +70,8 @@ uniform mat4 viewToLightProj;
 uniform vec4 lightParams;
 uniform float shadowSoftness;
 
+out vec4 OUT_col;
+
 void main()
 {   
    // Compute scene UV
@@ -179,5 +181,5 @@ void main()
    }
 
    vec4 colorSample = texture( colorBuffer, uvScene );
-   OUT_FragColor0 = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }

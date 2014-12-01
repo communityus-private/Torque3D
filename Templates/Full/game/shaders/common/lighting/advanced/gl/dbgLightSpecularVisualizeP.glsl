@@ -26,10 +26,10 @@
 in vec2 uv0;
 uniform sampler2D lightPrePassTex;
 
-out vec4 OUT_FragColor0;
+out vec4 OUT_col;
 
 void main()
 {   
    float specular = texture( lightPrePassTex, uv0 ).a;
-   OUT_FragColor0 = vec4( specular, specular, specular, 1.0 );
+   OUT_col = vec4( specular, specular, specular, 1.0 );
 }

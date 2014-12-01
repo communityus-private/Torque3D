@@ -26,10 +26,10 @@
 in vec2 uv0;
 uniform sampler2D lightPrePassTex;
 
-out vec4 OUT_FragColor0;
+out vec4 OUT_col;
 
 void main()
 {   
    vec4 lightColor = texture( lightPrePassTex, uv0 );
-   OUT_FragColor0 = vec4( lightColor.rgb, 1.0 ); 
+   OUT_col = vec4( lightColor.rgb, 1.0 ); 
 }

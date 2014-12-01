@@ -64,35 +64,25 @@ void ShaderGenPrinterGLSL::printVertexShaderCloser( Stream& stream )
 
 void ShaderGenPrinterGLSL::printPixelShaderOutputStruct(Stream& stream, const MaterialFeatureData &featureData)
 {
-   // Determine the number of output targets we need
-   U32 numMRTs = 0;
-   for (U32 i = 0; i < FEATUREMGR->getFeatureCount(); i++)
-   {
-      const FeatureInfo &info = FEATUREMGR->getAt(i);
-      if (featureData.features.hasFeature(*info.type))
-         numMRTs |= info.feature->getOutputTargets(featureData);
-   }
+    // Determine the number of output targets we need
+    U32 numMRTs = 0;
+    for (U32 i = 0; i < FEATUREMGR->getFeatureCount(); i++)
+    {
+        const FeatureInfo &info = FEATUREMGR->getAt(i);
+        if (featureData.features.hasFeature(*info.type))
+            numMRTs |= info.feature->getOutputTargets(featureData);
+    }
 
-   if (numMRTs>1)
-   {
-      WRITESTR("layout (location = 0) out vec4 OUT_col;\r\n");
-   }
-   else
-      WRITESTR("out vec4 OUT_col;\r\n");
-   for (U32 i = 1; i < 4; i++)
-   {
-      if (numMRTs & 1 << i)
-      {
-         WRITESTR(avar("layout (location = %d) out vec4 OUT_col%d;\r\n", i, i));
-         extraRTs[i - 1] = true;
-      }
-      else
-      {
-         extraRTs[i - 1] = false;
-      }
-   }
-   WRITESTR("\r\n");
-   WRITESTR("\r\n");
+    WRITESTR(avar("//Fragment shader OUT\r\n"));
+    WRITESTR(avar("out vec4 OUT_col;\r\n"));
+    for( U32 i = 1; i < 4; i++ )
+    {
+        if( numMRTs & 1 << i )
+            WRITESTR(avar("out vec4 OUT_col%d;\r\n", i));
+    }
+
+    WRITESTR("\r\n");
+    WRITESTR("\r\n");
 }
 
 void ShaderGenPrinterGLSL::printPixelShaderCloser(Stream& stream)

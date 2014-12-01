@@ -66,6 +66,8 @@ uniform vec4 farPlaneScalePSSM;
 uniform vec4 overDarkPSSM;
 uniform float shadowSoftness;
 
+out vec4 OUT_col;
+
 void main()             
 {
    // Emissive.
@@ -265,6 +267,5 @@ void main()
    }
 
    vec4 colorSample = texture( colorBuffer, uv0 );
-   OUT_FragColor0 = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
-   
+   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);   
 }

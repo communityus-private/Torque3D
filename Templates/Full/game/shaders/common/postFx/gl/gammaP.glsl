@@ -33,6 +33,8 @@ uniform float Contrast;
 
 in vec2 uv0;
 
+out vec4 OUT_col;
+
 void main()
 {
     vec4 color = texture(backBuffer, uv0.xy);
@@ -50,5 +52,6 @@ void main()
  
    // Apply brightness
    color.rgb += Brightness;
-   OUT_FragColor0 = color;
+   
+   OUT_col = color;
 }
