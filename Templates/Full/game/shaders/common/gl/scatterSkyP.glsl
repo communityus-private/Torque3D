@@ -74,7 +74,7 @@ void main()
 
    OUT_col.a = 1;
    
-   OUT_col = clamp(OUT_FragColor0, 0.0, 1.0);
+   OUT_col = clamp(OUT_col, 0.0, 1.0);
    
    OUT_col = hdrEncode( OUT_col );
 }

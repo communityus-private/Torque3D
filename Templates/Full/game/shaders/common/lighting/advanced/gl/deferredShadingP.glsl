@@ -29,6 +29,8 @@ uniform sampler2D colorBufferTex;
 uniform sampler2D lightPrePassTex;
 uniform sampler2D matInfoTex;
 
+out vec4 OUT_col;
+
 void main()
 {        
    vec4 lightBuffer = texture( lightPrePassTex, uv0 );
@@ -46,5 +48,5 @@ void main()
    colorBuffer *= vec4(lightBuffer.rgb, 1.0);
    colorBuffer += vec4(specular, specular, specular, 1.0);
 
-   OUT_FragColor0 = hdrEncode( colorBuffer );
+   OUT_col = hdrEncode( colorBuffer );
 }
