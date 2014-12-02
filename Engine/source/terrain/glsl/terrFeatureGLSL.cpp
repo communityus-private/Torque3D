@@ -672,30 +672,7 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
       meta->addStatement( new GenOp( "   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n", 
          inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
    }
-
-   // If this is a prepass then we skip color.
-   if ( fd.features.hasFeature( MFT_PrePassConditioner ) )
-   {
-      // Check to see if we have a gbuffer normal.
-      Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
-
-      // If we have a gbuffer normal and we don't have a
-      // normal map feature then we need to lerp in a 
-      // default normal else the normals below this layer
-      // will show thru.
-      if (  gbNormal && 
-            !fd.features.hasFeature( MFT_TerrainNormalMap, detailIndex ) )
-      {
-         Var *viewToTangent = getInViewToTangent( componentList );
-
-         meta->addStatement( new GenOp( "   @ = lerp( @, tGetMatrix3Row(@, 2), min( @, @.w ) );\r\n", 
-            gbNormal, gbNormal, viewToTangent, detailBlend, inDet ) );
-      }
-
-      output = meta;
-      return;
-   }
-
+   
    // used as texture unit num here
 
    // If we're using SM 3.0 then take advantage of 

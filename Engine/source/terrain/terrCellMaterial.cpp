@@ -531,15 +531,6 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    pass->oneOverTerrainSize = pass->shader->getShaderConstHandle( "$oneOverTerrainSize" );
    pass->squareSize = pass->shader->getShaderConstHandle( "$squareSize" );
    pass->lightParamsConst = pass->shader->getShaderConstHandle( "$rtParamslightInfoBuffer" );
-   
-   // NOTE: We're assuming rtParams0 here as we know its the only
-   // render target we currently get in a terrain material and the
-   // DeferredRTLightingFeatHLSL will always use 0.
-   //
-   // This could change in the future and we would need to fix
-   // the ShaderFeature API to allow us to do this right.
-   //
-   pass->lightParamsConst = pass->shader->getShaderConstHandle( "$rtParams0" );
 
    // Now prepare the basic stateblock.
    GFXStateBlockDesc desc;
