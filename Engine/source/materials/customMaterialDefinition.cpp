@@ -137,26 +137,10 @@ bool CustomMaterial::onAdd()
          	logError("sampler declarations must have a sampler name, e.g. sampler[\"diffuseMap\"]");
             return false;
          }
-         
-         // Assert sampler names are defined on ShaderData
-         S32 pos = -1;
-         String samplerName = entry->slotName + dStrlen(samplerDecl);
-         samplerName.insert(0, '$');
-         mShaderData->hasSamplerDef(samplerName, pos);
-         
-         if(pos == -1)
-         {
-            const char *error = (avar("CustomMaterial(%s) bind sampler[%s] and is not present on ShaderData(%s)", 
-               getName(), samplerName.c_str(), mShaderDataName.c_str() ));
-            Con::errorf(error);
 
-#if TORQUE_OPENGL
-            GFXAssertFatal(0, error);
-            continue;
-#endif
-         }
-         mSamplerNames[pos] = samplerName;
-         mTexFilename[pos] = entry->value;
+         mSamplerNames[i] = entry->slotName + dStrlen(samplerDecl);
+         mSamplerNames[i].insert(0, '$');
+         mTexFilename[i] = entry->value;
          ++i;
       }
    }
