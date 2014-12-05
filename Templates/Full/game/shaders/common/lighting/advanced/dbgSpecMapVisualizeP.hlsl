@@ -25,8 +25,8 @@
 
 
 float4 main( PFXVertToPix IN, 
-             uniform sampler2D colorBufferTex : register(S0) ) : COLOR0
+             uniform sampler2D matinfoTex : register(S0) ) : COLOR0
 {     
-   float specular = tex2D( colorBufferTex, IN.uv0 ).a;  
+   float specular = tex2D( matinfoTex, IN.uv0 ).b;  
    return float4( specular, specular, specular, 1.0 );   
 }

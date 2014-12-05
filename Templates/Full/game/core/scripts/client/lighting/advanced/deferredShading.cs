@@ -109,7 +109,7 @@ new ShaderData( AL_SpecMapShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgSpecMapVisualizeP.glsl";
 
-   samplerNames[0] = "colorBufferTex";
+   samplerNames[0] = "matinfoTex";
    pixVersion = 2.0;
 };
 
@@ -117,7 +117,7 @@ singleton PostEffect( AL_SpecMapVisualize )
 {   
    shader = AL_SpecMapShader;
    stateBlock = AL_DefaultVisualizeState;
-   texture[0] = "#color";
+   texture[0] = "#matinfo";
    target = "$backBuffer";
    renderPriority = 9999;
 };
