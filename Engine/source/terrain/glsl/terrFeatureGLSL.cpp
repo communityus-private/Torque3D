@@ -669,8 +669,16 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
       Var *normalMap = _getNormalMapTex();
 
       // Call the library function to do the rest.
-      meta->addStatement( new GenOp( "   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n", 
-         inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
+      if (fd.features.hasFeature(MFT_IsDXTnm, detailIndex))
+      {
+         meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n",
+            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
+      }
+      else
+      {
+         meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n",
+            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
+      }
    }
    
    // used as texture unit num here
