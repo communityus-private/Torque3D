@@ -969,18 +969,7 @@ bool GFXGLShader::_loadShaderFromStream(  GLuint shader,
    const char *newLine = "\r\n";
    buffers.push_back( dStrdup( newLine ) );
    lengths.push_back( dStrlen( newLine ) );
-
-#ifndef TORQUE_DEDICATED
-   //support for the Layout Qualifier: https://www.opengl.org/wiki/Layout_Qualifier_(GLSL)
-   if (gglHasExtension(ARB_explicit_attrib_location))
-   {
-      const char *extension = "#extension GL_ARB_explicit_attrib_location : enable\r\n";
-      buffers.push_back(dStrdup(extension));
-      lengths.push_back(dStrlen(extension));
-   }
-   else Con::errorf("Layout functionality not supported!");
-#endif
-
+   
    // Now add all the macros.
    for( U32 i = 0; i < macros.size(); i++ )
    {

@@ -20,9 +20,9 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-layout (location = 0) out vec4 col;
-layout (location = 1) out vec4 col1;
-layout (location = 2) out vec4 col2;
+out vec4 OUT_col;
+out vec4 OUT_col1;
+out vec4 OUT_col2;
 
 //-----------------------------------------------------------------------------
 // Main                                                                        
@@ -30,11 +30,11 @@ layout (location = 2) out vec4 col2;
 void main()
 {    
    // Clear Prepass Buffer ( Normals/Depth );
-   col =  vec4(1.0, 1.0, 1.0, 1.0);
+   OUT_col =  vec4(1.0, 1.0, 1.0, 1.0);
 
    // Clear Color Buffer.
-   col1 = vec4(0.0, 0.0, 0.0, 1.0);
+   OUT_col1 = vec4(0.0, 0.0, 0.0, 1.0);
 
    // Clear Material Info Buffer.
-   col2 = vec4(0.0, 0.0, 0.0, 1.0);
+   OUT_col2 = vec4(0.0, 0.0, 0.0, 1.0);
 }
