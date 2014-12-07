@@ -328,11 +328,6 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    if ( mMaterial->mVertLit[stageNum] )
       fd.features.addFeature( MFT_VertLit );
    
-   // cubemaps only available on stage 0 for now - bramage   
-   if ( stageNum < 1 && 
-         (  (  mMaterial->mCubemapData && mMaterial->mCubemapData->mCubemap ) ||
-               mMaterial->mDynamicCubemap ) )
-
    //only render cubemaps during the second pass if we need to pull render-order tricks
    if (mMaterial->mIsSky)
    {
