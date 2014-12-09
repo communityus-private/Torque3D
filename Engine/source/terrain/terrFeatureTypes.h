@@ -39,6 +39,7 @@ DeclareFeatureType( MFT_TerrainAdditive );
 DeclareFeatureType( MFT_DeferredTerrainBaseMap );
 DeclareFeatureType( MFT_DeferredTerrainDetailMap );
 DeclareFeatureType( MFT_DeferredTerrainMacroMap );
+DeclareFeatureType( MFT_DeferredTerrainBlankInfoMap );
 
 
 #endif // _TERRFEATURETYPES_H_

@@ -370,6 +370,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
          // if HDR is not enabled in the engine.
          features.addFeature( MFT_HDROut );
       }
+      features.addFeature(MFT_DeferredTerrainBlankInfoMap);
 
       // Enable lightmaps and fogging if we're in BL.
       if ( reflectMat || useBLM )

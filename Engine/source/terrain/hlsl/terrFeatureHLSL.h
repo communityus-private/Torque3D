@@ -162,4 +162,15 @@ public:
    virtual String getName() { return "Terrain Additive"; }
 };
 
+class TerrainBlankInfoMapFeatHLSL : public TerrainFeatHLSL
+{
+public:
+
+   virtual void processPix(Vector<ShaderComponent*> &componentList,
+      const MaterialFeatureData &fd);
+   
+   virtual U32 getOutputTargets(const MaterialFeatureData &fd) const;
+   virtual String getName() { return "Blank Matinfo map"; }
+};
+
 #endif // _TERRFEATUREHLSL_H_

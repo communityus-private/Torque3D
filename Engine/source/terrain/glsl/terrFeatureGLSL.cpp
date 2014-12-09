@@ -51,7 +51,8 @@ namespace
       FEATUREMGR->registerFeature( MFT_TerrainAdditive, new TerrainAdditiveFeatGLSL );     
       FEATUREMGR->registerFeature( MFT_DeferredTerrainBaseMap, new TerrainBaseMapFeatGLSL );
       FEATUREMGR->registerFeature( MFT_DeferredTerrainMacroMap, new TerrainMacroMapFeatGLSL );
-      FEATUREMGR->registerFeature( MFT_DeferredTerrainDetailMap, new TerrainDetailMapFeatGLSL );
+      FEATUREMGR->registerFeature( MFT_DeferredTerrainDetailMap, new TerrainDetailMapFeatGLSL ); 
+      FEATUREMGR->registerFeature( MFT_DeferredTerrainBlankInfoMap, new TerrainBlankInfoMapFeatGLSL );
    }
 
 };
@@ -1189,6 +1190,43 @@ void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentLis
 
    meta->addStatement( new GenOp( "   clip( @ - 0.0001 );\r\n", blendTotal ) );
    meta->addStatement( new GenOp( "   @.a = @;\r\n", color, blendTotal ) );
+
+   output = meta;
+}
+
+//standard matInfo map contains data of the form .r = bitflags, .g = translucency, 
+//.b = specular strength, a= spec power. 
+//here, it's merely a cutout for now, so that lightmapping (target3) doesn't get mangled.
+//we'll most likely revisit that later. possibly several ways...
+
+U32 TerrainBlankInfoMapFeatGLSL::getOutputTargets(const MaterialFeatureData &fd) const
+{
+   return fd.features[MFT_DeferredTerrainBaseMap] ? ShaderFeature::RenderTarget2 : ShaderFeature::RenderTarget1;
+}
+
+void TerrainBlankInfoMapFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
+   const MaterialFeatureData &fd)
+{
+   // search for material var
+   Var *material;
+   OutputTarget targ = RenderTarget1;
+   if (fd.features[MFT_DeferredTerrainBaseMap])
+   {
+      targ = RenderTarget2;
+   }
+   material = (Var*)LangElement::find(getOutputTargetVarName(targ));
+
+   MultiLine * meta = new MultiLine;
+   if (!material)
+   {
+      // create color var
+      material = new Var;
+      material->setType("vec4");
+      material->setName(getOutputTargetVarName(targ));
+      material->setStructName("OUT");
+   }
+
+   meta->addStatement(new GenOp("   @ = float4(0.0,0.0,0.0,0.0001);\r\n", material));
 
    output = meta;
 }

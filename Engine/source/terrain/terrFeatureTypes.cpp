@@ -38,3 +38,4 @@ ImplementFeatureType( MFT_TerrainAdditive, MFG_PostProcess, 999.0f, false );
 ImplementFeatureType( MFT_DeferredTerrainBaseMap, MFG_Texture, 100.1f, false );
 ImplementFeatureType( MFT_DeferredTerrainDetailMap, MFG_Texture, 102.1f, false );
 ImplementFeatureType( MFT_DeferredTerrainMacroMap, MFG_Texture, 104.1f, false );
+ImplementFeatureType( MFT_DeferredTerrainBlankInfoMap, MFG_Texture, 104.1f, false);
