@@ -97,6 +97,7 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_ImposterVert, new ImposterVertFeatureGLSL );
 
    // Deferred Shading
+   FEATUREMGR->registerFeature( MFT_isDeferred, new NamedFeatureGLSL( "Deferred Material" ) );
    FEATUREMGR->registerFeature( MFT_DeferredDiffuseMap, new DeferredDiffuseMapGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredDiffuseColor, new DeferredDiffuseColorGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredEmptyColor, new DeferredEmptyColorGLSL );

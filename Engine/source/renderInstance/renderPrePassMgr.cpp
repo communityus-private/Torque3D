@@ -603,6 +603,9 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
 
 #ifndef TORQUE_DEDICATED
 
+   //tag all materials running through prepass as deferred
+   newFeatures.addFeature(MFT_isDeferred);
+
    // Deferred Shading : Diffuse
    if (mStages[stageNum].getTex( MFT_DiffuseMap ))
    {

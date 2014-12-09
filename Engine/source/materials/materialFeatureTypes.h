@@ -174,6 +174,7 @@ DeclareFeatureType( MFT_ForwardShading );
 DeclareFeatureType( MFT_ImposterVert );
 
 // Deferred Shading
+DeclareFeatureType( MFT_isDeferred );
 DeclareFeatureType( MFT_SkyBox );
 DeclareFeatureType( MFT_DeferredDiffuseMap );
 DeclareFeatureType( MFT_DeferredDiffuseColor );

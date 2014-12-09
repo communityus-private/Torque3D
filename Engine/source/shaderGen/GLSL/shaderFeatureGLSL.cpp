@@ -1603,10 +1603,10 @@ void DetailFeatGLSL::processPix( Vector<ShaderComponent*> &componentList,
    // and a simple multiplication with the detail map.
 
    LangElement *statement = new GenOp( "( tex2D(@, @) * 2.0 ) - 1.0", detailMap, inTex );
-   if (  fd.features[MFT_DeferredDiffuseMap])
-       output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add, NULL, ShaderFeature::RenderTarget1 ) );
+   if (  fd.features[MFT_isDeferred])
+      output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add, NULL, ShaderFeature::RenderTarget1 ) );
    else
-   output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add ) );
+      output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add ) );
 }
 
 ShaderFeature::Resources DetailFeatGLSL::getResources( const MaterialFeatureData &fd )
@@ -1815,9 +1815,12 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    }
    else
    {
-       glossColor = (Var*) LangElement::find( "diffuseColor" );
-       if( !glossColor )
-           glossColor = (Var*) LangElement::find( "bumpNormal" );
+      if (fd.features[MFT_isDeferred])
+         glossColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
+      else
+         glossColor = (Var*)LangElement::find("diffuseColor");
+      if (!glossColor)
+         glossColor = (Var*)LangElement::find("bumpNormal");
    }
 
    // grab connector texcoord register
@@ -1846,7 +1849,7 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
 
    LangElement *texCube = NULL;
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-   if (fd.features[MFT_DeferredDiffuseMap] && matinfo)
+   if (fd.features[MFT_isDeferred] && matinfo)
    {
        // Determine roughness
        Var *specPower = (Var*)LangElement::find( "specularPower" );
@@ -1893,7 +1896,7 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
       else
          blendOp = Material::Mul;
    }
-   if (fd.features[MFT_DeferredDiffuseMap])
+   if (fd.features[MFT_isDeferred])
    {
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
        meta->addStatement(new GenOp("   @.rgb += @.rgb*lerp( @.rgb, (@).rgb, (@).a);\r\n", targ, targ, targ, texCube, lerpVal));

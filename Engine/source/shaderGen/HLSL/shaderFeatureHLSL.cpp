@@ -1601,10 +1601,10 @@ void DetailFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
    // and a simple multiplication with the detail map.
 
    LangElement *statement = new GenOp( "( tex2D(@, @) * 2.0 ) - 1.0", detailMap, inTex );
-   if (  fd.features[MFT_DeferredDiffuseMap])
-       output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add, NULL, ShaderFeature::RenderTarget1 ) );
+   if (  fd.features[MFT_isDeferred])
+      output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add, NULL, ShaderFeature::RenderTarget1 ) );
    else
-   output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add ) );
+      output = new GenOp( "   @;\r\n", assignColor( statement, Material::Add ) );
 }
 
 ShaderFeature::Resources DetailFeatHLSL::getResources( const MaterialFeatureData &fd )
@@ -1814,7 +1814,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    }
    else
    {
-      if (fd.features[MFT_DeferredDiffuseMap])
+      if (fd.features[MFT_isDeferred])
           glossColor = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) );
       else
           glossColor = (Var*) LangElement::find( "diffuseColor" );

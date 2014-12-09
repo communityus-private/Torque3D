@@ -357,7 +357,8 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       {
          features.addFeature( MFT_EyeSpaceDepthOut );
          features.addFeature( MFT_PrePassConditioner );
-         features.addFeature( MFT_DeferredTerrainBaseMap );        
+         features.addFeature( MFT_DeferredTerrainBaseMap );
+         features.addFeature(MFT_isDeferred);
 
          if ( advancedLightmapSupport )
             features.addFeature( MFT_RenderTarget3_Zero );

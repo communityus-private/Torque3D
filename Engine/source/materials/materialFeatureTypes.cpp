@@ -89,6 +89,7 @@ ImplementFeatureType( MFT_ForwardShading, U32(-1), -1, true );
 ImplementFeatureType( MFT_ImposterVert, MFG_PreTransform, 1.0, false );
 
 // Deferred Shading
+ImplementFeatureType( MFT_isDeferred, U32(-1), -1, true );
 ImplementFeatureType( MFT_SkyBox, MFG_Transform, 1.0f, true );
 ImplementFeatureType( MFT_DeferredDiffuseMap, MFG_Texture, 2.0f, false );
 ImplementFeatureType( MFT_DeferredDiffuseColor, MFG_Texture, 5.0f, false );

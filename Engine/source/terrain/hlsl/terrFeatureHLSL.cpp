@@ -271,7 +271,7 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
 
   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
-   if(fd.features.hasFeature(MFT_DeferredTerrainBaseMap))
+  if (fd.features.hasFeature(MFT_isDeferred))
    {
       target= ShaderFeature::RenderTarget1;
    }
@@ -1040,7 +1040,7 @@ void TerrainBlankInfoMapFeatHLSL::processPix(Vector<ShaderComponent*> &component
    // search for material var
    Var *material;
    OutputTarget targ = RenderTarget1;
-   if (fd.features[MFT_DeferredTerrainBaseMap])
+   if (fd.features[MFT_isDeferred])
    {
       targ = RenderTarget2;
    }

@@ -272,7 +272,7 @@ void TerrainBaseMapFeatGLSL::processPix(  Vector<ShaderComponent*> &componentLis
 
   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
-   if(fd.features.hasFeature(MFT_DeferredTerrainBaseMap))
+   if(fd.features.hasFeature(MFT_isDeferred))
    {
       target= ShaderFeature::RenderTarget1;
    }
@@ -292,7 +292,7 @@ ShaderFeature::Resources TerrainBaseMapFeatGLSL::getResources( const MaterialFea
 
 U32 TerrainBaseMapFeatGLSL::getOutputTargets( const MaterialFeatureData &fd ) const
 {
-   return fd.features[MFT_DeferredTerrainBaseMap] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
 }
 
 TerrainDetailMapFeatGLSL::TerrainDetailMapFeatGLSL()
@@ -1201,7 +1201,7 @@ void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentLis
 
 U32 TerrainBlankInfoMapFeatGLSL::getOutputTargets(const MaterialFeatureData &fd) const
 {
-   return fd.features[MFT_DeferredTerrainBaseMap] ? ShaderFeature::RenderTarget2 : ShaderFeature::RenderTarget1;
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget2 : ShaderFeature::RenderTarget1;
 }
 
 void TerrainBlankInfoMapFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
@@ -1210,7 +1210,7 @@ void TerrainBlankInfoMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
    // search for material var
    Var *material;
    OutputTarget targ = RenderTarget1;
-   if (fd.features[MFT_DeferredTerrainBaseMap])
+   if (fd.features[MFT_isDeferred])
    {
       targ = RenderTarget2;
    }
