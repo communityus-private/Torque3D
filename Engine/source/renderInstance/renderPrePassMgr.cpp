@@ -610,11 +610,8 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    if (mStages[stageNum].getTex( MFT_DiffuseMap ))
    {
       newFeatures.addFeature( MFT_DeferredDiffuseMap );
-      if ( mMaterial->mDiffuse[stageNum].alpha >= 0.0 && mMaterial->mDiffuse[stageNum] != ColorF::WHITE )
-         newFeatures.addFeature( MFT_DiffuseColor );
-   } else {
-      newFeatures.addFeature( MFT_DiffuseColor );
    }
+   newFeatures.addFeature( MFT_DiffuseColor );
 
    // Deferred Shading : Specular
    if( mStages[stageNum].getTex( MFT_SpecularMap ) )

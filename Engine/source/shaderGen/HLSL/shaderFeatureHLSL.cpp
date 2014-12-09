@@ -1147,7 +1147,14 @@ void DiffuseFeatureHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       }
    }
 
-   meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffuseMaterialColor, Material::Mul, NULL, targ ) ) );
+   Material::BlendOp op;
+   
+   if (fd.features[MFT_DiffuseMap] || fd.features[MFT_DeferredDiffuseMap])
+      op = Material::Mul;
+   else
+      op = Material::None;
+
+   meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffuseMaterialColor, op, NULL, targ ) ) );
    output = meta;
 }
 
