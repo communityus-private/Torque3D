@@ -151,8 +151,8 @@ DeclareFeatureType( MFT_InterlacedPrePass );
 /// to the second render-target
 DeclareFeatureType( MFT_LightbufferMRT );
 
-/// This feature outputs black to RenderTarget1
-DeclareFeatureType( MFT_RenderTarget1_Zero );
+/// This feature outputs black to RenderTarget3
+DeclareFeatureType( MFT_RenderTarget3_Zero );
 
 DeclareFeatureType( MFT_Foliage );
 

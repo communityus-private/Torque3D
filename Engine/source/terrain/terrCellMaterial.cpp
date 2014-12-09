@@ -360,7 +360,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
          features.addFeature( MFT_DeferredTerrainBaseMap );        
 
          if ( advancedLightmapSupport )
-            features.addFeature( MFT_RenderTarget1_Zero );
+            features.addFeature( MFT_RenderTarget3_Zero );
       }
       else
       {

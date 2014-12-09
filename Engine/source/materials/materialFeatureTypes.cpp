@@ -76,7 +76,7 @@ ImplementFeatureType( MFT_PrePassConditioner, MFG_PostProcess, 1.0f, false );
 ImplementFeatureType( MFT_NormalsOut, MFG_PreLighting, 1.0f, false );
 
 ImplementFeatureType( MFT_LightbufferMRT, MFG_PreLighting, 1.0f, false );
-ImplementFeatureType( MFT_RenderTarget1_Zero, MFG_PreTexture, 1.0f, false );
+ImplementFeatureType( MFT_RenderTarget3_Zero, MFG_PreTexture, 1.0f, false );
 
 ImplementFeatureType( MFT_Foliage, MFG_PreTransform, 1.0f, false );
 

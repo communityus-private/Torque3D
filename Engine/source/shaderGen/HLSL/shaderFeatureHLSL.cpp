@@ -1275,8 +1275,8 @@ void LightmapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
    if( fd.features[MFT_LightbufferMRT] )
    {
-      meta->addStatement( new GenOp( "   @;\r\n", assignColor( statement, Material::None, NULL, ShaderFeature::RenderTarget1 ) ) );
-      meta->addStatement( new GenOp( "   @.a = 0.0001;\r\n", LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) ) ) );
+      meta->addStatement( new GenOp( "   @;\r\n", assignColor( statement, Material::None, NULL, ShaderFeature::RenderTarget3 ) ) );
+      meta->addStatement( new GenOp( "   @.a = 0.0001;\r\n", LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget3) ) ) );
    }
    else
       meta->addStatement( new GenOp( "   @;\r\n", assignColor( statement, Material::Mul ) ) );
@@ -1308,7 +1308,7 @@ void LightmapFeatHLSL::setTexData(  Material::StageData &stageDat,
 
 U32 LightmapFeatHLSL::getOutputTargets( const MaterialFeatureData &fd ) const
 {
-   return fd.features[MFT_LightbufferMRT] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+   return fd.features[MFT_LightbufferMRT] ? ShaderFeature::RenderTarget3 : ShaderFeature::DefaultTarget;
 }
 
 //****************************************************************************
@@ -1402,8 +1402,8 @@ void TonemapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    // Assign to proper render target
    if( fd.features[MFT_LightbufferMRT] )
    {
-      meta->addStatement( new GenOp( "   @;\r\n", assignColor( toneMapColor, Material::None, NULL, ShaderFeature::RenderTarget1 ) ) );
-      meta->addStatement( new GenOp( "   @.a = 0.0001;\r\n", LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) ) ) );
+      meta->addStatement( new GenOp( "   @;\r\n", assignColor( toneMapColor, Material::None, NULL, ShaderFeature::RenderTarget3 ) ) );
+      meta->addStatement( new GenOp( "   @.a = 0.0001;\r\n", LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget3) ) ) );
    }
    else
       meta->addStatement( new GenOp( "   @;\r\n", assignColor( toneMapColor, blendOp ) ) );
@@ -1436,7 +1436,7 @@ void TonemapFeatHLSL::setTexData(  Material::StageData &stageDat,
 
 U32 TonemapFeatHLSL::getOutputTargets( const MaterialFeatureData &fd ) const
 {
-   return fd.features[MFT_LightbufferMRT] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+   return fd.features[MFT_LightbufferMRT] ? ShaderFeature::RenderTarget3 : ShaderFeature::DefaultTarget;
 }
 
 //****************************************************************************
@@ -1551,8 +1551,8 @@ void VertLitHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    // Output the color
    if ( fd.features[MFT_LightbufferMRT] )
    {
-      meta->addStatement( new GenOp( "   @;\r\n", assignColor( outColor, Material::None, NULL, ShaderFeature::RenderTarget1 ) ) );
-      meta->addStatement( new GenOp( "   @.a = 0.0001;\r\n", LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) ) ) );
+      meta->addStatement( new GenOp( "   @;\r\n", assignColor( outColor, Material::None, NULL, ShaderFeature::RenderTarget3 ) ) );
+      meta->addStatement( new GenOp( "   @.a = 0.0001;\r\n", LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget3) ) ) );
    }
    else
       meta->addStatement( new GenOp( "   @;\r\n", assignColor( outColor, blendOp ) ) );
@@ -1562,7 +1562,7 @@ void VertLitHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
 U32 VertLitHLSL::getOutputTargets( const MaterialFeatureData &fd ) const
 {
-   return fd.features[MFT_LightbufferMRT] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+   return fd.features[MFT_LightbufferMRT] ? ShaderFeature::RenderTarget3 : ShaderFeature::DefaultTarget;
 }
 
 //****************************************************************************

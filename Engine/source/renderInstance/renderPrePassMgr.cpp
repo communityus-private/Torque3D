@@ -664,7 +664,7 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    if(bEnableMRTLightmap)
    {
       // If this material has a lightmap, pass it through, and flag it to
-      // send it's output to RenderTarget1
+      // send it's output to RenderTarget3
       if( fd.features.hasFeature( MFT_ToneMap ) )
       {
          newFeatures.addFeature( MFT_ToneMap );
@@ -687,7 +687,7 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
       else
       {
          // If this object isn't lightmapped, add a zero-output feature to it
-         newFeatures.addFeature( MFT_RenderTarget1_Zero );
+         newFeatures.addFeature( MFT_RenderTarget3_Zero );
       }
    }
 
