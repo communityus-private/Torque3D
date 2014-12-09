@@ -1113,6 +1113,11 @@ void OverlayTexFeatHLSL::setTexData(   Material::StageData &stageDat,
 // Diffuse color
 //****************************************************************************
 
+U32 DiffuseFeatureHLSL::getOutputTargets(const MaterialFeatureData &fd) const
+{
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+}
+
 void DiffuseFeatureHLSL::processPix(   Vector<ShaderComponent*> &componentList, 
                                        const MaterialFeatureData &fd )
 {
@@ -1122,13 +1127,26 @@ void DiffuseFeatureHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    diffuseMaterialColor->uniform = true;
    diffuseMaterialColor->constSortPos = cspPotentialPrimitive;
 
+   MultiLine* meta = new MultiLine;
+   Var *col = (Var*)LangElement::find("col");
    ShaderFeature::OutputTarget targ = ShaderFeature::DefaultTarget;
-
-   Var *col = (Var*)LangElement::find( "col1" );
-   if (col)
+   if (fd.features[MFT_isDeferred])
+   {
       targ = ShaderFeature::RenderTarget1;
 
-   MultiLine * meta = new MultiLine;
+      col = (Var*)LangElement::find("col1");
+      MultiLine * meta = new MultiLine;
+      if (!col)
+      {
+         // create color var
+         col = new Var;
+         col->setType("fragout");
+         col->setName(getOutputTargetVarName(targ));
+         col->setStructName("OUT");
+         meta->addStatement(new GenOp("   @ = float4(1.0);\r\n", col));
+      }
+   }
+
    meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffuseMaterialColor, Material::Mul, NULL, targ ) ) );
    output = meta;
 }

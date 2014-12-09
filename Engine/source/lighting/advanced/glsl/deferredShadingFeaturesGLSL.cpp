@@ -228,20 +228,6 @@ void DeferredDiffuseMapGLSL::processVert( Vector<ShaderComponent*> &componentLis
    output = meta;
 }
 
-// Diffuse Color -> Color Buffer
-void DeferredDiffuseColorGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-   Var *diffuseMaterialColor  = new Var;
-   diffuseMaterialColor->setType( "vec4" );
-   diffuseMaterialColor->setName( "diffuseMaterialColor" );
-   diffuseMaterialColor->uniform = true;
-   diffuseMaterialColor->constSortPos = cspPotentialPrimitive;
-
-   MultiLine * meta = new MultiLine;
-   meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffuseMaterialColor, Material::Mul, NULL, ShaderFeature::RenderTarget1 ) ) );
-   output = meta;
-}
-
 // Empty Color -> Color Buffer
 void DeferredEmptyColorGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {

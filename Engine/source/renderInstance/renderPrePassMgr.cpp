@@ -611,9 +611,9 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    {
       newFeatures.addFeature( MFT_DeferredDiffuseMap );
       if ( mMaterial->mDiffuse[stageNum].alpha >= 0.0 && mMaterial->mDiffuse[stageNum] != ColorF::WHITE )
-         newFeatures.addFeature( MFT_DeferredDiffuseColor );
+         newFeatures.addFeature( MFT_DiffuseColor );
    } else {
-      newFeatures.addFeature( MFT_DeferredDiffuseColor );
+      newFeatures.addFeature( MFT_DiffuseColor );
    }
 
    // Deferred Shading : Specular
@@ -725,7 +725,6 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
 
    // Deferred Shading : Disable Unused Features
    newFeatures.removeFeature( MFT_DiffuseMap );
-   newFeatures.removeFeature( MFT_DiffuseColor );
 
    // Set the new features.
    fd.features = newFeatures;

@@ -50,17 +50,6 @@ public:
                              const MaterialFeatureData &fd );
 };
 
-class DeferredDiffuseColorGLSL : public ShaderFeatureGLSL
-{
-public:
-   virtual String getName() { return "Deferred Shading: Diffuse Color"; }
-
-   virtual void processPix( Vector<ShaderComponent*> &componentList, 
-      const MaterialFeatureData &fd );
-   
-   virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget1; }
-};
-
 class DeferredEmptyColorGLSL : public ShaderFeatureGLSL
 {
 public:

@@ -301,6 +301,7 @@ public:
 
    virtual Material::BlendOp getBlendOp(){ return Material::None; }
 
+   virtual U32 getOutputTargets(const MaterialFeatureData &fd) const;
    virtual String getName()
    {
       return "Diffuse Color";
