@@ -151,9 +151,6 @@ bool RenderPrePassMgr::_updateTargets()
       // reload materials, the conditioner needs to alter the generated shaders
    }
 
-   // Attach the light info buffer as a second render target, if there is
-   // lightmapped geometry in the scene.
-
    GFXFormat colorFormat = mTargetFormat;
    bool independentMrtBitDepth = GFX->getCardProfiler()->queryProfile("independentMrtBitDepth", false);
    //If independent bit depth on a MRT is supported than just use 8bit channels for the albedo color.
@@ -184,6 +181,30 @@ bool RenderPrePassMgr::_updateTargets()
  
                 for (U32 i = 0; i < mTargetChainLength; i++)
                         mTargetChain[i]->attachTexture(GFXTextureTarget::Color2, mMatInfoTarget.getTexture());
+   }
+
+   // Attach the light info buffer as a second render target, if there is
+   // lightmapped geometry in the scene.
+   AdvancedLightBinManager *lightBin;
+   if (Sim::findObject("AL_LightBinMgr", lightBin) &&
+      lightBin->MRTLightmapsDuringPrePass() &&
+      lightBin->isProperlyAdded())
+   {
+      // Update the size of the light bin target here. This will call _updateTargets
+      // on the light bin
+      ret &= lightBin->setTargetSize(mTargetSize);
+      if (ret)
+      {
+         // Sanity check
+         AssertFatal(lightBin->getTargetChainLength() == mTargetChainLength, "Target chain length mismatch");
+
+         // Attach light info buffer to Color1 for each target in the chain
+         for (U32 i = 0; i < mTargetChainLength; i++)
+         {
+            GFXTexHandle lightInfoTex = lightBin->getTargetTexture(0, i);
+            mTargetChain[i]->attachTexture(GFXTextureTarget::Color3, lightInfoTex);
+         }
+      }
    }
 
    _initShaders();
