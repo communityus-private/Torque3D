@@ -70,6 +70,8 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_Visibility, new VisibilityFeatGLSL );
    FEATUREMGR->registerFeature( MFT_Fog, new FogFeatGLSL );
    FEATUREMGR->registerFeature( MFT_LightbufferMRT, new NamedFeatureGLSL( "Lightbuffer MRT" ) );
+   FEATUREMGR->registerFeature( MFT_RenderTarget1_Zero, new RenderTargetZeroGLSL( ShaderFeature::RenderTarget1 ) );
+   FEATUREMGR->registerFeature( MFT_RenderTarget2_Zero, new RenderTargetZeroGLSL( ShaderFeature::RenderTarget2 ) );
    FEATUREMGR->registerFeature( MFT_RenderTarget3_Zero, new RenderTargetZeroGLSL( ShaderFeature::RenderTarget3 ) );
    FEATUREMGR->registerFeature( MFT_Imposter, new NamedFeatureGLSL( "Imposter" ) );
 
