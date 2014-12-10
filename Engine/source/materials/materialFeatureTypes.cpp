@@ -92,7 +92,6 @@ ImplementFeatureType( MFT_ImposterVert, MFG_PreTransform, 1.0, false );
 ImplementFeatureType( MFT_isDeferred, U32(-1), -1, true );
 ImplementFeatureType( MFT_SkyBox, MFG_Transform, 1.0f, true );
 ImplementFeatureType( MFT_DeferredDiffuseMap, MFG_Texture, 2.0f, false );
-ImplementFeatureType( MFT_DeferredEmptyColor, MFG_Texture, 5.0f, false );
 ImplementFeatureType( MFT_DeferredEmptySpec, MFG_Texture, 8.01f, false );
 
 ImplementFeatureType( MFT_DeferredEmissive, MFG_Texture, 8.1f, false );

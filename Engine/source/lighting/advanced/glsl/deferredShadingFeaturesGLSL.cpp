@@ -228,12 +228,6 @@ void DeferredDiffuseMapGLSL::processVert( Vector<ShaderComponent*> &componentLis
    output = meta;
 }
 
-// Empty Color -> Color Buffer
-void DeferredEmptyColorGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-   output = new GenOp( "   @;\r\n", assignColor( new GenOp( "vec4(1.0)" ), Material::None, NULL, ShaderFeature::RenderTarget1 ) );
-}
-
 // Specular Map -> Blue of Material Buffer ( greyscaled )
 void DeferredSpecMapGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {
