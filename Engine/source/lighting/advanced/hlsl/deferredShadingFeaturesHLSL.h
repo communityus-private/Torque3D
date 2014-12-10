@@ -27,29 +27,6 @@
 #include "shaderGen/HLSL/bumpHLSL.h"
 #include "shaderGen/HLSL/pixSpecularHLSL.h"
 
-// Diffuse Outputs
-class DeferredDiffuseMapHLSL : public ShaderFeatureHLSL
-{
-public:
-   virtual String getName() { return "Deferred Shading: Diffuse Map"; }
-
-   virtual void processPix( Vector<ShaderComponent*> &componentList, 
-      const MaterialFeatureData &fd );
-   
-   virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget1; }
-   virtual Resources getResources( const MaterialFeatureData &fd );
-   virtual Material::BlendOp getBlendOp(){ return Material::LerpAlpha; };
-
-   // Sets textures and texture flags for current pass
-   virtual void setTexData( Material::StageData &stageDat,
-                            const MaterialFeatureData &fd,
-                            RenderPassData &passData,
-                            U32 &texIndex );
-   
-   virtual void processVert( Vector<ShaderComponent*> &componentList,
-                             const MaterialFeatureData &fd );
-};
-
 class DeferredEmissiveHLSL : public ShaderFeatureHLSL
 {
 public:

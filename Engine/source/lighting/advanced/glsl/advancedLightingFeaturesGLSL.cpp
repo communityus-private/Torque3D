@@ -226,7 +226,7 @@ void DeferredBumpFeatGLSL::processVert(   Vector<ShaderComponent*> &componentLis
       getOutViewToTangent( componentList, meta, fd );
 
       // Make sure there are texcoords
-      if( !fd.features[MFT_Parallax] && !fd.features[MFT_DiffuseMap] && !fd.features[MFT_DeferredDiffuseMap])
+      if( !fd.features[MFT_Parallax] && !fd.features[MFT_DiffuseMap])
       {
          const bool useTexAnim = fd.features[MFT_TexAnim];
 

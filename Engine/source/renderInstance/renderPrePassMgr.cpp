@@ -609,7 +609,7 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    // Deferred Shading : Diffuse
    if (mStages[stageNum].getTex( MFT_DiffuseMap ))
    {
-      newFeatures.addFeature( MFT_DeferredDiffuseMap );
+      newFeatures.addFeature(MFT_DiffuseMap);
    }
    newFeatures.addFeature( MFT_DiffuseColor );
 
@@ -719,10 +719,7 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    newFeatures.addFeature( MFT_CubeMap );
    
 #endif
-
-   // Deferred Shading : Disable Unused Features
-   newFeatures.removeFeature( MFT_DiffuseMap );
-
+   
    // Set the new features.
    fd.features = newFeatures;
 }

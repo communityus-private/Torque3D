@@ -248,6 +248,8 @@ public:
    virtual void processPix( Vector<ShaderComponent*> &componentList, 
                             const MaterialFeatureData &fd );
 
+   virtual U32 getOutputTargets(const MaterialFeatureData &fd) const;
+
    virtual Material::BlendOp getBlendOp(){ return Material::LerpAlpha; }
 
    virtual Resources getResources( const MaterialFeatureData &fd );

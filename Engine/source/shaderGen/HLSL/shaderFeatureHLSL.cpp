@@ -845,11 +845,21 @@ void DiffuseMapFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
    output = meta;
 }
 
+U32 DiffuseMapFeatHLSL::getOutputTargets(const MaterialFeatureData &fd) const
+{
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+}
+
 void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList, 
                                        const MaterialFeatureData &fd )
 {
    // grab connector texcoord register
    Var *inTex = getInTexCoord( "texCoord", "float2", true, componentList );
+
+   //determine output target
+   ShaderFeature::OutputTarget targ = ShaderFeature::DefaultTarget;
+   if (fd.features[MFT_isDeferred])
+      targ = ShaderFeature::RenderTarget1;
 
    // create texture var
    Var *diffuseMap = new Var;
@@ -858,8 +868,8 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    diffuseMap->uniform = true;
    diffuseMap->sampler = true;
    diffuseMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
-
-if (  fd.features[MFT_CubeMap] )
+   
+   if (  fd.features[MFT_CubeMap] )
    {
       MultiLine * meta = new MultiLine;
       
@@ -883,7 +893,7 @@ if (  fd.features[MFT_CubeMap] )
                            diffuseMap, 
                            inTex ) );
       }
-      meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffColor, Material::Mul ) ) );
+      meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffColor, Material::Mul, NULL, targ) ) );
       output = meta;
    }
    else if(fd.features[MFT_DiffuseMapAtlas])
@@ -958,7 +968,7 @@ if (  fd.features[MFT_CubeMap] )
       if(!fd.features[MFT_PrePassConditioner])
       {
          meta->addStatement(new GenOp("   @ = float4(@.xy, mipLod / @.w, 1.0);\r\n", new DecOp(diffColor), inTex, atParams));
-         meta->addStatement(new GenOp("   @; return OUT;\r\n", assignColor(diffColor, Material::Mul)));
+         meta->addStatement(new GenOp("   @; return OUT;\r\n", assignColor(diffColor, Material::Mul, NULL, targ) ) );
          return;
       }
 #endif
@@ -982,19 +992,19 @@ if (  fd.features[MFT_CubeMap] )
                     new DecOp(diffColor), diffuseMap, inTex)); 
       }
 
-      meta->addStatement(new GenOp( "   @;\r\n", assignColor(diffColor, Material::Mul)));
+      meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ) ) );
    }
    else
    {
        if (  fd.features[MFT_Imposter] )
        {
            LangElement *statement = new GenOp( "tex2D(@, @)", diffuseMap, inTex );
-           output = new GenOp( "   @;\r\n", assignColor( statement, Material::Mul ) );
+           output = new GenOp("   @;\r\n", assignColor(statement, Material::Mul, NULL, targ) );
        }
        else
        {
            LangElement *statement = new GenOp( "tex2DLinear(@, @)", diffuseMap, inTex );
-           output = new GenOp( "   @;\r\n", assignColor( statement, Material::Mul ) );
+           output = new GenOp("   @;\r\n", assignColor(statement, Material::Mul, NULL, targ) );
        }
    }   
 }
@@ -1149,7 +1159,7 @@ void DiffuseFeatureHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    Material::BlendOp op;
    
-   if (fd.features[MFT_DiffuseMap] || fd.features[MFT_DeferredDiffuseMap])
+   if (fd.features[MFT_DiffuseMap])
       op = Material::Mul;
    else
       op = Material::None;
@@ -1713,11 +1723,10 @@ void ReflectCubeFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
    // If a base or bump tex is present in the material, but not in the
    // current pass - we need to add one to the current pass to use
    // its alpha channel as a gloss map.  Here we just need the tex coords.
-   if( !fd.features[MFT_DiffuseMap] && !fd.features[MFT_DeferredDiffuseMap] &&
+   if( !fd.features[MFT_DiffuseMap] &&
        !fd.features[MFT_NormalMap] )
    {
       if( fd.materialFeatures[MFT_DiffuseMap] ||
-          fd.materialFeatures[MFT_DeferredDiffuseMap] ||
           fd.materialFeatures[MFT_NormalMap] )
       {
          // find incoming texture var
@@ -1808,12 +1817,10 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    // current pass - we need to add one to the current pass to use
    // its alpha channel as a gloss map.
    if( !fd.features[MFT_DiffuseMap] &&
-       !fd.features[MFT_NormalMap] &&
-       !fd.features[MFT_DeferredDiffuseMap])
+       !fd.features[MFT_NormalMap])
    {
       if( fd.materialFeatures[MFT_DiffuseMap] ||
-          fd.materialFeatures[MFT_NormalMap] ||
-          fd.materialFeatures[MFT_DeferredDiffuseMap] )
+          fd.materialFeatures[MFT_NormalMap])
       {
          // grab connector texcoord register
          Var *inTex = getInTexCoord( "texCoord", "float2", true, componentList );
@@ -1873,7 +1880,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       
    LangElement *texCube = NULL;
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-   if (fd.features[MFT_DeferredDiffuseMap] && matinfo)
+   if (fd.features[MFT_isDeferred] && matinfo)
    {
        // Determine roughness
        Var *specPower = (Var*)LangElement::find( "specularPower" );
@@ -1919,7 +1926,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       else
          blendOp = Material::Mul;
    }
-   if (fd.features[MFT_DeferredDiffuseMap])
+   if (fd.features[MFT_isDeferred])
    {
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
        meta->addStatement(new GenOp("   @.rgb += @.rgb*lerp( @.rgb, (@).rgb, (@).a);\r\n", targ, targ, targ, texCube, lerpVal));
@@ -1933,7 +1940,7 @@ ShaderFeature::Resources ReflectCubeFeatHLSL::getResources( const MaterialFeatur
 {
    Resources res; 
 
-   if( fd.features[MFT_DiffuseMap] || fd.features[MFT_DeferredDiffuseMap] ||
+   if( fd.features[MFT_DiffuseMap] ||
        fd.features[MFT_NormalMap] )
    {
       res.numTex = 1;
@@ -1956,11 +1963,10 @@ void ReflectCubeFeatHLSL::setTexData(  Material::StageData &stageDat,
    // set up a gloss map if one is not present in the current pass
    // but is present in the current material stage
    if( !passData.mFeatureData.features[MFT_DiffuseMap] &&
-       !passData.mFeatureData.features[MFT_DeferredDiffuseMap] &&
        !passData.mFeatureData.features[MFT_NormalMap] )
    {
       GFXTextureObject *tex = stageDat.getTex( MFT_DetailMap );
-      if (  tex && (stageFeatures.features[MFT_DiffuseMap] || stageFeatures.features[MFT_DeferredDiffuseMap]) )
+      if (  tex && (stageFeatures.features[MFT_DiffuseMap]) )
       {
          passData.mSamplerNames[ texIndex ] = "diffuseMap";
          passData.mTexSlot[ texIndex++ ].texObject = tex;
