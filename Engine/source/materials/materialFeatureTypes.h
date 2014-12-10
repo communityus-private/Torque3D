@@ -185,5 +185,4 @@ DeclareFeatureType( MFT_DeferredMatInfoFlags );
 DeclareFeatureType( MFT_DeferredTranslucencyMap );
 DeclareFeatureType( MFT_DeferredTranslucencyEmpty );
 DeclareFeatureType( MFT_DeferredEmptySpec );
-DeclareFeatureType( MFT_DeferredEmissive );
 #endif // _MATERIALFEATURETYPES_H_

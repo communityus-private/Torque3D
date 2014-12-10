@@ -27,17 +27,6 @@
 #include "shaderGen/GLSL/bumpGLSL.h"
 #include "shaderGen/GLSL/pixSpecularGLSL.h"
 
-class DeferredEmissiveGLSL : public ShaderFeatureGLSL
-{
-public:
-   virtual String getName() { return "Deferred Shading: Emissive"; }
-
-   virtual void processPix( Vector<ShaderComponent*> &componentList, 
-      const MaterialFeatureData &fd );
-   
-   virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget2; }
-};
-
 // Specular Outputs
 class DeferredSpecMapGLSL : public ShaderFeatureGLSL
 {

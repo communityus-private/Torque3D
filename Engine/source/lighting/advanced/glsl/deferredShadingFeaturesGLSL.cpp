@@ -265,12 +265,6 @@ void DeferredEmptySpecGLSL::processPix( Vector<ShaderComponent*> &componentList,
    output = meta;
 }
 
-// Emissive -> Material Info Buffer.
-void DeferredEmissiveGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-   output = new GenOp( "   @;\r\n", assignColor( new GenOp( "vec4(1.0, 0.0, 0.0, 0.0)" ), Material::None, NULL, ShaderFeature::RenderTarget2 ) );
-}
-
 // Tranlucency -> Green of Material Info Buffer.
 void DeferredTranslucencyMapGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {

@@ -107,7 +107,6 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_DeferredTranslucencyEmpty, new DeferredTranslucencyEmptyGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredSpecStrength, new DeferredSpecStrengthGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredEmptySpec, new DeferredEmptySpecGLSL );
-   FEATUREMGR->registerFeature( MFT_DeferredEmissive, new DeferredEmissiveGLSL );
    FEATUREMGR->registerFeature( MFT_SkyBox, new DeferredSkyGLSL );
 }
 
