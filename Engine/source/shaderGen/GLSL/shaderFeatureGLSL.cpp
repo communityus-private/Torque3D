@@ -1883,21 +1883,11 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
    if (fd.features[MFT_isDeferred] && matinfo)
    {
-       // Determine roughness
-       Var *specPower = (Var*)LangElement::find( "specularPower" );
-       if ( !specPower )
-       {
-           specPower = new Var;
-           specPower->setType( "float" );
-           specPower->setName( "specularPower" );
-           meta->addStatement( new GenOp( "   @ = 1.0;\r\n", new DecOp(specPower)) );
-       }
-       meta->addStatement( new GenOp( "   @*=@.b;\r\n", specPower, matinfo ) );
-       // Cube LOD level = (1.0 - Roughness) * 8
-       // mip_levle =  min((1.0 - u_glossiness)*11.0 + 1.0, 8.0)
-       //LangElement *texCube = new GenOp( "texCUBElod( @, float4(@, min((1.0 - (@ / 128.0)) * 11.0 + 1.0, 8.0)) )", cubeMap, reflectVec, specPower );
-       //texCube = new GenOp( "texture(  usamplerCube(@), vec3(@), (@ / 128.0) * 8.0)", cubeMap, reflectVec, specPower );
-       texCube = new GenOp( "texCUBE( @, @)", cubeMap, reflectVec );
+
+      if (fd.features[MFT_DeferredSpecMap])
+         texCube = new GenOp("texture(  usamplerCube(@), vec3(@), (@.a*5) )", cubeMap, reflectVec, matinfo);
+      else
+         texCube = new GenOp("texture(  usamplerCube(@), vec3(@), (@.a/4) )", cubeMap, reflectVec, matinfo);
    }
    else texCube = new GenOp( "texCUBE( @, @)", cubeMap, reflectVec );
 
@@ -1931,7 +1921,10 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_isDeferred])
    {
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
-       meta->addStatement(new GenOp("   @.rgb += @.rgb*lerp( @.rgb, (@).rgb, (@).a);\r\n", targ, targ, targ, texCube, lerpVal));
+      if (fd.features[MFT_DeferredSpecMap])
+         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b));\r\n", targ, targ, texCube, lerpVal));
+      else
+         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b*128/5));\r\n", targ, targ, texCube, lerpVal));
    }
    else
         meta->addStatement( new GenOp( "   @;\r\n", assignColor( texCube, blendOp, lerpVal ) ) );         
