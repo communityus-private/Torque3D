@@ -1879,9 +1879,9 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
 
       if (fd.features[MFT_DeferredSpecMap])
-         texCube = new GenOp("texture(  usamplerCube(@), vec3(@), (@.a*5) )", cubeMap, reflectVec, matinfo);
+         texCube = new GenOp("texture(  @, @, (@.a*5) )", cubeMap, reflectVec, matinfo);
       else
-         texCube = new GenOp("texture(  usamplerCube(@), vec3(@), (@.a/4) )", cubeMap, reflectVec, matinfo);
+         texCube = new GenOp("texture(  @, @, (@.a/4) )", cubeMap, reflectVec, matinfo);
    }
    else texCube = new GenOp( "texCUBE( @, @)", cubeMap, reflectVec );
 
