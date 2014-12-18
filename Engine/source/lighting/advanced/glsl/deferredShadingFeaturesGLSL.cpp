@@ -131,9 +131,9 @@ void DeferredMatInfoFlagsGLSL::processPix( Vector<ShaderComponent*> &componentLi
 }
 
 // Spec Strength -> Blue Channel of Material Info Buffer.
-void DeferredSpecStrengthGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
+// Spec Power -> Alpha Channel ( of Material Info Buffer.
+void DeferredSpecVarsGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {
-	MultiLine *meta = new MultiLine;
 
    // search for material var
    Var *material = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
@@ -151,34 +151,16 @@ void DeferredSpecStrengthGLSL::processPix( Vector<ShaderComponent*> &componentLi
    specStrength->setName( "specularStrength" );
    specStrength->uniform = true;
    specStrength->constSortPos = cspPotentialPrimitive;
-   
-   meta->addStatement(new GenOp("   @.b = @/128;\r\n", material, specStrength));
-   output = meta;
-}
-
-// Spec Power -> Alpha Channel ( of Material Info Buffer.
-void DeferredSpecPowerGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-	MultiLine *meta = new MultiLine;
-
-   // search for material var
-   Var *material = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-   if ( !material )
-   {
-      // create material var
-      material = new Var;
-      material->setType( "vec4" );
-      material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-      material->setStructName("OUT");
-   }
 
    Var *specPower = new Var;
-   specPower->setType( "float" );
-   specPower->setName( "specularPower" );
+   specPower->setType("float");
+   specPower->setName("specularPower");
    specPower->uniform = true;
    specPower->constSortPos = cspPotentialPrimitive;
 
-   meta->addStatement(new GenOp("   @.a = @/5;\r\n", material, specPower ) );
+	MultiLine *meta = new MultiLine;
+   meta->addStatement(new GenOp("   @.b = @/128;\r\n", material, specStrength));
+   meta->addStatement(new GenOp("   @.a = @/5;\r\n", material, specPower));
    output = meta;
 }
 

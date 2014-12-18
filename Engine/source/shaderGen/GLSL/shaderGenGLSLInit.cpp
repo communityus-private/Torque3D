@@ -99,11 +99,10 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    // Deferred Shading
    FEATUREMGR->registerFeature( MFT_isDeferred, new NamedFeatureGLSL( "Deferred Material" ) );
    FEATUREMGR->registerFeature( MFT_DeferredSpecMap, new DeferredSpecMapGLSL );
-   FEATUREMGR->registerFeature( MFT_DeferredSpecPower, new DeferredSpecPowerGLSL );
+   FEATUREMGR->registerFeature( MFT_DeferredSpecVars, new DeferredSpecVarsGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredMatInfoFlags, new DeferredMatInfoFlagsGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredTranslucencyMap, new DeferredTranslucencyMapGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredTranslucencyEmpty, new DeferredTranslucencyEmptyGLSL );
-   FEATUREMGR->registerFeature( MFT_DeferredSpecStrength, new DeferredSpecStrengthGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredEmptySpec, new DeferredEmptySpecGLSL );
    FEATUREMGR->registerFeature( MFT_SkyBox, new DeferredSkyGLSL );
 }

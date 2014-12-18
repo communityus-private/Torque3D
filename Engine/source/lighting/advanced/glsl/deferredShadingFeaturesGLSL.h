@@ -59,10 +59,10 @@ public:
    virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget2; }
 };
 
-class DeferredSpecStrengthGLSL : public ShaderFeatureGLSL
+class DeferredSpecVarsGLSL : public ShaderFeatureGLSL
 {
 public:
-   virtual String getName() { return "Deferred Shading: Specular Strength"; }
+   virtual String getName() { return "Deferred Shading: Specular Explicit Numbers"; }
 
    virtual void processPix( Vector<ShaderComponent*> &componentList, 
       const MaterialFeatureData &fd );
@@ -70,16 +70,6 @@ public:
    virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget2; }
 };
 
-class DeferredSpecPowerGLSL : public ShaderFeatureGLSL
-{
-public:
-   virtual String getName() { return "Deferred Shading: Specular Power"; }
-
-   virtual void processPix( Vector<ShaderComponent*> &componentList, 
-      const MaterialFeatureData &fd );
-   
-   virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget2; }
-};
 
 class DeferredEmptySpecGLSL : public ShaderFeatureGLSL
 {

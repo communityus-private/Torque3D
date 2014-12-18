@@ -129,7 +129,8 @@ void DeferredMatInfoFlagsHLSL::processPix( Vector<ShaderComponent*> &componentLi
 }
 
 // Spec Strength -> Blue Channel of Material Info Buffer.
-void DeferredSpecStrengthHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
+// Spec Power -> Alpha Channel ( of Material Info Buffer.
+void DeferredSpecVarsHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {
    // search for material var
    Var *material = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
@@ -148,30 +149,16 @@ void DeferredSpecStrengthHLSL::processPix( Vector<ShaderComponent*> &componentLi
    specStrength->uniform = true;
    specStrength->constSortPos = cspPotentialPrimitive;
 
-   output = new GenOp( "   @.b = @/128;\r\n", material, specStrength );
-}
-
-// Spec Power -> Alpha Channel ( of Material Info Buffer.
-void DeferredSpecPowerHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-   // search for material var
-   Var *material = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-   if ( !material )
-   {
-      // create material var
-      material = new Var;
-      material->setType( "fragout" );
-      material->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-      material->setStructName( "OUT" );
-   }
-
    Var *specPower = new Var;
    specPower->setType( "float" );
    specPower->setName( "specularPower" );
    specPower->uniform = true;
    specPower->constSortPos = cspPotentialPrimitive;
-   output = new GenOp( "   @.a = @/5;\r\n", material, specPower );
 
+   MultiLine * meta = new MultiLine;
+   meta->addStatement(new GenOp("   @.b = @/128;\r\n", material, specStrength));
+   meta->addStatement(new GenOp("   @.a = @/5;\r\n", material, specPower));
+   output = meta;
 }
 
 // Black -> Blue and Alpha of Color Buffer (representing no specular)
