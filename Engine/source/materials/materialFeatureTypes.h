@@ -177,7 +177,6 @@ DeclareFeatureType( MFT_ImposterVert );
 DeclareFeatureType( MFT_isDeferred );
 DeclareFeatureType( MFT_SkyBox );
 DeclareFeatureType( MFT_DeferredSpecMap );
-DeclareFeatureType( MFT_DeferredSpecColor );
 DeclareFeatureType( MFT_DeferredSpecPower );
 DeclareFeatureType( MFT_DeferredSpecStrength );
 DeclareFeatureType( MFT_DeferredMatInfoFlags );

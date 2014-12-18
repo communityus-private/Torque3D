@@ -104,33 +104,6 @@ void DeferredSpecMapGLSL::processVert( Vector<ShaderComponent*> &componentList,
    output = meta;
 }
 
-// Specular Color -> Blue of Material Buffer ( greyscaled )
-void DeferredSpecColorGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-   Var *specularColor = (Var*)LangElement::find( "specularColor" );
-   if ( !specularColor )
-   {
-      specularColor  = new Var( "specularColor", "vec4" );
-      specularColor->uniform = true;
-      specularColor->constSortPos = cspPotentialPrimitive;
-   }
-
-   MultiLine *meta = new MultiLine;
-
-   Var *material = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget2));
-   if (!material)
-   {
-	   // create color var
-	   material = new Var;
-	   material->setType("vec4");
-	   material->setName(getOutputTargetVarName(ShaderFeature::RenderTarget2));
-       material->setStructName("OUT");
-   }
-   
-   meta->addStatement(new GenOp("   @.b = dot(@.rgb, vec3(0.3, 0.59, 0.11));\r\n", material, specularColor));
-   output = meta;
-}
-
 // Material Info Flags -> Red ( Flags ) of Material Info Buffer.
 void DeferredMatInfoFlagsGLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {

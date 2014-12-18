@@ -102,7 +102,6 @@ void _initShaderGenHLSL( ShaderGen *shaderGen )
    // Deferred Shading
    FEATUREMGR->registerFeature( MFT_isDeferred, new NamedFeatureHLSL( "Deferred Material" ) );
    FEATUREMGR->registerFeature( MFT_DeferredSpecMap, new DeferredSpecMapHLSL );
-   FEATUREMGR->registerFeature( MFT_DeferredSpecColor, new DeferredSpecColorHLSL );
    FEATUREMGR->registerFeature( MFT_DeferredSpecPower, new DeferredSpecPowerHLSL );
    FEATUREMGR->registerFeature( MFT_DeferredMatInfoFlags, new DeferredMatInfoFlagsHLSL );
    FEATUREMGR->registerFeature( MFT_DeferredTranslucencyMap, new DeferredTranslucencyMapHLSL );

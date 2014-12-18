@@ -59,15 +59,6 @@ public:
    virtual U32 getOutputTargets( const MaterialFeatureData &fd ) const { return ShaderFeature::RenderTarget2; }
 };
 
-class DeferredSpecColorHLSL : public ShaderFeatureHLSL
-{
-public:
-   virtual String getName() { return "Deferred Shading: Specular Color"; }
-
-   virtual void processPix( Vector<ShaderComponent*> &componentList, 
-      const MaterialFeatureData &fd );   
-};
-
 class DeferredSpecStrengthHLSL : public ShaderFeatureHLSL
 {
 public:
