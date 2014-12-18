@@ -101,7 +101,6 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_DeferredSpecMap, new DeferredSpecMapGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredSpecColor, new DeferredSpecColorGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredSpecPower, new DeferredSpecPowerGLSL );
-   FEATUREMGR->registerFeature( MFT_DeferredGlossMap, new DeferredGlossMapGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredMatInfoFlags, new DeferredMatInfoFlagsGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredTranslucencyMap, new DeferredTranslucencyMapGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredTranslucencyEmpty, new DeferredTranslucencyEmptyGLSL );

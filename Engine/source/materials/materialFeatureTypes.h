@@ -180,7 +180,6 @@ DeclareFeatureType( MFT_DeferredSpecMap );
 DeclareFeatureType( MFT_DeferredSpecColor );
 DeclareFeatureType( MFT_DeferredSpecPower );
 DeclareFeatureType( MFT_DeferredSpecStrength );
-DeclareFeatureType( MFT_DeferredGlossMap );
 DeclareFeatureType( MFT_DeferredMatInfoFlags );
 DeclareFeatureType( MFT_DeferredTranslucencyMap );
 DeclareFeatureType( MFT_DeferredTranslucencyEmpty );
