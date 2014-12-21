@@ -32,9 +32,9 @@
 #include "shaderGen/HLSL/paraboloidHLSL.h"
 #include "materials/materialFeatureTypes.h"
 #include "core/module.h"
-
 // Deferred Shading
 #include "lighting/advanced/hlsl/deferredShadingFeaturesHLSL.h"
+#include "shaderGen/HLSL/accuFeatureHLSL.h"
 
 static ShaderGen::ShaderGenInitDelegate sInitDelegate;
 
@@ -68,6 +68,7 @@ void _initShaderGenHLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_Visibility, new VisibilityFeatHLSL );
    FEATUREMGR->registerFeature( MFT_Fog, new FogFeatHLSL );
    FEATUREMGR->registerFeature( MFT_SpecularMap, new SpecularMapHLSL );
+   FEATUREMGR->registerFeature( MFT_AccuMap, new AccuTexFeatHLSL );
    FEATUREMGR->registerFeature( MFT_GlossMap, new NamedFeatureHLSL( "Gloss Map" ) );
    FEATUREMGR->registerFeature( MFT_LightbufferMRT, new NamedFeatureHLSL( "Lightbuffer MRT" ) );
    FEATUREMGR->registerFeature( MFT_RenderTarget1_Zero, new RenderTargetZeroHLSL( ShaderFeature::RenderTarget1 ) );
