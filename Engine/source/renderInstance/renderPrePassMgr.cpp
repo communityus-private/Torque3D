@@ -679,6 +679,34 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
          newFeatures.addFeature( type );
    }
 
+   if (mMaterial->mAccuEnabled[stageNum])
+   {
+      newFeatures.addFeature(MFT_AccuMap);
+      mHasAccumulation = true;
+   }
+
+   // we need both diffuse and normal maps + sm3 to have an accu map
+   if (fd.features[MFT_AccuMap] &&
+      (!fd.features[MFT_DiffuseMap] ||
+      !fd.features[MFT_NormalMap] ||
+      GFX->getPixelShaderVersion() < 3.0f)) {
+      AssertWarn(false, "SAHARA: Using an Accu Map requires SM 3.0 and a normal map.");
+      newFeatures.removeFeature(MFT_AccuMap);
+      mHasAccumulation = false;
+   }
+
+   // if we still have the AccuMap feature, we add all accu constant features
+   if (fd.features[MFT_AccuMap]) {
+      // add the dependencies of the accu map
+      newFeatures.addFeature(MFT_AccuScale);
+      newFeatures.addFeature(MFT_AccuDirection);
+      newFeatures.addFeature(MFT_AccuStrength);
+      newFeatures.addFeature(MFT_AccuCoverage);
+      newFeatures.addFeature(MFT_AccuSpecular);
+      // now remove some features that are not compatible with this
+      newFeatures.removeFeature(MFT_UseInstancing);
+   }
+
    // If there is lightmapped geometry support, add the MRT light buffer features
    if(bEnableMRTLightmap)
    {
