@@ -380,7 +380,8 @@ void RenderPrePassMgr::render( SceneRenderState *state )
    GFXCubemap *lastCubemap = NULL;
    GFXTextureObject *lastReflectTex = NULL;
    GFXTextureObject *lastMiscTex = NULL;
-
+   GFXTextureObject *lastAccuTex = NULL;
+   
    // Next render all the meshes.
    itr = mElementList.begin();
    for ( ; itr != mElementList.end(); )
@@ -457,6 +458,15 @@ void RenderPrePassMgr::render( SceneRenderState *state )
             {
                sgData.reflectTex = passRI->reflectTex;
                lastReflectTex = passRI->reflectTex;
+               dirty = true;
+            }
+            
+            // Update accumulation texture if it changed.
+            // Note: accumulation texture can be NULL, and must be updated.
+            if (passRI->accuTex != lastAccuTex)
+            {
+               sgData.accuTex = passRI->accuTex;
+               lastAccuTex = lastAccuTex;
                dirty = true;
             }
 
@@ -696,7 +706,7 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    }
 
    // if we still have the AccuMap feature, we add all accu constant features
-   if (fd.features[MFT_AccuMap]) {
+   if (newFeatures[MFT_AccuMap]) {
       // add the dependencies of the accu map
       newFeatures.addFeature(MFT_AccuScale);
       newFeatures.addFeature(MFT_AccuDirection);
