@@ -1334,19 +1334,11 @@ void GuiShapeEdPreview::renderWorld(const RectI &updateRect)
 
    FogData savedFogData = gClientSceneGraph->getFogData();
    gClientSceneGraph->setFogData( FogData() );  // no fog in preview window
-
-   /*
-       HACK:
-       there is a problem on handling transparency background on deferred pipeline.
-       the problem is caused by the "deferredShadingP" pixel shader which is a postFX.
-       we can avoid the problem by just selecting as the second argument of scene state SPT_Other instead of SPT_Diffuse, to avoid the pass of this shader.
-       maybe we can found a better solution on the future.
-   */
-
+   
    SceneRenderState state
    (
       gClientSceneGraph,
-      SPT_Other,
+      SPT_Diffuse,
       SceneCameraState( GFX->getViewport(), mSaveFrustum,
                         GFX->getWorldMatrix(), GFX->getProjectionMatrix() )
    );
