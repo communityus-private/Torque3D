@@ -122,6 +122,7 @@ function initializeWorldEditor()
    EVisibility.addOption( "AL: Color Buffer", "$AL_ColorBufferShaderVar", "toggleColorBufferViz" );
    EVisibility.addOption( "AL: Spec Map", "$AL_SpecMapShaderVar", "toggleSpecMapViz");
    EVisibility.addOption( "AL: Backbuffer", "$AL_BackbufferVisualizeVar", "toggleBackbufferViz" );
+   EVisibility.addOption( "AL: Glow Buffer", "$AL_GlowVisualizeVar", "toggleGlowViz" );
    EVisibility.addOption( "Frustum Lock", "$Scene::lockCull", "" );
    EVisibility.addOption( "Disable Zone Culling", "$Scene::disableZoneCulling", "" );
    EVisibility.addOption( "Disable Terrain Occlusion", "$Scene::disableTerrainOcclusion", "" );
