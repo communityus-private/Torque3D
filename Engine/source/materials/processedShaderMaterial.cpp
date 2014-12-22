@@ -412,7 +412,21 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
          fd.features.addFeature( MFT_GlossMap );
    }
 
+   if ( mMaterial->mAccuEnabled[stageNum] )
+   {
+      mHasAccumulation = true;
+   }
 
+   // we need both diffuse and normal maps + sm3 to have an accu map
+   if(   fd.features[ MFT_AccuMap ] && 
+       ( !fd.features[ MFT_DiffuseMap ] || 
+         !fd.features[ MFT_NormalMap ] ||
+         GFX->getPixelShaderVersion() < 3.0f ) ) {
+      AssertWarn(false, "SAHARA: Using an Accu Map requires SM 3.0 and a normal map.");
+      fd.features.removeFeature( MFT_AccuMap );
+      mHasAccumulation = false;
+   }
+   
    // Without a base texture use the diffuse color
    // feature to ensure some sort of output.
    if (!fd.features[MFT_DiffuseMap])
