@@ -88,11 +88,23 @@ void GFXGLCubemap::fillCubeTextures(GFXTexHandle* faces)
       GFXFormat faceFormat = faces[i]->getFormat();
 
         GFXGLTextureObject* glTex = static_cast<GFXGLTextureObject*>(faces[i].getPointer());
-        const U32 mipCount = isCompressed ? mMipLevels : 1;
-        for( U32 mip = 0; mip < mipCount; ++mip )
+        if( isCompressed )
         {
-            U8* buf = glTex->getTextureData( mip );
-            glTexImage2D(faceList[i], mip, GFXGLTextureInternalFormat[faceFormat], faces[i]->getWidth(), faces[i]->getHeight(), 
+            for( U32 mip = 0; mip < mMipLevels; ++mip )
+            {
+                const U32 mipWidth  = getMax( U32(1), faces[i]->getWidth() >> mip );
+                const U32 mipHeight = getMax( U32(1), faces[i]->getHeight() >> mip );
+                const U32 mipDataSize = getCompressedSurfaceSize( mFaceFormat, mWidth, mHeight, mip );
+
+                U8* buf = glTex->getTextureData( mip );
+                glCompressedTexImage2D(faceList[i], mip, GFXGLTextureInternalFormat[mFaceFormat], mipWidth, mipHeight, 0, mipDataSize, buf);
+                delete[] buf;
+            }
+        }
+        else
+        {
+            U8* buf = glTex->getTextureData();
+            glTexImage2D(faceList[i], 0, GFXGLTextureInternalFormat[faceFormat], mWidth, mHeight, 
                 0, GFXGLTextureFormat[faceFormat], GFXGLTextureType[faceFormat], buf);
             delete[] buf;
         }
@@ -162,8 +174,12 @@ void GFXGLCubemap::initStatic( DDSFile *dds )
       }
 
       // Now loop thru the mip levels!
-      for (U32 j = 0; j < mMipLevels; j++)
-         glCompressedTexImage2D(faceList[i], j, GFXGLTextureInternalFormat[mFaceFormat], mWidth, mHeight, 0, dds->getSurfaceSize(j), dds->mSurfaces[i]->mMips[j]);
+      for (U32 mip = 0; mip < mMipLevels; ++mip)
+      {
+         const U32 mipWidth  = getMax( U32(1), mWidth >> mip );
+         const U32 mipHeight = getMax( U32(1), mHeight >> mip );
+         glCompressedTexImage2D(faceList[i], mip, GFXGLTextureInternalFormat[mFaceFormat], mipWidth, mipHeight, 0, dds->getSurfaceSize(mip), dds->mSurfaces[i]->mMips[mip]);
+      }
    }
 }
 
@@ -186,15 +202,23 @@ void GFXGLCubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
    mWidth = texSize;
    mHeight = texSize;
 
-   for(U32 i = 0; i < 6; i++)
-   {
-        const U32 mipCount = isCompressed ? mMipLevels : 1;
-        for( U32 mip = 0; mip < mipCount; ++mip )
+    for(U32 i = 0; i < 6; i++)
+    {
+        if( isCompressedFormat(faceFormat) )
         {
-            glTexImage2D( faceList[i], mip, GFXGLTextureInternalFormat[faceFormat], texSize, texSize, 
+            for( U32 mip = 0; mip < mMipLevels; ++mip )
+            {
+                const U32 mipSize = getMax( U32(1), texSize >> mip );
+                const U32 mipDataSize = getCompressedSurfaceSize( mFaceFormat, texSize, texSize, mip );
+                glCompressedTexImage2D(faceList[i], mip, GFXGLTextureInternalFormat[mFaceFormat], mipSize, mipSize, 0, mipDataSize, NULL);
+            }
+        }
+        else
+        {
+            glTexImage2D( faceList[i], 0, GFXGLTextureInternalFormat[faceFormat], texSize, texSize, 
                 0, GFXGLTextureFormat[faceFormat], GFXGLTextureType[faceFormat], NULL);
         }
-   }
+    }
 
     if( !isCompressed )
         glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
