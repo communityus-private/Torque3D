@@ -149,10 +149,10 @@ void SceneManager::renderScene( ScenePassType passType, U32 objectMask )
    
    // Handle frustum locking.
 
-   const bool lockedFrustum = ( smLockDiffuseFrustum && passType == SPT_Diffuse );
+   const bool lockedFrustum = ( smLockDiffuseFrustum && ((passType == SPT_Diffuse) || (passType == SPT_Preview)));
    if( lockedFrustum )
       cameraState = smLockedDiffuseCamera;
-   else if( passType == SPT_Diffuse )
+   else if ((passType == SPT_Diffuse) || (passType == SPT_Preview))
    {
       // Store the camera state so if we lock, this will become the
       // locked state.

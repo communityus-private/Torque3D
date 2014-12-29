@@ -100,9 +100,11 @@ void RenderMeshMgr::render(SceneRenderState * state)
    if(!mElementList.size())
       return;
 
+   bool renderOnlyCubemap = false;
+
    // Check if bin is disabled in advanced lighting.
-   if ( MATMGR->getPrePassEnabled() && mBasicOnly )
-      return;
+   if (MATMGR->getPrePassEnabled() && mBasicOnly && !state->isPreviewPass())
+	   renderOnlyCubemap = true;
 
    GFXDEBUGEVENT_SCOPE( RenderMeshMgr_Render, ColorI::GREEN );
 
@@ -207,7 +209,7 @@ void RenderMeshMgr::render(SceneRenderState * state)
             bool dirty = false;
 
             // set the lightmaps if different
-            if( passRI->lightmap && passRI->lightmap != lastLM )
+			if (passRI->lightmap && passRI->lightmap != lastLM && !renderOnlyCubemap)
             {
                sgData.lightmap = passRI->lightmap;
                lastLM = passRI->lightmap;
@@ -222,7 +224,7 @@ void RenderMeshMgr::render(SceneRenderState * state)
                dirty = true;
             }
 
-            if ( passRI->reflectTex != lastReflectTex )
+            if ( passRI->reflectTex != lastReflectTex && !renderOnlyCubemap )
             {
                sgData.reflectTex = passRI->reflectTex;
                lastReflectTex = passRI->reflectTex;
@@ -231,7 +233,7 @@ void RenderMeshMgr::render(SceneRenderState * state)
 
             // Update accumulation texture if it changed.
             // Note: accumulation texture can be NULL, and must be updated.
-            if ( passRI->accuTex != lastAccuTex )
+            if ( passRI->accuTex != lastAccuTex && !renderOnlyCubemap )
             {
                sgData.accuTex = passRI->accuTex;
                lastAccuTex = lastAccuTex;

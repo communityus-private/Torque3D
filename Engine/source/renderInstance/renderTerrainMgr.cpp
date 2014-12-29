@@ -119,7 +119,7 @@ void RenderTerrainMgr::render( SceneRenderState *state )
       return;
 
    // Check if bin is disabled in advanced lighting.
-   if ( MATMGR->getPrePassEnabled() && mBasicOnly )
+   if (MATMGR->getPrePassEnabled() && mBasicOnly && !state->isPreviewPass())
       return;
 
    PROFILE_SCOPE( RenderTerrainMgr_Render );

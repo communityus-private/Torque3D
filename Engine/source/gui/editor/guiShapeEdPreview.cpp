@@ -1338,7 +1338,7 @@ void GuiShapeEdPreview::renderWorld(const RectI &updateRect)
    SceneRenderState state
    (
       gClientSceneGraph,
-      SPT_Diffuse,
+      SPT_Preview,
       SceneCameraState( GFX->getViewport(), mSaveFrustum,
                         GFX->getWorldMatrix(), GFX->getProjectionMatrix() )
    );

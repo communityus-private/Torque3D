@@ -215,13 +215,16 @@ class SceneRenderState
       ScenePassType getScenePassType() const { return mScenePassType; }
 
       /// Returns true if this is a diffuse scene rendering pass.
-      bool isDiffusePass() const { return mScenePassType == SPT_Diffuse; }
+	  bool isDiffusePass() const { return mScenePassType == SPT_Diffuse || isPreviewPass(); }
 
       /// Returns true if this is a reflection scene rendering pass.
       bool isReflectPass() const { return mScenePassType == SPT_Reflect; }
 
       /// Returns true if this is a shadow scene rendering pass.
       bool isShadowPass() const { return mScenePassType == SPT_Shadow; }
+
+	  /// Returns true if this is a editor preview scene rendering pass.
+	  bool isPreviewPass() const { return mScenePassType == SPT_Preview; }
 
       /// Returns true if this is not one of the other rendering passes.
       bool isOtherPass() const { return mScenePassType >= SPT_Other; }

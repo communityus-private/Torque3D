@@ -69,8 +69,8 @@ void RenderObjectMgr::render( SceneRenderState *state )
       return;
 
    // Check if bin is disabled in advanced lighting.
-   if ( MATMGR->getPrePassEnabled() && mBasicOnly )
-      return;
+   if (MATMGR->getPrePassEnabled() && mBasicOnly && !state->isPreviewPass())
+	   return;
 
    for( U32 i=0; i<mElementList.size(); i++ )
    {
