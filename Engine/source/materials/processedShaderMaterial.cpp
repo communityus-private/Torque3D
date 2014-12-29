@@ -334,16 +334,18 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
       fd.features.addFeature( MFT_VertLit );
    
    // cubemaps only available on stage 0 for now - bramage   
-   if ( stageNum < 1 && 
+   if ( stageNum < 1 && mMaterial->isTranslucent() &&
          (  (  mMaterial->mCubemapData && mMaterial->mCubemapData->mCubemap ) ||
                mMaterial->mDynamicCubemap ) )
    {
        fd.features.addFeature( MFT_CubeMap );
-
-       if (mMaterial->mIsSky)
-           fd.features.addFeature( MFT_SkyBox );
    }
 
+   if (mMaterial->mIsSky)
+   {
+      fd.features.addFeature(MFT_CubeMap);
+      fd.features.addFeature(MFT_SkyBox);
+   }
    fd.features.addFeature( MFT_Visibility );
 
    if (  lastStage && 

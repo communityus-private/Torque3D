@@ -1843,7 +1843,9 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
       if (fd.features[MFT_isDeferred])
          glossColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
-      else
+      if (!glossColor)
+         glossColor = (Var*)LangElement::find("specularColor");  
+      if (!glossColor)
          glossColor = (Var*)LangElement::find("diffuseColor");
       if (!glossColor)
          glossColor = (Var*)LangElement::find("bumpNormal");
@@ -1875,16 +1877,20 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
 
    LangElement *texCube = NULL;
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
+   //first try and grab the gbuffer
    if (fd.features[MFT_isDeferred] && matinfo)
    {
 
       if (fd.features[MFT_DeferredSpecMap])
-         texCube = new GenOp("texture(  @, @, (@.a*5) )", cubeMap, reflectVec, matinfo);
+         texCube = new GenOp("textureLod(  @, @, (@.a*5) )", cubeMap, reflectVec, matinfo);
       else
-         texCube = new GenOp("texture(  @, @, (@.a/4) )", cubeMap, reflectVec, matinfo);
+         texCube = new GenOp("textureLod(  @, @, (@.a/4) )", cubeMap, reflectVec, matinfo);
    }
-   else texCube = new GenOp( "texCUBE( @, @)", cubeMap, reflectVec );
-
+   else if(glossColor) //failing that, rtry and find color data
+      texCube = new GenOp("textureLod( @, @, @.a*5)", cubeMap, reflectVec, glossColor);
+   else
+      texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
+      
    LangElement *lerpVal = NULL;
    Material::BlendOp blendOp = Material::LerpAlpha;
 

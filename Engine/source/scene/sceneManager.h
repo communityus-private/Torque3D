@@ -83,9 +83,6 @@ enum ScenePassType
    /// The scene pass made for shadow map rendering.
    SPT_Shadow,
 
-   /// The scene pass made for editor preview rendering.
-   SPT_Preview,
-
    /// A scene pass that isn't one of the other 
    /// predefined scene pass types.
    SPT_Other,

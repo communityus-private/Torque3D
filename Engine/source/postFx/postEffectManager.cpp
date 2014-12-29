@@ -109,8 +109,7 @@ void PostEffectManager::_handleBinEvent( RenderBinManager *bin,
                                                 bool isBinStart )
 {
    if (  sceneState->isShadowPass() || 
-         sceneState->isOtherPass() ||
-		 sceneState->isPreviewPass() )
+         sceneState->isOtherPass() )
       return;
 
    // We require a bin name to process effects... without

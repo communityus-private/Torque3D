@@ -374,7 +374,7 @@ void GuiMaterialPreview::renderWorld(const RectI &updateRect)
    SceneRenderState state
    (
       gClientSceneGraph,
-      SPT_Preview,
+      SPT_Diffuse,
       SceneCameraState( GFX->getViewport(), frust, GFX->getWorldMatrix(), GFX->getProjectionMatrix() ),
       renderPass,
       true

@@ -1838,11 +1838,13 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    else
    {
       if (fd.features[MFT_isDeferred])
-          glossColor = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) );
-      else
-          glossColor = (Var*) LangElement::find( "diffuseColor" );
-      if( !glossColor )
-         glossColor = (Var*) LangElement::find( "bumpNormal" );
+         glossColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
+      if (!glossColor)
+         glossColor = (Var*)LangElement::find("specularColor");
+      if (!glossColor)
+         glossColor = (Var*)LangElement::find("diffuseColor");
+      if (!glossColor)
+         glossColor = (Var*)LangElement::find("bumpNormal");
    }
 
    // grab connector texcoord register
@@ -1871,6 +1873,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       
    LangElement *texCube = NULL;
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
+   //first try and grab the gbuffer
    if (fd.features[MFT_isDeferred] && matinfo)
    {
        // Cube LOD level = (1.0 - Roughness) * 8
@@ -1882,7 +1885,11 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       else
          texCube = new GenOp("texCUBElod( @, float4(@, (@.a/4)) )", cubeMap, reflectVec, matinfo);
    }
-   else texCube = new GenOp( "texCUBE( @, @)", cubeMap, reflectVec );
+   else
+      if (glossColor) //failing that, rtry and find color data
+         texCube = new GenOp("texCUBElod( @, float4(@, @.a*5))", cubeMap, reflectVec, glossColor);
+      else //failing *that*, just draw the cubemap
+         texCube = new GenOp("texCUBE( @, @)", cubeMap, reflectVec);
 
    LangElement *lerpVal = NULL;
    Material::BlendOp blendOp = Material::LerpAlpha;
