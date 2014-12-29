@@ -335,7 +335,8 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    
    // cubemaps only available on stage 0 for now - bramage   
    if ( stageNum < 1 && 
-         (  (  mMaterial->mCubemapData && mMaterial->mCubemapData->mCubemap ) ) )
+         (  (  mMaterial->mCubemapData && mMaterial->mCubemapData->mCubemap ) ||
+               mMaterial->mDynamicCubemap ) )
    {
        fd.features.addFeature( MFT_CubeMap );
 
