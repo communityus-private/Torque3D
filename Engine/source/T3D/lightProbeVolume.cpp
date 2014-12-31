@@ -46,6 +46,8 @@
 Vector< SimObjectPtr<SceneObject> > LightProbeVolume::smProbedObjects;
 Vector< SimObjectPtr<LightProbeVolume> > LightProbeVolume::smLightProbeVolumes;
 
+GFXCubemap * gLevelEnvMap;
+
 //#define DEBUG_DRAW
 
 IMPLEMENT_CO_NETOBJECT_V1( LightProbeVolume );
@@ -218,7 +220,7 @@ void LightProbeVolume::refreshVolumes()
    {
       SimObjectPtr<SceneObject> object = smProbedObjects[n];
       if ( object.isValid() )
-         object->mEnvMap = NULL;
+         object->mEnvMap = gLevelEnvMap;
    }
 
    // 
@@ -226,7 +228,7 @@ void LightProbeVolume::refreshVolumes()
    {
       SimObjectPtr<LightProbeVolume> volume = smLightProbeVolumes[i];
 
-      if ( volume.isNull() ) {Con::errorf("volume.isNull()!"); continue;}
+      if ( volume.isNull() ) continue;
 
       for (S32 n = 0; n < smProbedObjects.size(); ++n)
       {
@@ -271,7 +273,7 @@ void LightProbeVolume::updateObject(SceneObject* object)
 
    // We use ZERO instead of NULL so the accumulation
    // texture will be updated in renderMeshMgr.
-   object->mEnvMap = NULL;
+   object->mEnvMap = gLevelEnvMap;
 
    for (S32 i = 0; i < smLightProbeVolumes.size(); ++i)
    {

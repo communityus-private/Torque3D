@@ -614,10 +614,11 @@ void TSStatic::prepRenderImage( SceneRenderState* state )
    rdata.setOriginSort( mUseOriginSort );
 
    //area or per object cubemapping
-   if (mEnvMap)
-      rdata.setCubemap(mEnvMap);
-   else if ( mCubeReflector.isEnabled() )
+   if ( mCubeReflector.isEnabled() )
       rdata.setCubemap( mCubeReflector.getCubemap() );
+   else 
+      if (mEnvMap)
+         rdata.setCubemap(mEnvMap);
 
    // Acculumation
    rdata.setAccuTex(mAccuTex);
