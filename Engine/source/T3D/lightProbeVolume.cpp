@@ -43,7 +43,7 @@
 
 #include "math/mPolyhedron.impl.h"
 
-Vector< SimObjectPtr<SceneObject> > LightProbeVolume::smAccuObjects;
+Vector< SimObjectPtr<SceneObject> > LightProbeVolume::smProbedObjects;
 Vector< SimObjectPtr<LightProbeVolume> > LightProbeVolume::smLightProbeVolumes;
 
 //#define DEBUG_DRAW
@@ -51,12 +51,7 @@ Vector< SimObjectPtr<LightProbeVolume> > LightProbeVolume::smLightProbeVolumes;
 IMPLEMENT_CO_NETOBJECT_V1( LightProbeVolume );
 
 ConsoleDocClass( LightProbeVolume,
-   "@brief An invisible shape that allow objects within it to have an accumulation map.\n\n"
-
-   "LightProbeVolume is used to add additional realism to a scene. It's main use is in outdoor scenes "
-   " where objects could benefit from overlaying environment accumulation textures such as sand, snow, etc.\n\n"
-
-   "Objects within the volume must have accumulation enabled in their material. \n\n"
+   "@brief An invisible shape that overrides cubemapping on objects it encloses.\n\n"
 
    "@ingroup enviroMisc"
 );
@@ -97,7 +92,7 @@ LightProbeVolume::~LightProbeVolume()
 void LightProbeVolume::initPersistFields()
 {
       addField( "AreaEnvMap", TypeCubemapName, Offset( mAreaEnvMapName, LightProbeVolume ),
-         "Cubemap visible during night." );
+         "Environment map applied to objects for a given area." );
 
    Parent::initPersistFields();
 }
@@ -264,8 +259,14 @@ void LightProbeVolume::setTexture( const String& name )
    if ( isClientObject() && mAreaEnvMapName.isNotEmpty() )
    {
       Sim::findObject(mAreaEnvMapName, mAreaEnvMap);
-      if (mEnvMap)
-         Con::warnf( "LightProbeVolume::setTexture - Unable to load cubemap: %s", mAreaEnvMapName.c_str() );
+      if (!mAreaEnvMap)
+         Con::warnf("LightProbeVolume::setTexture - Unable to load cubemap: %s", mAreaEnvMapName.c_str());
+      else
+      {
+         if (!mAreaEnvMap->mCubemap)
+            mAreaEnvMap->createMap();
+         mEnvMap = mAreaEnvMap->mCubemap;
+      }
    }
    refreshVolumes();
 }
@@ -291,9 +292,9 @@ void LightProbeVolume::refreshVolumes()
    // global like change of volume or material occurs.
 
    // Clear old data.
-   for (S32 n = 0; n < smAccuObjects.size(); ++n)
+   for (S32 n = 0; n < smProbedObjects.size(); ++n)
    {
-      SimObjectPtr<SceneObject> object = smAccuObjects[n];
+      SimObjectPtr<SceneObject> object = smProbedObjects[n];
       if ( object.isValid() )
          object->mEnvMap = NULL;
    }
@@ -302,12 +303,16 @@ void LightProbeVolume::refreshVolumes()
    for (S32 i = 0; i < smLightProbeVolumes.size(); ++i)
    {
       SimObjectPtr<LightProbeVolume> volume = smLightProbeVolumes[i];
+
       if ( volume.isNull() ) continue;
 
-      for (S32 n = 0; n < smAccuObjects.size(); ++n)
+      for (S32 n = 0; n < smProbedObjects.size(); ++n)
       {
-         SimObjectPtr<SceneObject> object = smAccuObjects[n];
+         SimObjectPtr<SceneObject> object = smProbedObjects[n];
          if ( object.isNull() ) continue;
+
+         if ((volume->mAreaEnvMap) && !(volume->mAreaEnvMap->mCubemap))
+            volume->mAreaEnvMap->createMap();
 
          if (volume->containsPoint(object->getPosition()) && volume->mAreaEnvMap)
             object->mEnvMap = volume->mAreaEnvMap->mCubemap;
@@ -315,16 +320,16 @@ void LightProbeVolume::refreshVolumes()
    }
 }
 
-// Accumulation Object Management.
+// LightProbe Object Management.
 void LightProbeVolume::addObject(SimObjectPtr<SceneObject> object)
 {
-   smAccuObjects.push_back(object);
+   smProbedObjects.push_back(object);
    refreshVolumes();
 }
 
 void LightProbeVolume::removeObject(SimObjectPtr<SceneObject> object)
 {
-   smAccuObjects.remove(object);
+   smProbedObjects.remove(object);
    refreshVolumes();
 }
 
@@ -342,6 +347,9 @@ void LightProbeVolume::updateObject(SceneObject* object)
    {
       SimObjectPtr<LightProbeVolume> volume = smLightProbeVolumes[i];
       if ( volume.isNull() ) continue;
+
+      if ((volume->mAreaEnvMap) && !(volume->mAreaEnvMap->mCubemap))
+         volume->mAreaEnvMap->createMap();
 
       if ( volume->containsPoint(object->getPosition()) && volume->mAreaEnvMap)
          object->mEnvMap = volume->mAreaEnvMap->mCubemap;

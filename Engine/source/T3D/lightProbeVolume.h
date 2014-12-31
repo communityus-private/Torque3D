@@ -89,7 +89,7 @@ class LightProbeVolume : public ScenePolyhedralSpace
       // Static Functions.
       static void consoleInit();
       static void initPersistFields();
-      static Vector< SimObjectPtr<SceneObject> > smAccuObjects;
+      static Vector< SimObjectPtr<SceneObject> > smProbedObjects;
       static Vector< SimObjectPtr<LightProbeVolume> > smLightProbeVolumes;
       static void addObject(SimObjectPtr<SceneObject> object);
       static void removeObject(SimObjectPtr<SceneObject> object);

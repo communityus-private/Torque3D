@@ -2504,9 +2504,14 @@ void ShapeBase::prepBatchRender(SceneRenderState* state, S32 mountedImageIndex )
    
    // Set up our TS render state. 
    TSRenderState rdata;
-   rdata.setSceneState( state );
-   if ( mCubeReflector.isEnabled() )
-      rdata.setCubemap( mCubeReflector.getCubemap() );
+   rdata.setSceneState(state);
+   
+   //area or per object cubemapping
+   if (mEnvMap)
+      rdata.setCubemap(mEnvMap);
+   else if (mCubeReflector.isEnabled())
+      rdata.setCubemap(mCubeReflector.getCubemap());
+
    rdata.setFadeOverride( (1.0f - mCloakLevel) * mFadeVal );
 
    // We might have some forward lit materials

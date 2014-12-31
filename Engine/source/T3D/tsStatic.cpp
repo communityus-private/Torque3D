@@ -611,7 +611,10 @@ void TSStatic::prepRenderImage( SceneRenderState* state )
    rdata.setFadeOverride( 1.0f );
    rdata.setOriginSort( mUseOriginSort );
 
-   if ( mCubeReflector.isEnabled() )
+   //area or per object cubemapping
+   if (mEnvMap)
+      rdata.setCubemap(mEnvMap);
+   else if ( mCubeReflector.isEnabled() )
       rdata.setCubemap( mCubeReflector.getCubemap() );
 
    // Acculumation
