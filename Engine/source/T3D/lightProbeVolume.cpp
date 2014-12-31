@@ -59,8 +59,7 @@ ConsoleDocClass( LightProbeVolume,
 //-----------------------------------------------------------------------------
 
 LightProbeVolume::LightProbeVolume()
-   : mTransformDirty( true ),
-     mSilhouetteExtractor( mPolyhedron )
+   : mTransformDirty( true )
 {
    VECTOR_SET_ASSOCIATION( mWSPoints );
    VECTOR_SET_ASSOCIATION( mVolumeQueryList );
@@ -118,10 +117,7 @@ bool LightProbeVolume::onAdd()
       smLightProbeVolumes.push_back(this);
       refreshVolumes();
    }
-
-   // Set up the silhouette extractor.
-   mSilhouetteExtractor = SilhouetteExtractorType( mPolyhedron );
-
+   
    return true;
 }
 
@@ -154,70 +150,6 @@ void LightProbeVolume::setTransform( const MatrixF& mat )
    Parent::setTransform( mat );
    mTransformDirty = true;
    refreshVolumes();
-}
-
-//-----------------------------------------------------------------------------
-
-void LightProbeVolume::buildSilhouette( const SceneCameraState& cameraState, Vector< Point3F >& outPoints )
-{
-   // Extract the silhouette of the polyhedron.  This works differently
-   // depending on whether we project orthogonally or in perspective.
-
-   TempAlloc< U32 > indices( mPolyhedron.getNumPoints() );
-   U32 numPoints;
-
-   if( cameraState.getFrustum().isOrtho() )
-   {
-      // Transform the view direction into object space.
-
-      Point3F osViewDir;
-      getWorldTransform().mulV( cameraState.getViewDirection(), &osViewDir );
-
-      // And extract the silhouette.
-
-      SilhouetteExtractorOrtho< PolyhedronType > extractor( mPolyhedron );
-      numPoints = extractor.extractSilhouette( osViewDir, indices, indices.size );
-   }
-   else
-   {
-      // Create a transform to go from view space to object space.
-
-      MatrixF camView( true );
-      camView.scale( Point3F( 1.0f / getScale().x, 1.0f / getScale().y, 1.0f / getScale().z ) );
-      camView.mul( getRenderWorldTransform() );
-      camView.mul( cameraState.getViewWorldMatrix() );
-
-      // Do a perspective-correct silhouette extraction.
-
-      numPoints = mSilhouetteExtractor.extractSilhouette(
-         camView,
-         indices, indices.size );
-   }
-
-   // If we haven't yet, transform the polyhedron's points
-   // to world space.
-
-   if( mTransformDirty )
-   {
-      const U32 numPoints = mPolyhedron.getNumPoints();
-      const PolyhedronType::PointType* points = getPolyhedron().getPoints();
-
-      mWSPoints.setSize( numPoints );
-      for( U32 i = 0; i < numPoints; ++ i )
-      {
-         Point3F p = points[ i ];
-         p.convolve( getScale() );
-         getTransform().mulP( p, &mWSPoints[ i ] );
-      }
-
-      mTransformDirty = false;
-   }
-
-   // Now store the points.
-
-   outPoints.setSize( numPoints );
-   for( U32 i = 0; i < numPoints; ++ i )
-      outPoints[ i ] = mWSPoints[ indices[ i ] ];
 }
 
 //-----------------------------------------------------------------------------
@@ -271,16 +203,6 @@ void LightProbeVolume::setTexture( const String& name )
    refreshVolumes();
 }
 
-//-----------------------------------------------------------------------------
-// Static Functions
-//-----------------------------------------------------------------------------
-bool LightProbeVolume::_setTexture( void *object, const char *index, const char *data )
-{
-   LightProbeVolume* volume = reinterpret_cast< LightProbeVolume* >( object );
-   volume->setTexture( data );
-   return false;
-}
-
 void LightProbeVolume::refreshVolumes()
 {
    // This function tests each accumulation object to
@@ -304,7 +226,7 @@ void LightProbeVolume::refreshVolumes()
    {
       SimObjectPtr<LightProbeVolume> volume = smLightProbeVolumes[i];
 
-      if ( volume.isNull() ) continue;
+      if ( volume.isNull() ) {Con::errorf("volume.isNull()!"); continue;}
 
       for (S32 n = 0; n < smProbedObjects.size(); ++n)
       {
@@ -314,8 +236,16 @@ void LightProbeVolume::refreshVolumes()
          if ((volume->mAreaEnvMap) && !(volume->mAreaEnvMap->mCubemap))
             volume->mAreaEnvMap->createMap();
 
-         if (volume->containsPoint(object->getPosition()) && volume->mAreaEnvMap)
-            object->mEnvMap = volume->mAreaEnvMap->mCubemap;
+         if (volume->containsPoint(object->getPosition()))
+         {
+            if (volume->mAreaEnvMap)
+            {
+               object->mEnvMap = volume->mAreaEnvMap->mCubemap;
+            }
+            else
+               Con::errorf("Invalid area environment map!");
+
+         }
       }
    }
 }
@@ -346,12 +276,20 @@ void LightProbeVolume::updateObject(SceneObject* object)
    for (S32 i = 0; i < smLightProbeVolumes.size(); ++i)
    {
       SimObjectPtr<LightProbeVolume> volume = smLightProbeVolumes[i];
-      if ( volume.isNull() ) continue;
+      if (volume.isNull()) continue;
 
       if ((volume->mAreaEnvMap) && !(volume->mAreaEnvMap->mCubemap))
          volume->mAreaEnvMap->createMap();
 
-      if ( volume->containsPoint(object->getPosition()) && volume->mAreaEnvMap)
-         object->mEnvMap = volume->mAreaEnvMap->mCubemap;
+      if (volume->containsPoint(object->getPosition()))
+      {
+         if (volume->mAreaEnvMap)
+         {
+            object->mEnvMap = volume->mAreaEnvMap->mCubemap;
+         }
+         else
+            Con::errorf("Invalid area environment map!");
+
+      }
    }
 }

@@ -63,6 +63,8 @@
 #include "materials/materialFeatureTypes.h"
 #include "renderInstance/renderOcclusionMgr.h"
 #include "core/stream/fileStream.h"
+#include "T3D/accumulationVolume.h"
+#include "T3D/lightProbeVolume.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ShapeBaseData);
 
@@ -1045,6 +1047,13 @@ bool ShapeBase::onAdd()
         mCloakTexture = TextureHandle(mDataBlock->cloakTexName, MeshTexture, false);
 */         
 
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      if (mShapeInstance->hasAccumulation())
+         AccumulationVolume::addObject(this);
+      LightProbeVolume::addObject(this);
+   }
    return true;
 }
 
@@ -1058,6 +1067,14 @@ void ShapeBase::onRemove()
    if (isGhost())
       for (S32 i = 0; i < MaxSoundThreads; i++)
          stopAudio(i);
+
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      if (mShapeInstance->hasAccumulation())
+         AccumulationVolume::removeObject(this);
+      LightProbeVolume::removeObject(this);
+   }
 
    if ( isClientObject() )   
    {
@@ -3516,6 +3533,18 @@ void ShapeBase::setCurrentWaterObject( WaterObject *obj )
    mCurrentWaterObject = obj;
 }
 
+void ShapeBase::setTransform(const MatrixF & mat)
+{
+   Parent::setTransform(mat);
+
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      if (mShapeInstance->hasAccumulation())
+         AccumulationVolume::updateObject(this);
+      LightProbeVolume::updateObject(this);
+   }
+}
 //--------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 DefineEngineMethod( ShapeBase, setHidden, void, ( bool show ),,

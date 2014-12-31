@@ -45,10 +45,6 @@
 #include "T3D/gameBase/gameConnection.h"
 #include "T3D/accumulationVolume.h"
 
-#include "T3D/shapeBase.h"
-#include "T3D/tsStatic.h"
-#include "T3D/lightProbeVolume.h"
-
 IMPLEMENT_CONOBJECT(SceneObject);
 
 ConsoleDocClass( SceneObject,
@@ -307,25 +303,7 @@ bool SceneObject::onAdd()
    resolveMountPID();
 
    smSceneObjectAdd.trigger(this);
-
-   // EnvironmentMapping
-   if (isClientObject())
-   {
-      //performant casting checks
-      if (getTypeMask() & ShapeBaseObjectType)
-      {
-         ShapeBase *mutate = static_cast<ShapeBase *>(this);
-         if (mutate->getShapeInstance())
-            LightProbeVolume::addObject(this);
-      }
-      else if (getTypeMask() & ShapeBaseObjectType)
-      {
-         TSStatic *mutate = static_cast<TSStatic *>(this);
-         if (mutate->getShapeInstance())
-            LightProbeVolume::addObject(this);
-      }
-   }
-
+   
    return true;
 }
 
@@ -337,25 +315,7 @@ void SceneObject::onRemove()
 
    unmount();
    plUnlink();
-
-   // EnvironmentMapping
-   if (isClientObject())
-   {
-      //performant casting checks
-      if (getTypeMask() & ShapeBaseObjectType)
-      {
-         ShapeBase *mutate = static_cast<ShapeBase *>(this);
-         if (mutate->getShapeInstance())
-            LightProbeVolume::removeObject(this);
-      }
-      else if (getTypeMask() & ShapeBaseObjectType)
-      {
-         TSStatic *mutate = static_cast<TSStatic *>(this);
-         if (mutate->getShapeInstance())
-            LightProbeVolume::removeObject(this);
-      }
-   }
-
+   
    Parent::onRemove();
 }
 
@@ -443,24 +403,6 @@ void SceneObject::setTransform( const MatrixF& mat )
 
    if( mSceneManager != NULL )
       mSceneManager->notifyObjectDirty( this );
-
-   // EnvironmentMapping
-   if (isClientObject())
-   {
-      //performant casting checks
-      if (getTypeMask() & ShapeBaseObjectType)
-      {
-         ShapeBase *mutate = static_cast<ShapeBase *>(this);
-         if (mutate->getShapeInstance())
-            LightProbeVolume::updateObject(this);
-      }
-      else if (getTypeMask() & ShapeBaseObjectType)
-      {
-         TSStatic *mutate = static_cast<TSStatic *>(this);
-         if (mutate->getShapeInstance())
-            LightProbeVolume::updateObject(this);
-      }
-   }
 
    setRenderTransform( mat );
 }

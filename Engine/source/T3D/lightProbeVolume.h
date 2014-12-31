@@ -47,19 +47,14 @@ class LightProbeVolume : public ScenePolyhedralSpace
       typedef ScenePolyhedralSpace Parent;
 
    protected:
-
-      typedef SilhouetteExtractorPerspective< PolyhedronType > SilhouetteExtractorType;
-
+      
       /// Whether the volume's transform has changed and we need to recompute
       /// transform-based data.
       bool mTransformDirty;
 
       /// World-space points of the volume's polyhedron.
       Vector< Point3F > mWSPoints;
-
-      /// Silhouette extractor when using perspective projections.
-      SilhouetteExtractorType mSilhouetteExtractor;
-      
+            
       mutable Vector< SceneObject* > mVolumeQueryList;
 
       // Name (path) of the area environment cube map.
@@ -78,7 +73,7 @@ class LightProbeVolume : public ScenePolyhedralSpace
 
       // SimObject.
       DECLARE_CONOBJECT( LightProbeVolume );
-      DECLARE_DESCRIPTION( "Allows objects in an area to have accumulation effect applied." );
+      DECLARE_DESCRIPTION( "Allows objects in an area to have a given envoronment map applied." );
       DECLARE_CATEGORY( "3D Scene" );
 
       virtual bool onAdd();
@@ -94,7 +89,6 @@ class LightProbeVolume : public ScenePolyhedralSpace
       static void addObject(SimObjectPtr<SceneObject> object);
       static void removeObject(SimObjectPtr<SceneObject> object);
       static void refreshVolumes();
-      static bool _setTexture( void *object, const char *index, const char *data );
       static void updateObject(SceneObject* object);
 
       // Network
@@ -102,7 +96,6 @@ class LightProbeVolume : public ScenePolyhedralSpace
       void unpackUpdate( NetConnection *, BitStream *stream );
 
       // SceneObject.
-      virtual void buildSilhouette( const SceneCameraState& cameraState, Vector< Point3F >& outPoints );
       virtual void setTransform( const MatrixF& mat );
 };
 
