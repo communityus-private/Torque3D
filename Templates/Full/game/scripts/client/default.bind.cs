@@ -307,6 +307,13 @@ moveMap.bind(keyboard, lshift, doSprint);
 
 function mouseFire(%val)
 {
+   if ($guiCanvas::Interact)
+   {
+      %guitarg = $guiCanvas::InteractingWith;
+      if (%val)
+         %guitarg.doMouseClick($guiCanvas::PosX,$guiCanvas::PosY);
+      return;
+   }
    $mvTriggerCount0++;
 }
 

@@ -39,6 +39,8 @@
 #include "materials/matStateHint.h"
 #endif
 
+#include "gui/core/guiTextureCanvas.h"
+
 class ShaderFeature;
 class MaterialParameters;
 class MaterialParameterHandle;
@@ -224,6 +226,7 @@ public:
       return (stage < Material::MAX_STAGES) ? mStages[stage].getTex(type) : NULL;
    }
 
+   GuiTextureCanvas* guiTexCanvas;
 protected:
 
    /// Our passes.

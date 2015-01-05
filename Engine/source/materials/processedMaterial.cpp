@@ -96,7 +96,8 @@ ProcessedMaterial::ProcessedMaterial()
    mHasAccumulation( false ),   
    mMaxStages( 0 ),
    mVertexFormat( NULL ),
-   mUserObject( NULL )
+   mUserObject(NULL),
+   guiTexCanvas(NULL)
 {
    VECTOR_SET_ASSOCIATION( mPasses );
 }
@@ -386,8 +387,23 @@ void ProcessedMaterial::_setStageData()
    // Load up all the textures for every possible stage
    for( i=0; i<Material::MAX_STAGES; i++ )
    {
+      if (mMaterial->mDiffuseMapFilename[i].isNotEmpty() && !dStrcmp(mMaterial->mDiffuseMapFilename[i].substr(0, 4), "$gui"))
+      {
+         String subString(mMaterial->mDiffuseMapFilename[i].substr(4));
+         StringTableEntry canvasName = StringTable->insert(subString.c_str());
+         guiTexCanvas = dynamic_cast<GuiTextureCanvas*>(Sim::findObject(canvasName));
+         if (guiTexCanvas)
+         {
+            mStages[i].setTex(MFT_DiffuseMap, guiTexCanvas->getTextureHandle());
+         }
+         else
+            mStages[i].setTex(MFT_DiffuseMap, NULL);
+
+         if (!mStages[i].getTex(MFT_DiffuseMap))
+            mMaterial->logError("Failed to load diffuse map %s for stage %i", _getTexturePath(mMaterial->mDiffuseMapFilename[i]).c_str(), i);
+      }
       // DiffuseMap
-      if( mMaterial->mDiffuseMapFilename[i].isNotEmpty() )
+      else if (mMaterial->mDiffuseMapFilename[i].isNotEmpty())
       {
          mStages[i].setTex( MFT_DiffuseMap, _createTexture( mMaterial->mDiffuseMapFilename[i], &GFXDefaultStaticDiffuseProfile ) );
          if (!mStages[i].getTex( MFT_DiffuseMap ))

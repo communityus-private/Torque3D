@@ -445,6 +445,11 @@ bool MatInstance::setupPass(SceneRenderState * state, const SceneData &sgData )
       mCurPass = -1;
       return false;
    }
+   
+   if (mProcessedMaterial->guiTexCanvas)
+   {
+      mProcessedMaterial->guiTexCanvas->setDirty();
+   }
 
    return true;
 }

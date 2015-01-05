@@ -53,7 +53,7 @@ struct Collision
 
    // If generateTexCoord is set this will either be invalid (-1, -1)
    // or a value in texture space (assuming 0..1 UV mapping)
-   Point2F texCoord;
+   Point2F mUVtexCoord;
 
    // Face and Face dot are currently only set by the extrudedPolyList
    // clipper.  Values are otherwise undefined.
@@ -65,7 +65,7 @@ struct Collision
       object( NULL ),
       material( NULL ),
       generateTexCoord(false),
-      texCoord(-1.0f, -1.0f)
+      mUVtexCoord(-1.0f, -1.0f)
    {
    }
 };
