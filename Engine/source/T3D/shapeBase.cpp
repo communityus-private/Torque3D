@@ -1105,7 +1105,10 @@ bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
       delete mShapeInstance;
       mShapeInstance = new TSShapeInstance(mDataBlock->mShape, isClientObject());
       if (isClientObject())
+      {
+         mShapeInstance->setUserObject( this );
          mShapeInstance->cloneMaterialList();
+      }
 
       mObjBox = mDataBlock->mShape->bounds;
       resetWorldBox();
