@@ -242,7 +242,7 @@ class TSShapeInstance
 
     virtual void setUserObject( SimObject *userObject ) { mUserObject = userObject; }
     virtual SimObject* getUserObject() const { return mUserObject; }
-    SimObject *mUserObject;
+    
 //-------------------------------------------------------------------------------------
 // Misc.
 //-------------------------------------------------------------------------------------
@@ -272,6 +272,8 @@ protected:
    /// This should always point to a valid shape and should
    /// equal mShapeResource if it was created from a resource.
    TSShape *mShape;
+
+   SimObject *mUserObject;
 
    
    bool            mOwnMaterialList; ///< Does this own the material list pointer?
