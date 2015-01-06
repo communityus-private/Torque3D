@@ -836,8 +836,11 @@ void ProcessedPrePassMaterial::addStateBlockDesc(const GFXStateBlockDesc& desc)
    // If we're translucent then we're doing prepass blending
    // which never writes to the depth channels.
    const bool isTranslucent = getMaterial()->isTranslucent();
-   if ( isTranslucent )
-      prePassStateBlock.setBlend( true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha );
+   if (isTranslucent)
+   {
+	   prePassStateBlock.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
+	   prePassStateBlock.setColorWrites(false, false, false, true);
+   }
 
    // Enable z reads, but only enable zwrites if we're not translucent.
    prePassStateBlock.setZReadWrite( true, isTranslucent ? false : true );
