@@ -121,7 +121,7 @@ TSShapeInstance::TSShapeInstance( const Resource<TSShape> &shape, bool loadMater
    buildInstanceData( mShape, loadMaterials );
 }
 
-TSShapeInstance::TSShapeInstance( TSShape *shape, bool loadMaterials )
+TSShapeInstance::TSShapeInstance( TSShape *shape, bool loadMaterials ) : mUserObject(NULL)
 {
    VECTOR_SET_ASSOCIATION(mMeshObjects);
    VECTOR_SET_ASSOCIATION(mNodeTransforms);
@@ -260,6 +260,10 @@ void TSShapeInstance::cloneMaterialList( const FeatureSet *features )
 
    Material::sAllowTextureTargetAssignment = true;
    mMaterialList = new TSMaterialList(mMaterialList);
+
+   if( mUserObject )
+       mMaterialList->setUserObject( mUserObject );
+
    initMaterialList( features );
    Material::sAllowTextureTargetAssignment = false;
 
