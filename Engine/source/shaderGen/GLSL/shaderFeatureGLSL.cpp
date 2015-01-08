@@ -1882,7 +1882,7 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
 
       if (fd.features[MFT_DeferredSpecMap])
-         texCube = new GenOp("textureLod(  @, @, (@.a*5) )", cubeMap, reflectVec, matinfo);
+         texCube = new GenOp("textureLod(  @, @, (@.b*5) )", cubeMap, reflectVec, matinfo);
       else
          texCube = new GenOp("textureLod(  @, @, (@.a/4) )", cubeMap, reflectVec, matinfo);
    }
@@ -1922,9 +1922,9 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
       if (fd.features[MFT_DeferredSpecMap])
-         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b));\r\n", targ, targ, texCube, lerpVal));
+         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.a));\r\n", targ, texCube, targ, lerpVal));
       else
-         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b*128/5));\r\n", targ, targ, texCube, lerpVal));
+         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b*128/5));\r\n", targ, texCube, targ, lerpVal));
    }
    else
         meta->addStatement( new GenOp( "   @;\r\n", assignColor( texCube, blendOp, lerpVal ) ) );         

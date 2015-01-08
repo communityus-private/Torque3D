@@ -355,6 +355,7 @@ bool TSStatic::_createShape()
    resetWorldBox();
 
    mShapeInstance = new TSShapeInstance( mShape, isClientObject() );
+   mShapeInstance->setUserObject(this);
 
    if( isGhost() )
    {
