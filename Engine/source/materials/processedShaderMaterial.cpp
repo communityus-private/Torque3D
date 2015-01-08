@@ -332,15 +332,20 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
 
    if ( mMaterial->mVertLit[stageNum] )
       fd.features.addFeature( MFT_VertLit );
-   
+
+   bool envmapped = false;
+   SceneObject * test = dynamic_cast<SceneObject *>(mUserObject);
+   if (test && (test->getTypeMask() & (DynamicShapeObjectType | StaticObjectType | StaticShapeObjectType)))
+      envmapped = true;
+
    // cubemaps only available on stage 0 for now - bramage   
    if ( stageNum < 1 && mMaterial->isTranslucent() &&
          (  (  mMaterial->mCubemapData && mMaterial->mCubemapData->mCubemap ) ||
-               mMaterial->mDynamicCubemap ) )
+               mMaterial->mDynamicCubemap || envmapped) )
    {
        fd.features.addFeature( MFT_CubeMap );
    }
-
+   //if (features.hasFeature(MFT_SkyBox))
    if (mMaterial->mIsSky)
    {
       fd.features.addFeature(MFT_CubeMap);
