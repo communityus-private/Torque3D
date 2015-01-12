@@ -152,12 +152,20 @@ float4 main(   ConvexConnectP IN,
    // cause the hardware occlusion query to disable the shadow.
 
    // Specular term
-   float specular = AL_CalcSpecular(   -lightToPxlVec, 
-                                       normal, 
-                                       normalize( -eyeRay ) ) * lightBrightness * atten * shadowed;
+   float4 colorSample = tex2D( colorBuffer, uvScene );
+   float specular = 0;
+
+   float3 lightVec = lightPosition - viewSpacePos;
+   float3 real_specular = AL_CalcSpecular(  colorSample.rgb,
+                                      lightColor.rgb,
+                                      lightVec, 
+                                      normal, 
+                                      viewSpacePos,
+                                      matInfo.b,
+                                      matInfo.a );
 
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   float3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
+   float3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed * atten;
    float4 addToResult = 0.0;
 
    // TODO: This needs to be removed when lightmapping is disabled
@@ -176,6 +184,5 @@ float4 main(   ConvexConnectP IN,
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   float4 colorSample = tex2D( colorBuffer, uvScene );
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
 }

@@ -37,6 +37,7 @@ uniform float4 inLightColor[4];
 #endif
 
 uniform float4 ambient;
+#define ambientCameraFactor 0.3
 uniform float specularPower;
 uniform float4 specularColor;
 
@@ -205,13 +206,62 @@ void compute4Lights( float3 wsView,
 ///   @param toEye   The normalized vector representing direction from the pixel 
 ///                  being lit to the camera.
 ///
-float AL_CalcSpecular( float3 toLight, float3 normal, float3 toEye )
+float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, float3 normal, float3 toEye, float roughness, float metallic )
 {
-   // (R.V)^c
-   float specVal = dot( normalize( -reflect( toLight, normal ) ), toEye );
+    float PI = 3.14159265898793f;
 
-   // Return the specular factor.
-   return pow( max( specVal, 0.00001f ), AL_ConstantSpecularPower );
+    float nDotL = saturate( dot( normal, toLight ) );
+ 
+    if ( nDotL == 0 )
+        return float3( 0.0f, 0.0f, 0.0f );        
+       
+    float3 V = -toEye;
+    float3 H = normalize( toLight + V );
+ 
+    float nDotH = saturate( dot( normal, H ) );
+    float nDotV = saturate( dot( normal, V ) );
+    float HDotV = saturate(  dot( H, V )  );
+ 
+    //
+    //  Microfacet Specular Cook-Torrance
+    //
+        
+        float alphaSqr = pow( roughness, 4 );
+ 
+        float D = alphaSqr / ( PI * pow( (pow( nDotH, 2 ) * ( alphaSqr - 1.0f ) + 1.0f ), 2 ) );
+ 
+    //
+    //  G( l, v, h ) ==> Geometric attenution, basicly a visibility term
+    //
+
+ 
+        float k = pow( ( roughness + 1.0f ), 2 ) / 8;
+ 
+        float G  = ( nDotL * ( 1.0f - k ) + k ) * ( nDotV * ( 1.0f - k ) + k );
+        G = 1.0f / G;
+
+    //
+    //  F( v, h ) ==> frensel term, slicks approach.
+    //
+
+        float Fc = pow( 1.0f - HDotV,  5.0f );
+ 
+        float Fdielectric = 0.04 + ( 1.0 - 0.04 ) * Fc;
+       
+        float3 Fconductor = baseColor + ( float3( 1.0, 1.0, 1.0 ) - baseColor ) * Fc;
+
+    //
+    // Evalute based on the metallic property
+    //
+ 
+    float  fDielectric = ( ( 1.0f - metallic ) * D * G * Fdielectric ) / 4.0f ;
+    float3 fConductor  = ( metallic * D * G * Fconductor  )  / 4.0f ;
+ 
+    //
+    // Specular color
+    //
+ 
+    return ( fDielectric + fConductor ) * nDotL * lightColor;
 }
 
 /// The output for Deferred Lighting
@@ -227,22 +277,13 @@ float AL_CalcSpecular( float3 toLight, float3 normal, float3 toEye )
 float4 AL_DeferredOutput(
       float3   lightColor,
       float3   diffuseColor,
-      float4   matInfo,
       float4   ambient,
-      float    specular,
       float    shadowAttenuation)
 {
-   float3 specularColor = float3(specular, specular, specular);
-   bool metalness = getFlag(matInfo.r, 3);
-   if ( metalness )
-   {
-       specularColor = 0.04 * (1 - specular) + diffuseColor * specular;
-   }
-   
-   //specular = color * map * spec^gloss
-   float specularOut = (specularColor * matInfo.b * min(pow(specular, max(( matInfo.a/ AL_ConstantSpecularPower),1.0f)),matInfo.a)).r;
-   
    lightColor *= shadowAttenuation;
    lightColor += ambient.rgb;
-   return float4(lightColor.rgb, specularOut); 
+   
+   diffuseColor = saturate(diffuseColor);
+   lightColor *= diffuseColor.rgb;
+   return float4(lightColor.rgb, 0.0f); 
 }

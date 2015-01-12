@@ -209,22 +209,20 @@ float4 main( FarFrustumQuadConnectP IN,
    #endif // !NO_SHADOW
 
    // Specular term
-   float specular = AL_CalcSpecular(   -lightDirection, 
-                                       normal, 
-                                       normalize(-IN.vsEyeRay) ) * lightBrightness * shadowed;
+   float4 colorSample = tex2D( colorBuffer, IN.uv0 );
+   float specular = 0;
+   float3 real_specular = AL_CalcSpecular(  colorSample.rgb,
+                                      lightColor.rgb,
+                                      normalize( -lightDirection ), 
+                                      normal, 
+                                      IN.vsEyeRay * depth,
+                                      matInfo.b,
+                                      matInfo.a );
                                     
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   float3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
-
-   // Felix' Normal Mapped Ambient.
-   float ambientBrightness = (float)lightAmbient;
-   float3 worldNormal = normalize(mul(eyeMat, float4(normal,1.0))).xyz;
-   float ambientContrast = 0.5;  
-   float4 upAmbient = lerp( 1 - lightAmbient * 0.65, lightAmbient, 1-ambientBrightness*ambientContrast );
-   float4 lightAmbientTwoTone = lerp( lightAmbient * 0.8 , upAmbient , worldNormal.b ); 
-   float4 addToResult = lightAmbientTwoTone + dotNL * lightColor * ambientBrightness * 0.25; 
-
-   //float4 addToResult = lightAmbient;
+   float3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
+   
+   float4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
 
    // TODO: This needs to be removed when lightmapping is disabled
    // as its extra work per-pixel on dynamic lit scenes.
@@ -267,6 +265,5 @@ float4 main( FarFrustumQuadConnectP IN,
       addToResult = lightColor * float4( fLT, 0.0);
    }
 
-   float4 colorSample = tex2D( colorBuffer, IN.uv0 );
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
 }
