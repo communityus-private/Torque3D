@@ -1926,7 +1926,7 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
       //metalness: black(0) = color, white(1) = reflection
-      meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.a));\r\n", targ, targ, texCube, lerpVal));
+      meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@*@).rgb, (@.a));\r\n", targ, targ, targ, texCube, lerpVal));
    }
    else
         meta->addStatement( new GenOp( "   @;\r\n", assignColor( texCube, blendOp, lerpVal ) ) );         

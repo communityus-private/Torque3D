@@ -46,7 +46,7 @@ singleton Material(Lurker_Base)
 singleton Material(Lurker_MuzzleFlash_Base)
 {
    mapTo = "Lurker_MuzzleFlash_Base";
-   diffuseMap[0] = "Lurker_MuzzleFlash.dds";
+   diffuseMap[0] = "art/shapes/weapons/Lurker/Lurker_MuzzleFlash.dds";
    diffuseColor[0] = "0.15 0.15 0.15 1";
    specular[0] = "0.9 0.9 0.9 1";
    specularPower[0] = "10";
@@ -62,4 +62,5 @@ singleton Material(Lurker_MuzzleFlash_Base)
    waveFreq[0] = "5.313";
    waveAmp[0] = "0.016";
    castShadows = "0";
+   specularMap[0] = "art/shapes/weapons/Lurker/Lurker_MuzzleFlash.dds";
 };

@@ -7,6 +7,7 @@ new SimGroup(MissionGroup) {
    new LevelInfo(theLevelInfo) {
       nearClip = "0.1";
       visibleDistance = "2000";
+      visibleGhostDistance = "0";
       decalBias = "0.0015";
       fogColor = "0.462745 0.698039 0.729412 1";
       fogDensity = "0.005";
@@ -16,6 +17,7 @@ new SimGroup(MissionGroup) {
       ambientLightBlendPhase = "1";
       ambientLightBlendCurve = "0 0 -1 -1";
       advancedLightmapSupport = "0";
+      LevelEnvMap = "DesertSkyCubemap";
       soundAmbience = "AudioAmbienceDefault";
       soundDistanceModel = "Linear";
       canSave = "1";
@@ -33,6 +35,7 @@ new SimGroup(MissionGroup) {
       ambientScale = "1 1 1 1";
       fogScale = "1 1 1 1";
       exposure = "1";
+      zOffset = "0";
       azimuth = "0";
       elevation = "35";
       moonAzimuth = "0";
@@ -73,7 +76,7 @@ new SimGroup(MissionGroup) {
       axisTilt = "23.44";
       dayLength = "120";
       startTime = "0.1";
-      time = "0.756599";
+      time = "0.562407";
       play = "1";
       azimuthOverride = "1";
       dayScale = "1";
@@ -111,6 +114,7 @@ new SimGroup(MissionGroup) {
       castShadows = "1";
       squareSize = "2";
       baseTexSize = "1024";
+      baseTexFormat = "JPG";
       lightMapSize = "256";
       screenError = "16";
       position = "-1024 -1024 179.978";
@@ -1047,15 +1051,15 @@ new SimGroup(MissionGroup) {
       disableMove = "0";
       isAIControlled = "0";
       dataBlock = "CheetahCar";
-      position = "29.878 -39.733 244.411";
-      rotation = "0.279703 -0.957384 -0.0719901 1.72959";
+      position = "29.887 -39.7303 244.411";
+      rotation = "0.279381 -0.95701 -0.0779572 1.73636";
       scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
       persistentId = "fab05691-3175-11e4-978f-ce5dedd0cf27";
-         leftBrakeLight = "4285";
+         leftBrakeLight = "6614";
          mountable = "1";
-         rightBrakeLight = "4284";
+         rightBrakeLight = "6613";
    };
    new TSStatic() {
       shapeName = "art/shapes/rocks/rock1.dts";
@@ -1065,6 +1069,10 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "16.9991 -25.9715 240.76";
@@ -1081,6 +1089,10 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "39.7956 -43.2913 238.099";
@@ -1097,6 +1109,10 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-2.17366 -10.0803 233.761";
@@ -1113,6 +1129,10 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-56.0141 31.2388 261.771";
@@ -1216,6 +1236,10 @@ new SimGroup(MissionGroup) {
       collisionType = "Visible Mesh";
       decalType = "Visible Mesh";
       allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-118.394 34.2259 246.05";
@@ -1284,6 +1308,10 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-57.5817 -139.689 238.213";

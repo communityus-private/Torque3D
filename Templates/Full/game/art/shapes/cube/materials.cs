@@ -25,9 +25,8 @@ singleton Material(cube_GridMaterial)
 {
 	mapTo = "GridMaterial";
 
-	diffuseMap[0] = "grid";
-	normalMap[0] = "";
-	specularMap[0] = "";
+	diffuseMap[0] = "art/shapes/cube/grid";
+	specularMap[0] = "art/particles/test.png";
 
 	diffuseColor[0] = "1 1 1 1";
 	specular[0] = "0.9 0.9 0.9 1";
@@ -38,6 +37,7 @@ singleton Material(cube_GridMaterial)
 	doubleSided = false;
 	translucent = false;
 	translucentBlendOp = "None";
+   materialTag0 = "Miscellaneous";
 };
 
 //--- cube.dae MATERIALS END ---
