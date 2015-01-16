@@ -1840,8 +1840,6 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       if (fd.features[MFT_isDeferred])
          glossColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
       if (!glossColor)
-         glossColor = (Var*)LangElement::find("specularColor");
-      if (!glossColor)
          glossColor = (Var*)LangElement::find("diffuseColor");
       if (!glossColor)
          glossColor = (Var*)LangElement::find("bumpNormal");
@@ -1874,23 +1872,27 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    LangElement *texCube = NULL;
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
    //first try and grab the gbuffer
+   
    if (fd.features[MFT_isDeferred] && matinfo)
    {
-       // Cube LOD level = (1.0 - Roughness) * 8
-       // mip_levle =  min((1.0 - u_glossiness)*11.0 + 1.0, 8.0)
-       //LangElement *texCube = new GenOp( "texCUBElod( @, float4(@, min((1.0 - (@ / 128.0)) * 11.0 + 1.0, 8.0)) )", cubeMap, reflectVec, specPower );
-
-      if (fd.features[MFT_DeferredSpecMap])
-         texCube = new GenOp("texCUBElod( @, float4(@, (@.b*5)) )", cubeMap, reflectVec, matinfo);
-      else
-         texCube = new GenOp("texCUBElod( @, float4(@, (@.a/4)) )", cubeMap, reflectVec, matinfo);
+       //scale by 8 to derive the full range of mips from the g channel of the 'specular map'
+       texCube = new GenOp("texCUBElod( @, float4(@, (@.b*8.0)) )", cubeMap, reflectVec, matinfo);
    }
    else
-      if (glossColor) //failing that, rtry and find color data
-         texCube = new GenOp("texCUBElod( @, float4(@, @.a*5))", cubeMap, reflectVec, glossColor);
-      else //failing *that*, just draw the cubemap
-         texCube = new GenOp("texCUBE( @, @)", cubeMap, reflectVec);
-
+   {
+       Var *roughness = (Var*)LangElement::find("roughness");
+       if (roughness)
+       {
+           texCube = new GenOp("texCUBElod( @, float4(@, (@)) )", cubeMap, reflectVec, roughness);
+       }
+       else
+       {
+           if (glossColor) //failing that, try and find color data
+               texCube = new GenOp("texCUBElod( @, float4(@, @.g*8.0))", cubeMap, reflectVec, glossColor);
+           else //failing *that*, just draw the cubemap
+               texCube = new GenOp("texCUBE( @, @)", cubeMap, reflectVec);
+       }
+   }
    LangElement *lerpVal = NULL;
    Material::BlendOp blendOp = Material::LerpAlpha;
 
@@ -1920,11 +1922,9 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    }
    if (fd.features[MFT_isDeferred])
    {
-      Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
-      if (fd.features[MFT_DeferredSpecMap])
-         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.a));\r\n", targ, texCube, targ, lerpVal));
-      else
-         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b*128/5));\r\n", targ, texCube, targ, lerpVal));
+       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
+       //metalness: black(0) = color, white(1) = reflection
+       meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.a));\r\n", targ, targ, texCube, lerpVal));
    }
    else
        meta->addStatement( new GenOp( "   @;\r\n", assignColor( texCube, blendOp, lerpVal ) ) );         
@@ -2160,9 +2160,9 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    lightSpotFalloff->uniform = true;
    lightSpotFalloff->constSortPos = cspPotentialPrimitive;
 
-   Var *specularPower  = new Var( "specularPower", "float" );
-   specularPower->uniform = true;
-   specularPower->constSortPos = cspPotentialPrimitive;
+   Var *roughness = new Var("roughness", "float");
+   roughness->uniform = true;
+   roughness->constSortPos = cspPotentialPrimitive;
 
    Var *specularColor = (Var*)LangElement::find( "specularColor" );
    if ( !specularColor )
@@ -2181,7 +2181,7 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
                                   "      @, @, @, @, @, @, @, @,\r\n"
                                   "      @, @ );\r\n", 
       wsView, wsPosition, wsNormal, lightMask,
-      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, specularPower, specularColor,
+      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, roughness, specularColor,
       rtShading, specular ) );
 
    // Apply the lighting to the diffuse color.

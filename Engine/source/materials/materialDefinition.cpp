@@ -115,10 +115,9 @@ Material::Material()
    for( U32 i=0; i<MAX_STAGES; i++ )
    {
       mDiffuse[i].set( 1.0f, 1.0f, 1.0f, 1.0f );
-      mSpecular[i].set( 1.0f, 1.0f, 1.0f, 1.0f );
 
-      mSpecularPower[i] = 8.0f;
-      mSpecularStrength[i] = 1.0f;
+      mRoughness[i] = 0.0f;
+      mMetalness[i] = 0.0f;
       mPixelSpecular[i] = false;
 
       mAccuEnabled[i]   = false;
@@ -253,15 +252,12 @@ void Material::initPersistFields()
 
       addField( "detailNormalMapStrength", TypeF32, Offset(mDetailNormalMapStrength, Material), MAX_STAGES,
          "Used to scale the strength of the detail normal map when blended with the base normal map." );
+      
+      addField("roughness", TypeF32, Offset(mRoughness, Material), MAX_STAGES,
+         "The degree of roughness when not using a specularMap." );
 
-      addField("specular", TypeColorF, Offset(mSpecular, Material), MAX_STAGES,
-         "The color of the specular highlight when not using a specularMap." );
-
-      addField("specularPower", TypeF32, Offset(mSpecularPower, Material), MAX_STAGES,
-         "The hardness of the specular highlight when not using a specularMap." );
-
-		addField("specularStrength", TypeF32, Offset(mSpecularStrength, Material), MAX_STAGES,
-         "The strength of the specular highlight when not using a specularMap." );
+		addField("metalness", TypeF32, Offset(mMetalness, Material), MAX_STAGES,
+         "The degree of Metalness when not using a specularMap." );
 
       addField("pixelSpecular", TypeBool, Offset(mPixelSpecular, Material), MAX_STAGES, 
          "This enables per-pixel specular highlights controlled by the alpha channel of the "

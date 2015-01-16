@@ -914,10 +914,10 @@ function MaterialEditorGui::guiSync( %this, %material )
    MaterialEditorPropertiesWindow-->colorTintSwatch.color = (%material).diffuseColor[%layer];
    MaterialEditorPropertiesWindow-->specularColorSwatch.color = (%material).specular[%layer];     
    
-   MaterialEditorPropertiesWindow-->specularPowerTextEdit.setText((%material).specularPower[%layer]);
-   MaterialEditorPropertiesWindow-->specularPowerSlider.setValue((%material).specularPower[%layer]);
-   MaterialEditorPropertiesWindow-->specularStrengthTextEdit.setText((%material).specularStrength[%layer]);
-   MaterialEditorPropertiesWindow-->specularStrengthSlider.setValue((%material).specularStrength[%layer]);
+   MaterialEditorPropertiesWindow-->RoughnessTextEdit.setText((%material).Roughness[%layer]);
+   MaterialEditorPropertiesWindow-->RoughnessSlider.setValue((%material).Roughness[%layer]);
+   MaterialEditorPropertiesWindow-->MetalnessTextEdit.setText((%material).Metalness[%layer]);
+   MaterialEditorPropertiesWindow-->MetalnessSlider.setValue((%material).Metalness[%layer]);
    MaterialEditorPropertiesWindow-->pixelSpecularCheckbox.setValue((%material).pixelSpecular[%layer]);
    MaterialEditorPropertiesWindow-->glowCheckbox.setValue((%material).glow[%layer]);
    MaterialEditorPropertiesWindow-->emissiveCheckbox.setValue((%material).emissive[%layer]);

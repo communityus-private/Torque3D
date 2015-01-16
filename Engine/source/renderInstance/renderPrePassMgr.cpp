@@ -625,15 +625,9 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
 
    // Deferred Shading : Specular
    if( mStages[stageNum].getTex( MFT_SpecularMap ) )
-   {
        newFeatures.addFeature( MFT_DeferredSpecMap );
-   }
-   else if ( mMaterial->mPixelSpecular[stageNum] )
-   {
-       newFeatures.addFeature( MFT_DeferredSpecVars );
-   }
    else
-       newFeatures.addFeature(MFT_DeferredEmptySpec);
+       newFeatures.addFeature( MFT_DeferredSpecVars );
 
    // Deferred Shading : Translucency Mapping
    if ( mStages[stageNum].getTex( MFT_TranslucencyMap ) )
@@ -1096,20 +1090,23 @@ void RenderPrePassMgr::_initShaders()
    desc.setBlend( true );
    desc.setZReadWrite( false, false );
    desc.samplersDefined = true;
-   desc.samplers[0].addressModeU = GFXAddressWrap;
-   desc.samplers[0].addressModeV = GFXAddressWrap;
-   desc.samplers[0].addressModeW = GFXAddressWrap;
-   desc.samplers[0].magFilter = GFXTextureFilterLinear;
-   desc.samplers[0].minFilter = GFXTextureFilterLinear;
-   desc.samplers[0].mipFilter = GFXTextureFilterLinear;
-   desc.samplers[0].textureColorOp = GFXTOPModulate;
+   for (int i = 0; i < TEXTURE_STAGE_COUNT; i++)
+   {
+       desc.samplers[i].addressModeU = GFXAddressWrap;
+       desc.samplers[i].addressModeV = GFXAddressWrap;
+       desc.samplers[i].addressModeW = GFXAddressWrap;
+       desc.samplers[i].magFilter = GFXTextureFilterLinear;
+       desc.samplers[i].minFilter = GFXTextureFilterLinear;
+       desc.samplers[i].mipFilter = GFXTextureFilterLinear;
+       desc.samplers[i].textureColorOp = GFXTOPModulate;
+   }
 
    mStateblock = GFX->createStateBlock( desc );   
 
    // Set up shader constants.
    mShaderConsts = mClearGBufferShader->allocConstBuffer();
-   mSpecularStrengthSC = mClearGBufferShader->getShaderConstHandle( "$specularStrength" );
-   mSpecularPowerSC = mClearGBufferShader->getShaderConstHandle( "$specularPower" );
+   mRoughnessSC = mClearGBufferShader->getShaderConstHandle("$roughness");
+   mMetalnessSC = mClearGBufferShader->getShaderConstHandle("$metalness");
 }
 
 void RenderPrePassMgr::clearBuffers()

@@ -106,9 +106,9 @@ protected:
    NamedTexTarget                      mMatInfoTarget;
    GFXTexHandle                        mColorTex;
    GFXTexHandle                        mMatInfoTex;
-   GFXShaderConstBufferRef             mShaderConsts;
-   GFXShaderConstHandle                *mSpecularStrengthSC;  
-   GFXShaderConstHandle                *mSpecularPowerSC;
+   GFXShaderConstBufferRef             mShaderConsts; 
+   GFXShaderConstHandle                *mRoughnessSC;
+   GFXShaderConstHandle                *mMetalnessSC; 
 
 public:
    void clearBuffers();

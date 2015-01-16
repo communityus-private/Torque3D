@@ -518,26 +518,26 @@ void DeferredPixelSpecularGLSL::processPix(  Vector<ShaderComponent*> &component
       specCol->constSortPos = cspPotentialPrimitive;
    }
 
-   Var *specPow = new Var;
-   specPow->setType( "float" );
-   specPow->setName( "specularPower" );
+   Var *roughness = new Var;
+   roughness->setType("float");
+   roughness->setName("roughness");
 
    // If the gloss map flag is set, than the specular power is in the alpha
    // channel of the specular map for the input texture
    if( fd.features[ MFT_GlossMap ] )
-      meta->addStatement( new GenOp( "   @ = @.a * 255;\r\n", new DecOp( specPow ), specCol ) );
+       meta->addStatement(new GenOp("   @ = @.a * 255;\r\n", new DecOp(roughness), specCol));
    else
    {
-      specPow->uniform = true;
-      specPow->constSortPos = cspPotentialPrimitive;
+       roughness->uniform = true;
+       roughness->constSortPos = cspPotentialPrimitive;
    }
 
-   Var *specStrength = (Var*)LangElement::find( "specularStrength" );
-   if (!specStrength)
+   Var *metalness = (Var*)LangElement::find("metalness");
+   if (!metalness)
    {
-       specStrength = new Var( "specularStrength", "float" );
-       specStrength->uniform = true;
-       specStrength->constSortPos = cspPotentialPrimitive;
+       metalness = new Var("metalness", "float");
+       metalness->uniform = true;
+       metalness->constSortPos = cspPotentialPrimitive;
    }
 
    Var *lightInfoSamp = (Var *)LangElement::find( "lightInfoSample" );
@@ -557,7 +557,7 @@ void DeferredPixelSpecularGLSL::processPix(  Vector<ShaderComponent*> &component
    }
    // (a^m)^n = a^(m*n)
    		meta->addStatement( new GenOp( "   @ = pow( abs(@), max((@ / AL_ConstantSpecularPower),1.0f)) * @;\r\n", 
-      specDecl, d_specular, specPow, specStrength ) );
+            specDecl, d_specular, roughness, metalness));
 
    LangElement *specMul = new GenOp( "vec4( @.rgb, 0 ) * @", specCol, specular );
    LangElement *final = specMul;

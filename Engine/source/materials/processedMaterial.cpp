@@ -275,6 +275,8 @@ void ProcessedMaterial::_initPassStateBlock( RenderPassData *rpd, GFXStateBlockD
             result.samplers[i].addressModeU = GFXAddressClamp;
             result.samplers[i].addressModeV = GFXAddressClamp;
             result.samplers[i].addressModeW = GFXAddressClamp;
+            result.samplers[i].minFilter = GFXTextureFilterLinear;
+            result.samplers[i].magFilter = GFXTextureFilterLinear;
             break;
          }
 

@@ -2048,7 +2048,7 @@
                            VertSizing = "bottom";
                            position = "9 26";
                            Extent = "72 16";
-                           text = "Spec strength";
+                           text = "Metalness";
                         };
 
                         new GuiControl() {
@@ -2058,7 +2058,7 @@
                            
                            new GuiSliderCtrl() {
                               canSaveDynamicFields = "0";
-                              internalName = "specularPowerSlider";
+                              internalName = "RoughnessSlider";
                               Enabled = "1";
                               isContainer = "0";
                               Profile = "ToolsGuiSliderProfile";
@@ -2069,18 +2069,18 @@
                               MinExtent = "8 2";
                               canSave = "1";
                               Visible = "1";
-                              Command = "MaterialEditorGui.updateActiveMaterial(\"specularPower[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()), true, true);";
-                              AltCommand = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"specularPower[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()), true, false);";
+                              Command = "MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()), true, true);";
+                              AltCommand = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()), true, false);";
                               tooltipprofile = "ToolsGuiDefaultProfile";
-                              ToolTip = "Sets the hardness of the Pixel Specular value.";
+                              ToolTip = "Sets Roughness.";
                               hovertime = "1000";
-                              range = "1 128";
+                              range = "0 8";
                               ticks = "0";
-                              value = "1";
+                              value = "0";
                            };
                            new GuiTextEditCtrl() {
                               canSaveDynamicFields = "0";
-                              internalName = "specularPowerTextEdit";
+                              internalName = "RoughnessTextEdit";
                               Enabled = "1";
                               isContainer = "0";
                               Profile = "ToolsGuiTextEditProfile";
@@ -2091,14 +2091,13 @@
                               MinExtent = "8 2";
                               canSave = "1";
                               Visible = "1";
-                              Command = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"specularPower[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()));";
+                              Command = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()));";
                               hovertime = "1000";
                               AnchorTop = "1";
                               AnchorBottom = "0";
                               AnchorLeft = "1";
                               AnchorRight = "0";
-                              text = "32";
-                              maxLength = "3";
+                              text = "0";
                            };
                         };
 
@@ -2109,7 +2108,7 @@
 
                            new GuiSliderCtrl() {
                               canSaveDynamicFields = "0";
-                              internalName = "specularStrengthSlider";
+                              internalName = "MetalnessSlider";
                               Enabled = "1";
                               isContainer = "0";
                               Profile = "ToolsGuiSliderProfile";
@@ -2120,18 +2119,18 @@
                               MinExtent = "8 2";
                               canSave = "1";
                               Visible = "1";
-                              Command = "MaterialEditorGui.updateActiveMaterial(\"specularStrength[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue(), true, true);";
-                              AltCommand = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"specularStrength[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue(), true, false);";
+                              Command = "MaterialEditorGui.updateActiveMaterial(\"Metalness[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue(), true, true);";
+                              AltCommand = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Metalness[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue(), true, false);";
                               tooltipprofile = "ToolsGuiDefaultProfile";
-                              ToolTip = "Sets the strength of the Pixel Specular value.";
+                              ToolTip = "Sets Metalness.";
                               hovertime = "1000";
-                              range = "0 5";
+                              range = "0 1";
                               ticks = "0";
-                              value = "1";
+                              value = "0";
                            };
                            new GuiTextEditCtrl() {
                               canSaveDynamicFields = "0";
-                              internalName = "specularStrengthTextEdit";
+                              internalName = "MetalnessTextEdit";
                               Enabled = "1";
                               isContainer = "0";
                               Profile = "ToolsGuiTextEditProfile";
@@ -2142,14 +2141,13 @@
                               MinExtent = "8 2";
                               canSave = "1";
                               Visible = "1";
-                              Command = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"specularStrength[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue());";
+                              Command = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Metalness[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue());";
                               hovertime = "1000";
                               AnchorTop = "1";
                               AnchorBottom = "0";
                               AnchorLeft = "1";
                               AnchorRight = "0";
-                              text = "1";
-                              maxLength = "3";
+                              text = "0";
                            };
                         };
                      };

@@ -227,11 +227,9 @@ public:
    /// or if it has a texture it is multiplied against 
    /// the diffuse texture color.
    ColorF mDiffuse[MAX_STAGES];
-
-   ColorF mSpecular[MAX_STAGES];
-
-   F32 mSpecularPower[MAX_STAGES];
-   F32 mSpecularStrength[MAX_STAGES];
+   
+   F32 mRoughness[MAX_STAGES];
+   F32 mMetalness[MAX_STAGES];
    bool mPixelSpecular[MAX_STAGES];
 
    bool mVertLit[MAX_STAGES];

@@ -64,7 +64,7 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    specularMap->constNum = Var::getTexUnitNum();
    LangElement *texOp = new GenOp( "tex2D(@, @)", specularMap, texCoord );
 
-   meta->addStatement(new GenOp("   @.b = dot(tex2D(@, @).rgb, float3(0.3, 0.59, 0.11));\r\n", material, specularMap, texCoord));
+   meta->addStatement(new GenOp("   @.b = tex2D(@, @).g;\r\n", material, specularMap, texCoord));
    meta->addStatement(new GenOp("   @.a = tex2D(@, @).a;\r\n", material, specularMap, texCoord));
    output = meta;
 }
@@ -143,39 +143,18 @@ void DeferredSpecVarsHLSL::processPix( Vector<ShaderComponent*> &componentList, 
       material->setStructName( "OUT" );
    }
 
-   Var *specStrength = new Var;
-   specStrength->setType( "float" );
-   specStrength->setName( "specularStrength" );
-   specStrength->uniform = true;
-   specStrength->constSortPos = cspPotentialPrimitive;
+   Var *metalness = new Var("metalness", "float");
+   metalness->uniform = true;
+   metalness->constSortPos = cspPotentialPrimitive;
 
-   Var *specPower = new Var;
-   specPower->setType( "float" );
-   specPower->setName( "specularPower" );
-   specPower->uniform = true;
-   specPower->constSortPos = cspPotentialPrimitive;
+   Var *roughness = new Var("roughness", "float");
+   roughness->uniform = true;
+   roughness->constSortPos = cspPotentialPrimitive;
 
    MultiLine * meta = new MultiLine;
-   meta->addStatement(new GenOp("   @.b = @/128;\r\n", material, specStrength));
-   meta->addStatement(new GenOp("   @.a = @/5;\r\n", material, specPower));
+   meta->addStatement(new GenOp("   @.b = @/8.0;\r\n", material, roughness));
+   meta->addStatement(new GenOp("   @.a = @;\r\n", material, metalness));
    output = meta;
-}
-
-// Black -> Blue and Alpha of Color Buffer (representing no specular)
-void DeferredEmptySpecHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-   // search for color var
-   Var *color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-   if ( !color )
-   {
-       // create color var
-      color = new Var;
-      color->setType( "fragout" );
-      color->setName( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-      color->setStructName( "OUT" );
-   }
-   
-   output = new GenOp( "   @.ba = 0.0;\r\n", color );
 }
 
 // Tranlucency -> Green of Material Info Buffer.
