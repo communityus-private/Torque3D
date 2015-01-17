@@ -221,12 +221,18 @@ void main()
    // cause the hardware occlusion query to disable the shadow.
 
    // Specular term
-   float specular = AL_CalcSpecular(   lightVec, 
-                                       normal, 
-                                       normalize( -eyeRay ) ) * lightBrightness * atten * shadowed;
+   vec4 colorSample = texture( colorBuffer, uvScene );
+   float specular = 0;
+   vec3 real_specular = AL_CalcSpecular(  colorSample.rgb,
+                                      lightColor.rgb,
+                                      lightVec, 
+                                      normal, 
+                                      viewSpacePos,
+                                      matInfo.b,
+                                      matInfo.a );
 
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   vec3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
+   vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed * atten;
    vec4 addToResult = vec4(0.0);
     
    // TODO: This needs to be removed when lightmapping is disabled
@@ -261,6 +267,5 @@ void main()
       addToResult = lightColor * vec4( fLT, 0.0);
    }
 
-   vec4 colorSample = texture( colorBuffer, uvScene );
-   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
 }

@@ -38,7 +38,7 @@ uniform sampler2D ShadowMap ;
 
 #ifdef USE_SSAO_MASK
 uniform sampler2D ssaoMask ;
-uniform vec4 rtParams2;
+uniform vec4 rtParams3;
 #endif
 
 uniform sampler2D prePassBuffer;
@@ -209,22 +209,20 @@ void main()
    #endif // !NO_SHADOW
 
    // Specular term
-   float specular = AL_CalcSpecular(   -lightDirection, 
-                                       normal, 
-                                       normalize(-vsEyeRay) ) * lightBrightness * shadowed;
+   vec4 colorSample = texture( colorBuffer, uv0 );
+   float specular = 0;
+   vec3 real_specular = AL_CalcSpecular(  colorSample.rgb,
+                                      lightColor.rgb,
+                                      normalize( -lightDirection ), 
+                                      normal, 
+                                      vsEyeRay * depth,
+                                      matInfo.b,
+                                      matInfo.a );
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   vec3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
-   
-   // Felix' Normal Mapped Ambient.
-   float ambientBrightness = lightAmbient.r;
-   vec3 worldNormal = normalize(tMul(eyeMat, vec4(normal,1.0))).xyz;
-   float ambientContrast = 0.5;  
-   vec4 upAmbient = lerp( 1 - lightAmbient * 0.65, lightAmbient, 1-ambientBrightness*ambientContrast );
-   vec4 lightAmbientTwoTone = lerp( lightAmbient * 0.8 , upAmbient , worldNormal.b ); 
-   vec4 addToResult = lightAmbientTwoTone + dotNL * lightColor * ambientBrightness * 0.25; 
 
-   //vec4 addToResult = lightAmbient;
+   vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
+   vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
    // TODO: This needs to be removed when lightmapping is disabled
    // as its extra work per-pixel on dynamic lit scenes.
@@ -243,7 +241,7 @@ void main()
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
-      float ao = 1.0 - texture( ssaoMask, viewportCoordToRenderTarget( uv0.xy, rtParams2 ) ).r;
+      float ao = 1.0 - texture( ssaoMask, viewportCoordToRenderTarget( uv0.xy, rtParams3 ) ).r;
       addToResult *= ao;
    #endif
 
@@ -266,6 +264,5 @@ void main()
       addToResult = lightColor * vec4( fLT, 0.0);
    }
 
-   vec4 colorSample = texture( colorBuffer, uv0 );
-   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);   
+   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);   
 }
