@@ -1107,7 +1107,7 @@ void RenderPrePassMgr::_initShaders()
 void RenderPrePassMgr::clearBuffers()
 {
    // Clear z-buffer.
-   GFX->clear( GFXClearZBuffer | GFXClearStencil, ColorI::BLACK, 1.0f, 0);
+   GFX->clear( GFXClearTarget | GFXClearZBuffer | GFXClearStencil, ColorI::BLACK, 1.0f, 0);
 
    if ( !mClearGBufferShader )
       return;
