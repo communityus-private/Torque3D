@@ -23,12 +23,12 @@
 #include "shadergen:/autogenConditioners.h"
 #include "../../../postfx/gl/postFx.glsl"
 
-uniform sampler2D colorBufferTex;
+uniform sampler2D matinfoTex;
 
 out vec4 OUT_FragColor0;
 
 void main()
 { 
-   float specular = texture( colorBufferTex, uv0 ).a;  
+   float specular = texture( matinfoTex, uv0 ).a;
    OUT_FragColor0 = vec4( specular, specular, specular, 1.0 );
 }
