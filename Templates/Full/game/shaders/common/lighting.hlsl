@@ -226,7 +226,7 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
     //  Microfacet Specular Cook-Torrance
     //
         
-        float alphaSqr = pow( roughness, 4 );
+        float alphaSqr = pow( roughness, 2 );
  
         float D = alphaSqr / ( PI * pow( (pow( nDotH, 2 ) * ( alphaSqr - 1.0f ) + 1.0f ), 2 ) );
  
@@ -237,8 +237,7 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
  
         float k = pow( ( roughness + 1.0f ), 2 ) / 8;
  
-        float G  = ( nDotL * ( 1.0f - k ) + k ) * ( nDotV * ( 1.0f - k ) + k );
-        G = 1.0f / G;
+        float G  = (nDotL / ( nDotL * ( 1.0f - k ) + k )) * (nDotV/( nDotV * ( 1.0f - k ) + k ));
 
     //
     //  F( v, h ) ==> frensel term, slicks approach.
@@ -254,8 +253,8 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
     // Evalute based on the metallic property
     //
  
-    float  fDielectric = ( ( 1.0f - metallic ) * D * G * Fdielectric ) / 4.0f ;
-    float3 fConductor  = ( metallic * D * G * Fconductor  )  / 4.0f ;
+    float  fDielectric = ( ( 1.0f - metallic ) * D * G * Fdielectric ) / 4.0f;
+    float3 fConductor  = ( metallic * D * G * Fconductor  ) / 4.0f;
  
     //
     // Specular color
