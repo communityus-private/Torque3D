@@ -34,11 +34,12 @@ in vec2 uv0;
 in vec3 wsEyeRay;
 in vec3 vsEyeRay;
 
-uniform sampler2D ShadowMap ;
+uniform sampler2D shadowMap;
+uniform sampler2D dynamicShadowMap;
 
 #ifdef USE_SSAO_MASK
 uniform sampler2D ssaoMask ;
-uniform vec4 rtParams2;
+uniform vec4 rtParams3;
 #endif
 
 uniform sampler2D prePassBuffer;
@@ -51,18 +52,12 @@ uniform float  lightBrightness;
 uniform vec4 lightAmbient; 
 uniform vec3 eyePosWorld; 
 uniform mat4x4 eyeMat;
-uniform mat4x4 worldToLightProj;
-uniform vec4 scaleX;
-uniform vec4 scaleY;
-uniform vec4 offsetX;
-uniform vec4 offsetY;
 uniform vec4 atlasXOffset;
 uniform vec4 atlasYOffset;
 uniform vec2 atlasScale;
 uniform vec4 zNearFarInvNearFar;
 uniform vec4 lightMapParams;
 uniform vec2 fadeStartLength;
-uniform vec4 farPlaneScalePSSM;
 uniform vec4 overDarkPSSM;
 uniform float shadowSoftness;
 
@@ -95,18 +90,40 @@ void main()
    #endif
    
    #ifdef NO_SHADOW
+   
+//static shadowmap
+uniform mat4x4 worldToLightProj;
+uniform vec4 scaleX;
+uniform vec4 scaleY;
+uniform vec4 offsetX;
+uniform vec4 offsetY;
+uniform vec4 farPlaneScalePSSM;
 
-      // Fully unshadowed.
-      float shadowed = 1.0;
+//dynamic shadowmap
+uniform mat4x4 dynamicWorldToLightProj;
+uniform vec4 dynamicScaleX;
+uniform vec4 dynamicScaleY;
+uniform vec4 dynamicOffsetX;
+uniform vec4 dynamicOffsetY;
+uniform vec4 dynamicFarPlaneScalePSSM;
 
-      #ifdef PSSM_DEBUG_RENDER
-         debugColor = vec3(1.0);
-      #endif
-
-   #else
+float AL_VectorLightShadowCast( sampler2D _sourceShadowMap,
+                                vec2 _texCoord,
+                                mat4 _worldToLightProj,
+                                vec4 _worldPos,
+                                vec4 _scaleX, vec4 _scaleY,
+                                vec4 _offsetX, vec4 _offsetY,
+                                vec4 _farPlaneScalePSSM,
+                                vec4 _atlasXOffset, vec4 _atlasYOffset,
+                                vec2 _atlasScale,
+                                float _shadowSoftness, 
+                                float _dotNL ,
+                                vec4 _overDarkPSSM
+)
+{
 
       // Compute shadow map coordinate
-      vec4 pxlPosLightProj = tMul(worldToLightProj, worldPos);
+      vec4 pxlPosLightProj = tMul(_worldToLightProj, _worldPos);
       vec2 baseShadowCoord = pxlPosLightProj.xy / pxlPosLightProj.w;   
 
       // Distance to light, in shadowmap space
@@ -117,11 +134,11 @@ void main()
       vec4 shadowCoordX = vec4( baseShadowCoord.x );
       vec4 shadowCoordY = vec4( baseShadowCoord.y );
       vec4 farPlaneDists = vec4( distToLight );      
-      shadowCoordX *= scaleX;
-      shadowCoordY *= scaleY;
-      shadowCoordX += offsetX;
-      shadowCoordY += offsetY;
-      farPlaneDists *= farPlaneScalePSSM;
+      shadowCoordX *= _scaleX;
+      shadowCoordY *= _scaleY;
+      shadowCoordX += _offsetX;
+      shadowCoordY += _offsetY;
+      farPlaneDists *= _farPlaneScalePSSM;
       
       // If the shadow sample is within -1..1 and the distance 
       // to the light for this pixel is less than the far plane 
@@ -157,50 +174,114 @@ void main()
             debugColor += vec3( 1, 1, 0 );
       #endif
 
-      // Here we know what split we're sampling from, so recompute the texcoord location
+      // Here we know what split we're sampling from, so recompute the _texCoord location
       // Yes, we could just use the result from above, but doing it this way actually saves
       // shader instructions.
       vec2 finalScale;
-      finalScale.x = dot(finalMask, scaleX);
-      finalScale.y = dot(finalMask, scaleY);
+      finalScale.x = dot(finalMask, _scaleX);
+      finalScale.y = dot(finalMask, _scaleY);
 
       vec2 finalOffset;
-      finalOffset.x = dot(finalMask, offsetX);
-      finalOffset.y = dot(finalMask, offsetY);
+      finalOffset.x = dot(finalMask, _offsetX);
+      finalOffset.y = dot(finalMask, _offsetY);
 
       vec2 shadowCoord;                  
       shadowCoord = baseShadowCoord * finalScale;      
       shadowCoord += finalOffset;
 
-      // Convert to texcoord space
+      // Convert to _texCoord space
       shadowCoord = 0.5 * shadowCoord + vec2(0.5, 0.5);
       shadowCoord.y = 1.0f - shadowCoord.y;
 
       // Move around inside of atlas 
       vec2 aOffset;
-      aOffset.x = dot(finalMask, atlasXOffset);
-      aOffset.y = dot(finalMask, atlasYOffset);
+      aOffset.x = dot(finalMask, _atlasXOffset);
+      aOffset.y = dot(finalMask, _atlasYOffset);
 
-      shadowCoord *= atlasScale;
+      shadowCoord *= _atlasScale;
       shadowCoord += aOffset;
               
       // Each split has a different far plane, take this into account.
-      float farPlaneScale = dot( farPlaneScalePSSM, finalMask );
+      float farPlaneScale = dot( _farPlaneScalePSSM, finalMask );
       distToLight *= farPlaneScale;
       
-      float shadowed = softShadow_filter(   ShadowMap,
-                                             uv0.xy,
-                                             shadowCoord,
-                                             farPlaneScale * shadowSoftness,
-                                             distToLight,
-                                             dotNL,
-                                             dot( finalMask, overDarkPSSM ) );
-  
+      return softShadow_filter(  _sourceShadowMap,
+                                 _texCoord,
+                                 shadowCoord,
+                                 farPlaneScale * _shadowSoftness,
+                                 distToLight,
+                                 _dotNL,
+                                 dot( finalMask, _overDarkPSSM ) );
+}
+
+out vec4 OUT_col;
+void main()             
+{
+   // Sample/unpack the normal/z data
+   vec4 prepassSample = prepassUncondition( prePassBuffer, uv0 );
+   vec3 normal = prepassSample.rgb;
+   float depth = prepassSample.a;
+
+   // Use eye ray to get ws pos
+   vec4 worldPos = vec4(eyePosWorld + wsEyeRay * depth, 1.0f);
+   
+   // Get the light attenuation.
+   float dotNL = dot(-lightDirection, normal);
+
+   #ifdef PSSM_DEBUG_RENDER
+      vec3 debugColor = vec3(0);
+   #endif
+   
+   #ifdef NO_SHADOW
+
+      // Fully unshadowed.
+      float shadowed = 1.0;
+
+      #ifdef PSSM_DEBUG_RENDER
+         debugColor = vec3(1.0);
+      #endif
+
+   #else
+
+      float static_shadowed = AL_VectorLightShadowCast( shadowMap,
+                                                        uv0.xy,
+                                                        worldToLightProj,
+                                                        worldPos,
+                                                        scaleX, scaleY,
+                                                        offsetX, offsetY,
+                                                        farPlaneScalePSSM,
+                                                        atlasXOffset, atlasYOffset,
+                                                        atlasScale,
+                                                        shadowSoftness, 
+                                                        dotNL,
+                                                        overDarkPSSM);
+
+                                             
+      float dynamic_shadowed = AL_VectorLightShadowCast( dynamicShadowMap,
+                                                        uv0.xy,
+                                                        dynamicWorldToLightProj,
+                                                        worldPos,
+                                                        dynamicScaleX, dynamicScaleY,
+                                                        dynamicOffsetX, dynamicOffsetY,
+                                                        dynamicFarPlaneScalePSSM,
+                                                        atlasXOffset, atlasYOffset,
+                                                        atlasScale,
+                                                        shadowSoftness, 
+                                                        dotNL,
+                                                        overDarkPSSM);  
+      
       // Fade out the shadow at the end of the range.
       vec4 zDist = vec4(zNearFarInvNearFar.x + zNearFarInvNearFar.y * depth);
       float fadeOutAmt = ( zDist.x - fadeStartLength.x ) * fadeStartLength.y;
-      shadowed = mix( shadowed, 1.0, saturate( fadeOutAmt ) );
-
+      
+      static_shadowed = mix( static_shadowed, 1.0, saturate( fadeOutAmt ) );
+      dynamic_shadowed = mix( dynamic_shadowed, 1.0, saturate( fadeOutAmt ) );
+            
+      // temp for debugging. uncomment one or the other.
+      //float shadowed = static_shadowed;
+      //float shadowed = dynamic_shadowed;
+      float shadowed = min(static_shadowed, dynamic_shadowed);
+      
       #ifdef PSSM_DEBUG_RENDER
          if ( fadeOutAmt > 1.0 )
             debugColor = vec3(1.0);
@@ -243,7 +324,7 @@ void main()
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
-      float ao = 1.0 - texture( ssaoMask, viewportCoordToRenderTarget( uv0.xy, rtParams2 ) ).r;
+      float ao = 1.0 - texture( ssaoMask, viewportCoordToRenderTarget( uv0.xy, rtParams3 ) ).r;
       addToResult *= ao;
    #endif
 

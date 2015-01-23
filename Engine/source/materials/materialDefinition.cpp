@@ -188,6 +188,7 @@ Material::Material()
    mAlphaRef = 1;
 
    mCastShadows = true;
+   mCastDynamicShadows = true;
 
    mPlanarReflection = false;
 
@@ -402,6 +403,10 @@ void Material::initPersistFields()
 
    addField( "castShadows", TypeBool, Offset(mCastShadows, Material),
       "If set to false the lighting system will not cast shadows from this material." );
+
+   // andrewmac: static shadows
+   addField( "castDynamicShadows", TypeBool, Offset(mCastDynamicShadows, Material),
+      "If set to false the lighting system will not cast dynamic shadows from this material." );
 
    addField("planarReflection", TypeBool, Offset(mPlanarReflection, Material), "@internal" );
 
