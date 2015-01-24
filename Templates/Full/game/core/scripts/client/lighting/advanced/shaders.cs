@@ -38,7 +38,7 @@ new GFXStateBlockData( AL_VectorLightState )
    samplerStates[0] = SamplerClampPoint;  // G-buffer
    mSamplerNames[0] = "prePassBuffer";
    samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not change this to linear, as all cards can not filter equally.)
-   mSamplerNames[1] = "ShadowMap";
+   mSamplerNames[1] = "shadowMap";
    samplerStates[2] = SamplerClampLinear;  // SSAO Mask
    mSamplerNames[2] = "ssaoMask";
    samplerStates[3] = SamplerWrapPoint;   // Random Direction Map
@@ -65,7 +65,7 @@ new ShaderData( AL_VectorLightShader )
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/vectorLightP.glsl";
    
    samplerNames[0] = "$prePassBuffer";
-   samplerNames[1] = "$ShadowMap";
+   samplerNames[1] = "$shadowMap";
    samplerNames[2] = "$dynamicShadowMap";
    samplerNames[3] = "$ssaoMask";
    samplerNames[4] = "$gTapRotationTex";

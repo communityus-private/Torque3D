@@ -60,38 +60,8 @@ uniform vec4 lightMapParams;
 uniform vec2 fadeStartLength;
 uniform vec4 overDarkPSSM;
 uniform float shadowSoftness;
-
-out vec4 OUT_col;
-
-void main()             
-{
-   // Emissive.
-   vec4 matInfo = texture( matInfoBuffer, uv0 );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
-   {
-       OUT_col = vec4(1.0, 1.0, 1.0, 0.0);
-	   return;
-   }
-
-   // Sample/unpack the normal/z data
-   vec4 prepassSample = prepassUncondition( prePassBuffer, uv0 );
-   vec3 normal = prepassSample.rgb;
-   float depth = prepassSample.a;
-
-   // Use eye ray to get ws pos
-   vec4 worldPos = vec4(eyePosWorld + wsEyeRay * depth, 1.0f);
    
-   // Get the light attenuation.
-   float dotNL = dot(-lightDirection, normal);
-
-   #ifdef PSSM_DEBUG_RENDER
-      vec3 debugColor = vec3(0);
-   #endif
-   
-   #ifdef NO_SHADOW
-   
-//static shadowmap
+//static shadowMap
 uniform mat4x4 worldToLightProj;
 uniform vec4 scaleX;
 uniform vec4 scaleY;
@@ -99,7 +69,7 @@ uniform vec4 offsetX;
 uniform vec4 offsetY;
 uniform vec4 farPlaneScalePSSM;
 
-//dynamic shadowmap
+//dynamic shadowMap
 uniform mat4x4 dynamicWorldToLightProj;
 uniform vec4 dynamicScaleX;
 uniform vec4 dynamicScaleY;
@@ -107,7 +77,7 @@ uniform vec4 dynamicOffsetX;
 uniform vec4 dynamicOffsetY;
 uniform vec4 dynamicFarPlaneScalePSSM;
 
-float AL_VectorLightShadowCast( sampler2D _sourceShadowMap,
+float AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
                                 vec2 _texCoord,
                                 mat4 _worldToLightProj,
                                 vec4 _worldPos,
@@ -126,10 +96,10 @@ float AL_VectorLightShadowCast( sampler2D _sourceShadowMap,
       vec4 pxlPosLightProj = tMul(_worldToLightProj, _worldPos);
       vec2 baseShadowCoord = pxlPosLightProj.xy / pxlPosLightProj.w;   
 
-      // Distance to light, in shadowmap space
+      // Distance to light, in shadowMap space
       float distToLight = pxlPosLightProj.z / pxlPosLightProj.w;
          
-      // Figure out which split to sample from.  Basically, we compute the shadowmap sample coord
+      // Figure out which split to sample from.  Basically, we compute the shadowMap sample coord
       // for all of the splits and then check if its valid.  
       vec4 shadowCoordX = vec4( baseShadowCoord.x );
       vec4 shadowCoordY = vec4( baseShadowCoord.y );
@@ -205,7 +175,7 @@ float AL_VectorLightShadowCast( sampler2D _sourceShadowMap,
       float farPlaneScale = dot( _farPlaneScalePSSM, finalMask );
       distToLight *= farPlaneScale;
       
-      return softShadow_filter(  _sourceShadowMap,
+      return softShadow_filter(  _sourceshadowMap,
                                  _texCoord,
                                  shadowCoord,
                                  farPlaneScale * _shadowSoftness,
@@ -217,6 +187,15 @@ float AL_VectorLightShadowCast( sampler2D _sourceShadowMap,
 out vec4 OUT_col;
 void main()             
 {
+   // Emissive.
+   float4 matInfo = texture( matInfoBuffer, uv0 );   
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
+   {
+       OUT_col = vec4(1.0, 1.0, 1.0, 0.0);
+       return;
+   }
+   
    // Sample/unpack the normal/z data
    vec4 prepassSample = prepassUncondition( prePassBuffer, uv0 );
    vec3 normal = prepassSample.rgb;

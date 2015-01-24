@@ -624,7 +624,7 @@
                            text = "None";
                            maxLength = "1024";
                         };
-						new GuiButtonCtrl(){
+                        new GuiButtonCtrl(){
                            profile="ToolsGuiButtonProfile";
                            text ="Edit";
                            HorizSizing = "left";

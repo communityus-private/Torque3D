@@ -189,6 +189,14 @@ float4 main( FarFrustumQuadConnectP IN,
 
             ) : COLOR0
 {
+   // Emissive.
+   float4 matInfo = tex2D( matInfoBuffer, IN.uv0 );   
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
+   {
+       return float4(1.0, 1.0, 1.0, 0.0);
+   }
+   
    // Sample/unpack the normal/z data
    float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
