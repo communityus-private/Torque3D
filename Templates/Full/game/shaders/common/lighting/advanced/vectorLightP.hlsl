@@ -215,16 +215,8 @@ float4 main( FarFrustumQuadConnectP IN,
                                     
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    float3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
-
-   // Felix' Normal Mapped Ambient.
-   float ambientBrightness = (float)lightAmbient;
-   float3 worldNormal = normalize(mul(eyeMat, float4(normal,1.0))).xyz;
-   float ambientContrast = 0.5;  
-   float4 upAmbient = lerp( 1 - lightAmbient * 0.65, lightAmbient, 1-ambientBrightness*ambientContrast );
-   float4 lightAmbientTwoTone = lerp( lightAmbient * 0.8 , upAmbient , worldNormal.b ); 
-   float4 addToResult = lightAmbientTwoTone + dotNL * lightColor * ambientBrightness * 0.25; 
-
-   //float4 addToResult = lightAmbient;
+   
+   float4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
 
    // TODO: This needs to be removed when lightmapping is disabled
    // as its extra work per-pixel on dynamic lit scenes.
