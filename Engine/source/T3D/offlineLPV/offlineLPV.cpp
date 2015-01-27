@@ -43,6 +43,11 @@
 #include "math/mRandom.h"
 #include "T3D/lightBase.h"
 #include "lighting/shadowMap/lightShadowMap.h"
+#include "renderInstance/renderPassManager.h"
+#include "renderInstance/renderBinManager.h"
+#include "gfx/gfxTextureManager.h"
+#include "materials/shaderData.h"
+#include "gfx/sim/gfxStateBlockData.h"
 
 #include "math/mPolyhedron.impl.h"
 
@@ -60,6 +65,34 @@ ConsoleDocClass( OfflineLPV,
 
    "@ingroup enviroMisc"
 );
+
+static const Point3F cubePoints[8] = 
+{
+   Point3F(-1, -1, -1), Point3F(-1, -1,  1), Point3F(-1,  1, -1), Point3F(-1,  1,  1),
+   Point3F( 1, -1, -1), Point3F( 1, -1,  1), Point3F( 1,  1, -1), Point3F( 1,  1,  1)
+};
+
+static const U32 cubeFaces[6][4] = 
+{
+   { 0, 4, 6, 2 }, { 0, 2, 3, 1 }, { 0, 1, 5, 4 },
+   { 3, 2, 6, 7 }, { 7, 6, 4, 5 }, { 3, 7, 5, 1 }
+};
+
+static const Point2F cubeUVs[6][4] =
+{
+   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)}, // Top
+   {Point2F(1, 1), Point2F(0, 1), Point2F(0, 0), Point2F(1, 0)},
+   {Point2F(0, 1), Point2F(0, 0), Point2F(1, 0), Point2F(1, 1)},
+   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)},
+   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)},
+   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)} // Bottom
+};
+
+GFX_ImplementTextureProfile( LPVProfile,
+                              GFXTextureProfile::DiffuseMap,
+                              GFXTextureProfile::PreserveSize |
+                              GFXTextureProfile::Pooled,
+                              GFXTextureProfile::NONE );
 
 //-----------------------------------------------------------------------------
 
@@ -105,6 +138,8 @@ OfflineLPV::OfflineLPV()
    }
 
    resetWorldBox();
+
+   RenderPassManager::getRenderBinSignal().notify( this, &OfflineLPV::_handleBinEvent );
 }
 
 OfflineLPV::~OfflineLPV()
@@ -154,6 +189,25 @@ bool OfflineLPV::onAdd()
    // Set up the silhouette extractor.
    mSilhouetteExtractor = SilhouetteExtractorType( mPolyhedron );
 
+   U32 pos = 0;
+   for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+   {
+      for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
+      {
+         for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+         {
+            mLPVRawData[pos]     = x * 25;     // Blue
+            mLPVRawData[pos + 1] = y * 25;     // Green
+            mLPVRawData[pos + 2] = z * 25;   // Red
+            mLPVRawData[pos + 3] = 255;   // Alpha
+            pos += 4;
+         }
+      }
+   }
+
+   mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
+   _initShader();
+
    return true;
 }
 
@@ -167,7 +221,128 @@ void OfflineLPV::onRemove()
    Parent::onRemove();
 }
 
-//-----------------------------------------------------------------------------
+void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
+                  const SceneRenderState* sceneState,
+                  bool isBinStart )
+{
+
+   // We require a bin name to process effects... without
+   // it we can skip the bin entirely.
+   String binName( bin->getName() );
+   if ( binName.isEmpty() )
+      return;
+
+   if ( !isBinStart && binName.equal("ObjTranslucentBin") )
+   {
+      _renderLPV();
+   }
+}
+
+void OfflineLPV::_renderLPV()
+{
+   GFXVertexBufferHandle<GFXVertexPT> verts(GFX, 36, GFXBufferTypeVolatile);
+   verts.lock();
+
+   Box3F box = getWorldBox();
+
+   Point3F size = box.getExtents();
+   Point3F pos = box.getCenter();
+   ColorI color = ColorI(255, 0, 255);
+   Point3F halfSize = size * 0.5f;
+
+   GFXStateBlockDesc desc;
+   desc.setZReadWrite( true, true );
+   desc.setBlend( false );
+   desc.setFillModeSolid();
+   desc.samplers[0] = GFXSamplerStateDesc::getClampPoint();
+   desc.samplersDefined = true;
+
+   // setup 6 line loops
+   U32 vertexIndex = 0;
+   U32 idx;
+   for(S32 i = 0; i < 6; i++)
+   {
+      idx = cubeFaces[i][0];
+      verts[vertexIndex].point = cubePoints[idx] * halfSize;      
+      verts[vertexIndex].texCoord = cubeUVs[i][0];
+      vertexIndex++;
+
+      idx = cubeFaces[i][1];
+      verts[vertexIndex].point = cubePoints[idx] * halfSize;
+      verts[vertexIndex].texCoord = cubeUVs[i][1];
+      vertexIndex++;
+
+      idx = cubeFaces[i][3];
+      verts[vertexIndex].point = cubePoints[idx] * halfSize;
+      verts[vertexIndex].texCoord = cubeUVs[i][3];
+      vertexIndex++;
+
+      idx = cubeFaces[i][1];
+      verts[vertexIndex].point = cubePoints[idx] * halfSize;
+      verts[vertexIndex].texCoord = cubeUVs[i][1];
+      vertexIndex++;
+
+      idx = cubeFaces[i][2];
+      verts[vertexIndex].point = cubePoints[idx] * halfSize;
+      verts[vertexIndex].texCoord = cubeUVs[i][2];
+      vertexIndex++;
+
+      idx = cubeFaces[i][3];
+      verts[vertexIndex].point = cubePoints[idx] * halfSize;
+      verts[vertexIndex].texCoord = cubeUVs[i][3];
+      vertexIndex++;
+   }
+
+   // Apply xfm if we were passed one.
+   //if ( xfm != NULL )
+   //{
+   //   for ( U32 i = 0; i < 36; i++ )
+   //      xfm->mulV( verts[i].point );
+   //}
+
+   // Apply position offset
+   for ( U32 i = 0; i < 36; i++ )
+      verts[i].point += pos;
+
+   verts.unlock();
+
+   //MatrixF xfm = getTransform();
+   //GFX->multWorld(xfm);
+   MatrixF xform(GFX->getProjectionMatrix());
+   xform *= GFX->getViewMatrix();
+   xform *=  GFX->getWorldMatrix();
+   mShaderConsts->setSafe( mModelViewProjSC, xform );
+
+   GFX->setStateBlockByDesc( desc );
+   GFX->setVertexBuffer( verts );
+   GFX->setShader(mShader);
+   GFX->setShaderConstBuffer(mShaderConsts);
+   GFX->setTexture(0, mLPVTexture);
+
+   GFX->drawPrimitive( GFXTriangleList, 0, 12 );
+}
+
+bool OfflineLPV::_initShader()
+{
+   ShaderData *shaderData;
+   if ( !Sim::findObject( "OfflineLPVShaderData", shaderData ) )
+   {
+      Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVShaderData!" );
+      return false;
+   }
+   
+   Vector<GFXShaderMacro> macros;
+   mShader = shaderData->getShader( macros );
+
+   if ( !mShader )
+      return false;
+
+   mShaderConsts = mShader->allocConstBuffer();
+   mModelViewProjSC = mShader->getShaderConstHandle( "$modelView" );
+
+   return true;
+}
+
 
 void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat )
 {

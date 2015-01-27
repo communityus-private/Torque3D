@@ -35,7 +35,10 @@
 #include "gfx/gfxDevice.h"
 #endif
 
+#include "renderInstance/renderBinManager.h"
+
 #define LPV_GRID_RESOLUTION 10
+GFX_DeclareTextureProfile( LPVProfile );
 
 /// A volume in space that blocks visibility.
 class OfflineLPV : public ScenePolyhedralSpace
@@ -46,6 +49,15 @@ class OfflineLPV : public ScenePolyhedralSpace
 
    protected:
 
+      GFXTexHandle mLPVTexture;
+      GFXShaderRef mShader;
+      GFXStateBlockRef mStateBlock;
+      GFXShaderConstBufferRef mShaderConsts;
+      GFXShaderConstHandle *mModelViewProjSC;
+
+      bool _initShader();
+
+      U8 mLPVRawData[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
       bool mGeometryGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
       ColorF mLightGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
       ColorF mPropagatedLightGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
@@ -69,6 +81,11 @@ class OfflineLPV : public ScenePolyhedralSpace
       // SceneSpace.
       virtual void _renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat );
 
+      void _handleBinEvent(   RenderBinManager *bin,                           
+                        const SceneRenderState* sceneState,
+                        bool isBinStart );  
+      void _renderLPV();
+
    public:
 
       OfflineLPV();
@@ -79,6 +96,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       bool mPropagateLights;
       bool mShowLightGrid;
       bool mShowPropagatedLightGrid;
+
 
       // SimObject.
       DECLARE_CONOBJECT( OfflineLPV );
