@@ -41,7 +41,7 @@ struct ConvexConnectP
 #ifdef USE_COOKIE_TEX
 
 /// The texture for cookie rendering.
-uniform samplerCUBE cookieMap : register(S2);
+uniform samplerCUBE cookieMap : register(S3);
 
 #endif
 
@@ -115,6 +115,7 @@ float4 main(   ConvexConnectP IN,
                   uniform samplerCUBE shadowMap : register(S1),
                #else
                   uniform sampler2D shadowMap : register(S1),
+                  uniform sampler2D dynamicShadowMap : register(S2),
                #endif
 
                uniform sampler2D lightBuffer : register(S5),
@@ -132,6 +133,7 @@ float4 main(   ConvexConnectP IN,
 
                uniform float4 vsFarPlane,
                uniform float3x3 viewToLightProj,
+               uniform float3x3 dynamicViewToLightProj,
 
                uniform float4 lightParams,
                uniform float shadowSoftness ) : COLOR0
@@ -191,15 +193,27 @@ float4 main(   ConvexConnectP IN,
          
       #else
 
+         // Static
          float2 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) ).xy;
-         
-         float shadowed = softShadow_filter( shadowMap,
+         float static_shadowed = softShadow_filter( shadowMap,
                                              ssPos.xy,
                                              shadowCoord,
                                              shadowSoftness,
                                              distToLight,
                                              nDotL,
                                              lightParams.y );
+
+         // Dynamic
+         float2 dynamicShadowCoord = decodeShadowCoord( mul( dynamicViewToLightProj, -lightVec ) ).xy;
+         float dynamic_shadowed = softShadow_filter( dynamicShadowMap,
+                                             ssPos.xy,
+                                             dynamicShadowCoord,
+                                             shadowSoftness,
+                                             distToLight,
+                                             nDotL,
+                                             lightParams.y );
+
+         float shadowed = min(static_shadowed, dynamic_shadowed);
 
       #endif
 

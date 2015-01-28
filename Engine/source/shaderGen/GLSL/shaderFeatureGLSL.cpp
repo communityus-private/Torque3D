@@ -1026,11 +1026,8 @@ void DiffuseMapFeatGLSL::setTexData(   Material::StageData &stageDat,
                                        U32 &texIndex )
 {
    GFXTextureObject *tex = stageDat.getTex( MFT_DiffuseMap );
-   if ( tex )
-   {
-      passData.mSamplerNames[ texIndex ] = "diffuseMap";
-      passData.mTexSlot[ texIndex++ ].texObject = tex;
-   }
+   passData.mSamplerNames[ texIndex ] = "diffuseMap";
+   passData.mTexSlot[ texIndex++ ].texObject = tex;
 }
 
 
@@ -1918,7 +1915,7 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    else
    {
       if ( attn )
-         lerpVal = new GenOp( "saturate( @ ).xxxx", attn );
+         lerpVal = new GenOp( "vec4( saturate( @ ) ).xxxx", attn );
       else
          blendOp = Material::Mul;
    }

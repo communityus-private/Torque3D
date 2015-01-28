@@ -40,7 +40,7 @@ struct ConvexConnectP
 #ifdef USE_COOKIE_TEX
 
 /// The texture for cookie rendering.
-uniform sampler2D cookieMap : register(S2);
+uniform sampler2D cookieMap : register(S3);
 
 #endif
 
@@ -49,6 +49,7 @@ float4 main(   ConvexConnectP IN,
 
                uniform sampler2D prePassBuffer : register(S0),
                uniform sampler2D shadowMap : register(S1),
+               uniform sampler2D dynamicShadowMap : register(S2),
 
                uniform sampler2D lightBuffer : register(S5),
                uniform sampler2D colorBuffer : register(S6),
@@ -67,6 +68,7 @@ float4 main(   ConvexConnectP IN,
 
                uniform float4 vsFarPlane,
                uniform float4x4 viewToLightProj,
+               uniform float4x4 dynamicViewToLightProj,
 
                uniform float4 lightParams,
                uniform float shadowSoftness ) : COLOR0
@@ -114,6 +116,11 @@ float4 main(   ConvexConnectP IN,
    float2 shadowCoord = ( ( pxlPosLightProj.xy / pxlPosLightProj.w ) * 0.5 ) + float2( 0.5, 0.5 );
    shadowCoord.y = 1.0f - shadowCoord.y;
 
+   // Get the dynamic shadow texture coordinate
+   float4 dynpxlPosLightProj = mul( dynamicViewToLightProj, float4( viewSpacePos, 1 ) );
+   float2 dynshadowCoord = ( ( dynpxlPosLightProj.xy / dynpxlPosLightProj.w ) * 0.5 ) + float2( 0.5, 0.5 );
+   dynshadowCoord.y = 1.0f - dynshadowCoord.y;
+   
    #ifdef NO_SHADOW
    
       float shadowed = 1.0;
@@ -123,14 +130,22 @@ float4 main(   ConvexConnectP IN,
       // Get a linear depth from the light source.
       float distToLight = pxlPosLightProj.z / lightRange;
 
-      float shadowed = softShadow_filter( shadowMap,
+      float static_shadowed = softShadow_filter( shadowMap,
                                           ssPos.xy,
                                           shadowCoord,
                                           shadowSoftness,
                                           distToLight,
                                           nDotL,
                                           lightParams.y );
-
+                                          
+      float dynamic_shadowed = softShadow_filter( dynamicShadowMap,
+                                          ssPos.xy,
+                                          dynshadowCoord,
+                                          shadowSoftness,
+                                          distToLight,
+                                          nDotL,
+                                          lightParams.y );
+      float shadowed = min(static_shadowed, dynamic_shadowed);
    #endif // !NO_SHADOW
    
    #ifdef USE_COOKIE_TEX
