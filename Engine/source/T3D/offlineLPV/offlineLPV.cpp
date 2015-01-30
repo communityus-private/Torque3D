@@ -90,8 +90,7 @@ static const Point2F cubeUVs[6][4] =
 
 GFX_ImplementTextureProfile( LPVProfile,
                               GFXTextureProfile::DiffuseMap,
-                              GFXTextureProfile::PreserveSize |
-                              GFXTextureProfile::Pooled,
+                              GFXTextureProfile::NoMipmap | GFXTextureProfile::Dynamic,
                               GFXTextureProfile::NONE );
 
 //-----------------------------------------------------------------------------
@@ -124,6 +123,8 @@ OfflineLPV::OfflineLPV()
    mPropagateLights = false;
    mShowLightGrid = false;
    mShowPropagatedLightGrid = false;
+
+   mLightInfoTarget = NULL;
 
    // Generate Random Geometry Grid
    for ( U32 x = 0; x < 10; x++ )
@@ -196,9 +197,9 @@ bool OfflineLPV::onAdd()
       {
          for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
          {
-            mLPVRawData[pos]     = x * 25;     // Blue
-            mLPVRawData[pos + 1] = y * 25;     // Green
-            mLPVRawData[pos + 2] = z * 25;   // Red
+            mLPVRawData[pos]     = 0;     // Blue
+            mLPVRawData[pos + 1] = 0;     // Green
+            mLPVRawData[pos + 2] = 0;     // Red
             mLPVRawData[pos + 3] = 255;   // Alpha
             pos += 4;
          }
@@ -206,6 +207,7 @@ bool OfflineLPV::onAdd()
    }
 
    mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
+
    _initShader();
 
    return true;
@@ -219,6 +221,9 @@ void OfflineLPV::onRemove()
       //refreshVolumes();
    }
    Parent::onRemove();
+
+   mLPVTexture.free();
+   mLPVTexture = NULL;
 }
 
 void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
@@ -232,7 +237,7 @@ void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,
    if ( binName.isEmpty() )
       return;
 
-   if ( !isBinStart && binName.equal("ObjTranslucentBin") )
+   if ( !isBinStart && binName.equal("AL_LightBinMgr") )
    {
       _renderLPV();
    }
@@ -240,6 +245,19 @@ void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,
 
 void OfflineLPV::_renderLPV()
 {
+   if ( !mRenderTarget )
+      mRenderTarget = GFX->allocRenderToTextureTarget();
+         
+   if ( !mRenderTarget ) return;
+
+   if ( !mLightInfoTarget )
+      mLightInfoTarget = NamedTexTarget::find( "lightinfo" );
+
+   GFXTextureObject *texObject = mLightInfoTarget->getTexture();
+   if ( !texObject ) return;
+
+   mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
+
    GFXVertexBufferHandle<GFXVertexPT> verts(GFX, 36, GFXBufferTypeVolatile);
    verts.lock();
 
@@ -313,6 +331,9 @@ void OfflineLPV::_renderLPV()
    xform *=  GFX->getWorldMatrix();
    mShaderConsts->setSafe( mModelViewProjSC, xform );
 
+   GFX->pushActiveRenderTarget();
+   GFX->setActiveRenderTarget( mRenderTarget );
+
    GFX->setStateBlockByDesc( desc );
    GFX->setVertexBuffer( verts );
    GFX->setShader(mShader);
@@ -320,6 +341,10 @@ void OfflineLPV::_renderLPV()
    GFX->setTexture(0, mLPVTexture);
 
    GFX->drawPrimitive( GFXTriangleList, 0, 12 );
+
+   // Delete the SceneRenderState we allocated.
+   mRenderTarget->resolve();
+   GFX->popActiveRenderTarget();
 }
 
 bool OfflineLPV::_initShader()

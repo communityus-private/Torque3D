@@ -35,6 +35,7 @@
 #include "gfx/gfxDevice.h"
 #endif
 
+#include "materials/matTextureTarget.h"
 #include "renderInstance/renderBinManager.h"
 
 #define LPV_GRID_RESOLUTION 10
@@ -54,6 +55,8 @@ class OfflineLPV : public ScenePolyhedralSpace
       GFXStateBlockRef mStateBlock;
       GFXShaderConstBufferRef mShaderConsts;
       GFXShaderConstHandle *mModelViewProjSC;
+      NamedTexTarget* mLightInfoTarget;
+      GFXTextureTargetRef mRenderTarget;
 
       bool _initShader();
 
@@ -63,8 +66,6 @@ class OfflineLPV : public ScenePolyhedralSpace
       ColorF mPropagatedLightGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
 
       typedef SilhouetteExtractorPerspective< PolyhedronType > SilhouetteExtractorType;
-
-
 
       /// Whether the volume's transform has changed and we need to recompute
       /// transform-based data.
