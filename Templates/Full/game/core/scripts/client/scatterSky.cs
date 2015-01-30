@@ -48,3 +48,14 @@ singleton ShaderData( ScatterSkyShaderData )
    
    pixVersion = 2.0;
 };
+
+// TEMP LOCATION
+singleton ShaderData( OfflineLPVShaderData )
+{
+   DXVertexShaderFile     = "shaders/common/offlineLPVV.hlsl";
+   DXPixelShaderFile      = "shaders/common/offlineLPVP.hlsl";   
+   
+   samplerNames[0] = "$nightSky";
+   
+   pixVersion = 2.0;
+};
