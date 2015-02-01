@@ -48,6 +48,8 @@
 #include "gfx/gfxTextureManager.h"
 #include "materials/shaderData.h"
 #include "gfx/sim/gfxStateBlockData.h"
+#include "gfx/util/screenspace.h"
+#include "postFx/postEffectCommon.h"
 
 #include "math/mPolyhedron.impl.h"
 
@@ -65,28 +67,6 @@ ConsoleDocClass( OfflineLPV,
 
    "@ingroup enviroMisc"
 );
-
-static const Point3F cubePoints[8] = 
-{
-   Point3F(-1, -1, -1), Point3F(-1, -1,  1), Point3F(-1,  1, -1), Point3F(-1,  1,  1),
-   Point3F( 1, -1, -1), Point3F( 1, -1,  1), Point3F( 1,  1, -1), Point3F( 1,  1,  1)
-};
-
-static const U32 cubeFaces[6][4] = 
-{
-   { 0, 4, 6, 2 }, { 0, 2, 3, 1 }, { 0, 1, 5, 4 },
-   { 3, 2, 6, 7 }, { 7, 6, 4, 5 }, { 3, 7, 5, 1 }
-};
-
-static const Point2F cubeUVs[6][4] =
-{
-   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)}, // Top
-   {Point2F(1, 1), Point2F(0, 1), Point2F(0, 0), Point2F(1, 0)},
-   {Point2F(0, 1), Point2F(0, 0), Point2F(1, 0), Point2F(1, 1)},
-   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)},
-   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)},
-   {Point2F(1, 0), Point2F(1, 1), Point2F(0, 1), Point2F(0, 0)} // Bottom
-};
 
 GFX_ImplementTextureProfile( LPVProfile,
                               GFXTextureProfile::DiffuseMap,
@@ -122,9 +102,15 @@ OfflineLPV::OfflineLPV()
    mInjectLights = false;
    mPropagateLights = false;
    mShowLightGrid = false;
+   mExportGrid = false;
    mShowPropagatedLightGrid = false;
 
+   mLPVTexture = NULL;
    mLightInfoTarget = NULL;
+   mPrepassTarget = NULL;
+   mShader = NULL;
+   mShaderConsts = NULL;
+   mRenderTarget = NULL;
 
    // Generate Random Geometry Grid
    for ( U32 x = 0; x < 10; x++ )
@@ -146,6 +132,12 @@ OfflineLPV::OfflineLPV()
 OfflineLPV::~OfflineLPV()
 {
    //mAccuTexture = NULL;
+   mLPVTexture = NULL;
+   mLightInfoTarget = NULL;
+   mPrepassTarget = NULL;
+   mShader = NULL;
+   mShaderConsts = NULL;
+   mRenderTarget = NULL;
 }
 
 void OfflineLPV::initPersistFields()
@@ -158,6 +150,9 @@ void OfflineLPV::initPersistFields()
 
    addProtectedField( "propagateLights", TypeBool, Offset( mPropagateLights, OfflineLPV ),
          &_setPropagateLights, &defaultProtectedGetFn, "HACK: flip this to regen volume." );
+
+   addProtectedField( "exportGrid", TypeBool, Offset( mExportGrid, OfflineLPV ),
+         &_setExportGrid, &defaultProtectedGetFn, "HACK: flip this to regen volume." );
 
    addField("showLightGrid", TypeBool, Offset(mShowLightGrid, OfflineLPV), "");
    addField("showPropagatedLightGrid", TypeBool, Offset(mShowPropagatedLightGrid, OfflineLPV), "");
@@ -187,28 +182,15 @@ bool OfflineLPV::onAdd()
       //refreshVolumes();
    }
 
+   mRegenVolume = false;
+   mInjectLights = false;
+   mPropagateLights = false;
+   mShowLightGrid = false;
+   mExportGrid = false;
+   mShowPropagatedLightGrid = false;
+
    // Set up the silhouette extractor.
    mSilhouetteExtractor = SilhouetteExtractorType( mPolyhedron );
-
-   U32 pos = 0;
-   for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
-   {
-      for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
-      {
-         for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
-         {
-            mLPVRawData[pos]     = 0;     // Blue
-            mLPVRawData[pos + 1] = 0;     // Green
-            mLPVRawData[pos + 2] = 0;     // Red
-            mLPVRawData[pos + 3] = 255;   // Alpha
-            pos += 4;
-         }
-      }
-   }
-
-   mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
-
-   _initShader();
 
    return true;
 }
@@ -222,8 +204,12 @@ void OfflineLPV::onRemove()
    }
    Parent::onRemove();
 
-   mLPVTexture.free();
    mLPVTexture = NULL;
+   mLightInfoTarget = NULL;
+   mPrepassTarget = NULL;
+   mShader = NULL;
+   mShaderConsts = NULL;
+   mRenderTarget = NULL;
 }
 
 void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
@@ -239,12 +225,16 @@ void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,
 
    if ( !isBinStart && binName.equal("AL_LightBinMgr") )
    {
-      _renderLPV();
+      _renderLPV(sceneState);
    }
 }
 
-void OfflineLPV::_renderLPV()
+void OfflineLPV::_renderLPV(const SceneRenderState* state)
 {
+   if ( !mLPVTexture || !isClientObject() ) 
+      return;
+
+   // -- Setup Render Target --
    if ( !mRenderTarget )
       mRenderTarget = GFX->allocRenderToTextureTarget();
          
@@ -258,97 +248,128 @@ void OfflineLPV::_renderLPV()
 
    mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
 
-   GFXVertexBufferHandle<GFXVertexPT> verts(GFX, 36, GFXBufferTypeVolatile);
-   verts.lock();
+   // We also need to sample from the depth buffer.
+   if ( !mPrepassTarget )
+      mPrepassTarget = NamedTexTarget::find( "prepass" );
 
-   Box3F box = getWorldBox();
+   GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
+   if ( !prepassTexObject ) return;
 
-   Point3F size = box.getExtents();
-   Point3F pos = box.getCenter();
-   ColorI color = ColorI(255, 0, 255);
-   Point3F halfSize = size * 0.5f;
+   // -- Setup screenspace quad to render (postfx) --
+   Frustum frustum = state->getCameraFrustum();
+   GFXVertexBufferHandle<PFXVertex> vb;
+   _updateScreenGeometry( frustum, &vb );
 
+   // -- State Block --
    GFXStateBlockDesc desc;
-   desc.setZReadWrite( true, true );
-   desc.setBlend( false );
+   desc.setZReadWrite( false, false );
+   desc.setBlend( true, GFXBlendOne, GFXBlendOne );
    desc.setFillModeSolid();
    desc.samplers[0] = GFXSamplerStateDesc::getClampPoint();
    desc.samplersDefined = true;
 
-   // setup 6 line loops
-   U32 vertexIndex = 0;
-   U32 idx;
-   for(S32 i = 0; i < 6; i++)
-   {
-      idx = cubeFaces[i][0];
-      verts[vertexIndex].point = cubePoints[idx] * halfSize;      
-      verts[vertexIndex].texCoord = cubeUVs[i][0];
-      vertexIndex++;
+   // Camera position, used to calculate World Space position from depth buffer.
+   const Point3F &camPos = state->getCameraPosition();
+   mShaderConsts->setSafe( mEyePosWorldSC, camPos );
 
-      idx = cubeFaces[i][1];
-      verts[vertexIndex].point = cubePoints[idx] * halfSize;
-      verts[vertexIndex].texCoord = cubeUVs[i][1];
-      vertexIndex++;
+   Box3F worldBox = getWorldBox();
+   Point3F bottom_corner = worldBox.minExtents;
+   Point3F top_corner = worldBox.maxExtents;
+   Point3F volume_size = (top_corner - bottom_corner);
+   mShaderConsts->setSafe(mVolumeStartSC, bottom_corner);
+   mShaderConsts->setSafe(mVolumeSizeSC, volume_size);
 
-      idx = cubeFaces[i][3];
-      verts[vertexIndex].point = cubePoints[idx] * halfSize;
-      verts[vertexIndex].texCoord = cubeUVs[i][3];
-      vertexIndex++;
-
-      idx = cubeFaces[i][1];
-      verts[vertexIndex].point = cubePoints[idx] * halfSize;
-      verts[vertexIndex].texCoord = cubeUVs[i][1];
-      vertexIndex++;
-
-      idx = cubeFaces[i][2];
-      verts[vertexIndex].point = cubePoints[idx] * halfSize;
-      verts[vertexIndex].texCoord = cubeUVs[i][2];
-      vertexIndex++;
-
-      idx = cubeFaces[i][3];
-      verts[vertexIndex].point = cubePoints[idx] * halfSize;
-      verts[vertexIndex].texCoord = cubeUVs[i][3];
-      vertexIndex++;
-   }
-
-   // Apply xfm if we were passed one.
-   //if ( xfm != NULL )
-   //{
-   //   for ( U32 i = 0; i < 36; i++ )
-   //      xfm->mulV( verts[i].point );
-   //}
-
-   // Apply position offset
-   for ( U32 i = 0; i < 36; i++ )
-      verts[i].point += pos;
-
-   verts.unlock();
-
-   //MatrixF xfm = getTransform();
-   //GFX->multWorld(xfm);
-   MatrixF xform(GFX->getProjectionMatrix());
-   xform *= GFX->getViewMatrix();
-   xform *=  GFX->getWorldMatrix();
-   mShaderConsts->setSafe( mModelViewProjSC, xform );
+   // Render Target Parameters.
+   const Point3I &targetSz = texObject->getSize();
+   const RectI &targetVp = mLightInfoTarget->getViewport();
+   Point4F rtParams;
+   ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
+   mShaderConsts->setSafe(mRTParamsSC, rtParams);
 
    GFX->pushActiveRenderTarget();
    GFX->setActiveRenderTarget( mRenderTarget );
-
+   GFX->setVertexBuffer( vb );
    GFX->setStateBlockByDesc( desc );
-   GFX->setVertexBuffer( verts );
    GFX->setShader(mShader);
    GFX->setShaderConstBuffer(mShaderConsts);
-   GFX->setTexture(0, mLPVTexture);
 
-   GFX->drawPrimitive( GFXTriangleList, 0, 12 );
+   // Setup Textures
+   GFX->setTexture(0, mLPVTexture);
+   GFX->setTexture(1, prepassTexObject);
+
+   // Draw the screenspace quad.
+   GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
 
    // Delete the SceneRenderState we allocated.
    mRenderTarget->resolve();
    GFX->popActiveRenderTarget();
 }
 
+void OfflineLPV::_updateScreenGeometry(   const Frustum &frustum,
+                                          GFXVertexBufferHandle<PFXVertex> *outVB )
+{
+   outVB->set( GFX, 4, GFXBufferTypeVolatile );
+
+   const Point3F *frustumPoints = frustum.getPoints();
+   const Point3F& cameraPos = frustum.getPosition();
+
+   // Perform a camera offset.  We need to manually perform this offset on the postFx's
+   // polygon, which is at the far plane.
+   const Point2F& projOffset = frustum.getProjectionOffset();
+   Point3F cameraOffsetPos = cameraPos;
+   if(!projOffset.isZero())
+   {
+      // First we need to calculate the offset at the near plane.  The projOffset
+      // given above can be thought of a percent as it ranges from 0..1 (or 0..-1).
+      F32 nearOffset = frustum.getNearRight() * projOffset.x;
+
+      // Now given the near plane distance from the camera we can solve the right
+      // triangle and calcuate the SIN theta for the offset at the near plane.
+      // SIN theta = x/y
+      F32 sinTheta = nearOffset / frustum.getNearDist();
+
+      // Finally, we can calcuate the offset at the far plane, which is where our sun (or vector)
+      // light's polygon is drawn.
+      F32 farOffset = frustum.getFarDist() * sinTheta;
+
+      // We can now apply this far plane offset to the far plane itself, which then compensates
+      // for the project offset.
+      MatrixF camTrans = frustum.getTransform();
+      VectorF offset = camTrans.getRightVector();
+      offset *= farOffset;
+      cameraOffsetPos += offset;
+   }
+
+   PFXVertex *vert = outVB->lock();
+
+   vert->point.set( -1.0, -1.0, 0.0 );
+   vert->texCoord.set( 0.0f, 1.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarBottomLeft] - cameraOffsetPos;
+   vert++;
+
+   vert->point.set( -1.0, 1.0, 0.0 );
+   vert->texCoord.set( 0.0f, 0.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarTopLeft] - cameraOffsetPos;
+   vert++;
+
+   vert->point.set( 1.0, 1.0, 0.0 );
+   vert->texCoord.set( 1.0f, 0.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarTopRight] - cameraOffsetPos;
+   vert++;
+
+   vert->point.set( 1.0, -1.0, 0.0 );
+   vert->texCoord.set( 1.0f, 1.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarBottomRight] - cameraOffsetPos;
+   vert++;
+
+   outVB->unlock();
+}
+
 bool OfflineLPV::_initShader()
 {
+   mShader = NULL;
+   mShaderConsts = NULL;
+
    ShaderData *shaderData;
    if ( !Sim::findObject( "OfflineLPVShaderData", shaderData ) )
    {
@@ -356,14 +377,26 @@ bool OfflineLPV::_initShader()
       return false;
    }
    
+   // Need depth from pre-pass, so get the macros
    Vector<GFXShaderMacro> macros;
+
+   if ( !mPrepassTarget )
+      mPrepassTarget = NamedTexTarget::find( "prepass" );
+
+   if ( mPrepassTarget )
+      mPrepassTarget->getShaderMacros( &macros );
+
    mShader = shaderData->getShader( macros );
 
    if ( !mShader )
       return false;
 
    mShaderConsts = mShader->allocConstBuffer();
-   mModelViewProjSC = mShader->getShaderConstHandle( "$modelView" );
+   mEyePosWorldSC = mShader->getShaderConstHandle( "$eyePosWorld" );
+   mRTParamsSC = mShader->getShaderConstHandle( "$rtParams0" );
+
+   mVolumeStartSC = mShader->getShaderConstHandle( "$volumeStart" );
+   mVolumeSizeSC = mShader->getShaderConstHandle( "$volumeSize" );
 
    return true;
 }
@@ -528,6 +561,10 @@ U32 OfflineLPV::packUpdate( NetConnection *connection, U32 mask, BitStream *stre
    if ( mPropagateLights )
       mPropagateLights = false;
 
+   stream->writeFlag(mExportGrid);
+   if ( mExportGrid )
+      mExportGrid = false;
+
    return retMask;  
 }
 
@@ -560,6 +597,12 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
    if ( stream->readFlag() )
    {
       propagateLights();
+   }
+
+   // Propagate Lights Triggered?
+   if ( stream->readFlag() )
+   {
+      exportGrid();
    }
 }
 
@@ -601,7 +644,7 @@ void OfflineLPV::regenVolume()
             Point3F start = bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z);
             Point3F end = bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1));
 
-            bool hit = container->castRay(start, end, STATIC_COLLISION_TYPEMASK, &rayInfo);
+            bool hit = container->collideBox(start, end, STATIC_COLLISION_TYPEMASK, &rayInfo);
             mGeometryGrid[x][y][z] = hit;
             mLightGrid[x][y][z] = ColorF::ZERO;
             mPropagatedLightGrid[x][y][z] = ColorF::ZERO;
@@ -629,6 +672,8 @@ void OfflineLPV::injectLights()
    RayInfo rayInfo;
    SceneContainer* container = getContainer();
 
+   indirectLightSources.clear();
+
    // Geometry Grid Visualization.
    for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
    {
@@ -640,6 +685,11 @@ void OfflineLPV::injectLights()
 
             Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
             mLightGrid[x][y][z] = calcLightColor(point);
+
+            IndirectLightSource l;
+            l.color = mLightGrid[x][y][z];
+            l.position = point;
+            indirectLightSources.push_back(l);
          }
       }
    }
@@ -734,6 +784,93 @@ void OfflineLPV::propagateLights()
       {
          for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
          {
+            if ( !mGeometryGrid[x][y][z] ) continue;
+            if ( mLightGrid[x][y][z].alpha > 0 ) continue;
+
+            Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
+            mPropagatedLightGrid[x][y][z] = calcIndirectLightColor(point);
+         }
+      }
+   }
+}
+
+ColorF OfflineLPV::calcIndirectLightColor(Point3F position)
+{
+   PROFILE_SCOPE( OfflineLPV_calcIndirectLightColor );
+
+   ColorF result = ColorF::ZERO;
+
+   if ( !LIGHTMGR )
+      return result;
+
+   RayInfo rayInfo;
+   SceneContainer* container = getContainer();
+   if ( !container ) return result;
+
+   for (U32 i = 0; i < indirectLightSources.size(); ++i )
+   {
+      IndirectLightSource* light = &indirectLightSources[i];
+
+      bool hit = container->castRay(position, light->position, STATIC_COLLISION_TYPEMASK, &rayInfo);
+      if ( hit )
+      {
+         // OBSTRUCTED!
+         continue;
+      }
+      else
+      {
+         const F32 dist = Point3F(light->position - position).len();
+         result += light->color * (1 / (dist * dist));
+      }
+   }
+
+   return (result / indirectLightSources.size()) * 2;
+}
+
+bool OfflineLPV::_setExportGrid( void *object, const char *index, const char *data )
+{
+   OfflineLPV* volume = reinterpret_cast< OfflineLPV* >( object );
+   volume->mExportGrid = true;
+   return false;
+}
+
+void OfflineLPV::exportGrid()
+{
+   U32 pos = 0;
+   for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+   {
+      for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
+      {
+         for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+         {
+            ColorI cell_color = mPropagatedLightGrid[x][y][z];
+            mLPVRawData[pos]     = cell_color.blue;    // Blue
+            mLPVRawData[pos + 1] = cell_color.green;   // Green
+            mLPVRawData[pos + 2] = cell_color.red;     // Red
+            mLPVRawData[pos + 3] = 255;   // Alpha
+            pos += 4;
+         }
+      }
+   }
+
+   if ( _initShader() )
+   {
+      mLPVTexture = NULL;
+      mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
+   } else {
+      Con::errorf("Could not initialize shader for OfflineLPV Grid.");
+   }
+}
+
+/* Blended Light Propogation:
+
+   // Geometry Grid Visualization.
+   for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
+   {
+      for ( U32 y = 0; y < LPV_GRID_RESOLUTION; y++ )
+      {
+         for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
+         {
             ColorF blendedColor(0, 0, 0, 0);
             for ( S32 outerX = -1; outerX < 2; outerX++ )
             {
@@ -744,27 +881,16 @@ void OfflineLPV::propagateLights()
                      if ( x + outerX < 0 || y + outerY < 0 || z + outerZ < 0 ) continue;
                      if ( x + outerX >= LPV_GRID_RESOLUTION || y + outerY >= LPV_GRID_RESOLUTION || z + outerZ >= LPV_GRID_RESOLUTION ) continue;
 
-                     /*Con::printf("mLightGrid Color (%f, %f, %f): %f %f %f %f", 
-                        x + outerX, y + outerY, z + outerZ,
-                        mLightGrid[x + outerX][y + outerY][z + outerZ].red,
-                        mLightGrid[x + outerX][y + outerY][z + outerZ].green,
-                        mLightGrid[x + outerX][y + outerY][z + outerZ].blue,
-                        mLightGrid[x + outerX][y + outerY][z + outerZ].alpha);
-                        */
-
                      blendedColor += mLightGrid[x + outerX][y + outerY][z + outerZ];
                   }
                }
             }
 
             mPropagatedLightGrid[x][y][z] = blendedColor / 27;
-            Con::printf("Propagated Light Color: %f %f %f %f", mPropagatedLightGrid[x][y][z].red,
-               mPropagatedLightGrid[x][y][z].green,
-               mPropagatedLightGrid[x][y][z].blue,
-               mPropagatedLightGrid[x][y][z].alpha);
             if ( mPropagatedLightGrid[x][y][z].alpha > 0 )
                mPropagatedLightGrid[x][y][z].alpha = 1.0f;
          }
       }
    }
-}
+
+*/

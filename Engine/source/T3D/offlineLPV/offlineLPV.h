@@ -35,10 +35,14 @@
 #include "gfx/gfxDevice.h"
 #endif
 
+#ifndef _POSTEFFECTCOMMON_H_
+#include "postFx/postEffectCommon.h"
+#endif
+
 #include "materials/matTextureTarget.h"
 #include "renderInstance/renderBinManager.h"
 
-#define LPV_GRID_RESOLUTION 10
+#define LPV_GRID_RESOLUTION 20
 GFX_DeclareTextureProfile( LPVProfile );
 
 /// A volume in space that blocks visibility.
@@ -50,12 +54,24 @@ class OfflineLPV : public ScenePolyhedralSpace
 
    protected:
 
+      struct IndirectLightSource
+      {
+         ColorF color;
+         Point3F position;
+      };
+
+      Vector<IndirectLightSource> indirectLightSources;
+
       GFXTexHandle mLPVTexture;
       GFXShaderRef mShader;
       GFXStateBlockRef mStateBlock;
       GFXShaderConstBufferRef mShaderConsts;
-      GFXShaderConstHandle *mModelViewProjSC;
+      GFXShaderConstHandle *mEyePosWorldSC;
+      GFXShaderConstHandle *mRTParamsSC;
+      GFXShaderConstHandle *mVolumeStartSC;
+      GFXShaderConstHandle *mVolumeSizeSC;
       NamedTexTarget* mLightInfoTarget;
+      NamedTexTarget* mPrepassTarget;
       GFXTextureTargetRef mRenderTarget;
 
       bool _initShader();
@@ -85,7 +101,8 @@ class OfflineLPV : public ScenePolyhedralSpace
       void _handleBinEvent(   RenderBinManager *bin,                           
                         const SceneRenderState* sceneState,
                         bool isBinStart );  
-      void _renderLPV();
+      void _renderLPV(const SceneRenderState* sceneState);
+      void _updateScreenGeometry( const Frustum &frustum, GFXVertexBufferHandle<PFXVertex> *outVB );
 
    public:
 
@@ -97,7 +114,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       bool mPropagateLights;
       bool mShowLightGrid;
       bool mShowPropagatedLightGrid;
-
+      bool mExportGrid;
 
       // SimObject.
       DECLARE_CONOBJECT( OfflineLPV );
@@ -109,9 +126,11 @@ class OfflineLPV : public ScenePolyhedralSpace
       void inspectPostApply();
       void regenVolume();
       void injectLights();
+      void exportGrid();
       ColorF calcLightColor(Point3F position);
       F32 getAttenuation(LightInfo* lightInfo, Point3F position);
       void propagateLights();
+      ColorF calcIndirectLightColor(Point3F position);
 
       // Static Functions.
       static void consoleInit();
@@ -128,6 +147,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       static bool _setRegenVolume( void *object, const char *index, const char *data );
       static bool _setInjectLights( void *object, const char *index, const char *data );
       static bool _setPropagateLights( void *object, const char *index, const char *data );
+      static bool _setExportGrid( void *object, const char *index, const char *data );
 };
 
 #endif // !_AccumulationVolume_H_

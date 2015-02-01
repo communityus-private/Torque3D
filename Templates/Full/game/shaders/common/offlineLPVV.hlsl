@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 GarageGames, LLC
+// Copyright (c) 2015 Andrew Mac
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -20,11 +20,15 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "shadergen:/autogenConditioners.h"
+#include "torque.hlsl"
+
 // This is the shader input vertex structure.
 struct Vert
 {
-   float4 position   : POSITION;
-   float2 uv0        : TEXCOORD0;
+   float4 position : POSITION;
+   float2 uv0      : TEXCOORD0;
+   float3 wsEyeRay : TEXCOORD1;
 };
 
 // This is the shader output data.
@@ -32,15 +36,20 @@ struct Conn
 {
    float4 position : POSITION;
    float2 uv0      : TEXCOORD0;
+   float3 wsEyeRay : TEXCOORD1;
 };
 
-Conn main(  Vert In,
+// Render Target Paramaters (width/height of depth/light buffers)
+float4 rtParams0;
+
+Conn main(  Vert IN,
             uniform float4x4 modelView          : register(C0)
             )	         
 {
-   Conn Out;   
-   Out.position = mul( modelView, In.position );
-   Out.uv0 = In.uv0;
-   return Out;
+   Conn OUT;   
+   OUT.position = IN.position;
+   OUT.uv0 = viewportCoordToRenderTarget( IN.uv0, rtParams0 );
+   OUT.wsEyeRay = IN.wsEyeRay;
+   return OUT;
 }
 
