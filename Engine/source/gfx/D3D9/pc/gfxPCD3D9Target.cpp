@@ -497,6 +497,7 @@ void GFXPCD3D9WindowTarget::resetMode()
    mSize = Point2I(mPresentationParams.BackBufferWidth, mPresentationParams.BackBufferHeight);      
 
    mWindow->setSuppressReset(false);
+   GFX->beginReset();
 }
 
 void GFXPCD3D9WindowTarget::zombify()
