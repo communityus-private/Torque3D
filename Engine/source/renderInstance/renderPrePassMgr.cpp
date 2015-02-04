@@ -158,7 +158,7 @@ bool RenderPrePassMgr::_updateTargets()
       colorFormat = GFXFormatR8G8B8A8;
    
    // andrewmac: Deferred Shading Color Buffer
-   if (mColorTex.getFormat() != colorFormat || mColorTex.getWidthHeight() != mTargetSize)
+   if (mColorTex.getFormat() != colorFormat || mColorTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
    {
            mColorTarget.release();
            mColorTex.set(mTargetSize.x, mTargetSize.y, colorFormat,
@@ -171,7 +171,7 @@ bool RenderPrePassMgr::_updateTargets()
    }
  
    // andrewmac: Deferred Shading Material Info Buffer
-   if (mMatInfoTex.getFormat() != colorFormat || mMatInfoTex.getWidthHeight() != mTargetSize)
+   if (mMatInfoTex.getFormat() != colorFormat || mMatInfoTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
    {
                 mMatInfoTarget.release();
                 mMatInfoTex.set(mTargetSize.x, mTargetSize.y, colorFormat,
@@ -182,6 +182,8 @@ bool RenderPrePassMgr::_updateTargets()
                 for (U32 i = 0; i < mTargetChainLength; i++)
                         mTargetChain[i]->attachTexture(GFXTextureTarget::Color2, mMatInfoTarget.getTexture());
    }
+
+   GFX->finalizeReset();
 
    // Attach the light info buffer as a second render target, if there is
    // lightmapped geometry in the scene.
