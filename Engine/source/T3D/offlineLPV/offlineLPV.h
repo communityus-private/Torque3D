@@ -42,7 +42,7 @@
 #include "materials/matTextureTarget.h"
 #include "renderInstance/renderBinManager.h"
 
-#define LPV_GRID_RESOLUTION 20
+#define LPV_GRID_RESOLUTION 16
 GFX_DeclareTextureProfile( LPVProfile );
 
 /// A volume in space that blocks visibility.
@@ -58,6 +58,11 @@ class OfflineLPV : public ScenePolyhedralSpace
       {
          ColorF color;
          Point3F position;
+      };
+
+      struct ColorVoxelGrid
+      {
+         ColorF data[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
       };
 
       Vector<IndirectLightSource> indirectLightSources;
@@ -78,8 +83,13 @@ class OfflineLPV : public ScenePolyhedralSpace
 
       U8 mLPVRawData[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
       bool mGeometryGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
-      ColorF mLightGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
-      ColorF mPropagatedLightGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
+
+      ColorVoxelGrid    mLightGrid;
+
+      U32               mPropagationStage;
+      ColorVoxelGrid*   mPropagatedLightGrid;
+      ColorVoxelGrid    mPropagatedLightGridA;
+      ColorVoxelGrid    mPropagatedLightGridB;
 
       typedef SilhouetteExtractorPerspective< PolyhedronType > SilhouetteExtractorType;
 
@@ -129,7 +139,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       void exportGrid();
       ColorF calcLightColor(Point3F position);
       F32 getAttenuation(LightInfo* lightInfo, Point3F position);
-      void propagateLights();
+      void propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest);
       ColorF calcIndirectLightColor(Point3F position);
 
       // Static Functions.

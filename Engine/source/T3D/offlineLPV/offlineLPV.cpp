@@ -70,7 +70,7 @@ ConsoleDocClass( OfflineLPV,
 
 GFX_ImplementTextureProfile( LPVProfile,
                               GFXTextureProfile::DiffuseMap,
-                              GFXTextureProfile::NoMipmap | GFXTextureProfile::Dynamic,
+                              GFXTextureProfile::PreserveSize | GFXTextureProfile::KeepBitmap,
                               GFXTextureProfile::NONE );
 
 //-----------------------------------------------------------------------------
@@ -94,16 +94,13 @@ OfflineLPV::OfflineLPV()
    mObjToWorld.identity();
    mWorldToObj.identity();
 
-   // Accumulation Texture.
-   //mTextureName = "";
-   //mAccuTexture = NULL;
-
    mRegenVolume = false;
    mInjectLights = false;
    mPropagateLights = false;
    mShowLightGrid = false;
    mExportGrid = false;
    mShowPropagatedLightGrid = false;
+   mPropagationStage = 0;
 
    mLPVTexture = NULL;
    mLightInfoTarget = NULL;
@@ -111,6 +108,7 @@ OfflineLPV::OfflineLPV()
    mShader = NULL;
    mShaderConsts = NULL;
    mRenderTarget = NULL;
+   mPropagatedLightGrid = &mPropagatedLightGridA;
 
    // Generate Random Geometry Grid
    for ( U32 x = 0; x < 10; x++ )
@@ -176,10 +174,26 @@ bool OfflineLPV::onAdd()
       return false;
 
    // Prepare some client side things.
-   if ( isClientObject() )  
+   if ( isClientObject() && mLPVTexture.isNull() )  
    {
-      //smAccuVolumes.push_back(this);
-      //refreshVolumes();
+      U32 pos = 0;
+      for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+      {
+         for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
+         {
+            for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+            {
+               mLPVRawData[pos]     = 0;   // Blue
+               mLPVRawData[pos + 1] = 0;   // Green
+               mLPVRawData[pos + 2] = 255;   // Red
+               mLPVRawData[pos + 3] = 255;      // Alpha
+               pos += 4;
+            }
+         }
+      }
+
+      mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
+      _initShader();
    }
 
    mRegenVolume = false;
@@ -199,17 +213,9 @@ void OfflineLPV::onRemove()
 {
    if ( isClientObject() )  
    {
-      //smAccuVolumes.remove(this);
-      //refreshVolumes();
+
    }
    Parent::onRemove();
-
-   mLPVTexture = NULL;
-   mLightInfoTarget = NULL;
-   mPrepassTarget = NULL;
-   mShader = NULL;
-   mShaderConsts = NULL;
-   mRenderTarget = NULL;
 }
 
 void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
@@ -430,19 +436,19 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
             {
                if ( mShowPropagatedLightGrid )
                {
-                  if ( mPropagatedLightGrid[x][y][z].alpha <= 0.0f ) continue;
+                  if ( mPropagatedLightGrid->data[x][y][z].alpha <= 0.0f ) continue;
 
                   Box3F new_box;
                   new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
                      bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-                  drawer->drawCube( desc, new_box, mPropagatedLightGrid[x][y][z] );
+                  drawer->drawCube( desc, new_box, mPropagatedLightGrid->data[x][y][z] );
                } else {
-                  if ( mLightGrid[x][y][z].alpha <= 0.0f ) continue;
+                  if ( mLightGrid.data[x][y][z].alpha <= 0.0f ) continue;
 
                   Box3F new_box;
                   new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
                      bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-                  drawer->drawCube( desc, new_box, mLightGrid[x][y][z] );
+                  drawer->drawCube( desc, new_box, mLightGrid.data[x][y][z] );
                }
             } else {
                if ( !mGeometryGrid[x][y][z] ) continue;
@@ -596,7 +602,24 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
    // Propagate Lights Triggered?
    if ( stream->readFlag() )
    {
-      propagateLights();
+      switch(mPropagationStage)
+      {
+         case 0:
+            mPropagatedLightGrid = &mPropagatedLightGridA;
+            propagateLights(&mLightGrid, mPropagatedLightGrid);
+            mPropagationStage = 1;
+            break;
+         case 1:
+            mPropagatedLightGrid = &mPropagatedLightGridB;
+            propagateLights(&mPropagatedLightGridA, &mPropagatedLightGridB);
+            mPropagationStage = 2;
+            break;
+         case 2:
+            mPropagatedLightGrid = &mPropagatedLightGridA;
+            propagateLights(&mPropagatedLightGridB, &mPropagatedLightGridA);
+            mPropagationStage = 1;
+            break;
+      }
    }
 
    // Propagate Lights Triggered?
@@ -651,8 +674,10 @@ void OfflineLPV::regenVolume()
                Con::printf("Material Found In Voxel: %s", name);
             }
             mGeometryGrid[x][y][z] = hit;
-            mLightGrid[x][y][z] = ColorF::ZERO;
-            mPropagatedLightGrid[x][y][z] = ColorF::ZERO;
+            mLightGrid.data[x][y][z] = ColorF::ZERO;
+            mPropagationStage = 0;
+            mPropagatedLightGridA.data[x][y][z] = ColorF::ZERO;
+            mPropagatedLightGridB.data[x][y][z] = ColorF::ZERO;
          }
       }
    }
@@ -689,12 +714,13 @@ void OfflineLPV::injectLights()
             if ( !mGeometryGrid[x][y][z] ) continue;
 
             Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
-            mLightGrid[x][y][z] = calcLightColor(point);
+            mLightGrid.data[x][y][z] = calcLightColor(point);
 
             IndirectLightSource l;
-            l.color = mLightGrid[x][y][z];
+            l.color = mLightGrid.data[x][y][z];
             l.position = point;
             indirectLightSources.push_back(l);
+            mPropagationStage = 0;
          }
       }
    }
@@ -770,7 +796,7 @@ bool OfflineLPV::_setPropagateLights( void *object, const char *index, const cha
    return false;
 }
 
-void OfflineLPV::propagateLights()
+void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest)
 {
    Con::printf("Propagating Lights!");
 
@@ -789,16 +815,16 @@ void OfflineLPV::propagateLights()
       {
          for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
          {
-            /* Color based on indirect light sources */
+            /* Color based on indirect light sources 
             if ( !mGeometryGrid[x][y][z] ) continue;
             if ( mLightGrid[x][y][z].alpha > 0 ) continue;
 
             Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
             mPropagatedLightGrid[x][y][z] = calcIndirectLightColor(point);
-
+            */
             /* -- OR -- */
 
-            /* Simple Average Based Color Blending Blur
+            /* Simple Average Based Color Blending Blur */
             ColorF blendedColor(0, 0, 0, 0);
             for ( S32 outerX = -1; outerX < 2; outerX++ )
             {
@@ -809,15 +835,14 @@ void OfflineLPV::propagateLights()
                      if ( x + outerX < 0 || y + outerY < 0 || z + outerZ < 0 ) continue;
                      if ( x + outerX >= LPV_GRID_RESOLUTION || y + outerY >= LPV_GRID_RESOLUTION || z + outerZ >= LPV_GRID_RESOLUTION ) continue;
 
-                     blendedColor += mLightGrid[x + outerX][y + outerY][z + outerZ];
+                     blendedColor += source->data[x + outerX][y + outerY][z + outerZ];
                   }
                }
             }
 
-            mPropagatedLightGrid[x][y][z] = blendedColor / 27;
-            if ( mPropagatedLightGrid[x][y][z].alpha > 0 )
-               mPropagatedLightGrid[x][y][z].alpha = 1.0f;
-            */
+            dest->data[x][y][z] = blendedColor / 27;
+            if ( dest->data[x][y][z].alpha > 0 )
+               dest->data[x][y][z].alpha = 1.0f;
          }
       }
    }
@@ -866,28 +891,26 @@ bool OfflineLPV::_setExportGrid( void *object, const char *index, const char *da
 
 void OfflineLPV::exportGrid()
 {
-   U32 pos = 0;
-   for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+   GFXLockedRect* locked_rect = mLPVTexture->lock();
+   if ( locked_rect )
    {
-      for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
+      U32 pos = 0;
+      for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
       {
-         for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+         for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
          {
-            ColorI cell_color = mPropagatedLightGrid[x][y][z];
-            mLPVRawData[pos]     = cell_color.blue;    // Blue
-            mLPVRawData[pos + 1] = cell_color.green;   // Green
-            mLPVRawData[pos + 2] = cell_color.red;     // Red
-            mLPVRawData[pos + 3] = 255;   // Alpha
-            pos += 4;
+            for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+            {
+               ColorI cell_color = mPropagatedLightGrid->data[x][y][z];
+               mLPVRawData[pos]     = cell_color.blue;    // Blue
+               mLPVRawData[pos + 1] = cell_color.green;   // Green
+               mLPVRawData[pos + 2] = cell_color.red;     // Red
+               mLPVRawData[pos + 3] = 255;   // Alpha
+               pos += 4;
+            }
          }
       }
-   }
-
-   if ( _initShader() )
-   {
-      mLPVTexture = NULL;
-      mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
-   } else {
-      Con::errorf("Could not initialize shader for OfflineLPV Grid.");
+      dMemcpy(locked_rect->bits, mLPVRawData, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
+      mLPVTexture->unlock();
    }
 }
