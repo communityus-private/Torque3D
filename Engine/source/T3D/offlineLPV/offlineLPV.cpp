@@ -53,17 +53,13 @@
 
 #include "math/mPolyhedron.impl.h"
 
-//#define DEBUG_DRAW
-
 IMPLEMENT_CO_NETOBJECT_V1( OfflineLPV );
 
 ConsoleDocClass( OfflineLPV,
-   "@brief An invisible shape that allow objects within it to have an accumulation map.\n\n"
+   "@brief An invisible shape that allow objects within it to be lit with static global illumination.\n\n"
 
-   "OfflineLPV is used to add additional realism to a scene. It's main use is in outdoor scenes "
-   " where objects could benefit from overlaying environment accumulation textures such as sand, snow, etc.\n\n"
-
-   "Objects within the volume must have accumulation enabled in their material. \n\n"
+   "OfflineLPV is used to add static global illumination to an area of the scene. It's results are generated\n\n"
+   "at runtime based on the settings configured in the editor. \n\n"
 
    "@ingroup enviroMisc"
 );
@@ -82,8 +78,6 @@ OfflineLPV::OfflineLPV()
    VECTOR_SET_ASSOCIATION( mWSPoints );
    VECTOR_SET_ASSOCIATION( mVolumeQueryList );
 
-   //mObjectFlags.set( VisualOccluderFlag );
-   
    mNetFlags.set( Ghostable | ScopeAlways );
    mObjScale.set( 1.f, 1.f, 1.f );
    mObjBox.set(
@@ -110,15 +104,13 @@ OfflineLPV::OfflineLPV()
    mRenderTarget = NULL;
    mPropagatedLightGrid = &mPropagatedLightGridA;
 
-   // Generate Random Geometry Grid
+   // Setup Empty Geometry Grid.
    for ( U32 x = 0; x < 10; x++ )
    {
       for ( U32 y = 0; y < 10; y++ )
       {
          for ( U32 z = 0; z < 10; z++ )
-         {
-            mGeometryGrid[x][y][z] = ( gRandGen.randI(0, 10) < 5 );
-         }
+            mGeometryGrid[x][y][z] = false;
       }
    }
 
@@ -129,7 +121,6 @@ OfflineLPV::OfflineLPV()
 
 OfflineLPV::~OfflineLPV()
 {
-   //mAccuTexture = NULL;
    mLPVTexture = NULL;
    mLightInfoTarget = NULL;
    mPrepassTarget = NULL;
@@ -173,9 +164,9 @@ bool OfflineLPV::onAdd()
    if( !Parent::onAdd() )
       return false;
 
-   // Prepare some client side things.
    if ( isClientObject() && mLPVTexture.isNull() )  
    {
+      // Initialize the volume texture with all black to begin with.
       U32 pos = 0;
       for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
       {
@@ -185,13 +176,14 @@ bool OfflineLPV::onAdd()
             {
                mLPVRawData[pos]     = 0;   // Blue
                mLPVRawData[pos + 1] = 0;   // Green
-               mLPVRawData[pos + 2] = 255;   // Red
-               mLPVRawData[pos + 3] = 255;      // Alpha
+               mLPVRawData[pos + 2] = 0;   // Red
+               mLPVRawData[pos + 3] = 0;   // Alpha
                pos += 4;
             }
          }
       }
 
+      // TODO: _initShader() could fail.
       mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
       _initShader();
    }
@@ -218,196 +210,9 @@ void OfflineLPV::onRemove()
    Parent::onRemove();
 }
 
-void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
-                  const SceneRenderState* sceneState,
-                  bool isBinStart )
-{
+//-----------------------------------------------------------------------------
 
-   // We require a bin name to process effects... without
-   // it we can skip the bin entirely.
-   String binName( bin->getName() );
-   if ( binName.isEmpty() )
-      return;
-
-   if ( !isBinStart && binName.equal("AL_LightBinMgr") )
-   {
-      _renderLPV(sceneState);
-   }
-}
-
-void OfflineLPV::_renderLPV(const SceneRenderState* state)
-{
-   if ( !mLPVTexture || !isClientObject() ) 
-      return;
-
-   // -- Setup Render Target --
-   if ( !mRenderTarget )
-      mRenderTarget = GFX->allocRenderToTextureTarget();
-         
-   if ( !mRenderTarget ) return;
-
-   if ( !mLightInfoTarget )
-      mLightInfoTarget = NamedTexTarget::find( "lightinfo" );
-
-   GFXTextureObject *texObject = mLightInfoTarget->getTexture();
-   if ( !texObject ) return;
-
-   mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
-
-   // We also need to sample from the depth buffer.
-   if ( !mPrepassTarget )
-      mPrepassTarget = NamedTexTarget::find( "prepass" );
-
-   GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
-   if ( !prepassTexObject ) return;
-
-   // -- Setup screenspace quad to render (postfx) --
-   Frustum frustum = state->getCameraFrustum();
-   GFXVertexBufferHandle<PFXVertex> vb;
-   _updateScreenGeometry( frustum, &vb );
-
-   // -- State Block --
-   GFXStateBlockDesc desc;
-   desc.setZReadWrite( false, false );
-   desc.setBlend( true, GFXBlendOne, GFXBlendOne );
-   desc.setFillModeSolid();
-   //desc.samplers[0] = GFXSamplerStateDesc::getClampPoint();
-   //desc.samplersDefined = true;
-
-   // Camera position, used to calculate World Space position from depth buffer.
-   const Point3F &camPos = state->getCameraPosition();
-   mShaderConsts->setSafe( mEyePosWorldSC, camPos );
-
-   Box3F worldBox = getWorldBox();
-   Point3F bottom_corner = worldBox.minExtents;
-   Point3F top_corner = worldBox.maxExtents;
-   Point3F volume_size = (top_corner - bottom_corner);
-   mShaderConsts->setSafe(mVolumeStartSC, bottom_corner);
-   mShaderConsts->setSafe(mVolumeSizeSC, volume_size);
-
-   // Render Target Parameters.
-   const Point3I &targetSz = texObject->getSize();
-   const RectI &targetVp = mLightInfoTarget->getViewport();
-   Point4F rtParams;
-   ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
-   mShaderConsts->setSafe(mRTParamsSC, rtParams);
-
-   GFX->pushActiveRenderTarget();
-   GFX->setActiveRenderTarget( mRenderTarget );
-   GFX->setVertexBuffer( vb );
-   GFX->setStateBlockByDesc( desc );
-   GFX->setShader(mShader);
-   GFX->setShaderConstBuffer(mShaderConsts);
-
-   // Setup Textures
-   GFX->setTexture(0, mLPVTexture);
-   GFX->setTexture(1, prepassTexObject);
-
-   // Draw the screenspace quad.
-   GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
-
-   // Delete the SceneRenderState we allocated.
-   mRenderTarget->resolve();
-   GFX->popActiveRenderTarget();
-}
-
-void OfflineLPV::_updateScreenGeometry(   const Frustum &frustum,
-                                          GFXVertexBufferHandle<PFXVertex> *outVB )
-{
-   outVB->set( GFX, 4, GFXBufferTypeVolatile );
-
-   const Point3F *frustumPoints = frustum.getPoints();
-   const Point3F& cameraPos = frustum.getPosition();
-
-   // Perform a camera offset.  We need to manually perform this offset on the postFx's
-   // polygon, which is at the far plane.
-   const Point2F& projOffset = frustum.getProjectionOffset();
-   Point3F cameraOffsetPos = cameraPos;
-   if(!projOffset.isZero())
-   {
-      // First we need to calculate the offset at the near plane.  The projOffset
-      // given above can be thought of a percent as it ranges from 0..1 (or 0..-1).
-      F32 nearOffset = frustum.getNearRight() * projOffset.x;
-
-      // Now given the near plane distance from the camera we can solve the right
-      // triangle and calcuate the SIN theta for the offset at the near plane.
-      // SIN theta = x/y
-      F32 sinTheta = nearOffset / frustum.getNearDist();
-
-      // Finally, we can calcuate the offset at the far plane, which is where our sun (or vector)
-      // light's polygon is drawn.
-      F32 farOffset = frustum.getFarDist() * sinTheta;
-
-      // We can now apply this far plane offset to the far plane itself, which then compensates
-      // for the project offset.
-      MatrixF camTrans = frustum.getTransform();
-      VectorF offset = camTrans.getRightVector();
-      offset *= farOffset;
-      cameraOffsetPos += offset;
-   }
-
-   PFXVertex *vert = outVB->lock();
-
-   vert->point.set( -1.0, -1.0, 0.0 );
-   vert->texCoord.set( 0.0f, 1.0f );
-   vert->wsEyeRay = frustumPoints[Frustum::FarBottomLeft] - cameraOffsetPos;
-   vert++;
-
-   vert->point.set( -1.0, 1.0, 0.0 );
-   vert->texCoord.set( 0.0f, 0.0f );
-   vert->wsEyeRay = frustumPoints[Frustum::FarTopLeft] - cameraOffsetPos;
-   vert++;
-
-   vert->point.set( 1.0, 1.0, 0.0 );
-   vert->texCoord.set( 1.0f, 0.0f );
-   vert->wsEyeRay = frustumPoints[Frustum::FarTopRight] - cameraOffsetPos;
-   vert++;
-
-   vert->point.set( 1.0, -1.0, 0.0 );
-   vert->texCoord.set( 1.0f, 1.0f );
-   vert->wsEyeRay = frustumPoints[Frustum::FarBottomRight] - cameraOffsetPos;
-   vert++;
-
-   outVB->unlock();
-}
-
-bool OfflineLPV::_initShader()
-{
-   mShader = NULL;
-   mShaderConsts = NULL;
-
-   ShaderData *shaderData;
-   if ( !Sim::findObject( "OfflineLPVShaderData", shaderData ) )
-   {
-      Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVShaderData!" );
-      return false;
-   }
-   
-   // Need depth from pre-pass, so get the macros
-   Vector<GFXShaderMacro> macros;
-
-   if ( !mPrepassTarget )
-      mPrepassTarget = NamedTexTarget::find( "prepass" );
-
-   if ( mPrepassTarget )
-      mPrepassTarget->getShaderMacros( &macros );
-
-   mShader = shaderData->getShader( macros );
-
-   if ( !mShader )
-      return false;
-
-   mShaderConsts = mShader->allocConstBuffer();
-   mEyePosWorldSC = mShader->getShaderConstHandle( "$eyePosWorld" );
-   mRTParamsSC = mShader->getShaderConstHandle( "$rtParams0" );
-
-   mVolumeStartSC = mShader->getShaderConstHandle( "$volumeStart" );
-   mVolumeSizeSC = mShader->getShaderConstHandle( "$volumeSize" );
-
-   return true;
-}
-
-
+// This renders the visualization of the volume in the editor.
 void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat )
 {
    Parent::_renderObject( ri, state, overrideMat );
@@ -461,11 +266,6 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
          }
       }
    }
-
-   #ifdef DEBUG_DRAW
-   if( state->isDiffusePass() )
-      DebugDrawer::get()->drawPolyhedronDebugInfo( mPolyhedron, getTransform(), getScale() );
-   #endif
 }
 
 //-----------------------------------------------------------------------------
@@ -474,7 +274,6 @@ void OfflineLPV::setTransform( const MatrixF& mat )
 {
    Parent::setTransform( mat );
    mTransformDirty = true;
-   //refreshVolumes();
 }
 
 //-----------------------------------------------------------------------------
@@ -547,10 +346,7 @@ U32 OfflineLPV::packUpdate( NetConnection *connection, U32 mask, BitStream *stre
 {
    U32 retMask = Parent::packUpdate( connection, mask, stream );
 
-   if (stream->writeFlag(mask & InitialUpdateMask))
-   {
-     // stream->write( mTextureName );
-   }
+   // TODO: Should probably use a mask here rather than sending every update.
 
    stream->writeFlag(mShowLightGrid);
    stream->writeFlag(mShowPropagatedLightGrid);
@@ -578,12 +374,6 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
 {
    Parent::unpackUpdate( connection, stream );
 
-   if (stream->readFlag())
-   {
-      //stream->read( &mTextureName );
-      //setTexture(mTextureName);
-   }
-
    mShowLightGrid = stream->readFlag();
    mShowPropagatedLightGrid = stream->readFlag();
 
@@ -606,7 +396,7 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
       {
          case 0:
             mPropagatedLightGrid = &mPropagatedLightGridA;
-            propagateLights(&mLightGrid, mPropagatedLightGrid);
+            propagateLights(&mLightGrid, mPropagatedLightGrid, true);
             mPropagationStage = 1;
             break;
          case 1:
@@ -634,8 +424,10 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
 void OfflineLPV::inspectPostApply()
 {
    Parent::inspectPostApply();
-   setMaskBits(U32(-1) );
+   setMaskBits(U32(-1));
 }
+
+//--- Scene Voxelization ---
 
 bool OfflineLPV::_setRegenVolume( void *object, const char *index, const char *data )
 {
@@ -671,7 +463,7 @@ void OfflineLPV::regenVolume()
             if ( rayInfo.material )
             {
                const char* name = rayInfo.material->getMaterial()->getName();
-               Con::printf("Material Found In Voxel: %s", name);
+               //Con::printf("Material Found In Voxel: %s", name);
             }
             mGeometryGrid[x][y][z] = hit;
             mLightGrid.data[x][y][z] = ColorF::ZERO;
@@ -682,6 +474,8 @@ void OfflineLPV::regenVolume()
       }
    }
 }
+
+//--- Light Injection ---
 
 bool OfflineLPV::_setInjectLights( void *object, const char *index, const char *data )
 {
@@ -789,6 +583,8 @@ F32 OfflineLPV::getAttenuation(LightInfo* lightInfo, Point3F position)
    return 1.0 - mDot( attenParams, Point2F( dist, dist * dist ) );
 }
 
+//--- Light Propagation ---
+
 bool OfflineLPV::_setPropagateLights( void *object, const char *index, const char *data )
 {
    OfflineLPV* volume = reinterpret_cast< OfflineLPV* >( object );
@@ -796,7 +592,7 @@ bool OfflineLPV::_setPropagateLights( void *object, const char *index, const cha
    return false;
 }
 
-void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest)
+void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest, bool sampleFromGeometry)
 {
    Con::printf("Propagating Lights!");
 
@@ -804,6 +600,11 @@ void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest)
    Point3F bottom_corner = worldBox.minExtents;
    Point3F top_corner = worldBox.maxExtents;
    Point3F half_difference = ((top_corner - bottom_corner) / LPV_GRID_RESOLUTION) / 2;
+
+   Point3F difference = ((top_corner - bottom_corner) / LPV_GRID_RESOLUTION);
+   F32 distance = 1 + difference.len(); // if not offset by one then a distance < 1 increases light power? :(
+   F32 attenuation = 1 / (distance * distance);
+   //Con::printf("Distance: %f Attentuation Factor: %f", distance, attenuation);
 
    RayInfo rayInfo;
    SceneContainer* container = getContainer();
@@ -815,16 +616,17 @@ void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest)
       {
          for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
          {
-            /* Color based on indirect light sources 
+            /* Color based on indirect light sources (simple tracing)
             if ( !mGeometryGrid[x][y][z] ) continue;
             if ( mLightGrid[x][y][z].alpha > 0 ) continue;
 
             Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
             mPropagatedLightGrid[x][y][z] = calcIndirectLightColor(point);
-            */
+            ---------------- */
+
             /* -- OR -- */
 
-            /* Simple Average Based Color Blending Blur */
+            /* Color Bleeding */
             ColorF blendedColor(0, 0, 0, 0);
             for ( S32 outerX = -1; outerX < 2; outerX++ )
             {
@@ -835,7 +637,11 @@ void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest)
                      if ( x + outerX < 0 || y + outerY < 0 || z + outerZ < 0 ) continue;
                      if ( x + outerX >= LPV_GRID_RESOLUTION || y + outerY >= LPV_GRID_RESOLUTION || z + outerZ >= LPV_GRID_RESOLUTION ) continue;
 
-                     blendedColor += source->data[x + outerX][y + outerY][z + outerZ];
+                     // Attempt at being geometry aware. The idea was to not sample from voxels with geometry in them after the first pass.
+                     // First pass would let light bleed into the "air" and then the following passes would sample from "air light".
+                     if ( !sampleFromGeometry && mGeometryGrid[x + outerX][y + outerY][z + outerZ] ) continue;
+
+                     blendedColor += (source->data[x + outerX][y + outerY][z + outerZ]);// * attenuation;
                   }
                }
             }
@@ -843,6 +649,7 @@ void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest)
             dest->data[x][y][z] = blendedColor / 27;
             if ( dest->data[x][y][z].alpha > 0 )
                dest->data[x][y][z].alpha = 1.0f;
+            /* ---------------- */
          }
       }
    }
@@ -879,8 +686,9 @@ ColorF OfflineLPV::calcIndirectLightColor(Point3F position)
    }
 
    return result;
-   //return (result / indirectLightSources.size()) * 2;
 }
+
+//--- Export from CPU to GPU for rendering ---
 
 bool OfflineLPV::_setExportGrid( void *object, const char *index, const char *data )
 {
@@ -889,6 +697,8 @@ bool OfflineLPV::_setExportGrid( void *object, const char *index, const char *da
    return false;
 }
 
+// Exports mPropagatedLightGrid to the actual volume texture on the graphics card.
+// Note: for some reason the volume texture insists on being BGRA.
 void OfflineLPV::exportGrid()
 {
    GFXLockedRect* locked_rect = mLPVTexture->lock();
@@ -905,7 +715,7 @@ void OfflineLPV::exportGrid()
                mLPVRawData[pos]     = cell_color.blue;    // Blue
                mLPVRawData[pos + 1] = cell_color.green;   // Green
                mLPVRawData[pos + 2] = cell_color.red;     // Red
-               mLPVRawData[pos + 3] = 255;   // Alpha
+               mLPVRawData[pos + 3] = 255;                // Alpha
                pos += 4;
             }
          }
@@ -913,4 +723,198 @@ void OfflineLPV::exportGrid()
       dMemcpy(locked_rect->bits, mLPVRawData, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
       mLPVTexture->unlock();
    }
+}
+
+//--- Final Volume Rendering Into LightBuffer ---
+
+bool OfflineLPV::_initShader()
+{
+   mShader = NULL;
+   mShaderConsts = NULL;
+
+   ShaderData *shaderData;
+   if ( !Sim::findObject( "OfflineLPVShaderData", shaderData ) )
+   {
+      Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVShaderData!" );
+      return false;
+   }
+   
+   // Need depth from pre-pass, so get the macros
+   Vector<GFXShaderMacro> macros;
+
+   if ( !mPrepassTarget )
+      mPrepassTarget = NamedTexTarget::find( "prepass" );
+
+   if ( mPrepassTarget )
+      mPrepassTarget->getShaderMacros( &macros );
+
+   mShader = shaderData->getShader( macros );
+
+   if ( !mShader )
+      return false;
+
+   mShaderConsts = mShader->allocConstBuffer();
+   mEyePosWorldSC = mShader->getShaderConstHandle( "$eyePosWorld" );
+   mRTParamsSC = mShader->getShaderConstHandle( "$rtParams0" );
+
+   mVolumeStartSC = mShader->getShaderConstHandle( "$volumeStart" );
+   mVolumeSizeSC = mShader->getShaderConstHandle( "$volumeSize" );
+
+   return true;
+}
+
+void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
+                  const SceneRenderState* sceneState,
+                  bool isBinStart )
+{
+
+   // We require a bin name to process effects... without
+   // it we can skip the bin entirely.
+   String binName( bin->getName() );
+   if ( binName.isEmpty() )
+      return;
+
+   if ( !isBinStart && binName.equal("AL_LightBinMgr") )
+   {
+      _renderLPV(sceneState);
+   }
+}
+
+void OfflineLPV::_renderLPV(const SceneRenderState* state)
+{
+   if ( !mLPVTexture || !isClientObject() ) 
+      return;
+
+   // -- Setup Render Target --
+   if ( !mRenderTarget )
+      mRenderTarget = GFX->allocRenderToTextureTarget();
+         
+   if ( !mRenderTarget ) return;
+
+   if ( !mLightInfoTarget )
+      mLightInfoTarget = NamedTexTarget::find( "lightinfo" );
+
+   GFXTextureObject *texObject = mLightInfoTarget->getTexture();
+   if ( !texObject ) return;
+
+   mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
+
+   // We also need to sample from the depth buffer.
+   if ( !mPrepassTarget )
+      mPrepassTarget = NamedTexTarget::find( "prepass" );
+
+   GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
+   if ( !prepassTexObject ) return;
+
+   // -- Setup screenspace quad to render (postfx) --
+   Frustum frustum = state->getCameraFrustum();
+   GFXVertexBufferHandle<PFXVertex> vb;
+   _updateScreenGeometry( frustum, &vb );
+
+   // -- State Block --
+   GFXStateBlockDesc desc;
+   desc.setZReadWrite( false, false );
+   desc.setBlend( true, GFXBlendOne, GFXBlendOne );
+   desc.setFillModeSolid();
+
+   // Point sampling is useful for debugging to see the exact color values in each cell.
+   //desc.samplers[0] = GFXSamplerStateDesc::getClampPoint();
+   //desc.samplersDefined = true;
+
+   // Camera position, used to calculate World Space position from depth buffer.
+   const Point3F &camPos = state->getCameraPosition();
+   mShaderConsts->setSafe( mEyePosWorldSC, camPos );
+
+   // Volume position, used to calculate UV sampling.
+   Box3F worldBox = getWorldBox();
+   Point3F bottom_corner = worldBox.minExtents;
+   Point3F top_corner = worldBox.maxExtents;
+   Point3F volume_size = (top_corner - bottom_corner);
+   mShaderConsts->setSafe(mVolumeStartSC, bottom_corner);
+   mShaderConsts->setSafe(mVolumeSizeSC, volume_size);
+
+   // Render Target Parameters.
+   const Point3I &targetSz = texObject->getSize();
+   const RectI &targetVp = mLightInfoTarget->getViewport();
+   Point4F rtParams;
+   ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
+   mShaderConsts->setSafe(mRTParamsSC, rtParams);
+
+   GFX->pushActiveRenderTarget();
+   GFX->setActiveRenderTarget( mRenderTarget );
+   GFX->setVertexBuffer( vb );
+   GFX->setStateBlockByDesc( desc );
+   GFX->setShader(mShader);
+   GFX->setShaderConstBuffer(mShaderConsts);
+
+   // Setup Textures
+   GFX->setTexture(0, mLPVTexture);
+   GFX->setTexture(1, prepassTexObject);
+
+   // Draw the screenspace quad.
+   GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
+
+   // Clean Up
+   mRenderTarget->resolve();
+   GFX->popActiveRenderTarget();
+}
+
+void OfflineLPV::_updateScreenGeometry(   const Frustum &frustum,
+                                          GFXVertexBufferHandle<PFXVertex> *outVB )
+{
+   outVB->set( GFX, 4, GFXBufferTypeVolatile );
+
+   const Point3F *frustumPoints = frustum.getPoints();
+   const Point3F& cameraPos = frustum.getPosition();
+
+   // Perform a camera offset.  We need to manually perform this offset on the postFx's
+   // polygon, which is at the far plane.
+   const Point2F& projOffset = frustum.getProjectionOffset();
+   Point3F cameraOffsetPos = cameraPos;
+   if(!projOffset.isZero())
+   {
+      // First we need to calculate the offset at the near plane.  The projOffset
+      // given above can be thought of a percent as it ranges from 0..1 (or 0..-1).
+      F32 nearOffset = frustum.getNearRight() * projOffset.x;
+
+      // Now given the near plane distance from the camera we can solve the right
+      // triangle and calcuate the SIN theta for the offset at the near plane.
+      // SIN theta = x/y
+      F32 sinTheta = nearOffset / frustum.getNearDist();
+
+      // Finally, we can calcuate the offset at the far plane, which is where our sun (or vector)
+      // light's polygon is drawn.
+      F32 farOffset = frustum.getFarDist() * sinTheta;
+
+      // We can now apply this far plane offset to the far plane itself, which then compensates
+      // for the project offset.
+      MatrixF camTrans = frustum.getTransform();
+      VectorF offset = camTrans.getRightVector();
+      offset *= farOffset;
+      cameraOffsetPos += offset;
+   }
+
+   PFXVertex *vert = outVB->lock();
+
+   vert->point.set( -1.0, -1.0, 0.0 );
+   vert->texCoord.set( 0.0f, 1.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarBottomLeft] - cameraOffsetPos;
+   vert++;
+
+   vert->point.set( -1.0, 1.0, 0.0 );
+   vert->texCoord.set( 0.0f, 0.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarTopLeft] - cameraOffsetPos;
+   vert++;
+
+   vert->point.set( 1.0, 1.0, 0.0 );
+   vert->texCoord.set( 1.0f, 0.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarTopRight] - cameraOffsetPos;
+   vert++;
+
+   vert->point.set( 1.0, -1.0, 0.0 );
+   vert->texCoord.set( 1.0f, 1.0f );
+   vert->wsEyeRay = frustumPoints[Frustum::FarBottomRight] - cameraOffsetPos;
+   vert++;
+
+   outVB->unlock();
 }

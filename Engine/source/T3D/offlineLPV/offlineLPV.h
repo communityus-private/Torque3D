@@ -42,7 +42,7 @@
 #include "materials/matTextureTarget.h"
 #include "renderInstance/renderBinManager.h"
 
-#define LPV_GRID_RESOLUTION 16
+#define LPV_GRID_RESOLUTION 32
 GFX_DeclareTextureProfile( LPVProfile );
 
 /// A volume in space that blocks visibility.
@@ -60,65 +60,68 @@ class OfflineLPV : public ScenePolyhedralSpace
          Point3F position;
       };
 
+      // Wrapped in struct for easy pointer reference.
       struct ColorVoxelGrid
       {
          ColorF data[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
       };
 
+      // Used only for indirect light tracing.
       Vector<IndirectLightSource> indirectLightSources;
 
-      GFXTexHandle mLPVTexture;
-      GFXShaderRef mShader;
-      GFXStateBlockRef mStateBlock;
+      // Volume Texture and it's raw data for copying.
+      U8             mLPVRawData[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
+      GFXTexHandle   mLPVTexture;
+
+      // We sample from prepass and render to light buffer.
+      NamedTexTarget*         mPrepassTarget;
+      NamedTexTarget*         mLightInfoTarget;
+      GFXTextureTargetRef     mRenderTarget;
+
+      // Shader
+      GFXShaderRef            mShader;
+      GFXStateBlockRef        mStateBlock;
       GFXShaderConstBufferRef mShaderConsts;
-      GFXShaderConstHandle *mEyePosWorldSC;
-      GFXShaderConstHandle *mRTParamsSC;
-      GFXShaderConstHandle *mVolumeStartSC;
-      GFXShaderConstHandle *mVolumeSizeSC;
-      NamedTexTarget* mLightInfoTarget;
-      NamedTexTarget* mPrepassTarget;
-      GFXTextureTargetRef mRenderTarget;
+
+      // Shader Constants.
+      GFXShaderConstHandle    *mEyePosWorldSC;
+      GFXShaderConstHandle    *mRTParamsSC;
+      GFXShaderConstHandle    *mVolumeStartSC;
+      GFXShaderConstHandle    *mVolumeSizeSC;
 
       bool _initShader();
 
-      U8 mLPVRawData[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
+      // Geometry Grid (true = filled, false = empty)
       bool mGeometryGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
 
+      // Directly lit voxel grid. Calculated from real light sources in scene.
       ColorVoxelGrid    mLightGrid;
 
+      // Propagation Grids.
       U32               mPropagationStage;
       ColorVoxelGrid*   mPropagatedLightGrid;
       ColorVoxelGrid    mPropagatedLightGridA;
       ColorVoxelGrid    mPropagatedLightGridB;
 
-      typedef SilhouetteExtractorPerspective< PolyhedronType > SilhouetteExtractorType;
-
-      /// Whether the volume's transform has changed and we need to recompute
-      /// transform-based data.
-      bool mTransformDirty;
-
-      /// World-space points of the volume's polyhedron.
-      Vector< Point3F > mWSPoints;
-
-      /// Silhouette extractor when using perspective projections.
-      SilhouetteExtractorType mSilhouetteExtractor;
-      
-      mutable Vector< SceneObject* > mVolumeQueryList;
-      
-      // SceneSpace.
-      virtual void _renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat );
-
-      void _handleBinEvent(   RenderBinManager *bin,                           
-                        const SceneRenderState* sceneState,
-                        bool isBinStart );  
+      // Final Volume Rendering
+      void _handleBinEvent( RenderBinManager *bin, const SceneRenderState* sceneState, bool isBinStart );  
       void _renderLPV(const SceneRenderState* sceneState);
       void _updateScreenGeometry( const Frustum &frustum, GFXVertexBufferHandle<PFXVertex> *outVB );
+
+      // World Editor Visualization.
+      typedef SilhouetteExtractorPerspective< PolyhedronType > SilhouetteExtractorType;
+      bool mTransformDirty;
+      Vector< Point3F > mWSPoints;
+      SilhouetteExtractorType mSilhouetteExtractor;
+      mutable Vector< SceneObject* > mVolumeQueryList;
+      virtual void _renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat );
 
    public:
 
       OfflineLPV();
       ~OfflineLPV();
 
+      // Editor Triggered Flags
       bool mRegenVolume;
       bool mInjectLights;
       bool mPropagateLights;
@@ -134,12 +137,14 @@ class OfflineLPV : public ScenePolyhedralSpace
       virtual bool onAdd();
       virtual void onRemove();
       void inspectPostApply();
+
+      // Editor Triggered Functions
       void regenVolume();
       void injectLights();
       void exportGrid();
       ColorF calcLightColor(Point3F position);
       F32 getAttenuation(LightInfo* lightInfo, Point3F position);
-      void propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest);
+      void propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest, bool sampleFromGeometry = false);
       ColorF calcIndirectLightColor(Point3F position);
 
       // Static Functions.
@@ -154,10 +159,11 @@ class OfflineLPV : public ScenePolyhedralSpace
       virtual void buildSilhouette( const SceneCameraState& cameraState, Vector< Point3F >& outPoints );
       virtual void setTransform( const MatrixF& mat );
 
+      // Editor Triggered Functions
       static bool _setRegenVolume( void *object, const char *index, const char *data );
       static bool _setInjectLights( void *object, const char *index, const char *data );
       static bool _setPropagateLights( void *object, const char *index, const char *data );
       static bool _setExportGrid( void *object, const char *index, const char *data );
 };
 
-#endif // !_AccumulationVolume_H_
+#endif // !_OFFLINELPV_H_
