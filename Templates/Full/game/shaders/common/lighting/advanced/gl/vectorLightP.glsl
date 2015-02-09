@@ -275,16 +275,7 @@ void main()
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    vec3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
-   
-   // Felix' Normal Mapped Ambient.
-   float ambientBrightness = lightAmbient.r;
-   vec3 worldNormal = normalize(tMul(eyeMat, vec4(normal,1.0))).xyz;
-   float ambientContrast = 0.5;  
-   vec4 upAmbient = lerp( 1 - lightAmbient * 0.65, lightAmbient, 1-ambientBrightness*ambientContrast );
-   vec4 lightAmbientTwoTone = lerp( lightAmbient * 0.8 , upAmbient , worldNormal.b ); 
-   vec4 addToResult = lightAmbientTwoTone + dotNL * lightColor * ambientBrightness * 0.25; 
-
-   //vec4 addToResult = lightAmbient;
+   vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
    // TODO: This needs to be removed when lightmapping is disabled
    // as its extra work per-pixel on dynamic lit scenes.
