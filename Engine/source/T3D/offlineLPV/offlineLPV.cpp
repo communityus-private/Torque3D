@@ -446,6 +446,7 @@ void OfflineLPV::regenVolume()
    Point3F difference = (top_corner - bottom_corner) / LPV_GRID_RESOLUTION;
 
    RayInfo rayInfo;
+   rayInfo.generateTexCoord = true;
    SceneContainer* container = getContainer();
    if ( !container ) return;
 
@@ -462,7 +463,10 @@ void OfflineLPV::regenVolume()
             bool hit = container->castRay(start, end, STATIC_COLLISION_TYPEMASK, &rayInfo);
             if ( rayInfo.material )
             {
-               const char* name = rayInfo.material->getMaterial()->getName();
+               BaseMaterialDefinition* mat = rayInfo.material->getMaterial();
+               const char* name = mat->getName();
+               BaseMatInstance* matInst = mat->createMatInstance();
+               //matInst
                //Con::printf("Material Found In Voxel: %s", name);
             }
             mGeometryGrid[x][y][z] = hit;
@@ -705,11 +709,11 @@ void OfflineLPV::exportGrid()
    if ( locked_rect )
    {
       U32 pos = 0;
-      for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+      for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
       {
          for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
          {
-            for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+            for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
             {
                ColorI cell_color = mPropagatedLightGrid->data[x][y][z];
                mLPVRawData[pos]     = cell_color.blue;    // Blue
