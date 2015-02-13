@@ -102,7 +102,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       bool _initShaders();
 
       // Geometry Grid (true = filled, false = empty)
-      bool mGeometryGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
+      ColorVoxelGrid    mGeometryGrid;
 
       // Directly lit voxel grid. Calculated from real light sources in scene.
       ColorVoxelGrid    mLightGrid;

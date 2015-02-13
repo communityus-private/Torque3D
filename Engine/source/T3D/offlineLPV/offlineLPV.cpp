@@ -33,6 +33,7 @@
 #include "materials/materialManager.h"
 #include "materials/materialFeatureTypes.h"
 #include "materials/matInstance.h"
+#include "materials/processedMaterial.h"
 #include "console/consoleTypes.h"
 #include "core/stream/bitStream.h"
 #include "gfx/gfxDevice.h"
@@ -110,16 +111,6 @@ OfflineLPV::OfflineLPV()
    mReflectShaderConsts = NULL;
    mRenderTarget = NULL;
    mPropagatedLightGrid = &mPropagatedLightGridA;
-
-   // Setup Empty Geometry Grid.
-   for ( U32 x = 0; x < 10; x++ )
-   {
-      for ( U32 y = 0; y < 10; y++ )
-      {
-         for ( U32 z = 0; z < 10; z++ )
-            mGeometryGrid[x][y][z] = false;
-      }
-   }
 
    resetWorldBox();
 
@@ -301,12 +292,12 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
 
             if ( mShowVoxels )
             {
-               if ( !mGeometryGrid[x][y][z] ) continue;
+               if ( mGeometryGrid.data[x][y][z].alpha <= 0.0f ) continue;
 
                Box3F new_box;
                new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
                   bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-               drawer->drawCube( desc, new_box, ColorI( x * 7.9, y * 7.9, z * 7.9 ) );
+               drawer->drawCube( desc, new_box, mGeometryGrid.data[x][y][z] );
 
                continue;
             }
@@ -520,16 +511,20 @@ void OfflineLPV::regenVolume()
             Point3F start = bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z);
             Point3F end = bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1));
 
+            ColorF voxel_color = ColorF::ZERO;
+
             bool hit = container->castRay(start, end, STATIC_COLLISION_TYPEMASK, &rayInfo);
-            if ( rayInfo.material )
+            if ( hit && rayInfo.material )
             {
-               BaseMaterialDefinition* mat = rayInfo.material->getMaterial();
-               const char* name = mat->getName();
-               BaseMatInstance* matInst = mat->createMatInstance();
-               //matInst
-               //Con::printf("Material Found In Voxel: %s", name);
+               Material* mat = dynamic_cast<Material*>(rayInfo.material->getMaterial());
+               if ( !mat ) continue;
+
+               //const char* name = mat->getName();
+               //Con::printf("Voxel Color Detected: %f %f %f", mat->mDiffuse[0].red, mat->mDiffuse[0].blue, mat->mDiffuse[0].green);
+             
+               voxel_color = mat->mDiffuse[0];
             }
-            mGeometryGrid[x][y][z] = hit;
+            mGeometryGrid.data[x][y][z] = voxel_color;
             mLightGrid.data[x][y][z] = ColorF::ZERO;
             mPropagationStage = 0;
             mPropagatedLightGridA.data[x][y][z] = ColorF::ZERO;
@@ -569,10 +564,10 @@ void OfflineLPV::injectLights()
       {
          for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
          {
-            if ( !mGeometryGrid[x][y][z] ) continue;
+            if ( mGeometryGrid.data[x][y][z].alpha <= 0.0f ) continue;
 
             Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
-            mLightGrid.data[x][y][z] = calcLightColor(point);
+            mLightGrid.data[x][y][z] = calcLightColor(point) * mGeometryGrid.data[x][y][z];
 
             IndirectLightSource l;
             l.color = mLightGrid.data[x][y][z];
@@ -703,7 +698,7 @@ void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest, b
 
                      // Attempt at being geometry aware. The idea was to not sample from voxels with geometry in them after the first pass.
                      // First pass would let light bleed into the "air" and then the following passes would sample from "air light".
-                     if ( !sampleFromGeometry && mGeometryGrid[x + outerX][y + outerY][z + outerZ] ) continue;
+                     if ( !sampleFromGeometry && mGeometryGrid.data[x + outerX][y + outerY][z + outerZ].alpha > 0.0f ) continue;
 
                      blendedColor += (source->data[x + outerX][y + outerY][z + outerZ]);// * attenuation;
                   }
