@@ -91,16 +91,23 @@ OfflineLPV::OfflineLPV()
    mRegenVolume = false;
    mInjectLights = false;
    mPropagateLights = false;
-   mShowLightGrid = false;
-   mExportGrid = false;
-   mShowPropagatedLightGrid = false;
+   mExportPropagated = false;
+   mExportDirectLight = false;
+   mRenderReflection = false;
    mPropagationStage = 0;
 
-   mLPVTexture = NULL;
+   mShowVoxels = false;
+   mShowDirectLight = false;
+   mShowPropagated = false;
+
+   mPropagatedTexture = NULL;
+   mDirectLightTexture = NULL;
    mLightInfoTarget = NULL;
    mPrepassTarget = NULL;
-   mShader = NULL;
-   mShaderConsts = NULL;
+   mPropagatedShader = NULL;
+   mPropagatedShaderConsts = NULL;
+   mReflectShader = NULL;
+   mReflectShaderConsts = NULL;
    mRenderTarget = NULL;
    mPropagatedLightGrid = &mPropagatedLightGridA;
 
@@ -121,30 +128,53 @@ OfflineLPV::OfflineLPV()
 
 OfflineLPV::~OfflineLPV()
 {
-   mLPVTexture = NULL;
+   mPropagatedTexture = NULL;
+   mDirectLightTexture = NULL;
    mLightInfoTarget = NULL;
    mPrepassTarget = NULL;
-   mShader = NULL;
-   mShaderConsts = NULL;
+   mPropagatedShader = NULL;
+   mPropagatedShaderConsts = NULL;
+   mReflectShader = NULL;
+   mReflectShaderConsts = NULL;
    mRenderTarget = NULL;
 }
 
 void OfflineLPV::initPersistFields()
 {
-   addProtectedField( "regenVolume", TypeBool, Offset( mRegenVolume, OfflineLPV ),
-         &_setRegenVolume, &defaultProtectedGetFn, "HACK: flip this to regen volume." );
+   addGroup("OfflineLPV - General");
 
-   addProtectedField( "injectLights", TypeBool, Offset( mInjectLights, OfflineLPV ),
-         &_setInjectLights, &defaultProtectedGetFn, "HACK: flip this to regen volume." );
+      addProtectedField( "regenVolume", TypeBool, Offset( mRegenVolume, OfflineLPV ),
+            &_setRegenVolume, &defaultProtectedGetFn, "Regenerate Voxel Grid" );
 
-   addProtectedField( "propagateLights", TypeBool, Offset( mPropagateLights, OfflineLPV ),
-         &_setPropagateLights, &defaultProtectedGetFn, "HACK: flip this to regen volume." );
+      addField("showVoxels", TypeBool, Offset(mShowVoxels, OfflineLPV), "");
 
-   addProtectedField( "exportGrid", TypeBool, Offset( mExportGrid, OfflineLPV ),
-         &_setExportGrid, &defaultProtectedGetFn, "HACK: flip this to regen volume." );
+      addProtectedField( "injectLights", TypeBool, Offset( mInjectLights, OfflineLPV ),
+            &_setInjectLights, &defaultProtectedGetFn, "Inject scene lights into grid." );
 
-   addField("showLightGrid", TypeBool, Offset(mShowLightGrid, OfflineLPV), "");
-   addField("showPropagatedLightGrid", TypeBool, Offset(mShowPropagatedLightGrid, OfflineLPV), "");
+      addField("showDirectLight", TypeBool, Offset(mShowDirectLight, OfflineLPV), "");
+
+   endGroup("OfflineLPV - General");
+
+   addGroup("OfflineLPV - Propagation");
+
+      addProtectedField( "propagateLights", TypeBool, Offset( mPropagateLights, OfflineLPV ),
+            &_setPropagateLights, &defaultProtectedGetFn, "Perform light propagation." );
+
+      addField("showPropagated", TypeBool, Offset(mShowPropagated, OfflineLPV), "Render propagated light.");
+
+      addProtectedField( "exportPropagated", TypeBool, Offset( mExportPropagated, OfflineLPV ),
+            &_setExportPropagated, &defaultProtectedGetFn, "Export propagated light grid to display." );
+
+   endGroup("OfflineLPV - Propagation");
+
+   addGroup("OfflineLPV - Reflection");
+
+      addProtectedField( "exportDirectLight", TypeBool, Offset( mExportDirectLight, OfflineLPV ),
+            &_setExportDirectLight, &defaultProtectedGetFn, "Export direct light grid for reflections." );
+
+      addField("renderReflection", TypeBool, Offset(mRenderReflection, OfflineLPV), "Render reflections.");
+
+   endGroup("OfflineLPV - Reflection");
 
    Parent::initPersistFields();
 }
@@ -164,7 +194,7 @@ bool OfflineLPV::onAdd()
    if( !Parent::onAdd() )
       return false;
 
-   if ( isClientObject() && mLPVTexture.isNull() )  
+   if ( isClientObject() )  
    {
       // Initialize the volume texture with all black to begin with.
       U32 pos = 0;
@@ -174,26 +204,34 @@ bool OfflineLPV::onAdd()
          {
             for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
             {
-               mLPVRawData[pos]     = 0;   // Blue
-               mLPVRawData[pos + 1] = 0;   // Green
-               mLPVRawData[pos + 2] = 0;   // Red
-               mLPVRawData[pos + 3] = 0;   // Alpha
+               mBuffer[pos]     = 0;   // Blue
+               mBuffer[pos + 1] = 0;   // Green
+               mBuffer[pos + 2] = 0;   // Red
+               mBuffer[pos + 3] = 0;   // Alpha
                pos += 4;
             }
          }
       }
 
-      // TODO: _initShader() could fail.
-      mLPVTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mLPVRawData[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Light Propagation Grid");
-      _initShader();
+      if ( mPropagatedTexture.isNull() || mDirectLightTexture.isNull() )
+         _initShaders();
+
+      if ( mPropagatedTexture.isNull() )
+         mPropagatedTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mBuffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Propagated Light Grid");
+
+      if ( mDirectLightTexture.isNull() )
+         mDirectLightTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mBuffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Direct Light Grid");
    }
 
    mRegenVolume = false;
    mInjectLights = false;
    mPropagateLights = false;
-   mShowLightGrid = false;
-   mExportGrid = false;
-   mShowPropagatedLightGrid = false;
+   mExportPropagated = false;
+   mExportDirectLight = false;
+   mRenderReflection = false;
+   mShowVoxels = false;
+   mShowDirectLight = false;
+   mShowPropagated = false;
 
    // Set up the silhouette extractor.
    mSilhouetteExtractor = SilhouetteExtractorType( mPolyhedron );
@@ -237,31 +275,40 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
       {
          for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
          {
-            if ( mShowLightGrid )
+            if ( mShowPropagated )
             {
-               if ( mShowPropagatedLightGrid )
-               {
-                  if ( mPropagatedLightGrid->data[x][y][z].alpha <= 0.0f ) continue;
+               if ( mPropagatedLightGrid->data[x][y][z].alpha <= 0.0f ) continue;
 
-                  Box3F new_box;
-                  new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
-                     bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-                  drawer->drawCube( desc, new_box, mPropagatedLightGrid->data[x][y][z] );
-               } else {
-                  if ( mLightGrid.data[x][y][z].alpha <= 0.0f ) continue;
+               Box3F new_box;
+               new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
+                  bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
+               drawer->drawCube( desc, new_box, mPropagatedLightGrid->data[x][y][z] );
 
-                  Box3F new_box;
-                  new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
-                     bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-                  drawer->drawCube( desc, new_box, mLightGrid.data[x][y][z] );
-               }
-            } else {
+               continue;
+            }
+
+            if ( mShowDirectLight )
+            {
+               if ( mLightGrid.data[x][y][z].alpha <= 0.0f ) continue;
+
+               Box3F new_box;
+               new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
+                  bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
+               drawer->drawCube( desc, new_box, mLightGrid.data[x][y][z] );
+
+               continue;
+            }
+
+            if ( mShowVoxels )
+            {
                if ( !mGeometryGrid[x][y][z] ) continue;
 
                Box3F new_box;
                new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
                   bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
                drawer->drawCube( desc, new_box, ColorI( x * 7.9, y * 7.9, z * 7.9 ) );
+
+               continue;
             }
          }
       }
@@ -347,9 +394,10 @@ U32 OfflineLPV::packUpdate( NetConnection *connection, U32 mask, BitStream *stre
    U32 retMask = Parent::packUpdate( connection, mask, stream );
 
    // TODO: Should probably use a mask here rather than sending every update.
-
-   stream->writeFlag(mShowLightGrid);
-   stream->writeFlag(mShowPropagatedLightGrid);
+   stream->writeFlag(mShowVoxels);
+   stream->writeFlag(mShowDirectLight);
+   stream->writeFlag(mShowPropagated);
+   stream->writeFlag(mRenderReflection);
 
    stream->writeFlag(mRegenVolume);
    if ( mRegenVolume )
@@ -363,9 +411,13 @@ U32 OfflineLPV::packUpdate( NetConnection *connection, U32 mask, BitStream *stre
    if ( mPropagateLights )
       mPropagateLights = false;
 
-   stream->writeFlag(mExportGrid);
-   if ( mExportGrid )
-      mExportGrid = false;
+   stream->writeFlag(mExportPropagated);
+   if ( mExportPropagated )
+      mExportPropagated = false;
+
+   stream->writeFlag(mExportDirectLight);
+   if ( mExportDirectLight )
+      mExportDirectLight = false;
 
    return retMask;  
 }
@@ -374,8 +426,10 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
 {
    Parent::unpackUpdate( connection, stream );
 
-   mShowLightGrid = stream->readFlag();
-   mShowPropagatedLightGrid = stream->readFlag();
+   mShowVoxels = stream->readFlag();
+   mShowDirectLight = stream->readFlag();
+   mShowPropagated = stream->readFlag();
+   mRenderReflection = stream->readFlag();
 
    // Regen Volume Triggered?
    if ( stream->readFlag() )
@@ -412,10 +466,16 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
       }
    }
 
-   // Propagate Lights Triggered?
+   // Export Propagated Light?
    if ( stream->readFlag() )
    {
-      exportGrid();
+      exportPropagatedLight();
+   }
+
+   // Export Direct Light?
+   if ( stream->readFlag() )
+   {
+      exportDirectLight();
    }
 }
 
@@ -694,18 +754,18 @@ ColorF OfflineLPV::calcIndirectLightColor(Point3F position)
 
 //--- Export from CPU to GPU for rendering ---
 
-bool OfflineLPV::_setExportGrid( void *object, const char *index, const char *data )
+bool OfflineLPV::_setExportPropagated( void *object, const char *index, const char *data )
 {
    OfflineLPV* volume = reinterpret_cast< OfflineLPV* >( object );
-   volume->mExportGrid = true;
+   volume->mExportPropagated = true;
    return false;
 }
 
 // Exports mPropagatedLightGrid to the actual volume texture on the graphics card.
 // Note: for some reason the volume texture insists on being BGRA.
-void OfflineLPV::exportGrid()
+void OfflineLPV::exportPropagatedLight()
 {
-   GFXLockedRect* locked_rect = mLPVTexture->lock();
+   GFXLockedRect* locked_rect = mPropagatedTexture->lock();
    if ( locked_rect )
    {
       U32 pos = 0;
@@ -716,33 +776,63 @@ void OfflineLPV::exportGrid()
             for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
             {
                ColorI cell_color = mPropagatedLightGrid->data[x][y][z];
-               mLPVRawData[pos]     = cell_color.blue;    // Blue
-               mLPVRawData[pos + 1] = cell_color.green;   // Green
-               mLPVRawData[pos + 2] = cell_color.red;     // Red
-               mLPVRawData[pos + 3] = 255;                // Alpha
+               mBuffer[pos]     = cell_color.blue;    // Blue
+               mBuffer[pos + 1] = cell_color.green;   // Green
+               mBuffer[pos + 2] = cell_color.red;     // Red
+               mBuffer[pos + 3] = 255;                // Alpha
                pos += 4;
             }
          }
       }
-      dMemcpy(locked_rect->bits, mLPVRawData, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
-      mLPVTexture->unlock();
+      dMemcpy(locked_rect->bits, mBuffer, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
+      mPropagatedTexture->unlock();
+   }
+}
+
+bool OfflineLPV::_setExportDirectLight( void *object, const char *index, const char *data )
+{
+   OfflineLPV* volume = reinterpret_cast< OfflineLPV* >( object );
+   volume->mExportDirectLight = true;
+   return false;
+}
+
+// Exports mLightGrid to the actual volume texture on the graphics card.
+// Note: for some reason the volume texture insists on being BGRA.
+void OfflineLPV::exportDirectLight()
+{
+   GFXLockedRect* locked_rect = mDirectLightTexture->lock();
+   if ( locked_rect )
+   {
+      U32 pos = 0;
+      for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+      {
+         for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
+         {
+            for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+            {
+               ColorI cell_color = mLightGrid.data[x][y][z];
+               mBuffer[pos]     = cell_color.blue;    // Blue
+               mBuffer[pos + 1] = cell_color.green;   // Green
+               mBuffer[pos + 2] = cell_color.red;     // Red
+               mBuffer[pos + 3] = 255;                // Alpha
+               pos += 4;
+            }
+         }
+      }
+      dMemcpy(locked_rect->bits, mBuffer, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
+      mDirectLightTexture->unlock();
    }
 }
 
 //--- Final Volume Rendering Into LightBuffer ---
 
-bool OfflineLPV::_initShader()
+bool OfflineLPV::_initShaders()
 {
-   mShader = NULL;
-   mShaderConsts = NULL;
+   mPropagatedShader = NULL;
+   mPropagatedShaderConsts = NULL;
+   mReflectShader = NULL;
+   mReflectShaderConsts = NULL;
 
-   ShaderData *shaderData;
-   if ( !Sim::findObject( "OfflineLPVShaderData", shaderData ) )
-   {
-      Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVShaderData!" );
-      return false;
-   }
-   
    // Need depth from pre-pass, so get the macros
    Vector<GFXShaderMacro> macros;
 
@@ -752,17 +842,42 @@ bool OfflineLPV::_initShader()
    if ( mPrepassTarget )
       mPrepassTarget->getShaderMacros( &macros );
 
-   mShader = shaderData->getShader( macros );
+   ShaderData *shaderData;
 
-   if ( !mShader )
+   // Load Propagated Display Shader
+   if ( !Sim::findObject( "OfflineLPVPropagatedShaderData", shaderData ) )
+   {
+      Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVPropagatedShaderData!" );
+      return false;
+   }
+
+   mPropagatedShader = shaderData->getShader( macros );
+   if ( !mPropagatedShader )
+      return false;
+   
+   mPropagatedShaderConsts = mPropagatedShader->allocConstBuffer();
+   mEyePosWorldPropSC = mPropagatedShader->getShaderConstHandle( "$eyePosWorld" );
+   mRTParamsPropSC = mPropagatedShader->getShaderConstHandle( "$rtParams0" );
+   mVolumeStartPropSC = mPropagatedShader->getShaderConstHandle( "$volumeStart" );
+   mVolumeSizePropSC = mPropagatedShader->getShaderConstHandle( "$volumeSize" );
+
+   // Load Reflection Shader
+   if ( !Sim::findObject( "OfflineLPVReflectShaderData", shaderData ) )
+   {
+      Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVReflectShaderData!" );
+      return false;
+   }
+
+   mReflectShader = shaderData->getShader( macros );
+   if ( !mReflectShader )
       return false;
 
-   mShaderConsts = mShader->allocConstBuffer();
-   mEyePosWorldSC = mShader->getShaderConstHandle( "$eyePosWorld" );
-   mRTParamsSC = mShader->getShaderConstHandle( "$rtParams0" );
-
-   mVolumeStartSC = mShader->getShaderConstHandle( "$volumeStart" );
-   mVolumeSizeSC = mShader->getShaderConstHandle( "$volumeSize" );
+   mReflectShaderConsts = mReflectShader->allocConstBuffer();
+   mInverseViewReflectSC = mReflectShader->getShaderConstHandle( "$invViewMat" );
+   mEyePosWorldReflectSC = mReflectShader->getShaderConstHandle( "$eyePosWorld" );
+   mRTParamsReflectSC = mReflectShader->getShaderConstHandle( "$rtParams0" );
+   mVolumeStartReflectSC = mReflectShader->getShaderConstHandle( "$volumeStart" );
+   mVolumeSizeReflectSC = mReflectShader->getShaderConstHandle( "$volumeSize" );
 
    return true;
 }
@@ -780,13 +895,16 @@ void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,
 
    if ( !isBinStart && binName.equal("AL_LightBinMgr") )
    {
-      _renderLPV(sceneState);
+      _renderPropagated(sceneState);
+
+      if ( mRenderReflection )
+         _renderReflect(sceneState);
    }
 }
 
-void OfflineLPV::_renderLPV(const SceneRenderState* state)
+void OfflineLPV::_renderPropagated(const SceneRenderState* state)
 {
-   if ( !mLPVTexture || !isClientObject() ) 
+   if ( !mPropagatedTexture || !isClientObject() ) 
       return;
 
    // -- Setup Render Target --
@@ -827,32 +945,116 @@ void OfflineLPV::_renderLPV(const SceneRenderState* state)
 
    // Camera position, used to calculate World Space position from depth buffer.
    const Point3F &camPos = state->getCameraPosition();
-   mShaderConsts->setSafe( mEyePosWorldSC, camPos );
+   mPropagatedShaderConsts->setSafe( mEyePosWorldPropSC, camPos );
 
    // Volume position, used to calculate UV sampling.
    Box3F worldBox = getWorldBox();
    Point3F bottom_corner = worldBox.minExtents;
    Point3F top_corner = worldBox.maxExtents;
    Point3F volume_size = (top_corner - bottom_corner);
-   mShaderConsts->setSafe(mVolumeStartSC, bottom_corner);
-   mShaderConsts->setSafe(mVolumeSizeSC, volume_size);
+   mPropagatedShaderConsts->setSafe(mVolumeStartPropSC, bottom_corner);
+   mPropagatedShaderConsts->setSafe(mVolumeSizePropSC, volume_size);
 
    // Render Target Parameters.
    const Point3I &targetSz = texObject->getSize();
    const RectI &targetVp = mLightInfoTarget->getViewport();
    Point4F rtParams;
    ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
-   mShaderConsts->setSafe(mRTParamsSC, rtParams);
+   mPropagatedShaderConsts->setSafe(mRTParamsPropSC, rtParams);
 
    GFX->pushActiveRenderTarget();
    GFX->setActiveRenderTarget( mRenderTarget );
    GFX->setVertexBuffer( vb );
    GFX->setStateBlockByDesc( desc );
-   GFX->setShader(mShader);
-   GFX->setShaderConstBuffer(mShaderConsts);
+   GFX->setShader(mPropagatedShader);
+   GFX->setShaderConstBuffer(mPropagatedShaderConsts);
 
    // Setup Textures
-   GFX->setTexture(0, mLPVTexture);
+   GFX->setTexture(0, mPropagatedTexture);
+   GFX->setTexture(1, prepassTexObject);
+
+   // Draw the screenspace quad.
+   GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
+
+   // Clean Up
+   mRenderTarget->resolve();
+   GFX->popActiveRenderTarget();
+}
+
+void OfflineLPV::_renderReflect(const SceneRenderState* state)
+{
+   if ( !mDirectLightTexture || !isClientObject() ) 
+      return;
+
+   // -- Setup Render Target --
+   if ( !mRenderTarget )
+      mRenderTarget = GFX->allocRenderToTextureTarget();
+         
+   if ( !mRenderTarget ) return;
+
+   if ( !mLightInfoTarget )
+      mLightInfoTarget = NamedTexTarget::find( "lightinfo" );
+
+   GFXTextureObject *texObject = mLightInfoTarget->getTexture();
+   if ( !texObject ) return;
+
+   mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
+
+   // We also need to sample from the depth buffer.
+   if ( !mPrepassTarget )
+      mPrepassTarget = NamedTexTarget::find( "prepass" );
+
+   GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
+   if ( !prepassTexObject ) return;
+
+   // -- Setup screenspace quad to render (postfx) --
+   Frustum frustum = state->getCameraFrustum();
+   GFXVertexBufferHandle<PFXVertex> vb;
+   _updateScreenGeometry( frustum, &vb );
+
+   // -- State Block --
+   GFXStateBlockDesc desc;
+   desc.setZReadWrite( false, false );
+   desc.setBlend( true, GFXBlendOne, GFXBlendOne );
+   desc.setFillModeSolid();
+
+   // Point sampling is useful for debugging to see the exact color values in each cell.
+   //desc.samplers[0] = GFXSamplerStateDesc::getClampPoint();
+   //desc.samplersDefined = true;
+
+   // Camera position, used to calculate World Space position from depth buffer.
+   const Point3F &camPos = state->getCameraPosition();
+   mReflectShaderConsts->setSafe( mEyePosWorldReflectSC, camPos );
+
+   MatrixF inverseViewMatrix = state->getWorldViewMatrix();
+   inverseViewMatrix.fullInverse();
+   inverseViewMatrix.transpose();
+   mReflectShaderConsts->setSafe( mInverseViewReflectSC, inverseViewMatrix );
+
+   // Volume position, used to calculate UV sampling.
+   Box3F worldBox = getWorldBox();
+   Point3F bottom_corner = worldBox.minExtents;
+   Point3F top_corner = worldBox.maxExtents;
+   Point3F volume_size = (top_corner - bottom_corner);
+   mReflectShaderConsts->setSafe(mVolumeStartReflectSC, bottom_corner);
+   mReflectShaderConsts->setSafe(mVolumeSizeReflectSC, volume_size);
+
+   // Render Target Parameters.
+   const Point3I &targetSz = texObject->getSize();
+   const RectI &targetVp = mLightInfoTarget->getViewport();
+   Point4F rtParams;
+   ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
+   mReflectShaderConsts->setSafe(mRTParamsReflectSC, rtParams);
+
+   GFX->pushActiveRenderTarget();
+   GFX->setActiveRenderTarget( mRenderTarget );
+   GFX->setVertexBuffer( vb );
+   GFX->setStateBlockByDesc( desc );
+   GFX->setShader(mReflectShader);
+   GFX->setShaderConstBuffer(mReflectShaderConsts);
+
+   // Setup Textures
+   GFX->setTexture(0, mDirectLightTexture);
    GFX->setTexture(1, prepassTexObject);
 
    // Draw the screenspace quad.

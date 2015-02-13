@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 GarageGames, LLC
+// Copyright (c) 2015 Andrew Mac
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -20,31 +20,39 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-new GFXStateBlockData( ScatterSkySBData )
+#include "shadergen:/autogenConditioners.h"
+#include "torque.hlsl"
+
+struct Conn
 {
-   //cullDefined = true;
-   cullMode = "GFXCullNone";
-   
-   zDefined = true;
-   zEnable = true;
-   zWriteEnable = false;
-   //zFunc = "GFXCmpLessEqual";
-   
-   samplersDefined = true;
-   samplerStates[0] = SamplerClampLinear;   
-   samplerStates[1] = SamplerClampLinear;
-   vertexColorEnable = true;
+   float4 position : POSITION;
+   float2 uv0      : TEXCOORD0;
+   float3 wsEyeRay : TEXCOORD1;
 };
 
-singleton ShaderData( ScatterSkyShaderData )
-{
-   DXVertexShaderFile     = "shaders/common/scatterSkyV.hlsl";
-   DXPixelShaderFile      = "shaders/common/scatterSkyP.hlsl";   
-   
-   OGLVertexShaderFile     = "shaders/common/gl/scatterSkyV.glsl";
-   OGLPixelShaderFile      = "shaders/common/gl/scatterSkyP.glsl";
-   
-   samplerNames[0] = "$nightSky";
-   
-   pixVersion = 2.0;
-};
+uniform sampler2D prePassBuffer : register(S1);
+uniform sampler3D lpvData : register(S0);
+uniform float3 eyePosWorld;
+uniform float3 volumeStart;
+uniform float3 volumeSize;
+
+float4 main( Conn IN ) : COLOR0
+{ 
+   float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
+   float3 normal = prepassSample.rgb;
+   float depth = prepassSample.a;
+
+   // Use eye ray to get ws pos
+   float4 worldPos = float4(eyePosWorld + IN.wsEyeRay * depth, 1.0f);
+
+   float3 volume_position = (worldPos.xyz - volumeStart) / volumeSize;
+   if ( volume_position.x < 0 || volume_position.x > 1 || 
+        volume_position.y < 0 || volume_position.y > 1 || 
+        volume_position.z < 0 || volume_position.z > 1 )
+   {
+        return float4(0.0, 0.0, 0.0, 0.0); 
+   }
+
+   float4 color = tex3D(lpvData, volume_position);
+   return float4(color.rgb, 0.0);
+}

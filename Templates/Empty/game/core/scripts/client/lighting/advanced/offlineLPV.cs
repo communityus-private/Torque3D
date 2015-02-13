@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 GarageGames, LLC
+// Copyright (c) 2015 Andrew Mac
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -20,31 +20,18 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-new GFXStateBlockData( ScatterSkySBData )
+singleton ShaderData( OfflineLPVPropagatedShaderData )
 {
-   //cullDefined = true;
-   cullMode = "GFXCullNone";
+   DXVertexShaderFile     = "shaders/common/offlineLPVPropagatedV.hlsl";
+   DXPixelShaderFile      = "shaders/common/offlineLPVPropagatedP.hlsl";   
    
-   zDefined = true;
-   zEnable = true;
-   zWriteEnable = false;
-   //zFunc = "GFXCmpLessEqual";
-   
-   samplersDefined = true;
-   samplerStates[0] = SamplerClampLinear;   
-   samplerStates[1] = SamplerClampLinear;
-   vertexColorEnable = true;
+   pixVersion = 3.0;
 };
 
-singleton ShaderData( ScatterSkyShaderData )
+singleton ShaderData( OfflineLPVReflectShaderData )
 {
-   DXVertexShaderFile     = "shaders/common/scatterSkyV.hlsl";
-   DXPixelShaderFile      = "shaders/common/scatterSkyP.hlsl";   
+   DXVertexShaderFile     = "shaders/common/offlineLPVReflectV.hlsl";
+   DXPixelShaderFile      = "shaders/common/offlineLPVReflectP.hlsl";   
    
-   OGLVertexShaderFile     = "shaders/common/gl/scatterSkyV.glsl";
-   OGLPixelShaderFile      = "shaders/common/gl/scatterSkyP.glsl";
-   
-   samplerNames[0] = "$nightSky";
-   
-   pixVersion = 2.0;
+   pixVersion = 3.0;
 };

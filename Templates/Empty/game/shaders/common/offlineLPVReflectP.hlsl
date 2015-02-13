@@ -32,6 +32,7 @@ struct Conn
 
 uniform sampler2D prePassBuffer : register(S1);
 uniform sampler3D lpvData : register(S0);
+uniform float4x4 invViewMat;
 uniform float3 eyePosWorld;
 uniform float3 volumeStart;
 uniform float3 volumeSize;
@@ -45,15 +46,34 @@ float4 main( Conn IN ) : COLOR0
    // Use eye ray to get ws pos
    float4 worldPos = float4(eyePosWorld + IN.wsEyeRay * depth, 1.0f);
 
-   float3 volume_position = (worldPos.xyz - volumeStart) / volumeSize;
-   if ( volume_position.x < 0 || volume_position.x > 1 || 
-        volume_position.y < 0 || volume_position.y > 1 || 
-        volume_position.z < 0 || volume_position.z > 1 )
+   // Need world-space normal.
+   float3 wsNormal = mul(normal, invViewMat);
+
+   // Calculate angle to potential light
+   float3 normalEyeRay = normalize(eyePosWorld + IN.wsEyeRay);
+   float3 reflected = normalize(reflect(normalEyeRay, wsNormal));
+
+   // Make 16 steps into the grid in search of color!
+   float3 final_color = float3(0, 0, 0);
+   for(int i = 1; i < 16; i++)
    {
-        return float4(0.0, 0.0, 0.0, 0.0); 
+       float3 curPos = worldPos.rgb + (reflected * i * 0.1);
+       float3 volume_position = (curPos - volumeStart) / volumeSize;
+       if ( volume_position.x < 0 || volume_position.x > 1 || 
+            volume_position.y < 0 || volume_position.y > 1 || 
+            volume_position.z < 0 || volume_position.z > 1 )
+       {
+            break; 
+       }
+
+       float3 color = tex3D(lpvData, volume_position).rgb;
+       if ( length(color) > 0.0 )
+       {
+            final_color += color;
+            //break;
+       }
    }
 
-   float4 color = tex3D(lpvData, volume_position);
-   return float4(color.rgb, 0.0);
-   //return float4(0.0, 0.0, 0.0, 0.0); 
+   
+   return float4(final_color / 16, 0.0);
 }

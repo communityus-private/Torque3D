@@ -69,27 +69,37 @@ class OfflineLPV : public ScenePolyhedralSpace
       // Used only for indirect light tracing.
       Vector<IndirectLightSource> indirectLightSources;
 
-      // Volume Texture and it's raw data for copying.
-      U8             mLPVRawData[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
-      GFXTexHandle   mLPVTexture;
+      // Volume Textures and raw data buffer used to copy.
+      U8             mBuffer[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
+      GFXTexHandle   mPropagatedTexture;
+      GFXTexHandle   mDirectLightTexture;
 
       // We sample from prepass and render to light buffer.
       NamedTexTarget*         mPrepassTarget;
       NamedTexTarget*         mLightInfoTarget;
       GFXTextureTargetRef     mRenderTarget;
 
-      // Shader
-      GFXShaderRef            mShader;
+      // Stateblock for shaders
       GFXStateBlockRef        mStateBlock;
-      GFXShaderConstBufferRef mShaderConsts;
 
-      // Shader Constants.
-      GFXShaderConstHandle    *mEyePosWorldSC;
-      GFXShaderConstHandle    *mRTParamsSC;
-      GFXShaderConstHandle    *mVolumeStartSC;
-      GFXShaderConstHandle    *mVolumeSizeSC;
+      // Propagated Shader
+      GFXShaderRef            mPropagatedShader;
+      GFXShaderConstBufferRef mPropagatedShaderConsts;
+      GFXShaderConstHandle    *mEyePosWorldPropSC;
+      GFXShaderConstHandle    *mRTParamsPropSC;
+      GFXShaderConstHandle    *mVolumeStartPropSC;
+      GFXShaderConstHandle    *mVolumeSizePropSC;
 
-      bool _initShader();
+      // Reflection Shader
+      GFXShaderRef            mReflectShader;
+      GFXShaderConstBufferRef mReflectShaderConsts;
+      GFXShaderConstHandle    *mInverseViewReflectSC;
+      GFXShaderConstHandle    *mEyePosWorldReflectSC;
+      GFXShaderConstHandle    *mRTParamsReflectSC;
+      GFXShaderConstHandle    *mVolumeStartReflectSC;
+      GFXShaderConstHandle    *mVolumeSizeReflectSC;
+
+      bool _initShaders();
 
       // Geometry Grid (true = filled, false = empty)
       bool mGeometryGrid[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
@@ -105,7 +115,8 @@ class OfflineLPV : public ScenePolyhedralSpace
 
       // Final Volume Rendering
       void _handleBinEvent( RenderBinManager *bin, const SceneRenderState* sceneState, bool isBinStart );  
-      void _renderLPV(const SceneRenderState* sceneState);
+      void _renderPropagated(const SceneRenderState* sceneState);
+      void _renderReflect(const SceneRenderState* sceneState);
       void _updateScreenGeometry( const Frustum &frustum, GFXVertexBufferHandle<PFXVertex> *outVB );
 
       // World Editor Visualization.
@@ -125,9 +136,12 @@ class OfflineLPV : public ScenePolyhedralSpace
       bool mRegenVolume;
       bool mInjectLights;
       bool mPropagateLights;
-      bool mShowLightGrid;
-      bool mShowPropagatedLightGrid;
-      bool mExportGrid;
+      bool mShowVoxels;
+      bool mShowDirectLight;
+      bool mShowPropagated;
+      bool mExportPropagated;
+      bool mExportDirectLight;
+      bool mRenderReflection;
 
       // SimObject.
       DECLARE_CONOBJECT( OfflineLPV );
@@ -141,7 +155,8 @@ class OfflineLPV : public ScenePolyhedralSpace
       // Editor Triggered Functions
       void regenVolume();
       void injectLights();
-      void exportGrid();
+      void exportPropagatedLight();
+      void exportDirectLight();
       ColorF calcLightColor(Point3F position);
       F32 getAttenuation(LightInfo* lightInfo, Point3F position);
       void propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest, bool sampleFromGeometry = false);
@@ -163,7 +178,8 @@ class OfflineLPV : public ScenePolyhedralSpace
       static bool _setRegenVolume( void *object, const char *index, const char *data );
       static bool _setInjectLights( void *object, const char *index, const char *data );
       static bool _setPropagateLights( void *object, const char *index, const char *data );
-      static bool _setExportGrid( void *object, const char *index, const char *data );
+      static bool _setExportPropagated( void *object, const char *index, const char *data );
+      static bool _setExportDirectLight( void *object, const char *index, const char *data );
 };
 
 #endif // !_OFFLINELPV_H_
