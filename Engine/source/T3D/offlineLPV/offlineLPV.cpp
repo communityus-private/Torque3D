@@ -22,7 +22,6 @@
 
 #include "platform/platform.h"
 #include "T3D/offlineLPV/offlineLPV.h"
-
 #include "scene/sceneManager.h"
 #include "scene/sceneRenderState.h"
 #include "gfx/gfxDevice.h"
@@ -50,8 +49,10 @@
 #include "materials/shaderData.h"
 #include "gfx/sim/gfxStateBlockData.h"
 #include "gfx/util/screenspace.h"
+#include "gfx/gfxTextureHandle.h"
 #include "postFx/postEffectCommon.h"
-
+#include "core/stream/fileStream.h"
+#include "core/fileObject.h"
 #include "math/mPolyhedron.impl.h"
 
 IMPLEMENT_CO_NETOBJECT_V1( OfflineLPV );
@@ -89,28 +90,34 @@ OfflineLPV::OfflineLPV()
    mObjToWorld.identity();
    mWorldToObj.identity();
 
-   mRegenVolume = false;
-   mInjectLights = false;
-   mPropagateLights = false;
-   mExportPropagated = false;
-   mExportDirectLight = false;
-   mRenderReflection = false;
-   mPropagationStage = 0;
+   mRegenVolume         = false;
+   mShowVoxels          = false;
+   mInjectLights        = false;
+   mShowDirectLight     = false;
+   mPropagationStage    = 0;
+   mPropagateLights     = false;
+   mShowPropagated      = false;
+   mExportPropagated    = false;
+   mExportDirectLight   = false;
+   mRenderReflection    = false;
+   mFileName            = "";
+   mSaveResults         = false;
+   mLoadResults         = false;
 
-   mShowVoxels = false;
-   mShowDirectLight = false;
-   mShowPropagated = false;
-
-   mPropagatedTexture = NULL;
-   mDirectLightTexture = NULL;
-   mLightInfoTarget = NULL;
-   mPrepassTarget = NULL;
-   mPropagatedShader = NULL;
+   mGeometryGrid           = NULL;
+   mLightGrid              = NULL;
+   mPropagatedLightGrid    = NULL;
+   mPropagatedLightGridA   = NULL;
+   mPropagatedLightGridB   = NULL;
+   mPropagatedTexture      = NULL;
+   mDirectLightTexture     = NULL;
+   mLightInfoTarget        = NULL;
+   mPrepassTarget          = NULL;
+   mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
-   mReflectShader = NULL;
-   mReflectShaderConsts = NULL;
-   mRenderTarget = NULL;
-   mPropagatedLightGrid = &mPropagatedLightGridA;
+   mReflectShader          = NULL;
+   mReflectShaderConsts    = NULL;
+   mRenderTarget           = NULL;
 
    resetWorldBox();
 
@@ -119,53 +126,74 @@ OfflineLPV::OfflineLPV()
 
 OfflineLPV::~OfflineLPV()
 {
-   mPropagatedTexture = NULL;
-   mDirectLightTexture = NULL;
-   mLightInfoTarget = NULL;
-   mPrepassTarget = NULL;
-   mPropagatedShader = NULL;
+   SAFE_DELETE(mGeometryGrid);
+   SAFE_DELETE(mLightGrid);
+   SAFE_DELETE(mPropagatedLightGridA);
+   SAFE_DELETE(mPropagatedLightGridB);
+
+   mPropagatedTexture      = NULL;
+   mDirectLightTexture     = NULL;
+   mLightInfoTarget        = NULL;
+   mPrepassTarget          = NULL;
+   mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
-   mReflectShader = NULL;
-   mReflectShaderConsts = NULL;
-   mRenderTarget = NULL;
+   mReflectShader          = NULL;
+   mReflectShaderConsts    = NULL;
+   mRenderTarget           = NULL;
 }
 
 void OfflineLPV::initPersistFields()
 {
+   //
    addGroup("OfflineLPV - General");
 
       addProtectedField( "regenVolume", TypeBool, Offset( mRegenVolume, OfflineLPV ),
-            &_setRegenVolume, &defaultProtectedGetFn, "Regenerate Voxel Grid" );
+         &_setRegenVolume, &defaultProtectedGetFn, "Regenerate Voxel Grid", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors);
 
       addField("showVoxels", TypeBool, Offset(mShowVoxels, OfflineLPV), "");
 
       addProtectedField( "injectLights", TypeBool, Offset( mInjectLights, OfflineLPV ),
-            &_setInjectLights, &defaultProtectedGetFn, "Inject scene lights into grid." );
+            &_setInjectLights, &defaultProtectedGetFn, "Inject scene lights into grid.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
 
       addField("showDirectLight", TypeBool, Offset(mShowDirectLight, OfflineLPV), "");
 
    endGroup("OfflineLPV - General");
 
+   //
    addGroup("OfflineLPV - Propagation");
 
       addProtectedField( "propagateLights", TypeBool, Offset( mPropagateLights, OfflineLPV ),
-            &_setPropagateLights, &defaultProtectedGetFn, "Perform light propagation." );
+            &_setPropagateLights, &defaultProtectedGetFn, "Perform light propagation.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
 
       addField("showPropagated", TypeBool, Offset(mShowPropagated, OfflineLPV), "Render propagated light.");
 
       addProtectedField( "exportPropagated", TypeBool, Offset( mExportPropagated, OfflineLPV ),
-            &_setExportPropagated, &defaultProtectedGetFn, "Export propagated light grid to display." );
+            &_setExportPropagated, &defaultProtectedGetFn, "Export propagated light grid to display.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
 
    endGroup("OfflineLPV - Propagation");
 
+   //
    addGroup("OfflineLPV - Reflection");
 
       addProtectedField( "exportDirectLight", TypeBool, Offset( mExportDirectLight, OfflineLPV ),
-            &_setExportDirectLight, &defaultProtectedGetFn, "Export direct light grid for reflections." );
+            &_setExportDirectLight, &defaultProtectedGetFn, "Export direct light grid for reflections.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
 
       addField("renderReflection", TypeBool, Offset(mRenderReflection, OfflineLPV), "Render reflections.");
 
    endGroup("OfflineLPV - Reflection");
+
+   //
+   addGroup("OfflineLPV - Save/Load");
+
+      addField( "fileName", TypeStringFilename, Offset( mFileName, OfflineLPV ), "Path of file to save and load results." );
+
+      addProtectedField( "saveResults", TypeBool, Offset( mSaveResults, OfflineLPV ),
+            &_setSaveResults, &defaultProtectedGetFn, "Save the results of the light propagation.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
+
+      addProtectedField( "loadResults", TypeBool, Offset( mLoadResults, OfflineLPV ),
+            &_setLoadResults, &defaultProtectedGetFn, "Load the results of the light propagation.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
+
+   endGroup("OfflineLPV - Save/Load");
 
    Parent::initPersistFields();
 }
@@ -188,6 +216,7 @@ bool OfflineLPV::onAdd()
    if ( isClientObject() )  
    {
       // Initialize the volume texture with all black to begin with.
+      U8 buffer[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
       U32 pos = 0;
       for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
       {
@@ -195,10 +224,10 @@ bool OfflineLPV::onAdd()
          {
             for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
             {
-               mBuffer[pos]     = 0;   // Blue
-               mBuffer[pos + 1] = 0;   // Green
-               mBuffer[pos + 2] = 0;   // Red
-               mBuffer[pos + 3] = 0;   // Alpha
+               buffer[pos]     = 0;   // Blue
+               buffer[pos + 1] = 0;   // Green
+               buffer[pos + 2] = 0;   // Red
+               buffer[pos + 3] = 0;   // Alpha
                pos += 4;
             }
          }
@@ -208,21 +237,26 @@ bool OfflineLPV::onAdd()
          _initShaders();
 
       if ( mPropagatedTexture.isNull() )
-         mPropagatedTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mBuffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Propagated Light Grid");
+         mPropagatedTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &buffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Propagated Light Grid");
 
       if ( mDirectLightTexture.isNull() )
-         mDirectLightTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &mBuffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Direct Light Grid");
+         mDirectLightTexture.set(LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, LPV_GRID_RESOLUTION, &buffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "Direct Light Grid");
+
+      // Try to load the saved grid.
+      load();
    }
 
-   mRegenVolume = false;
-   mInjectLights = false;
-   mPropagateLights = false;
-   mExportPropagated = false;
-   mExportDirectLight = false;
-   mRenderReflection = false;
-   mShowVoxels = false;
-   mShowDirectLight = false;
-   mShowPropagated = false;
+   // None of these are actual settings to be saved.
+   mRegenVolume         = false;
+   mInjectLights        = false;
+   mPropagateLights     = false;
+   mExportPropagated    = false;
+   mExportDirectLight   = false;
+   mSaveResults         = false;
+   mLoadResults         = false;
+   mShowVoxels          = false;
+   mShowDirectLight     = false;
+   mShowPropagated      = false;
 
    // Set up the silhouette extractor.
    mSilhouetteExtractor = SilhouetteExtractorType( mPolyhedron );
@@ -246,7 +280,6 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
 {
    Parent::_renderObject( ri, state, overrideMat );
 
-   // Render GRID!
    GFXDrawUtil *drawer = GFX->getDrawUtil();
 
    GFXStateBlockDesc desc;
@@ -260,47 +293,47 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
    Point3F difference = (top_corner - bottom_corner) / LPV_GRID_RESOLUTION;
 
    // Geometry Grid Visualization.
-   for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
+   U32 pos = 0;
+   for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
    {
       for ( U32 y = 0; y < LPV_GRID_RESOLUTION; y++ )
       {
-         for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
+         for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
          {
-            if ( mShowPropagated )
+            if ( mShowPropagated && mPropagatedLightGrid && mPropagatedLightGrid[pos].alpha > 0.0f )
             {
-               if ( mPropagatedLightGrid->data[x][y][z].alpha <= 0.0f ) continue;
-
                Box3F new_box;
                new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
                   bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-               drawer->drawCube( desc, new_box, mPropagatedLightGrid->data[x][y][z] );
+               drawer->drawCube( desc, new_box, mPropagatedLightGrid[pos] );
 
+               pos++;
                continue;
             }
 
-            if ( mShowDirectLight )
+            if ( mShowDirectLight && mLightGrid && mLightGrid[pos].alpha > 0.0f )
             {
-               if ( mLightGrid.data[x][y][z].alpha <= 0.0f ) continue;
-
                Box3F new_box;
                new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
                   bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-               drawer->drawCube( desc, new_box, mLightGrid.data[x][y][z] );
+               drawer->drawCube( desc, new_box, mLightGrid[pos] );
 
+               pos++;
                continue;
             }
 
-            if ( mShowVoxels )
+            if ( mShowVoxels && mGeometryGrid && mGeometryGrid[pos].alpha > 0.0f )
             {
-               if ( mGeometryGrid.data[x][y][z].alpha <= 0.0f ) continue;
-
                Box3F new_box;
                new_box.set(bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z), 
                   bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1)));
-               drawer->drawCube( desc, new_box, mGeometryGrid.data[x][y][z] );
+               drawer->drawCube( desc, new_box, mGeometryGrid[pos] );
 
+               pos++;
                continue;
             }
+
+            pos++;
          }
       }
    }
@@ -327,26 +360,22 @@ void OfflineLPV::buildSilhouette( const SceneCameraState& cameraState, Vector< P
    if( cameraState.getFrustum().isOrtho() )
    {
       // Transform the view direction into object space.
-
       Point3F osViewDir;
       getWorldTransform().mulV( cameraState.getViewDirection(), &osViewDir );
 
       // And extract the silhouette.
-
       SilhouetteExtractorOrtho< PolyhedronType > extractor( mPolyhedron );
       numPoints = extractor.extractSilhouette( osViewDir, indices, indices.size );
    }
    else
    {
       // Create a transform to go from view space to object space.
-
       MatrixF camView( true );
       camView.scale( Point3F( 1.0f / getScale().x, 1.0f / getScale().y, 1.0f / getScale().z ) );
       camView.mul( getRenderWorldTransform() );
       camView.mul( cameraState.getViewWorldMatrix() );
 
       // Do a perspective-correct silhouette extraction.
-
       numPoints = mSilhouetteExtractor.extractSilhouette(
          camView,
          indices, indices.size );
@@ -354,7 +383,6 @@ void OfflineLPV::buildSilhouette( const SceneCameraState& cameraState, Vector< P
 
    // If we haven't yet, transform the polyhedron's points
    // to world space.
-
    if( mTransformDirty )
    {
       const U32 numPoints = mPolyhedron.getNumPoints();
@@ -372,7 +400,6 @@ void OfflineLPV::buildSilhouette( const SceneCameraState& cameraState, Vector< P
    }
 
    // Now store the points.
-
    outPoints.setSize( numPoints );
    for( U32 i = 0; i < numPoints; ++ i )
       outPoints[ i ] = mWSPoints[ indices[ i ] ];
@@ -385,6 +412,7 @@ U32 OfflineLPV::packUpdate( NetConnection *connection, U32 mask, BitStream *stre
    U32 retMask = Parent::packUpdate( connection, mask, stream );
 
    // TODO: Should probably use a mask here rather than sending every update.
+   stream->write(mFileName);
    stream->writeFlag(mShowVoxels);
    stream->writeFlag(mShowDirectLight);
    stream->writeFlag(mShowPropagated);
@@ -410,6 +438,14 @@ U32 OfflineLPV::packUpdate( NetConnection *connection, U32 mask, BitStream *stre
    if ( mExportDirectLight )
       mExportDirectLight = false;
 
+   stream->writeFlag(mSaveResults);
+   if ( mSaveResults )
+      mSaveResults = false;
+
+   stream->writeFlag(mLoadResults);
+   if ( mLoadResults )
+      mLoadResults = false;
+
    return retMask;  
 }
 
@@ -417,41 +453,46 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
 {
    Parent::unpackUpdate( connection, stream );
 
-   mShowVoxels = stream->readFlag();
-   mShowDirectLight = stream->readFlag();
-   mShowPropagated = stream->readFlag();
+   stream->read(&mFileName);
+   mShowVoxels       = stream->readFlag();
+   mShowDirectLight  = stream->readFlag();
+   mShowPropagated   = stream->readFlag();
    mRenderReflection = stream->readFlag();
 
    // Regen Volume Triggered?
    if ( stream->readFlag() )
-   {
       regenVolume();
-   }
 
    // Inject Lights Triggered?
    if ( stream->readFlag() )
-   {
       injectLights();
-   }
 
    // Propagate Lights Triggered?
    if ( stream->readFlag() )
    {
+      if (!mPropagatedLightGridA)
+         mPropagatedLightGridA = new ColorF[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION];
+
+      if (!mPropagatedLightGridB)
+         mPropagatedLightGridB = new ColorF[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION];
+
       switch(mPropagationStage)
       {
          case 0:
-            mPropagatedLightGrid = &mPropagatedLightGridA;
-            propagateLights(&mLightGrid, mPropagatedLightGrid, true);
+            mPropagatedLightGrid = mPropagatedLightGridA;
+            propagateLights(mLightGrid, mPropagatedLightGrid, true);
             mPropagationStage = 1;
             break;
+
          case 1:
-            mPropagatedLightGrid = &mPropagatedLightGridB;
-            propagateLights(&mPropagatedLightGridA, &mPropagatedLightGridB);
+            mPropagatedLightGrid = mPropagatedLightGridB;
+            propagateLights(mPropagatedLightGridA, mPropagatedLightGridB);
             mPropagationStage = 2;
             break;
+
          case 2:
-            mPropagatedLightGrid = &mPropagatedLightGridA;
-            propagateLights(&mPropagatedLightGridB, &mPropagatedLightGridA);
+            mPropagatedLightGrid = mPropagatedLightGridA;
+            propagateLights(mPropagatedLightGridB, mPropagatedLightGridA);
             mPropagationStage = 1;
             break;
       }
@@ -459,15 +500,19 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
 
    // Export Propagated Light?
    if ( stream->readFlag() )
-   {
       exportPropagatedLight();
-   }
 
    // Export Direct Light?
    if ( stream->readFlag() )
-   {
       exportDirectLight();
-   }
+
+   // Save Results?
+   if ( stream->readFlag() )
+      save();
+
+   // Load Results?
+   if ( stream->readFlag() )
+      load();
 }
 
 //-----------------------------------------------------------------------------
@@ -489,24 +534,33 @@ bool OfflineLPV::_setRegenVolume( void *object, const char *index, const char *d
 
 void OfflineLPV::regenVolume()
 {
-   Con::printf("Regenerating Geometry Volume!");
-
-   Box3F worldBox = getWorldBox();
-   Point3F bottom_corner = worldBox.minExtents;
-   Point3F top_corner = worldBox.maxExtents;
-   Point3F difference = (top_corner - bottom_corner) / LPV_GRID_RESOLUTION;
+   Box3F worldBox          = getWorldBox();
+   Point3F bottom_corner   = worldBox.minExtents;
+   Point3F top_corner      = worldBox.maxExtents;
+   Point3F difference      = (top_corner - bottom_corner) / LPV_GRID_RESOLUTION;
 
    RayInfo rayInfo;
    rayInfo.generateTexCoord = true;
    SceneContainer* container = getContainer();
    if ( !container ) return;
 
+   // Allocate our grids.
+   SAFE_DELETE(mGeometryGrid);
+   SAFE_DELETE(mLightGrid);
+   SAFE_DELETE(mPropagatedLightGridA);
+   SAFE_DELETE(mPropagatedLightGridB);
+   mGeometryGrid           = new ColorF[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION];
+   mLightGrid              = new ColorF[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION];
+   mPropagatedLightGridA   = new ColorF[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION];
+   mPropagatedLightGridB   = new ColorF[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION];
+
    // Geometry Grid Visualization.
-   for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
+   U32 pos = 0;
+   for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
    {
       for ( U32 y = 0; y < LPV_GRID_RESOLUTION; y++ )
       {
-         for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
+         for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
          {
             Point3F start = bottom_corner + Point3F(difference.x * x, difference.y * y, difference.z * z);
             Point3F end = bottom_corner + Point3F(difference.x * (x + 1), difference.y * (y + 1), difference.z * (z + 1));
@@ -517,18 +571,28 @@ void OfflineLPV::regenVolume()
             if ( hit && rayInfo.material )
             {
                Material* mat = dynamic_cast<Material*>(rayInfo.material->getMaterial());
-               if ( !mat ) continue;
+               if ( mat && rayInfo.texCoord.x != -1 && rayInfo.texCoord.y != -1 )
+               {
+                  Resource<GBitmap> diffuseTex = GBitmap::load( mat->mDiffuseMapFilename[0] );
+                  if(diffuseTex != NULL)
+                  {
+                     U32 w = diffuseTex->getWidth();
+                     U32 h = diffuseTex->getHeight();
 
-               //const char* name = mat->getName();
-               //Con::printf("Voxel Color Detected: %f %f %f", mat->mDiffuse[0].red, mat->mDiffuse[0].blue, mat->mDiffuse[0].green);
-             
+                     ColorI result;
+                     diffuseTex->getColor(rayInfo.texCoord.x * w, rayInfo.texCoord.y * h, result);
+                  }
+               }
                voxel_color = mat->mDiffuse[0];
             }
-            mGeometryGrid.data[x][y][z] = voxel_color;
-            mLightGrid.data[x][y][z] = ColorF::ZERO;
+
+            mGeometryGrid[pos] = voxel_color;
+            mLightGrid[pos] = ColorF::ZERO;
             mPropagationStage = 0;
-            mPropagatedLightGridA.data[x][y][z] = ColorF::ZERO;
-            mPropagatedLightGridB.data[x][y][z] = ColorF::ZERO;
+            mPropagatedLightGridA[pos] = ColorF::ZERO;
+            mPropagatedLightGridB[pos] = ColorF::ZERO;
+            mPropagatedLightGrid = mPropagatedLightGridA;
+            pos++;
          }
       }
    }
@@ -545,35 +609,28 @@ bool OfflineLPV::_setInjectLights( void *object, const char *index, const char *
 
 void OfflineLPV::injectLights()
 {
-   Con::printf("Injecting Lights!");
+   if ( !mGeometryGrid || !mLightGrid ) return;
 
-   Box3F worldBox = getWorldBox();
-   Point3F bottom_corner = worldBox.minExtents;
-   Point3F top_corner = worldBox.maxExtents;
+   Box3F worldBox          = getWorldBox();
+   Point3F bottom_corner   = worldBox.minExtents;
+   Point3F top_corner      = worldBox.maxExtents;
    Point3F half_difference = ((top_corner - bottom_corner) / LPV_GRID_RESOLUTION);
 
-   RayInfo rayInfo;
-   SceneContainer* container = getContainer();
-
-   indirectLightSources.clear();
-
-   // Geometry Grid Visualization.
-   for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
+   // Inject lights from the scene into the light grid.
+   U32 pos = 0;
+   for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
    {
       for ( U32 y = 0; y < LPV_GRID_RESOLUTION; y++ )
       {
-         for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
+         for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
          {
-            if ( mGeometryGrid.data[x][y][z].alpha <= 0.0f ) continue;
-
-            Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
-            mLightGrid.data[x][y][z] = calcLightColor(point) * mGeometryGrid.data[x][y][z];
-
-            IndirectLightSource l;
-            l.color = mLightGrid.data[x][y][z];
-            l.position = point;
-            indirectLightSources.push_back(l);
-            mPropagationStage = 0;
+            if ( mGeometryGrid[pos].alpha > 0.0f )
+            {
+               Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
+               mLightGrid[pos] = calcLightColor(point) * mGeometryGrid[pos];
+               mPropagationStage = 0;
+            }
+            pos++;
          }
       }
    }
@@ -618,7 +675,6 @@ ColorF OfflineLPV::calcLightColor(Point3F position)
          if ( atten <= 0 ) continue;
 
          result += info->getColor() * atten;
-         //Con::printf("Attenuation: %f Result Total: %f %f %f %f", atten, result.red, result.green, result.blue, result.alpha);
       }
    }
 
@@ -651,40 +707,18 @@ bool OfflineLPV::_setPropagateLights( void *object, const char *index, const cha
    return false;
 }
 
-void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest, bool sampleFromGeometry)
+void OfflineLPV::propagateLights(ColorF* source, ColorF* dest, bool sampleFromGeometry)
 {
-   Con::printf("Propagating Lights!");
-
-   Box3F worldBox = getWorldBox();
-   Point3F bottom_corner = worldBox.minExtents;
-   Point3F top_corner = worldBox.maxExtents;
-   Point3F half_difference = ((top_corner - bottom_corner) / LPV_GRID_RESOLUTION) / 2;
-
-   Point3F difference = ((top_corner - bottom_corner) / LPV_GRID_RESOLUTION);
-   F32 distance = 1 + difference.len(); // if not offset by one then a distance < 1 increases light power? :(
-   F32 attenuation = 1 / (distance * distance);
-   //Con::printf("Distance: %f Attentuation Factor: %f", distance, attenuation);
-
-   RayInfo rayInfo;
-   SceneContainer* container = getContainer();
+   if ( !mGeometryGrid || !source || !dest ) return;
 
    // Geometry Grid Visualization.
-   for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
+   U32 pos = 0;
+   for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
    {
       for ( U32 y = 0; y < LPV_GRID_RESOLUTION; y++ )
       {
-         for ( U32 z = 0; z < LPV_GRID_RESOLUTION; z++ )
+         for ( U32 x = 0; x < LPV_GRID_RESOLUTION; x++ )
          {
-            /* Color based on indirect light sources (simple tracing)
-            if ( !mGeometryGrid[x][y][z] ) continue;
-            if ( mLightGrid[x][y][z].alpha > 0 ) continue;
-
-            Point3F point = bottom_corner + Point3F(half_difference.x * (x + 1), half_difference.y * (y + 1), half_difference.z * (z + 1));
-            mPropagatedLightGrid[x][y][z] = calcIndirectLightColor(point);
-            ---------------- */
-
-            /* -- OR -- */
-
             /* Color Bleeding */
             ColorF blendedColor(0, 0, 0, 0);
             for ( S32 outerX = -1; outerX < 2; outerX++ )
@@ -696,55 +730,25 @@ void OfflineLPV::propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest, b
                      if ( x + outerX < 0 || y + outerY < 0 || z + outerZ < 0 ) continue;
                      if ( x + outerX >= LPV_GRID_RESOLUTION || y + outerY >= LPV_GRID_RESOLUTION || z + outerZ >= LPV_GRID_RESOLUTION ) continue;
 
+                     U32 sampleOffset = (LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * (z + outerZ)) +
+                        (LPV_GRID_RESOLUTION * (y + outerY)) + (x + outerX);
+
                      // Attempt at being geometry aware. The idea was to not sample from voxels with geometry in them after the first pass.
                      // First pass would let light bleed into the "air" and then the following passes would sample from "air light".
-                     if ( !sampleFromGeometry && mGeometryGrid.data[x + outerX][y + outerY][z + outerZ].alpha > 0.0f ) continue;
+                     if ( !sampleFromGeometry && mGeometryGrid[sampleOffset].alpha > 0.0f ) continue;
 
-                     blendedColor += (source->data[x + outerX][y + outerY][z + outerZ]);// * attenuation;
+                     blendedColor += (source[sampleOffset]);
                   }
                }
             }
 
-            dest->data[x][y][z] = blendedColor / 27;
-            if ( dest->data[x][y][z].alpha > 0 )
-               dest->data[x][y][z].alpha = 1.0f;
-            /* ---------------- */
+            dest[pos] = blendedColor / 27;
+            if ( dest[pos].alpha > 0 )
+               dest[pos].alpha = 1.0f;
+            pos++;
          }
       }
    }
-}
-
-ColorF OfflineLPV::calcIndirectLightColor(Point3F position)
-{
-   PROFILE_SCOPE( OfflineLPV_calcIndirectLightColor );
-
-   ColorF result = ColorF::ZERO;
-
-   if ( !LIGHTMGR )
-      return result;
-
-   RayInfo rayInfo;
-   SceneContainer* container = getContainer();
-   if ( !container ) return result;
-
-   for (U32 i = 0; i < indirectLightSources.size(); ++i )
-   {
-      IndirectLightSource* light = &indirectLightSources[i];
-
-      bool hit = container->castRay(position, light->position, STATIC_COLLISION_TYPEMASK, &rayInfo);
-      if ( hit )
-      {
-         // OBSTRUCTED!
-         continue;
-      }
-      else
-      {
-         const F32 dist = Point3F(light->position - position).len();
-         result += light->color * (1 / (dist * dist));
-      }
-   }
-
-   return result;
 }
 
 //--- Export from CPU to GPU for rendering ---
@@ -758,28 +762,35 @@ bool OfflineLPV::_setExportPropagated( void *object, const char *index, const ch
 
 // Exports mPropagatedLightGrid to the actual volume texture on the graphics card.
 // Note: for some reason the volume texture insists on being BGRA.
-void OfflineLPV::exportPropagatedLight()
+void OfflineLPV::exportPropagatedLight(ColorF* altSource)
 {
+   if ( !mPropagatedLightGrid && !altSource ) return;
+   ColorF* source = altSource ? altSource : mPropagatedLightGrid;
+
    GFXLockedRect* locked_rect = mPropagatedTexture->lock();
    if ( locked_rect )
    {
+      U8 buffer[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
       U32 pos = 0;
+      U32 bufPos = 0;
       for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
       {
          for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
          {
             for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
             {
-               ColorI cell_color = mPropagatedLightGrid->data[x][y][z];
-               mBuffer[pos]     = cell_color.blue;    // Blue
-               mBuffer[pos + 1] = cell_color.green;   // Green
-               mBuffer[pos + 2] = cell_color.red;     // Red
-               mBuffer[pos + 3] = 255;                // Alpha
-               pos += 4;
+               ColorI cell_color = source[pos];
+               pos++;
+
+               buffer[bufPos]     = cell_color.blue;    // Blue
+               buffer[bufPos + 1] = cell_color.green;   // Green
+               buffer[bufPos + 2] = cell_color.red;     // Red
+               buffer[bufPos + 3] = 255;                // Alpha
+               bufPos += 4;
             }
          }
       }
-      dMemcpy(locked_rect->bits, mBuffer, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
+      dMemcpy(locked_rect->bits, buffer, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
       mPropagatedTexture->unlock();
    }
 }
@@ -793,28 +804,35 @@ bool OfflineLPV::_setExportDirectLight( void *object, const char *index, const c
 
 // Exports mLightGrid to the actual volume texture on the graphics card.
 // Note: for some reason the volume texture insists on being BGRA.
-void OfflineLPV::exportDirectLight()
+void OfflineLPV::exportDirectLight(ColorF* altSource)
 {
+   if ( !mLightGrid && !altSource ) return;
+   ColorF* source = altSource ? altSource : mLightGrid;
+
    GFXLockedRect* locked_rect = mDirectLightTexture->lock();
    if ( locked_rect )
    {
+      U8 buffer[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
       U32 pos = 0;
+      U32 bufPos = 0;
       for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
       {
          for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
          {
             for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
             {
-               ColorI cell_color = mLightGrid.data[x][y][z];
-               mBuffer[pos]     = cell_color.blue;    // Blue
-               mBuffer[pos + 1] = cell_color.green;   // Green
-               mBuffer[pos + 2] = cell_color.red;     // Red
-               mBuffer[pos + 3] = 255;                // Alpha
-               pos += 4;
+               ColorI cell_color = source[pos];
+               pos++;
+
+               buffer[bufPos]     = cell_color.blue;    // Blue
+               buffer[bufPos + 1] = cell_color.green;   // Green
+               buffer[bufPos + 2] = cell_color.red;     // Red
+               buffer[bufPos + 3] = 255;                // Alpha
+               bufPos += 4;
             }
          }
       }
-      dMemcpy(locked_rect->bits, mBuffer, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
+      dMemcpy(locked_rect->bits, buffer, LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4 * sizeof(U8));
       mDirectLightTexture->unlock();
    }
 }
@@ -823,10 +841,10 @@ void OfflineLPV::exportDirectLight()
 
 bool OfflineLPV::_initShaders()
 {
-   mPropagatedShader = NULL;
+   mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
-   mReflectShader = NULL;
-   mReflectShaderConsts = NULL;
+   mReflectShader          = NULL;
+   mReflectShaderConsts    = NULL;
 
    // Need depth from pre-pass, so get the macros
    Vector<GFXShaderMacro> macros;
@@ -851,10 +869,10 @@ bool OfflineLPV::_initShaders()
       return false;
    
    mPropagatedShaderConsts = mPropagatedShader->allocConstBuffer();
-   mEyePosWorldPropSC = mPropagatedShader->getShaderConstHandle( "$eyePosWorld" );
-   mRTParamsPropSC = mPropagatedShader->getShaderConstHandle( "$rtParams0" );
-   mVolumeStartPropSC = mPropagatedShader->getShaderConstHandle( "$volumeStart" );
-   mVolumeSizePropSC = mPropagatedShader->getShaderConstHandle( "$volumeSize" );
+   mEyePosWorldPropSC      = mPropagatedShader->getShaderConstHandle( "$eyePosWorld" );
+   mRTParamsPropSC         = mPropagatedShader->getShaderConstHandle( "$rtParams0" );
+   mVolumeStartPropSC      = mPropagatedShader->getShaderConstHandle( "$volumeStart" );
+   mVolumeSizePropSC       = mPropagatedShader->getShaderConstHandle( "$volumeSize" );
 
    // Load Reflection Shader
    if ( !Sim::findObject( "OfflineLPVReflectShaderData", shaderData ) )
@@ -867,12 +885,12 @@ bool OfflineLPV::_initShaders()
    if ( !mReflectShader )
       return false;
 
-   mReflectShaderConsts = mReflectShader->allocConstBuffer();
-   mInverseViewReflectSC = mReflectShader->getShaderConstHandle( "$invViewMat" );
-   mEyePosWorldReflectSC = mReflectShader->getShaderConstHandle( "$eyePosWorld" );
-   mRTParamsReflectSC = mReflectShader->getShaderConstHandle( "$rtParams0" );
-   mVolumeStartReflectSC = mReflectShader->getShaderConstHandle( "$volumeStart" );
-   mVolumeSizeReflectSC = mReflectShader->getShaderConstHandle( "$volumeSize" );
+   mReflectShaderConsts    = mReflectShader->allocConstBuffer();
+   mInverseViewReflectSC   = mReflectShader->getShaderConstHandle( "$invViewMat" );
+   mEyePosWorldReflectSC   = mReflectShader->getShaderConstHandle( "$eyePosWorld" );
+   mRTParamsReflectSC      = mReflectShader->getShaderConstHandle( "$rtParams0" );
+   mVolumeStartReflectSC   = mReflectShader->getShaderConstHandle( "$volumeStart" );
+   mVolumeSizeReflectSC    = mReflectShader->getShaderConstHandle( "$volumeSize" );
 
    return true;
 }
@@ -1118,4 +1136,117 @@ void OfflineLPV::_updateScreenGeometry(   const Frustum &frustum,
    vert++;
 
    outVB->unlock();
+}
+
+//--- Final Volume Saving & Loading ---
+
+bool OfflineLPV::_setSaveResults( void *object, const char *index, const char *data )
+{
+   OfflineLPV* volume = reinterpret_cast< OfflineLPV* >( object );
+   volume->mSaveResults = true;
+   return false;
+}
+
+bool OfflineLPV::save()
+{
+   if ( mFileName.length() == 0 || !mLightGrid || !mPropagatedLightGrid ) return false;
+
+   FileStream dtsStream;
+   if (dtsStream.open(mFileName, Torque::FS::File::Write))
+   {
+      // Resolution
+      dtsStream.write(LPV_GRID_RESOLUTION);
+      dtsStream.write(LPV_GRID_RESOLUTION);
+      dtsStream.write(LPV_GRID_RESOLUTION);
+
+      U32 pos = 0;
+      for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+      {
+         for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
+         {
+            for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+            {
+               // Direct Light
+               dtsStream.write(mLightGrid[pos].red);
+               dtsStream.write(mLightGrid[pos].green);
+               dtsStream.write(mLightGrid[pos].blue);
+               dtsStream.write(mLightGrid[pos].alpha);
+
+               // Propagated Light
+               dtsStream.write(mPropagatedLightGrid[pos].red);
+               dtsStream.write(mPropagatedLightGrid[pos].green);
+               dtsStream.write(mPropagatedLightGrid[pos].blue);
+               dtsStream.write(mPropagatedLightGrid[pos].alpha);
+
+               pos++;
+            }
+         }
+      }
+
+      return true;
+   }
+
+   return false;
+}
+
+bool OfflineLPV::_setLoadResults( void *object, const char *index, const char *data )
+{
+   OfflineLPV* volume = reinterpret_cast< OfflineLPV* >( object );
+   volume->mLoadResults = true;
+   return false;
+}
+
+bool OfflineLPV::load()
+{
+   if ( mFileName.length() == 0 ) return false;
+
+   FileStream dtsStream;
+   if (dtsStream.open(mFileName, Torque::FS::File::Read))
+   {
+      // Resolution
+      S32 x_resolution;
+      dtsStream.read(&x_resolution);
+      S32 y_resolution;
+      dtsStream.read(&y_resolution);
+      S32 z_resolution;
+      dtsStream.read(&z_resolution);
+
+      ColorF* directLightGrid = new ColorF[x_resolution * y_resolution * z_resolution];
+      ColorF* propagatedLightGrid = new ColorF[x_resolution * y_resolution * z_resolution];
+
+      U32 pos = 0;
+      for(U32 z = 0; z < LPV_GRID_RESOLUTION; z++)
+      {
+         for(U32 y = 0; y < LPV_GRID_RESOLUTION; y++)
+         {
+            for(U32 x = 0; x < LPV_GRID_RESOLUTION; x++)
+            {
+               // Direct Light
+               dtsStream.read(&directLightGrid[pos].red);
+               dtsStream.read(&directLightGrid[pos].green);
+               dtsStream.read(&directLightGrid[pos].blue);
+               dtsStream.read(&directLightGrid[pos].alpha);
+
+               // Propagated Light
+               dtsStream.read(&propagatedLightGrid[pos].red);
+               dtsStream.read(&propagatedLightGrid[pos].green);
+               dtsStream.read(&propagatedLightGrid[pos].blue);
+               dtsStream.read(&propagatedLightGrid[pos].alpha);
+
+               pos++;
+            }
+         }
+      }
+
+      // Export loaded results.
+      exportPropagatedLight(propagatedLightGrid);
+      exportDirectLight(directLightGrid);
+
+      SAFE_DELETE(propagatedLightGrid);
+      SAFE_DELETE(directLightGrid);
+
+      return true;
+   }
+
+   return false;
 }

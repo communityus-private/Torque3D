@@ -54,23 +54,7 @@ class OfflineLPV : public ScenePolyhedralSpace
 
    protected:
 
-      struct IndirectLightSource
-      {
-         ColorF color;
-         Point3F position;
-      };
-
-      // Wrapped in struct for easy pointer reference.
-      struct ColorVoxelGrid
-      {
-         ColorF data[LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION][LPV_GRID_RESOLUTION];
-      };
-
-      // Used only for indirect light tracing.
-      Vector<IndirectLightSource> indirectLightSources;
-
       // Volume Textures and raw data buffer used to copy.
-      U8             mBuffer[LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * LPV_GRID_RESOLUTION * 4];
       GFXTexHandle   mPropagatedTexture;
       GFXTexHandle   mDirectLightTexture;
 
@@ -101,17 +85,17 @@ class OfflineLPV : public ScenePolyhedralSpace
 
       bool _initShaders();
 
-      // Geometry Grid (true = filled, false = empty)
-      ColorVoxelGrid    mGeometryGrid;
+      // Geometry Grid
+      ColorF*   mGeometryGrid;
 
       // Directly lit voxel grid. Calculated from real light sources in scene.
-      ColorVoxelGrid    mLightGrid;
+      ColorF*   mLightGrid;
 
       // Propagation Grids.
-      U32               mPropagationStage;
-      ColorVoxelGrid*   mPropagatedLightGrid;
-      ColorVoxelGrid    mPropagatedLightGridA;
-      ColorVoxelGrid    mPropagatedLightGridB;
+      U32       mPropagationStage;
+      ColorF*   mPropagatedLightGrid;
+      ColorF*   mPropagatedLightGridA;
+      ColorF*   mPropagatedLightGridB;
 
       // Final Volume Rendering
       void _handleBinEvent( RenderBinManager *bin, const SceneRenderState* sceneState, bool isBinStart );  
@@ -142,6 +126,8 @@ class OfflineLPV : public ScenePolyhedralSpace
       bool mExportPropagated;
       bool mExportDirectLight;
       bool mRenderReflection;
+      bool mSaveResults;
+      bool mLoadResults;
 
       // SimObject.
       DECLARE_CONOBJECT( OfflineLPV );
@@ -152,15 +138,18 @@ class OfflineLPV : public ScenePolyhedralSpace
       virtual void onRemove();
       void inspectPostApply();
 
+      String   mFileName;
+      bool     save();
+      bool     load();
+
       // Editor Triggered Functions
-      void regenVolume();
-      void injectLights();
-      void exportPropagatedLight();
-      void exportDirectLight();
-      ColorF calcLightColor(Point3F position);
-      F32 getAttenuation(LightInfo* lightInfo, Point3F position);
-      void propagateLights(ColorVoxelGrid* source, ColorVoxelGrid* dest, bool sampleFromGeometry = false);
-      ColorF calcIndirectLightColor(Point3F position);
+      void     regenVolume();
+      void     injectLights();
+      void     exportPropagatedLight(ColorF* altSource = NULL);
+      void     exportDirectLight(ColorF* altSource = NULL);
+      ColorF   calcLightColor(Point3F position);
+      F32      getAttenuation(LightInfo* lightInfo, Point3F position);
+      void     propagateLights(ColorF* source, ColorF* dest, bool sampleFromGeometry = false);
 
       // Static Functions.
       static void consoleInit();
@@ -180,6 +169,8 @@ class OfflineLPV : public ScenePolyhedralSpace
       static bool _setPropagateLights( void *object, const char *index, const char *data );
       static bool _setExportPropagated( void *object, const char *index, const char *data );
       static bool _setExportDirectLight( void *object, const char *index, const char *data );
+      static bool _setSaveResults( void *object, const char *index, const char *data );
+      static bool _setLoadResults( void *object, const char *index, const char *data );
 };
 
 #endif // !_OFFLINELPV_H_
