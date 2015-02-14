@@ -42,7 +42,6 @@
 #include "materials/matTextureTarget.h"
 #include "renderInstance/renderBinManager.h"
 
-#define LPV_GRID_RESOLUTION 32
 GFX_DeclareTextureProfile( LPVProfile );
 
 /// A volume in space that blocks visibility.
@@ -55,8 +54,8 @@ class OfflineLPV : public ScenePolyhedralSpace
    protected:
 
       // Volume Textures and raw data buffer used to copy.
-      GFXTexHandle   mPropagatedTexture;
-      GFXTexHandle   mDirectLightTexture;
+      GFXTexHandle            mPropagatedTexture;
+      GFXTexHandle            mDirectLightTexture;
 
       // We sample from prepass and render to light buffer.
       NamedTexTarget*         mPrepassTarget;
@@ -83,7 +82,13 @@ class OfflineLPV : public ScenePolyhedralSpace
       GFXShaderConstHandle    *mVolumeStartReflectSC;
       GFXShaderConstHandle    *mVolumeSizeReflectSC;
 
-      bool _initShaders();
+      // Configuratable volume resolution
+      F32       mVoxelSize;
+
+      // Volume Texture
+      Point3I   mCachedVolumeSize;
+      void     _initVolumeTextures(Point3I volumeSize);
+      bool     _initShaders();
 
       // Geometry Grid
       ColorF*   mGeometryGrid;
@@ -137,6 +142,9 @@ class OfflineLPV : public ScenePolyhedralSpace
       virtual bool onAdd();
       virtual void onRemove();
       void inspectPostApply();
+
+      Point3I  getVoxelCount();
+      Point3F  getWorldSpaceVoxelSize();
 
       String   mFileName;
       bool     save();
