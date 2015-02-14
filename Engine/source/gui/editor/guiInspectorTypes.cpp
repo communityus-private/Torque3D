@@ -412,30 +412,57 @@ ConsoleDocClass( GuiInspectorTypeCheckBox,
 
 GuiControl* GuiInspectorTypeCheckBox::constructEditControl()
 {
-   GuiControl* retCtrl = new GuiCheckBoxCtrl();
+   if ( mField->flag.test(AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors) )
+   {
+      // This checkbox (bool field) is meant to be treated as a button.
+      GuiControl* retCtrl = new GuiButtonCtrl();
 
-   // If we couldn't construct the control, bail!
-   if( retCtrl == NULL )
+      // If we couldn't construct the control, bail!
+      if( retCtrl == NULL )
+         return retCtrl;
+
+      GuiButtonCtrl *button = dynamic_cast<GuiButtonCtrl*>(retCtrl);
+
+      // Let's make it look pretty.
+      retCtrl->setDataField( StringTable->insert("profile"), NULL, "InspectorTypeButtonProfile" );
+      retCtrl->setField( "text", "Click Here" );
+
+      retCtrl->setScriptValue( getData() );
+
+      _registerEditControl( retCtrl );
+
+      // Configure it to update our value when the popup is closed
+      char szBuffer[512];
+      dSprintf( szBuffer, 512, "%d.apply(%d.getValue());",getId(), button->getId() );
+      button->setField("Command", szBuffer );
+
       return retCtrl;
+   } else {
+      GuiControl* retCtrl = new GuiCheckBoxCtrl();
 
-   GuiCheckBoxCtrl *check = dynamic_cast<GuiCheckBoxCtrl*>(retCtrl);
+      // If we couldn't construct the control, bail!
+      if( retCtrl == NULL )
+         return retCtrl;
 
-   // Let's make it look pretty.
-   retCtrl->setDataField( StringTable->insert("profile"), NULL, "InspectorTypeCheckboxProfile" );
-   retCtrl->setField( "text", "" );
+      GuiCheckBoxCtrl *check = dynamic_cast<GuiCheckBoxCtrl*>(retCtrl);
 
-   check->setIndent( 4 );
+      // Let's make it look pretty.
+      retCtrl->setDataField( StringTable->insert("profile"), NULL, "InspectorTypeCheckboxProfile" );
+      retCtrl->setField( "text", "" );
 
-   retCtrl->setScriptValue( getData() );
+      check->setIndent( 4 );
 
-   _registerEditControl( retCtrl );
+      retCtrl->setScriptValue( getData() );
 
-   // Configure it to update our value when the popup is closed
-   char szBuffer[512];
-   dSprintf( szBuffer, 512, "%d.apply(%d.getValue());",getId(),check->getId() );
-   check->setField("Command", szBuffer );
+      _registerEditControl( retCtrl );
 
-   return retCtrl;
+      // Configure it to update our value when the popup is closed
+      char szBuffer[512];
+      dSprintf( szBuffer, 512, "%d.apply(%d.getValue());",getId(),check->getId() );
+      check->setField("Command", szBuffer );
+
+      return retCtrl;
+   }
 }
 
 
