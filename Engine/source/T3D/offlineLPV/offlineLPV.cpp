@@ -677,10 +677,22 @@ ColorF OfflineLPV::calcLightColor(Point3F position)
    Vector<SceneObject*>::iterator iter = lightObjects.begin();
    for ( ; iter != lightObjects.end(); iter++ )
    {
-      // Get the light.
+      LightInfo* info = NULL;
       SceneObject *lightObject = (*iter);
+      ISceneLight* light = dynamic_cast<LightBase*>(lightObject);
+      info = light->getLight();
+      if ( !info ) continue;
+      
+      // Sun has special positioning.
+      Point3F lightPosition = lightObject->getPosition();
+      if ( info->getType() == LightInfo::Type::Vector )
+      {
+         VectorF sunVector = info->getDirection();
+         lightPosition.set(-10000, -10000, -10000);
+         lightPosition *= sunVector;
+      } 
 
-      bool hit = container->castRay(position, lightObject->getPosition(), STATIC_COLLISION_TYPEMASK, &rayInfo);
+      bool hit = container->castRay(position, lightPosition, STATIC_COLLISION_TYPEMASK, &rayInfo);
       if ( hit )
       {
          // OBSTRUCTED!
@@ -688,14 +700,26 @@ ColorF OfflineLPV::calcLightColor(Point3F position)
       }
       else
       {
-         LightBase* lb = dynamic_cast<LightBase*>(lightObject);
-         if ( !lb ) continue;
+         // Point Light
+         if ( info->getType() == LightInfo::Type::Point )
+         {
+            F32 atten = getAttenuation(info, position);
+            if ( atten <= 0 ) continue;
+         
+            result += info->getColor() * atten;
+         }
 
-         LightInfo* info = lb->getLight();
-         F32 atten = getAttenuation(info, position);
-         if ( atten <= 0 ) continue;
+         // Spot Light
+         if ( info->getType() == LightInfo::Type::Spot )
+         {
+            // TODO
+         }
 
-         result += info->getColor() * atten;
+         // Sun Light
+         if ( info->getType() == LightInfo::Type::Vector )
+         {
+            result += info->getColor() * info->getBrightness();
+         }
       }
    }
 
