@@ -785,23 +785,23 @@ bool OfflineLPV::_setExportPropagated( void *object, const char *index, const ch
 
 // Exports mPropagatedLightGrid to the actual volume texture on the graphics card.
 // Note: for some reason the volume texture insists on being BGRA.
-void OfflineLPV::exportPropagatedLight(ColorF* altSource)
+void OfflineLPV::exportPropagatedLight(ColorF* altSource, Point3I* altSize)
 {
    if ( !mPropagatedLightGrid && !altSource ) return;
    ColorF* source = altSource ? altSource : mPropagatedLightGrid;
+   Point3I size = altSize ? *altSize : getVoxelCount();
 
    GFXLockedRect* locked_rect = mPropagatedTexture->lock();
    if ( locked_rect )
    {
-      Point3I voxelCount = getVoxelCount();
-      U8* buffer = new U8[voxelCount.x * voxelCount.y * voxelCount.z * 4];
+      U8* buffer = new U8[size.x * size.y * size.z * 4];
       U32 pos = 0;
       U32 bufPos = 0;
-      for(U32 z = 0; z < voxelCount.z; z++)
+      for(U32 z = 0; z < size.z; z++)
       {
-         for(U32 y = 0; y < voxelCount.y; y++)
+         for(U32 y = 0; y < size.y; y++)
          {
-            for(U32 x = 0; x < voxelCount.x; x++)
+            for(U32 x = 0; x < size.x; x++)
             {
                ColorI cell_color = source[pos];
                pos++;
@@ -814,7 +814,7 @@ void OfflineLPV::exportPropagatedLight(ColorF* altSource)
             }
          }
       }
-      dMemcpy(locked_rect->bits, buffer, voxelCount.x * voxelCount.y * voxelCount.z * 4 * sizeof(U8));
+      dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mPropagatedTexture->unlock();
       SAFE_DELETE(buffer);
    }
@@ -829,23 +829,23 @@ bool OfflineLPV::_setExportDirectLight( void *object, const char *index, const c
 
 // Exports mLightGrid to the actual volume texture on the graphics card.
 // Note: for some reason the volume texture insists on being BGRA.
-void OfflineLPV::exportDirectLight(ColorF* altSource)
+void OfflineLPV::exportDirectLight(ColorF* altSource, Point3I* altSize)
 {
    if ( !mLightGrid && !altSource ) return;
    ColorF* source = altSource ? altSource : mLightGrid;
+   Point3I size = altSize ? *altSize : getVoxelCount();
 
    GFXLockedRect* locked_rect = mDirectLightTexture->lock();
    if ( locked_rect )
    {
-      Point3I voxelCount = getVoxelCount();
-      U8* buffer = new U8[voxelCount.x * voxelCount.y * voxelCount.z * 4];
+      U8* buffer = new U8[size.x * size.y * size.z * 4];
       U32 pos = 0;
       U32 bufPos = 0;
-      for(U32 z = 0; z < voxelCount.z; z++)
+      for(U32 z = 0; z < size.z; z++)
       {
-         for(U32 y = 0; y < voxelCount.y; y++)
+         for(U32 y = 0; y < size.y; y++)
          {
-            for(U32 x = 0; x < voxelCount.x; x++)
+            for(U32 x = 0; x < size.x; x++)
             {
                ColorI cell_color = source[pos];
                pos++;
@@ -858,7 +858,7 @@ void OfflineLPV::exportDirectLight(ColorF* altSource)
             }
          }
       }
-      dMemcpy(locked_rect->bits, buffer, voxelCount.x * voxelCount.y * voxelCount.z * 4 * sizeof(U8));
+      dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mDirectLightTexture->unlock();
       SAFE_DELETE(buffer);
    }
@@ -1269,22 +1269,20 @@ bool OfflineLPV::load()
    if (dtsStream.open(mFileName, Torque::FS::File::Read))
    {
       // Resolution
-      S32 x_resolution;
-      dtsStream.read(&x_resolution);
-      S32 y_resolution;
-      dtsStream.read(&y_resolution);
-      S32 z_resolution;
-      dtsStream.read(&z_resolution);
+      Point3I size;
+      dtsStream.read(&size.x);
+      dtsStream.read(&size.y);
+      dtsStream.read(&size.z);
 
-      ColorF* directLightGrid = new ColorF[x_resolution * y_resolution * z_resolution];
-      ColorF* propagatedLightGrid = new ColorF[x_resolution * y_resolution * z_resolution];
+      ColorF* directLightGrid = new ColorF[size.x * size.y * size.z];
+      ColorF* propagatedLightGrid = new ColorF[size.x * size.y * size.z];
 
       U32 pos = 0;
-      for(U32 z = 0; z < z_resolution; z++)
+      for(U32 z = 0; z < size.z; z++)
       {
-         for(U32 y = 0; y < y_resolution; y++)
+         for(U32 y = 0; y < size.y; y++)
          {
-            for(U32 x = 0; x < x_resolution; x++)
+            for(U32 x = 0; x < size.x; x++)
             {
                // Direct Light
                dtsStream.read(&directLightGrid[pos].red);
@@ -1304,9 +1302,9 @@ bool OfflineLPV::load()
       }
 
       // Export loaded results.
-      _initVolumeTextures(Point3I(x_resolution, y_resolution, z_resolution));
-      exportPropagatedLight(propagatedLightGrid);
-      exportDirectLight(directLightGrid);
+      _initVolumeTextures(size);
+      exportPropagatedLight(propagatedLightGrid, &size);
+      exportDirectLight(directLightGrid, &size);
 
       SAFE_DELETE(propagatedLightGrid);
       SAFE_DELETE(directLightGrid);

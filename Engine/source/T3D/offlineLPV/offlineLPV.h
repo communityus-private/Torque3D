@@ -153,8 +153,8 @@ class OfflineLPV : public ScenePolyhedralSpace
       // Editor Triggered Functions
       void     regenVolume();
       void     injectLights();
-      void     exportPropagatedLight(ColorF* altSource = NULL);
-      void     exportDirectLight(ColorF* altSource = NULL);
+      void     exportPropagatedLight(ColorF* altSource = NULL, Point3I* altSize = NULL);
+      void     exportDirectLight(ColorF* altSource = NULL, Point3I* altSize = NULL);
       ColorF   calcLightColor(Point3F position);
       F32      getAttenuation(LightInfo* lightInfo, Point3F position);
       void     propagateLights(ColorF* source, ColorF* dest, bool sampleFromGeometry = false);
