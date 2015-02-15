@@ -175,10 +175,11 @@ void ShadowMapPass::render(   SceneManager *sceneManager,
       
       // --- Static Shadow Map ---
 	  LightShadowMap *lsm = params->getOrCreateShadowMap();
+     LightShadowMap *dlsm = params->getOrCreateShadowMap(true);
 
       // First check the visiblity query... if it wasn't 
       // visible skip it.
-	  if (lsm->wasOccluded())
+     if (lsm->wasOccluded() || dlsm->wasOccluded())
          continue;
 
       // Any shadow that is visible is counted as being 
@@ -191,12 +192,6 @@ void ShadowMapPass::render(   SceneManager *sceneManager,
 	  shadowMaps.push_back(lsm);
 
       // --- Dynamic Shadow Map ---
-      LightShadowMap *dlsm = params->getOrCreateShadowMap(true);
-
-      // First check the visiblity query... if it wasn't 
-      // visible skip it.
-	  if (dlsm->wasOccluded())
-         continue;
 
       // Any shadow that is visible is counted as being 
       // active regardless if we update it or not.
