@@ -704,8 +704,5 @@ ConsoleMethod( GuiRadarTSCtrl, setStemColor, void, 3, 3, "(Color)"
 ConsoleMethod( GuiRadarTSCtrl, setTarget, void, 2, 3, "(str Target ShapebaseName)"
 			  "Set the target ShapeBaseName, if no Target is sent it is cleared.")
 {
-	if (argv[2])
-		object->setTarget(argv[2]);
-	else
-		object->setTarget("");
+   object->setTarget((const char*)argv[2]);
 }
