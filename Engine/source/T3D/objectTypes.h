@@ -147,6 +147,8 @@ enum SceneObjectTypes
    /// @see PhysicalZone
    PhysicalZoneObjectType = BIT( 22 ),
 
+   /// Tag For Bots
+   AIObjectType = BIT(27),
    /// @}
 };
 

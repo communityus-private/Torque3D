@@ -591,6 +591,9 @@ public:
    /// @{
 
    Resource<TSShape> mShape;         ///< Shape handle
+   StringTableEntry mIcon;
+   GFXTexHandle mIconHandle;
+   bool mHideIcon;
    U32 mCRC;
    bool computeCRC;
 
