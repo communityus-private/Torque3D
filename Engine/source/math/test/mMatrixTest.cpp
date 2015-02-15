@@ -19,7 +19,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-
+/* TEMP FIX FOR https://github.com/GarageGames/Torque3D/issues/1197
 #ifdef TORQUE_TESTS_ENABLED
 #include "testing/unitTesting.h"
 #include "platform/platform.h"
@@ -104,3 +104,4 @@ TEST(MatrixF, MultiplyImplmentations)
 }
 
 #endif
+*/
