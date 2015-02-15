@@ -60,6 +60,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       // We sample from prepass and render to light buffer.
       NamedTexTarget*         mPrepassTarget;
       NamedTexTarget*         mLightInfoTarget;
+      NamedTexTarget*         mMatInfoTarget;
       GFXTextureTargetRef     mRenderTarget;
 
       // Stateblock for shaders
@@ -114,6 +115,19 @@ class OfflineLPV : public ScenePolyhedralSpace
       Vector< Point3F > mWSPoints;
       SilhouetteExtractorType mSilhouetteExtractor;
       mutable Vector< SceneObject* > mVolumeQueryList;
+
+      // Debug voxel rendering.
+      struct DebugVoxel
+      {
+         ColorF color;
+         Point3F position;
+         Point3F size;
+      };
+      Vector<DebugVoxel> mDebugVoxels;
+      GFXVertexBufferHandle<GFXVertexPC> mDebugVoxelVB;
+
+      void _rebuildDebugVoxels();
+      void _rebuildDebugVoxelsVB();
       virtual void _renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat );
 
    public:

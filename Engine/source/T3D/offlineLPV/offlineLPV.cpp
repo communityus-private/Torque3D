@@ -114,6 +114,7 @@ OfflineLPV::OfflineLPV()
    mDirectLightTexture     = NULL;
    mLightInfoTarget        = NULL;
    mPrepassTarget          = NULL;
+   mMatInfoTarget          = NULL;
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
@@ -136,6 +137,7 @@ OfflineLPV::~OfflineLPV()
    mDirectLightTexture     = NULL;
    mLightInfoTarget        = NULL;
    mPrepassTarget          = NULL;
+   mMatInfoTarget          = NULL;
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
@@ -275,24 +277,28 @@ Point3F OfflineLPV::getWorldSpaceVoxelSize()
    return difference;
 }
 
-// Renders the visualization of the volume in the editor.
-void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat )
+//--- Debug Voxel Rendering ---
+static const Point3F cubePoints[8] = 
 {
-   Parent::_renderObject( ri, state, overrideMat );
+   Point3F(-1, -1, -1), Point3F(-1, -1,  1), Point3F(-1,  1, -1), Point3F(-1,  1,  1),
+   Point3F( 1, -1, -1), Point3F( 1, -1,  1), Point3F( 1,  1, -1), Point3F( 1,  1,  1)
+};
 
-   GFXDrawUtil *drawer = GFX->getDrawUtil();
+static const U32 cubeFaces[6][4] = 
+{
+   { 0, 4, 6, 2 }, { 0, 2, 3, 1 }, { 0, 1, 5, 4 },
+   { 3, 2, 6, 7 }, { 7, 6, 4, 5 }, { 3, 7, 5, 1 }
+};
 
-   GFXStateBlockDesc desc;
-   desc.setZReadWrite( true, true );
-   desc.setBlend( false );
-   desc.setFillModeSolid();
-   
+void OfflineLPV::_rebuildDebugVoxels()
+{
    Box3F worldBox = getWorldBox();
    Point3F bottom_corner = worldBox.minExtents;
    Point3F top_corner = worldBox.maxExtents;
    Point3F wsVoxelSize = getWorldSpaceVoxelSize();
    Point3I voxelCount = getVoxelCount();
 
+   mDebugVoxels.clear();
    U32 pos = 0;
    for ( U32 z = 0; z < voxelCount.z; z++ )
    {
@@ -300,15 +306,21 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
       {
          for ( U32 x = 0; x < voxelCount.x; x++ )
          {
+            // Calculate voxel space.
+            Box3F new_box;
+            new_box.set(bottom_corner + Point3F(wsVoxelSize.x * x, wsVoxelSize.y * y, wsVoxelSize.z * z), 
+               bottom_corner + Point3F(wsVoxelSize.x * (x + 1), wsVoxelSize.y * (y + 1), wsVoxelSize.z * (z + 1)));
+            DebugVoxel d;
+            d.position = new_box.getCenter();
+            d.size = new_box.getExtents();
+
             // Propagated Light Grid Visualization.
             if ( mShowPropagated && mPropagatedLightGrid )
             {
                if ( mPropagatedLightGrid[pos].alpha > 0.0f )
                {
-                  Box3F new_box;
-                  new_box.set(bottom_corner + Point3F(wsVoxelSize.x * x, wsVoxelSize.y * y, wsVoxelSize.z * z), 
-                     bottom_corner + Point3F(wsVoxelSize.x * (x + 1), wsVoxelSize.y * (y + 1), wsVoxelSize.z * (z + 1)));
-                  drawer->drawCube( desc, new_box, mPropagatedLightGrid[pos] );
+                  d.color = mPropagatedLightGrid[pos];
+                  mDebugVoxels.push_back(d);
                }
 
                pos++;
@@ -320,10 +332,8 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
             {
                if ( mLightGrid[pos].alpha > 0.0f )
                {
-                  Box3F new_box;
-                  new_box.set(bottom_corner + Point3F(wsVoxelSize.x * x, wsVoxelSize.y * y, wsVoxelSize.z * z), 
-                     bottom_corner + Point3F(wsVoxelSize.x * (x + 1), wsVoxelSize.y * (y + 1), wsVoxelSize.z * (z + 1)));
-                  drawer->drawCube( desc, new_box, mLightGrid[pos] );
+                  d.color = mLightGrid[pos];
+                  mDebugVoxels.push_back(d);
                }
 
                pos++;
@@ -335,10 +345,8 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
             {
                if ( mGeometryGrid[pos].alpha > 0.0f )
                {
-                  Box3F new_box;
-                  new_box.set(bottom_corner + Point3F(wsVoxelSize.x * x, wsVoxelSize.y * y, wsVoxelSize.z * z), 
-                     bottom_corner + Point3F(wsVoxelSize.x * (x + 1), wsVoxelSize.y * (y + 1), wsVoxelSize.z * (z + 1)));
-                  drawer->drawCube( desc, new_box, mGeometryGrid[pos] );
+                  d.color = mGeometryGrid[pos];
+                  mDebugVoxels.push_back(d);
                }
 
                pos++;
@@ -349,6 +357,88 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
          }
       }
    }
+
+   _rebuildDebugVoxelsVB();
+}
+
+void OfflineLPV::_rebuildDebugVoxelsVB()
+{
+   if ( mDebugVoxels.size() < 1 ) return;
+
+   U32 numVerts = mDebugVoxels.size() * 36;
+   if ( mDebugVoxelVB.isNull() || mDebugVoxelVB->mNumVerts != numVerts )
+      mDebugVoxelVB.set(GFX, mDebugVoxels.size() * 36, GFXBufferTypeDynamic );
+
+   mDebugVoxelVB.lock();
+
+   U32 vert_pos = 0;
+   for( U32 n = 0; n < mDebugVoxels.size(); ++n)
+   {
+      Point3F halfSize = mDebugVoxels[n].size * 0.5f;
+
+      // setup 6 line loops
+      U32 vertexIndex = vert_pos;
+      U32 idx;
+      for(S32 i = 0; i < 6; i++)
+      {
+         idx = cubeFaces[i][0];
+         mDebugVoxelVB[vertexIndex].point = cubePoints[idx] * halfSize;      
+         mDebugVoxelVB[vertexIndex].color = mDebugVoxels[n].color;
+         vertexIndex++;
+
+         idx = cubeFaces[i][1];
+         mDebugVoxelVB[vertexIndex].point = cubePoints[idx] * halfSize;
+         mDebugVoxelVB[vertexIndex].color = mDebugVoxels[n].color;
+         vertexIndex++;
+
+         idx = cubeFaces[i][3];
+         mDebugVoxelVB[vertexIndex].point = cubePoints[idx] * halfSize;
+         mDebugVoxelVB[vertexIndex].color = mDebugVoxels[n].color;
+         vertexIndex++;
+
+         idx = cubeFaces[i][1];
+         mDebugVoxelVB[vertexIndex].point = cubePoints[idx] * halfSize;
+         mDebugVoxelVB[vertexIndex].color = mDebugVoxels[n].color;
+         vertexIndex++;
+
+         idx = cubeFaces[i][2];
+         mDebugVoxelVB[vertexIndex].point = cubePoints[idx] * halfSize;
+         mDebugVoxelVB[vertexIndex].color = mDebugVoxels[n].color;
+         vertexIndex++;
+
+         idx = cubeFaces[i][3];
+         mDebugVoxelVB[vertexIndex].point = cubePoints[idx] * halfSize;
+         mDebugVoxelVB[vertexIndex].color = mDebugVoxels[n].color;
+         vertexIndex++;
+      }
+
+      // Apply position offset
+      for ( U32 i = vert_pos; i < (vert_pos + 36); i++ )
+         mDebugVoxelVB[i].point += mDebugVoxels[n].position;
+
+      vert_pos += 36;
+   }
+
+   mDebugVoxelVB.unlock();
+}
+
+// Renders the visualization of the volume in the editor.
+void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat )
+{
+   Parent::_renderObject( ri, state, overrideMat );
+
+   if ( mDebugVoxels.size() < 1 || !(mShowVoxels || mShowDirectLight || mShowPropagated)) return;
+
+   GFXStateBlockDesc desc;
+   desc.setZReadWrite( true, true );
+   desc.setBlend( false );
+   desc.setFillModeSolid();
+
+   GFX->setStateBlockByDesc( desc );
+   GFX->setVertexBuffer( mDebugVoxelVB );
+   GFX->setupGenericShaders();
+
+   GFX->drawPrimitive( GFXTriangleList, 0, mDebugVoxels.size() * 12 );
 }
 
 //-----------------------------------------------------------------------------
@@ -468,9 +558,22 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
 
    stream->read(&mVoxelSize);
    stream->read(&mFileName);
-   mShowVoxels       = stream->readFlag();
-   mShowDirectLight  = stream->readFlag();
-   mShowPropagated   = stream->readFlag();
+
+   // Show geometry grid?
+   bool old_show_voxels = mShowVoxels;
+   mShowVoxels = stream->readFlag();
+   if ( mShowVoxels != old_show_voxels ) _rebuildDebugVoxels();
+
+   // Show direct light?
+   bool old_show_light = mShowDirectLight;
+   mShowDirectLight = stream->readFlag();
+   if ( mShowDirectLight != old_show_light ) _rebuildDebugVoxels();
+
+   // Show propagated?
+   bool old_show_prop = mShowPropagated;
+   mShowPropagated = stream->readFlag();
+   if ( mShowPropagated != old_show_prop ) _rebuildDebugVoxels();
+
    mRenderReflection = stream->readFlag();
 
    // Regen Volume Triggered?
@@ -616,6 +719,8 @@ void OfflineLPV::regenVolume()
          }
       }
    }
+
+   _rebuildDebugVoxels();
 }
 
 //--- Light Injection ---
@@ -655,6 +760,8 @@ void OfflineLPV::injectLights()
          }
       }
    }
+
+   _rebuildDebugVoxels();
 }
 
 ColorF OfflineLPV::calcLightColor(Point3F position)
@@ -680,6 +787,8 @@ ColorF OfflineLPV::calcLightColor(Point3F position)
       LightInfo* info = NULL;
       SceneObject *lightObject = (*iter);
       ISceneLight* light = dynamic_cast<LightBase*>(lightObject);
+      if ( !light ) continue;
+
       info = light->getLight();
       if ( !info ) continue;
       
@@ -796,6 +905,8 @@ void OfflineLPV::propagateLights(ColorF* source, ColorF* dest, bool sampleFromGe
          }
       }
    }
+
+   _rebuildDebugVoxels();
 }
 
 //--- Export from CPU to GPU for rendering ---
@@ -1100,12 +1211,19 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
 
    mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
 
-   // We also need to sample from the depth buffer.
+   // We need to sample from the depth buffer.
    if ( !mPrepassTarget )
       mPrepassTarget = NamedTexTarget::find( "prepass" );
 
    GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
    if ( !prepassTexObject ) return;
+
+   // and the material info buffer.
+   if ( !mMatInfoTarget )
+      mMatInfoTarget = NamedTexTarget::find( "matinfo" );
+
+   GFXTextureObject *matInfoTexObject = mMatInfoTarget->getTexture();
+   if ( !matInfoTexObject ) return;
 
    // -- Setup screenspace quad to render (postfx) --
    Frustum frustum = state->getCameraFrustum();
@@ -1156,6 +1274,7 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    // Setup Textures
    GFX->setTexture(0, mDirectLightTexture);
    GFX->setTexture(1, prepassTexObject);
+   GFX->setTexture(2, matInfoTexObject);
 
    // Draw the screenspace quad.
    GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
