@@ -94,14 +94,32 @@ class OfflineLPV : public ScenePolyhedralSpace
       // Geometry Grid
       ColorF*   mGeometryGrid;
 
+      // 2nd Order Spherical Harmonics require storage in (3) float4s.
+      struct SHVoxel
+      {
+         ColorF red;
+         ColorF green;
+         ColorF blue;
+      };
+
+      // Spherical Harmonics functions
+      Vector4F getClampedCosineSHCoeffs(Point3F dir);
+      SHVoxel  encodeSH(Point3F dir, ColorF color);
+      ColorF   decodeSH(Point3F dir, SHVoxel sh);
+      SHVoxel  calcSHLights(Point3F position, ColorF geometryColor, Point3I voxelPosition);
+
+      // Helper functions
+      Point3F  getNearestFaceNormals(Point3F dir, bool nonOccludedOnly = false, U32 x = 0, U32 y = 0, U32 z = 0);
+      Point3F  reflect(Point3F v, Point3F n);
+
       // Directly lit voxel grid. Calculated from real light sources in scene.
-      ColorF*   mLightGrid;
+      SHVoxel*   mLightGrid;
 
       // Propagation Grids.
-      U32       mPropagationStage;
-      ColorF*   mPropagatedLightGrid;
-      ColorF*   mPropagatedLightGridA;
-      ColorF*   mPropagatedLightGridB;
+      U32        mPropagationStage;
+      SHVoxel*   mPropagatedLightGrid;
+      SHVoxel*   mPropagatedLightGridA;
+      SHVoxel*   mPropagatedLightGridB;
 
       // Final Volume Rendering
       void _handleBinEvent( RenderBinManager *bin, const SceneRenderState* sceneState, bool isBinStart );  
@@ -135,6 +153,23 @@ class OfflineLPV : public ScenePolyhedralSpace
       OfflineLPV();
       ~OfflineLPV();
 
+      // SimObject.
+      DECLARE_CONOBJECT( OfflineLPV );
+      DECLARE_DESCRIPTION( "Offline Light Propogation Volume" );
+      DECLARE_CATEGORY( "3D Scene" );
+
+      virtual bool onAdd();
+      virtual void onRemove();
+      void inspectPostApply();
+
+      Point3I  getVoxelCount();
+      Point3F  getWorldSpaceVoxelSize();
+
+      // Saving & Loading
+      String   mFileName;
+      bool     save();
+      bool     load();
+
       // Editor Triggered Flags
       bool mRegenVolume;
       bool mInjectLights;
@@ -148,44 +183,29 @@ class OfflineLPV : public ScenePolyhedralSpace
       bool mSaveResults;
       bool mLoadResults;
 
-      // SimObject.
-      DECLARE_CONOBJECT( OfflineLPV );
-      DECLARE_DESCRIPTION( "Offline Light Propogation Volume" );
-      DECLARE_CATEGORY( "3D Scene" );
-
-      virtual bool onAdd();
-      virtual void onRemove();
-      void inspectPostApply();
-
-      Point3I  getVoxelCount();
-      Point3F  getWorldSpaceVoxelSize();
-
-      String   mFileName;
-      bool     save();
-      bool     load();
-
       // Editor Triggered Functions
-      void     regenVolume();
-      void     injectLights();
-      void     exportPropagatedLight(ColorF* altSource = NULL, Point3I* altSize = NULL);
-      void     exportDirectLight(ColorF* altSource = NULL, Point3I* altSize = NULL);
-      ColorF   calcLightColor(Point3F position);
-      F32      getAttenuation(LightInfo* lightInfo, Point3F position);
-      void     propagateLights(ColorF* source, ColorF* dest, bool sampleFromGeometry = false);
-
-      // Static Functions.
-      static void consoleInit();
-      static void initPersistFields();
+      void regenVolume();
+      void injectLights();
+      void exportPropagatedLight(ColorF* pSource, Point3I* pSize = NULL);
+      void exportPropagatedLight(SHVoxel* pSource, Point3I* pSize = NULL);
+      void exportDirectLight(ColorF* pSource, Point3I* pSize = NULL);
+      void exportDirectLight(SHVoxel* pSource, Point3I* pSize = NULL);
+      F32  getAttenuation(LightInfo* lightInfo, Point3F position);
+      void propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFromGeometry = false);
 
       // Network
-      U32 packUpdate( NetConnection *, U32 mask, BitStream *stream );
+      U32  packUpdate( NetConnection *, U32 mask, BitStream *stream );
       void unpackUpdate( NetConnection *, BitStream *stream );
 
       // SceneObject.
       virtual void buildSilhouette( const SceneCameraState& cameraState, Vector< Point3F >& outPoints );
       virtual void setTransform( const MatrixF& mat );
 
-      // Editor Triggered Functions
+      // Static Functions.
+      static void consoleInit();
+      static void initPersistFields();
+
+      // Editor Triggered Static Functions
       static bool _setRegenVolume( void *object, const char *index, const char *data );
       static bool _setInjectLights( void *object, const char *index, const char *data );
       static bool _setPropagateLights( void *object, const char *index, const char *data );
