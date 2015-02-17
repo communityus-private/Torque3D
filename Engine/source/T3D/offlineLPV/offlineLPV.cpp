@@ -839,7 +839,7 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
    {
       LightInfo* info = NULL;
       SceneObject *lightObject = (*iter);
-      ISceneLight* light = dynamic_cast<LightBase*>(lightObject);
+      ISceneLight* light = dynamic_cast<ISceneLight*>(lightObject);
       if ( !light ) continue;
 
       info = light->getLight();
