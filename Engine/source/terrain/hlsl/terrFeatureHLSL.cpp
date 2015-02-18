@@ -1024,7 +1024,7 @@ void TerrainAdditiveFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
    output = meta;
 }
 
-//standard matInfo map contains data of the form .r = bitflags, .g = translucency, 
+//standard matInfo map contains data of the form .r = bitflags, .g = (will contain AO), 
 //.b = specular strength, a= spec power. 
 //here, it's merely a cutout for now, so that lightmapping (target3) doesn't get mangled.
 //we'll most likely revisit that later. possibly several ways...

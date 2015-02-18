@@ -1154,11 +1154,7 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
 
    // Deferred Shading: Determine Material Info Flags
    S32 matInfoFlags = 
-            (mMaterial->mEmissive[stageNum] ? 1 : 0) |                              // Emissive
-            (mMaterial->mGlow[stageNum] ? 2 : 0) |                                  // Glow
-            (mMaterial->mTranslucencyMapFilename[stageNum].isNotEmpty() ? 4 : 0) |  // Translucency
-            (mMaterial->mUseMetalness[stageNum] ? 8: 0)                             // Metalness
-            ;
+            (mMaterial->mEmissive[stageNum] ? 1 : 0);
    mMaterial->mMatInfoFlags[stageNum] = matInfoFlags / 255.0f;
    shaderConsts->setSafe(handles->mMatInfoFlagsSC, mMaterial->mMatInfoFlags[stageNum]);   
    if( handles->mAccuScaleSC->isValid() )

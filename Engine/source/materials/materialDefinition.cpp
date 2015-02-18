@@ -298,14 +298,7 @@ void Material::initPersistFields()
       
       addField( "useAnisotropic", TypeBool, Offset(mUseAnisotropic, Material), MAX_STAGES,
          "Use anisotropic filtering for the textures of this stage." );
-
-      // Deferred Shading: Metalness
-      addField( "useMetalness", TypeBool, Offset(mUseMetalness, Material), MAX_STAGES,
-         "Treat specular map as metalness map." );
-
-      addField("translucencyMap", TypeImageFilename, Offset(mTranslucencyMapFilename, Material), MAX_STAGES,
-         "The name of a translucency map to apply to this material." );
-
+      
       addField("vertLit", TypeBool, Offset(mVertLit, Material), MAX_STAGES,
          "If true the vertex color is used for lighting." );
 
@@ -392,9 +385,6 @@ void Material::initPersistFields()
       addProtectedField("bumpTex",        TypeImageFilename,   Offset(mNormalMapFilename, Material),
          defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES, 
          "For backwards compatibility.\n@see normalMap\n"); 
-      addProtectedField("translucencyTex",         TypeImageFilename,   Offset(mTranslucencyMapFilename, Material),
-         defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
-         "For backwards compatibility.\n@see envMap\n"); 
       addProtectedField("colorMultiply",  TypeColorF,          Offset(mDiffuse, Material),
          defaultProtectedSetNotEmptyFn, emptyStringProtectedGetFn, MAX_STAGES,
          "For backwards compatibility.\n@see diffuseColor\n"); 

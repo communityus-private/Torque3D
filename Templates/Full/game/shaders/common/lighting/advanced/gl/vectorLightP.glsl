@@ -301,21 +301,6 @@ void main()
    #ifdef PSSM_DEBUG_RENDER
       lightColorOut = debugColor;
    #endif
-   
-   bool translucent = getFlag( matInfo.r, 2 );
-   if ( translucent && matInfo.g > 0.1 )
-   {
-      float fLTDistortion = 0.1;
-      float iLTPower = 10;
-      float fLTAmbient = 0.0;
-      float fLTThickness = matInfo.g;
-      float fLTScale = 0.5;
-      vec3 vLTLight = lightDirection + normal * fLTDistortion;
-      float fLTDot = pow(clamp(dot(normalize(vsEyeRay), -vLTLight), 0.0, 1.0), iLTPower) * fLTScale;
-      vec3 fLT = vec3(1.0 * (fLTDot + fLTAmbient) * fLTThickness);
-
-      addToResult = lightColor * vec4( fLT, 0.0);
-   }
 
    vec4 colorSample = texture( colorBuffer, uv0 );
    OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);   
