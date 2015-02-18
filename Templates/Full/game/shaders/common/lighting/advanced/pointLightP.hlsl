@@ -268,21 +268,5 @@ float4 main(   ConvexConnectP IN,
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   bool translucent = getFlag( matInfo.r, 2 );
-   if ( translucent && matInfo.g > 0.1 )
-   {
-      float fLTDistortion = 0.0;
-      int iLTPower = 10;
-      float fLTAmbient = 0.0;
-      float fLTThickness = matInfo.g;
-      float fLTScale = 1.0;
-
-      float3 vLTLight = lightVec + normal * fLTDistortion;
-      float fLTDot = pow(saturate(dot(-IN.vsEyeDir.xyz, -vLTLight)), iLTPower) * fLTScale;
-      float3 fLT = atten * (fLTDot + fLTAmbient) * fLTThickness;
-
-      addToResult = lightColor * float4( fLT, 0.0);
-   }
-
    return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
 }

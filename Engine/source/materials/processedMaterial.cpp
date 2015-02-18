@@ -457,14 +457,6 @@ void ProcessedMaterial::_setStageData()
          if(!mStages[i].getTex( MFT_SpecularMap ))
             mMaterial->logError("Failed to load specular map %s for stage %i", _getTexturePath(mMaterial->mSpecularMapFilename[i]).c_str(), i);
       }
-
-      // TranslucencyMap
-      if( mMaterial->mTranslucencyMapFilename[i].isNotEmpty() )
-      {
-         mStages[i].setTex( MFT_TranslucencyMap, _createTexture( mMaterial->mTranslucencyMapFilename[i], &GFXDefaultStaticDiffuseProfile ) );
-         if(!mStages[i].getTex( MFT_TranslucencyMap ))
-            mMaterial->logError("Failed to load translucency map %s for stage %i", _getTexturePath(mMaterial->mTranslucencyMapFilename[i]).c_str(), i);
-      }
    }
 
 	mMaterial->mCubemapData = dynamic_cast<CubemapData*>(Sim::findObject( mMaterial->mCubemapName ));
