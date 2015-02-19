@@ -298,6 +298,7 @@ void main()
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
+   addToResult.rgb *= matInfo.ggg;
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK

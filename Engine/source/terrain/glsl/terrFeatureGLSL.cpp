@@ -1122,7 +1122,7 @@ void TerrainBlankInfoMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
       material->setStructName("OUT");
    }
 
-   meta->addStatement(new GenOp("   @ = float4(0.0,0.0,0.0,0.0001);\r\n", material));
+   meta->addStatement(new GenOp("   @ = float4(0.0,1.0,0.0,0.0001);\r\n", material));
 
    output = meta;
 }

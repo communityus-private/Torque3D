@@ -282,5 +282,5 @@ vec4 AL_DeferredOutput(
 {    
    lightColor *= vec3(shadowAttenuation);
    lightColor += ambient.rgb;
-   return vec4(lightColor.rgb, specularOut); 
+   return vec4(lightColor.rgb, 0.0f); 
 }
