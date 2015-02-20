@@ -51,6 +51,37 @@ class OfflineLPV : public ScenePolyhedralSpace
 
       typedef ScenePolyhedralSpace Parent;
 
+      struct DebugRenderStash
+      {
+         struct WireMeshData
+         {
+            struct data
+            {
+               data()
+               {
+                  triCount = 0;
+               }
+
+               U32 triCount;
+
+               Vector<Point3F> vertA;
+               Vector<Point3F> vertB;
+               Vector<Point3F> vertC;
+            };
+
+            void clear()
+            {
+               bufferData.clear();
+            }
+
+            Vector<data> bufferData;
+         };
+
+         WireMeshData wireMeshRender;
+      };
+
+      DebugRenderStash mDebugRender;
+
    protected:
 
       // Volume Textures and raw data buffer used to copy.
@@ -100,7 +131,6 @@ class OfflineLPV : public ScenePolyhedralSpace
          ColorF red;
          ColorF green;
          ColorF blue;
-
          Point3F normal;
       };
 
@@ -194,6 +224,26 @@ class OfflineLPV : public ScenePolyhedralSpace
       void exportDirectLight(SHVoxel* pSource, Point3I* pSize = NULL);
       F32  getAttenuation(LightInfo* lightInfo, Point3F position);
       void propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFromGeometry = false);
+
+      Point3I getVoxel(Point3F position);
+      S32 getVoxelIndex(U32 x, U32 y, U32 z)
+      {
+         Point3I voxels = getVoxelCount();
+         S32 offset = -1;
+
+         if (x < voxels.x && y < voxels.y && z < voxels.z)
+         {
+            /*offset = (x*voxels.y*voxels.z + y*voxels.z + z);
+
+            U32 otheroffset = x * (voxels.y * voxels.z) + y * (voxels.z) + z;
+
+            bool hurp = true;*/
+
+            offset = (voxels.x * voxels.y * z) + (voxels.x * y) + x;
+         }
+
+         return offset;
+      }
 
       // Network
       U32  packUpdate( NetConnection *, U32 mask, BitStream *stream );

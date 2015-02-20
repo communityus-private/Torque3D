@@ -55,6 +55,10 @@
 #include "core/fileObject.h"
 #include "math/mPolyhedron.impl.h"
 
+#include "gui/controls/guiTextCtrl.h"
+
+#include "collision/optimizedPolyList.h"
+
 IMPLEMENT_CO_NETOBJECT_V1( OfflineLPV );
 
 ConsoleDocClass( OfflineLPV,
@@ -124,6 +128,8 @@ OfflineLPV::OfflineLPV()
    resetWorldBox();
 
    RenderPassManager::getRenderBinSignal().notify( this, &OfflineLPV::_handleBinEvent );
+
+   mDebugRender.wireMeshRender.clear();
 }
 
 OfflineLPV::~OfflineLPV()
@@ -335,7 +341,6 @@ void OfflineLPV::_rebuildDebugVoxels()
                if ( decoded_color.red > 0.0f || decoded_color.green > 0.0f || decoded_color.blue > 0.0f )
                {
                   d.color = decoded_color;
-                  d.position += mLightGrid[pos].normal;
                   mDebugVoxels.push_back(d);
                }
 
@@ -430,7 +435,7 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
 {
    Parent::_renderObject( ri, state, overrideMat );
 
-   if ( mDebugVoxels.size() < 1 || !(mShowVoxels || mShowDirectLight || mShowPropagated)) return;
+   if (mDebugVoxels.size() < 1 || !(mShowVoxels || mShowDirectLight || mShowPropagated)) return;
 
    GFXStateBlockDesc desc;
    desc.setZReadWrite( true, true );
@@ -442,6 +447,50 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
    GFX->setupGenericShaders();
 
    GFX->drawPrimitive( GFXTriangleList, 0, mDebugVoxels.size() * 12 );
+
+   GFX->enterDebugEvent(ColorI(255, 0, 255), "OfflineLPV_DebugRender");
+
+   if (!mDebugRender.wireMeshRender.bufferData.empty())
+   {
+      //first, we'll render the wire mesh data
+      GFXStateBlockDesc desc;
+      desc.setZReadWrite(true, false);
+      desc.setBlend(true);
+      desc.setCullMode(GFXCullNone);
+      //desc.setZReadWrite( false, false );
+      desc.fillMode = GFXFillWireframe;
+
+      if (mDebugRender.wireMeshRender.bufferData.empty())
+         return;
+
+      GFXStateBlockRef sb = GFX->createStateBlock(desc);
+      GFX->setStateBlock(sb);
+
+      PrimBuild::color3i(255, 255, 255);
+
+      Point3F *pnt;
+
+      for (U32 b = 0; b < mDebugRender.wireMeshRender.bufferData.size(); b++)
+      {
+         U32 indexCnt = mDebugRender.wireMeshRender.bufferData[b].triCount * 3;
+         PrimBuild::begin(GFXTriangleList, mDebugRender.wireMeshRender.bufferData[b].triCount * 3);
+
+         U32 triCnt = mDebugRender.wireMeshRender.bufferData[b].triCount;
+         for (U32 i = 0; i < mDebugRender.wireMeshRender.bufferData[b].triCount; i++)
+         {
+            pnt = &mDebugRender.wireMeshRender.bufferData[b].vertA[i];
+            PrimBuild::vertex3fv(pnt);
+
+            pnt = &mDebugRender.wireMeshRender.bufferData[b].vertB[i];
+            PrimBuild::vertex3fv(pnt);
+
+            pnt = &mDebugRender.wireMeshRender.bufferData[b].vertC[i];
+            PrimBuild::vertex3fv(pnt);
+         }
+
+         PrimBuild::end();
+      }
+   }
 }
 
 //-----------------------------------------------------------------------------
@@ -662,6 +711,16 @@ void OfflineLPV::regenVolume()
    Point3F wsVoxelSize     = getWorldSpaceVoxelSize();
    Point3I voxelCount      = getVoxelCount();
 
+   //get our editor status bar so we can keep tabs on progress
+   GuiTextCtrl * statusBarGuiCtrl = dynamic_cast<GuiTextCtrl*>(Sim::findObject("EWorldEditorStatusBarInfo"));
+   String statusBarGuiText = "";
+
+   if (statusBarGuiCtrl)
+   {
+      statusBarGuiText = statusBarGuiCtrl->getText();
+      statusBarGuiCtrl->setText("Beginning Regen of the LPV. Clearing old LPV data.");
+   }
+
    RayInfo rayInfo;
    rayInfo.generateTexCoord = true;
    SceneContainer* container = getContainer();
@@ -688,48 +747,354 @@ void OfflineLPV::regenVolume()
       {
          for ( U32 x = 0; x < voxelCount.x; x++ )
          {
-            Point3F start = bottom_corner + Point3F(wsVoxelSize.x * x, wsVoxelSize.y * y, wsVoxelSize.z * z);
-            Point3F end = bottom_corner + Point3F(wsVoxelSize.x * (x + 1), wsVoxelSize.y * (y + 1), wsVoxelSize.z * (z + 1));
-
-            ColorF voxel_color = ColorF::ZERO;
-
-            bool hit = container->castRay(start, end, STATIC_COLLISION_TYPEMASK, &rayInfo);
-            if ( hit && rayInfo.material )
-            {
-               Material* mat = dynamic_cast<Material*>(rayInfo.material->getMaterial());
-               if ( mat && rayInfo.texCoord.x != -1 && rayInfo.texCoord.y != -1 )
-               {
-                  Resource<GBitmap> diffuseTex = GBitmap::load( mat->mDiffuseMapFilename[0] );
-                  if(diffuseTex != NULL)
-                  {
-                     U32 w = diffuseTex->getWidth();
-                     U32 h = diffuseTex->getHeight();
-
-                     ColorI result;
-                     diffuseTex->getColor(rayInfo.texCoord.x * w, rayInfo.texCoord.y * h, result);
-                  }
-               }
-               voxel_color = mat->mDiffuse[0];
-            }
-
-            mGeometryGrid[pos] = voxel_color;
+            //mGeometryGrid[pos] = voxel_color;
+            mGeometryGrid[pos] = ColorF::ZERO;
             mLightGrid[pos].red = ColorF::ZERO;
             mLightGrid[pos].green = ColorF::ZERO;
             mLightGrid[pos].blue = ColorF::ZERO;
-            mPropagationStage = 0;
             mPropagatedLightGridA[pos].red = ColorF::ZERO;
             mPropagatedLightGridA[pos].green = ColorF::ZERO;
             mPropagatedLightGridA[pos].blue = ColorF::ZERO;
             mPropagatedLightGridB[pos].red = ColorF::ZERO;
             mPropagatedLightGridB[pos].green = ColorF::ZERO;
             mPropagatedLightGridB[pos].blue = ColorF::ZERO;
-            mPropagatedLightGrid = mPropagatedLightGridA;
             pos++;
          }
       }
    }
 
-   _rebuildDebugVoxels();
+   mPropagationStage = 0;
+   mPropagatedLightGrid = mPropagatedLightGridA;
+
+   mDebugVoxels.clear();
+
+   //Step one, we poll the scene container and find all objects that overlap with us
+   SphereF sphere;
+   sphere.center = (worldBox.minExtents + worldBox.maxExtents) * 0.5;
+   VectorF bv = worldBox.maxExtents - sphere.center;
+   sphere.radius = bv.len();
+
+   if (statusBarGuiCtrl)
+   {
+      statusBarGuiCtrl->setText("Voxelizing Static Geometry. 0% complete.");
+   }
+
+   S32 processedTris = 0;
+   S32 totalTris = 0;
+
+   Vector<OptimizedPolyList> polyLists;
+
+   SimpleQueryList sql;
+   container->findObjects(worldBox, STATIC_COLLISION_TYPEMASK, SimpleQueryList::insertionCallback, &sql);
+   for (U32 i = 0; i < sql.mList.size(); i++)
+   {
+      OptimizedPolyList polyList;
+
+      sql.mList[i]->buildPolyList(PLC_Export, &polyList, worldBox, sphere);
+
+      polyLists.push_back(polyList);
+
+      totalTris += polyList.mPolyList.size();
+   }
+
+   for (U32 i = 0; i < polyLists.size(); i++)
+   {
+      if (!polyLists[i].isEmpty())
+      {
+         Vector<U32> tempIndices;
+         tempIndices.reserve(4);
+
+         for (U32 j = 0; j < polyLists[i].mPolyList.size(); j++)
+         {
+            const OptimizedPolyList::Poly& poly = polyLists[i].mPolyList[j];
+
+            if (poly.vertexCount < 3)
+               continue;
+
+            tempIndices.setSize(poly.vertexCount);
+            dMemset(tempIndices.address(), 0, poly.vertexCount);
+
+            if (poly.type == OptimizedPolyList::TriangleStrip)
+            {
+               tempIndices[0] = 0;
+               U32 idx = 1;
+
+               for (U32 k = 1; k < poly.vertexCount; k += 2)
+                  tempIndices[idx++] = k;
+
+               for (U32 k = ((poly.vertexCount - 1) & (~0x1)); k > 0; k -= 2)
+                  tempIndices[idx++] = k;
+            }
+            else if (poly.type == OptimizedPolyList::TriangleList ||
+               poly.type == OptimizedPolyList::TriangleFan)
+            {
+               for (U32 k = 0; k < poly.vertexCount; k++)
+                  tempIndices[k] = k;
+            }
+            else
+               continue;
+
+            const U32& firstIdx = polyLists[i].mIndexList[poly.vertexStart];
+            const OptimizedPolyList::VertIndex& firstVertIdx = polyLists[i].mVertexList[firstIdx];
+
+            for (U32 k = 1; k < poly.vertexCount - 1; k++)
+            {
+               const U32& secondIdx = polyLists[i].mIndexList[poly.vertexStart + tempIndices[k]];
+               const U32& thirdIdx = polyLists[i].mIndexList[poly.vertexStart + tempIndices[k + 1]];
+
+               const OptimizedPolyList::VertIndex& secondVertIdx = polyLists[i].mVertexList[secondIdx];
+               const OptimizedPolyList::VertIndex& thirdVertIdx = polyLists[i].mVertexList[thirdIdx];
+
+               Point3F vertA = polyLists[i].mPoints[firstVertIdx.vertIdx];
+               Point3F vertB = polyLists[i].mPoints[secondVertIdx.vertIdx];
+               Point3F vertC = polyLists[i].mPoints[thirdVertIdx.vertIdx];
+               
+
+               //First, test if any of them are contained inside. If they are, we're done
+               if (worldBox.isContained(vertA) || worldBox.isContained(vertB) || worldBox.isContained(vertC))
+               {
+                  //can only do 65000 verts in a call, so split it up
+                  if (mDebugRender.wireMeshRender.bufferData.empty() || mDebugRender.wireMeshRender.bufferData.last().triCount >= 21666)
+                  {
+                     DebugRenderStash::WireMeshData::data newBufferData;
+                     mDebugRender.wireMeshRender.bufferData.push_back(newBufferData);
+                  }
+
+                  mDebugRender.wireMeshRender.bufferData.last().triCount++;
+                  mDebugRender.wireMeshRender.bufferData.last().vertA.push_back(vertA);
+                  mDebugRender.wireMeshRender.bufferData.last().vertB.push_back(vertB);
+                  mDebugRender.wireMeshRender.bufferData.last().vertC.push_back(vertC);
+
+                  PlaneF triPlane = PlaneF(vertA, vertB, vertC);
+
+                  Point3F triCenter = (vertA + vertB + vertC) / 3;
+
+                  Box3F triBox;
+
+                  Vector<Point3F> verts;
+                  verts.push_back(vertA);
+                  verts.push_back(vertB);
+                  verts.push_back(vertC);
+
+                  triBox = Box3F::aroundPoints(verts.address(), verts.size());
+
+                  //get the voxels our tri's bounds overlap
+                  Point3I minExtIdx = getVoxel(triBox.minExtents);
+                  Point3I maxExtIdx = getVoxel(triBox.maxExtents);
+
+                  U32 xVoxCount = mAbs(maxExtIdx.x - minExtIdx.x);
+                  U32 yVoxCount = mAbs(maxExtIdx.y - minExtIdx.y);
+                  U32 zVoxCount = mAbs(maxExtIdx.z - minExtIdx.z);
+
+                  xVoxCount = xVoxCount > 0 ? xVoxCount : 1;
+                  yVoxCount = yVoxCount > 0 ? yVoxCount : 1;
+                  zVoxCount = zVoxCount > 0 ? zVoxCount : 1;
+
+                  U32 xStart = maxExtIdx.x > minExtIdx.x ? minExtIdx.x : maxExtIdx.x;
+                  U32 yStart = maxExtIdx.y > minExtIdx.y ? minExtIdx.y : maxExtIdx.y;
+                  U32 zStart = maxExtIdx.z > minExtIdx.z ? minExtIdx.z : maxExtIdx.z;
+
+                  //now, iterate through the smaller subset of voxels that this encompasses, and test them. Early out if it isn't valid
+                  for (U32 x = xStart; x < xStart + xVoxCount; x++)
+                  {
+                     for (U32 y = yStart; y < yStart + yVoxCount; y++)
+                     {
+                        for (U32 z = zStart; z < zStart + zVoxCount; z++)
+                        {
+                           bool newVoxel = false;
+
+                           S32 voxIndex = getVoxelIndex(x, y, z);
+                           if (voxIndex == -1)
+                              continue;
+
+                           ColorF voxel_color = ColorF(0, 0, 0, 0);
+
+                           Box3F voxBox = Box3F(bottom_corner + Point3F(mVoxelSize * x, mVoxelSize * y, mVoxelSize * z),
+                              bottom_corner + Point3F(mVoxelSize * (x + 1), mVoxelSize * (y + 1), mVoxelSize * (z + 1)));
+
+                           if (triPlane.whichSide(voxBox) == PlaneF::Side::On)
+                           {
+                              //early out test. If the box containts any or all of the verts, it's assumed to intersect
+                              if (voxBox.isContained(vertA) || voxBox.isContained(vertB) || voxBox.isContained(vertC))
+                              {
+                                 Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
+                                 if (mat)
+                                 {
+                                    Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                    if (diffuseTex != NULL)
+                                    {
+                                       U32 w = diffuseTex->getWidth();
+                                       U32 h = diffuseTex->getHeight();
+
+                                       ColorI result;
+                                       diffuseTex->getColor(0.5 * w, 0.5 * h, result);
+                                       voxel_color = result;
+                                    } else {
+                                       voxel_color = mat->mDiffuse[0];
+                                    }
+                                 } else {
+                                    voxel_color = ColorF(255, 255, 255, 255);
+                                 }
+
+                                 U32 voxelIdx = getVoxelIndex(x, y, z);
+                                 mGeometryGrid[voxelIdx] = voxel_color;
+
+                                 DebugVoxel d;
+                                 d.color = voxel_color;
+                                 mDebugVoxels.push_back(d);
+                              }
+                              else
+                              {
+                                 //first, test if any of the tri edges intersect the box
+                                 if (voxBox.collideLine(vertA, vertB) || voxBox.collideLine(vertB, vertC) || voxBox.collideLine(vertC, vertA))
+                                 {
+                                    Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
+                                    if (mat)
+                                    {
+                                       Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                       if (diffuseTex != NULL)
+                                       {
+                                          U32 w = diffuseTex->getWidth();
+                                          U32 h = diffuseTex->getHeight();
+
+                                          ColorI result;
+                                          diffuseTex->getColor(0.5 * w, 0.5 * h, result);
+                                          voxel_color = result;
+                                       } else {
+                                          voxel_color = mat->mDiffuse[0];
+                                       }
+                                    } else {
+                                       voxel_color = ColorF(255, 255, 255, 255);
+                                    }
+
+                                    //indeed it does
+                                    U32 voxelIdx = getVoxelIndex(x, y, z);
+                                    mGeometryGrid[voxelIdx] = voxel_color;
+
+                                    DebugVoxel d;
+                                    d.color = voxel_color;
+                                    mDebugVoxels.push_back(d);
+                                 }
+                                 else
+                                 {
+                                    //it doesn't, so we have to test if the voxel intersects the tri(like in cases where the triangle is larger than the voxel)
+                                    //we do this second because it requires more tests and is thus slower.
+                                    for (U32 e = 0; e < BoxBase::Edges::NUM_EDGES; e++)
+                                    {
+                                       BoxBase::Points a, b;
+                                       voxBox.getEdgePointIndices((BoxBase::Edges)e, a, b);
+
+                                       Point3F edgeA = voxBox.computeVertex(a);
+                                       Point3F edgeB = voxBox.computeVertex(b);
+
+                                       Point3F intersect;
+
+                                       if (triPlane.clipSegment(edgeA, edgeB, intersect))
+                                          //if (MathUtils::mLineTriangleCollide(edgeA, edgeB, vertA, vertB, vertC, NULL, &t))
+                                       {
+                                          if (intersect == edgeA || intersect == edgeB)
+                                             continue;
+
+                                          //yep, it intersects, so find out if the intersection falls inside our actual triangle
+                                          VectorF v0 = vertC - vertA;
+                                          VectorF v1 = vertB - vertA;
+                                          VectorF v2 = intersect - vertA;
+
+                                          // Compute dot products
+                                          F32 dot00 = mDot(v0, v0);
+                                          F32 dot01 = mDot(v0, v1);
+                                          F32 dot02 = mDot(v0, v2);
+                                          F32 dot11 = mDot(v1, v1);
+                                          F32 dot12 = mDot(v1, v2);
+
+                                          // Compute barycentric coordinates
+                                          F32 invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+                                          F32 u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+                                          F32 v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+                                          // Check if point is in triangle
+                                          if ((u >= 0) && (v >= 0) && (u + v < 1))
+                                          {
+                                             Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
+                                             if (mat)
+                                             {
+                                                Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                                if (diffuseTex != NULL)
+                                                {
+                                                   U32 w = diffuseTex->getWidth();
+                                                   U32 h = diffuseTex->getHeight();
+
+                                                   ColorI result;
+                                                   diffuseTex->getColor(u * w, v * h, result);
+                                                   voxel_color = result;
+                                                } else {
+                                                   voxel_color = mat->mDiffuse[0];
+                                                }
+                                             } else {
+                                                voxel_color = ColorF(255, 255, 255, 255);
+                                             }
+
+                                             U32 voxelIdx = getVoxelIndex(x, y, z);
+                                             mGeometryGrid[voxelIdx] = voxel_color;
+
+                                             DebugVoxel d;
+                                             d.color = voxel_color;
+                                             mDebugVoxels.push_back(d);
+
+                                             break;
+                                          }
+                                       }
+                                    }
+                                 }
+                              }
+                           }
+                        }
+                     }
+                  }
+               }
+            }
+
+            processedTris++;
+
+            if (statusBarGuiCtrl)
+            {
+               char buff[256];
+               F32 percetile = processedTris / totalTris;
+               dSprintf(buff, 256, "Voxelizing Static Geometry. %g % complete.", percetile);
+               statusBarGuiCtrl->setText(buff);
+            }
+         }
+      }
+   }
+
+   if (statusBarGuiCtrl)
+   {
+       statusBarGuiCtrl->setText(statusBarGuiText);
+   }
+
+   //_rebuildDebugVoxels();
+}
+
+Point3I OfflineLPV::getVoxel(Point3F position)
+{
+   Box3F worldBox = getWorldBox();
+   Point3F center = worldBox.getCenter();
+   Point3F bottom_corner = worldBox.minExtents;
+   Point3F top_corner = worldBox.maxExtents;
+
+   Point3F offset = position - bottom_corner;
+
+   Point3I index = Point3I(mAbs(offset.x / mVoxelSize), mAbs(offset.y / mVoxelSize), mAbs(offset.z / mVoxelSize));
+
+   Box3F voxBox = Box3F(bottom_corner + Point3F(mVoxelSize * index.x, mVoxelSize * index.y, mVoxelSize * index.z),
+      bottom_corner + Point3F(mVoxelSize * (index.x + 1), mVoxelSize * (index.y + 1), mVoxelSize * (index.z + 1)));
+
+   bool correct = voxBox.isContained(position);
+
+   if (!voxBox.isContained(position))
+      return Point3I(-1, -1, -1);
+
+   return index;
 }
 
 //--- Light Injection ---
@@ -871,7 +1236,7 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
          if ( hit )
             continue;
       }
-
+      
       if ( !hit )
       {
          Point3F direction = lightPosition - position;
@@ -910,7 +1275,7 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
             result.red += encoded.red;
             result.green += encoded.green;
             result.blue += encoded.blue;
-            result.normal = reflected;
+            result.normal = normal;
          }
       }
    }
@@ -968,8 +1333,11 @@ Vector4F OfflineLPV::getClampedCosineSHCoeffs(Point3F dir)
 OfflineLPV::SHVoxel OfflineLPV::encodeSH(Point3F dir, ColorF color)
 {
    SHVoxel result;
-   Vector4F coeffs = getClampedCosineSHCoeffs(dir);   coeffs = coeffs / M_PI_F;
-   result.red.set(coeffs.x * color.red, coeffs.y * color.red, coeffs.z * color.red, coeffs.w * color.red);   result.green.set(coeffs.x * color.green, coeffs.y * color.green, coeffs.z * color.green, coeffs.w * color.green);   result.blue.set(coeffs.x * color.blue, coeffs.y * color.blue, coeffs.z * color.blue, coeffs.w * color.blue);
+   Vector4F coeffs = getClampedCosineSHCoeffs(dir);
+   coeffs = coeffs / M_PI_F;
+   result.red.set(coeffs.x * color.red, coeffs.y * color.red, coeffs.z * color.red, coeffs.w * color.red);
+   result.green.set(coeffs.x * color.green, coeffs.y * color.green, coeffs.z * color.green, coeffs.w * color.green);
+   result.blue.set(coeffs.x * color.blue, coeffs.y * color.blue, coeffs.z * color.blue, coeffs.w * color.blue);
 
    return result;
 }
@@ -977,7 +1345,8 @@ OfflineLPV::SHVoxel OfflineLPV::encodeSH(Point3F dir, ColorF color)
 ColorF OfflineLPV::decodeSH(Point3F dir, SHVoxel sh)
 {
    Vector4F coeffs = getClampedCosineSHCoeffs(dir); 
-   ColorF color( 0, 0, 0 );    
+   ColorF color( 0, 0, 0 );
+    
    color.red = mDot(sh.red, coeffs);
    color.green = mDot(sh.green, coeffs);
    color.blue = mDot(sh.blue, coeffs);
@@ -1015,13 +1384,30 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
             // Sample from 6 faces of the cube and sum the attenuated results
             for ( U32 i = 0; i < 6; i++ )
             {
-               if (  z + sample_directions[i].z < 0 || z + sample_directions[i].z >= voxelCount.z ||
-                     y + sample_directions[i].y < 0 || y + sample_directions[i].y >= voxelCount.y ||
-                     x + sample_directions[i].x < 0 || x + sample_directions[i].x >= voxelCount.x )
+               /*if (  z + sample_directions[i].z < 0 || z + sample_directions[i].z >= voxelCount.z ||
+                     y + sample_directions[i].y < 0 || z + sample_directions[i].y >= voxelCount.y ||
+                     x + sample_directions[i].x < 0 || z + sample_directions[i].x >= voxelCount.x )
+                  continue;*/
+               S32 zSample = z + sample_directions[i].z;
+               S32 ySample = y + sample_directions[i].y;
+               S32 xSample = x + sample_directions[i].x;
+
+               if (zSample < 0 || zSample >= voxelCount.z ||
+                  ySample < 0 || ySample >= voxelCount.y ||
+                  xSample < 0 || xSample >= voxelCount.x)
                   continue;
 
                // Determine which voxel we'll be sampling from.
                U32 sampleOffset = (voxelCount.x * voxelCount.y * (z + sample_directions[i].z)) + (voxelCount.x * (y + sample_directions[i].y)) + (x + sample_directions[i].x);
+
+               if (sampleOffset == 677801)
+               {
+                  bool derp = true;
+
+                  SHVoxel fetchedVox = source[sampleOffset-1];
+
+                  fetchedVox = source[sampleOffset];
+               }
 
                // Decode the color from that voxel facing the opposite direction we sampled from.
                ColorF decoded_color = decodeSH(sample_directions[i] * -1, source[sampleOffset]);
