@@ -100,6 +100,8 @@ class OfflineLPV : public ScenePolyhedralSpace
          ColorF red;
          ColorF green;
          ColorF blue;
+
+         Point3F normal;
       };
 
       // Spherical Harmonics functions

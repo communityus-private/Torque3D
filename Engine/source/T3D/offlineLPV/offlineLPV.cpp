@@ -335,6 +335,7 @@ void OfflineLPV::_rebuildDebugVoxels()
                if ( decoded_color.red > 0.0f || decoded_color.green > 0.0f || decoded_color.blue > 0.0f )
                {
                   d.color = decoded_color;
+                  d.position += mLightGrid[pos].normal;
                   mDebugVoxels.push_back(d);
                }
 
@@ -747,11 +748,14 @@ Point3F OfflineLPV::getNearestFaceNormals(Point3F dir, bool nonOccludedOnly, U32
          if ( nonOccludedOnly )
          {
             Point3I voxelCount = getVoxelCount();
-            U32 sampleOffset = (voxelCount.x * voxelCount.y * z) + (voxelCount.x * y) + x;
-            if ( mGeometryGrid[sampleOffset].red > 0.0f || 
-                 mGeometryGrid[sampleOffset].green > 0.0f || 
-                 mGeometryGrid[sampleOffset].blue > 0.0f )
-               continue;
+            U32 sampleOffset = (voxelCount.x * voxelCount.y * (z + face_normals[i].z)) + (voxelCount.x * (y + face_normals[i].y)) + (x + face_normals[i].x);
+            if ( sampleOffset < (voxelCount.x * voxelCount.y * voxelCount.z) )
+            {
+               if ( mGeometryGrid[sampleOffset].red > 0.0f || 
+                    mGeometryGrid[sampleOffset].green > 0.0f || 
+                    mGeometryGrid[sampleOffset].blue > 0.0f )
+                  continue;
+            }
          }
 
          chosen_face = i;
@@ -857,10 +861,18 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
       bool hit = container->castRay(position, lightPosition, STATIC_COLLISION_TYPEMASK, &rayInfo);
       if ( hit )
       {
-         // OBSTRUCTED!
-         continue;
+         if ( rayInfo.material )
+         {
+            Material* mat = dynamic_cast<Material*>(rayInfo.material->getMaterial());
+            if ( mat && mat->isTranslucent() )
+               hit = false;
+         }
+
+         if ( hit )
+            continue;
       }
-      else
+
+      if ( !hit )
       {
          Point3F direction = lightPosition - position;
          direction.normalize();
@@ -872,13 +884,14 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
             F32 atten = getAttenuation(info, position);
             if ( atten <= 0 ) continue;
 
-            Point3F normal = getNearestFaceNormals(direction);
+            Point3F normal = getNearestFaceNormals(direction, true, voxelPosition.x, voxelPosition.y, voxelPosition.z);
             Point3F reflected = reflect(direction, normal);
          
             SHVoxel encoded = encodeSH(reflected, geometryColor * info->getColor() * atten);
             result.red += encoded.red;
             result.green += encoded.green;
             result.blue += encoded.blue;
+            result.normal = normal;
          }
 
          // Spot Light
@@ -897,6 +910,7 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
             result.red += encoded.red;
             result.green += encoded.green;
             result.blue += encoded.blue;
+            result.normal = reflected;
          }
       }
    }
@@ -1002,8 +1016,8 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
             for ( U32 i = 0; i < 6; i++ )
             {
                if (  z + sample_directions[i].z < 0 || z + sample_directions[i].z >= voxelCount.z ||
-                     y + sample_directions[i].y < 0 || z + sample_directions[i].y >= voxelCount.y ||
-                     x + sample_directions[i].x < 0 || z + sample_directions[i].x >= voxelCount.x )
+                     y + sample_directions[i].y < 0 || y + sample_directions[i].y >= voxelCount.y ||
+                     x + sample_directions[i].x < 0 || x + sample_directions[i].x >= voxelCount.x )
                   continue;
 
                // Determine which voxel we'll be sampling from.
