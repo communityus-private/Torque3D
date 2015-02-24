@@ -849,6 +849,9 @@ void OfflineLPV::regenVolume()
                Point3F vertB = polyLists[i].mPoints[secondVertIdx.vertIdx];
                Point3F vertC = polyLists[i].mPoints[thirdVertIdx.vertIdx];
                
+               Point2F uvA = polyLists[i].mUV0s[firstVertIdx.uv0Idx];
+               Point2F uvB = polyLists[i].mUV0s[secondVertIdx.uv0Idx];
+               Point2F uvC = polyLists[i].mUV0s[thirdVertIdx.uv0Idx];
 
                //First, test if any of them are contained inside. If they are, we're done
                if (worldBox.isContained(vertA) || worldBox.isContained(vertB) || worldBox.isContained(vertC))
@@ -915,8 +918,16 @@ void OfflineLPV::regenVolume()
                            if (triPlane.whichSide(voxBox) == PlaneF::Side::On)
                            {
                               //early out test. If the box containts any or all of the verts, it's assumed to intersect
-                              if (voxBox.isContained(vertA) || voxBox.isContained(vertB) || voxBox.isContained(vertC))
+                              bool containsVertA = voxBox.isContained(vertA);
+                              bool containsVertB = voxBox.isContained(vertB);
+                              bool containsVertC = voxBox.isContained(vertC);
+                              if (containsVertA || containsVertB || containsVertC)
                               {
+                                 Point2F uv;
+                                 if ( containsVertA ) uv = uvA;
+                                 if ( containsVertB ) uv = uvB;
+                                 if ( containsVertC ) uv = uvC;
+
                                  Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
                                  if (mat)
                                  {
@@ -927,7 +938,7 @@ void OfflineLPV::regenVolume()
                                        U32 h = diffuseTex->getHeight();
 
                                        ColorI result;
-                                       diffuseTex->getColor(0.5 * w, 0.5 * h, result);
+                                       diffuseTex->getColor(uv.x * w, uv.y * h, result);
                                        voxel_color = result;
                                     } else {
                                        voxel_color = mat->mDiffuse[0];
@@ -938,16 +949,29 @@ void OfflineLPV::regenVolume()
 
                                  U32 voxelIdx = getVoxelIndex(x, y, z);
                                  mGeometryGrid[voxelIdx] = voxel_color;
-
-                                 DebugVoxel d;
-                                 d.color = voxel_color;
-                                 mDebugVoxels.push_back(d);
                               }
                               else
                               {
                                  //first, test if any of the tri edges intersect the box
-                                 if (voxBox.collideLine(vertA, vertB) || voxBox.collideLine(vertB, vertC) || voxBox.collideLine(vertC, vertA))
+                                 F32 collideAPos;
+                                 Point3F collideANorm;
+                                 bool collideA = voxBox.collideLine(vertA, vertB, &collideAPos, &collideANorm);
+
+                                 F32 collideBPos;
+                                 Point3F collideBNorm;
+                                 bool collideB = voxBox.collideLine(vertB, vertC, &collideBPos, &collideBNorm);
+
+                                 F32 collideCPos;
+                                 Point3F collideCNorm;
+                                 bool collideC = voxBox.collideLine(vertC, vertA, &collideCPos, &collideCNorm);
+
+                                 if (collideA || collideB || collideC)
                                  {
+                                    Point2F uv;
+                                    if ( collideA ) uv = uvA + (collideAPos * (uvB - uvA));
+                                    if ( collideB ) uv = uvB + (collideBPos * (uvC - uvB));
+                                    if ( collideC ) uv = uvC + (collideCPos * (uvA - uvC));
+
                                     Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
                                     if (mat)
                                     {
@@ -958,7 +982,7 @@ void OfflineLPV::regenVolume()
                                           U32 h = diffuseTex->getHeight();
 
                                           ColorI result;
-                                          diffuseTex->getColor(0.5 * w, 0.5 * h, result);
+                                          diffuseTex->getColor(uv.x * w, uv.y * h, result);
                                           voxel_color = result;
                                        } else {
                                           voxel_color = mat->mDiffuse[0];
@@ -970,10 +994,6 @@ void OfflineLPV::regenVolume()
                                     //indeed it does
                                     U32 voxelIdx = getVoxelIndex(x, y, z);
                                     mGeometryGrid[voxelIdx] = voxel_color;
-
-                                    DebugVoxel d;
-                                    d.color = voxel_color;
-                                    mDebugVoxels.push_back(d);
                                  }
                                  else
                                  {
@@ -995,54 +1015,40 @@ void OfflineLPV::regenVolume()
                                           if (intersect == edgeA || intersect == edgeB)
                                              continue;
 
-                                          //yep, it intersects, so find out if the intersection falls inside our actual triangle
-                                          VectorF v0 = vertC - vertA;
-                                          VectorF v1 = vertB - vertA;
-                                          VectorF v2 = intersect - vertA;
+                                          VectorF f1 = vertA - intersect;
+                                          VectorF f2 = vertB - intersect;
+                                          VectorF f3 = vertC - intersect;
 
-                                          // Compute dot products
-                                          F32 dot00 = mDot(v0, v0);
-                                          F32 dot01 = mDot(v0, v1);
-                                          F32 dot02 = mDot(v0, v2);
-                                          F32 dot11 = mDot(v1, v1);
-                                          F32 dot12 = mDot(v1, v2);
+                                          F32 a =  mCross(vertA - vertB, vertA - vertC).magnitudeSafe();
+                                          F32 a1 = mCross(f2, f3).magnitudeSafe() / a;
+                                          F32 a2 = mCross(f3, f1).magnitudeSafe() / a;
+                                          F32 a3 = mCross(f1, f2).magnitudeSafe() / a;
 
-                                          // Compute barycentric coordinates
-                                          F32 invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
-                                          F32 u = (dot11 * dot02 - dot01 * dot12) * invDenom;
-                                          F32 v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+                                          Point2F uv = (uvA * a1) + (uvB * a2) + (uvC * a3);
 
-                                          // Check if point is in triangle
-                                          if ((u >= 0) && (v >= 0) && (u + v < 1))
+                                          Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
+                                          if (mat)
                                           {
-                                             Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
-                                             if (mat)
+                                             Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                             if (diffuseTex != NULL)
                                              {
-                                                Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
-                                                if (diffuseTex != NULL)
-                                                {
-                                                   U32 w = diffuseTex->getWidth();
-                                                   U32 h = diffuseTex->getHeight();
+                                                U32 w = diffuseTex->getWidth();
+                                                U32 h = diffuseTex->getHeight();
 
-                                                   ColorI result;
-                                                   diffuseTex->getColor(u * w, v * h, result);
-                                                   voxel_color = result;
-                                                } else {
-                                                   voxel_color = mat->mDiffuse[0];
-                                                }
+                                                ColorI result;
+                                                diffuseTex->getColor(uv.x * w, uv.y * h, result);
+                                                voxel_color = result;
                                              } else {
-                                                voxel_color = ColorF(255, 255, 255, 255);
+                                                voxel_color = mat->mDiffuse[0];
                                              }
-
-                                             U32 voxelIdx = getVoxelIndex(x, y, z);
-                                             mGeometryGrid[voxelIdx] = voxel_color;
-
-                                             DebugVoxel d;
-                                             d.color = voxel_color;
-                                             mDebugVoxels.push_back(d);
-
-                                             break;
+                                          } else {
+                                             voxel_color = ColorF(255, 255, 255, 255);
                                           }
+
+                                          U32 voxelIdx = getVoxelIndex(x, y, z);
+                                          mGeometryGrid[voxelIdx] = voxel_color;
+
+                                          break;
                                        }
                                     }
                                  }
