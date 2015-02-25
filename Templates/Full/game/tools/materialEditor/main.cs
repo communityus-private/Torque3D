@@ -120,7 +120,10 @@ function MaterialEditorPlugin::onActivated( %this )
    }else{
       $wasInWireFrameMode = false;  
    }
+   
    advancedTextureMapsRollout.Expanded = false;
+   accumulationPropertiesRollout.Expanded = false;
+   lightingPropertiesRollout.Expanded = false;
    materialAnimationPropertiesRollout.Expanded = false;
    materialAdvancedPropertiesRollout.Expanded = false;
    WorldEditorPlugin.onActivated();

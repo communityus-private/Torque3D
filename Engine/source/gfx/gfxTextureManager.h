@@ -125,6 +125,16 @@ public:
       U32 numMipLevels,
       S32 antialiasLevel);
 
+   Torque::Path validatePath(const Torque::Path &path);
+   GBitmap *loadUncompressedTexture(const Torque::Path &path, GFXTextureProfile *profile);
+   virtual GFXTextureObject *createCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
+      GFXTextureProfile *profile);
+   
+   virtual GFXTextureObject *createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
+      const String &resourceName,
+      GFXTextureProfile *profile,
+      bool deleteBmp);
+
    void deleteTexture( GFXTextureObject *texture );
    void reloadTexture( GFXTextureObject *texture );
 

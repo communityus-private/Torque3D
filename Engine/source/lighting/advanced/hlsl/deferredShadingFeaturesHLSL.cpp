@@ -64,7 +64,7 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    specularMap->constNum = Var::getTexUnitNum();
    LangElement *texOp = new GenOp( "tex2D(@, @)", specularMap, texCoord );
 
-   meta->addStatement(new GenOp("   @.gba = tex2D(@, @).bga;\r\n", material, specularMap, texCoord));
+   meta->addStatement(new GenOp("   @.bga = tex2D(@, @).rgb;\r\n", material, specularMap, texCoord));
    output = meta;
 }
 

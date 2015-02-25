@@ -174,6 +174,12 @@ GFXTexHandle ProcessedMaterial::_createTexture( const char* filename, GFXTexture
    return GFXTexHandle( _getTexturePath(filename), profile, avar("%s() - NA (line %d)", __FUNCTION__, __LINE__) );
 }
 
+GFXTexHandle ProcessedMaterial::_createCompositeTexture(const char *filenameR, const char *filenameG, const char *filenameB, const char *filenameA, U32 inputKey[4], GFXTextureProfile *profile)
+{
+   return GFXTexHandle(_getTexturePath(filenameR), _getTexturePath(filenameG), _getTexturePath(filenameB), _getTexturePath(filenameA), inputKey, profile, avar("%s() - NA (line %d)", __FUNCTION__, __LINE__));
+}
+
+
 void ProcessedMaterial::addStateBlockDesc(const GFXStateBlockDesc& sb)
 {
    mUserDefined = sb;
@@ -457,6 +463,20 @@ void ProcessedMaterial::_setStageData()
          if(!mStages[i].getTex( MFT_SpecularMap ))
             mMaterial->logError("Failed to load specular map %s for stage %i", _getTexturePath(mMaterial->mSpecularMapFilename[i]).c_str(), i);
       }
+      else
+         if (mMaterial->mRoughMapFilename[i].isNotEmpty() && mMaterial->mMetalMapFilename[i].isNotEmpty())
+         {
+            U32 inputKey[4];
+            inputKey[0] = mMaterial->mRoughnessChan[i];
+            inputKey[1] = mMaterial->mAOChan[i];
+            inputKey[2] = mMaterial->mMetalChan[i];
+            mStages[i].setTex(MFT_SpecularMap, _createCompositeTexture(mMaterial->mRoughMapFilename[i], mMaterial->mAOMapFilename[i],
+                                                                       mMaterial->mMetalMapFilename[i], "",
+                                                                       inputKey, &GFXDefaultStaticDiffuseProfile));
+            if (!mStages[i].getTex(MFT_SpecularMap))
+               mMaterial->logError("Failed to load specular map %s for stage %i", _getTexturePath(mMaterial->mSpecularMapFilename[i]).c_str(), i);
+         }
+
    }
 
 	mMaterial->mCubemapData = dynamic_cast<CubemapData*>(Sim::findObject( mMaterial->mCubemapName ));

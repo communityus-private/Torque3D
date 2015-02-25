@@ -213,6 +213,12 @@ public:
    FileName mNormalMapFilename[MAX_STAGES];
 
    FileName mSpecularMapFilename[MAX_STAGES];
+   FileName mRoughMapFilename[MAX_STAGES];
+   F32      mRoughnessChan[MAX_STAGES];
+   FileName mAOMapFilename[MAX_STAGES];
+   F32      mAOChan[MAX_STAGES];
+   FileName mMetalMapFilename[MAX_STAGES];
+   F32      mMetalChan[MAX_STAGES];
 
    /// A second normal map which repeats at the detail map
    /// scale and blended with the base normal map.

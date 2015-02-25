@@ -119,6 +119,10 @@ Material::Material()
       mRoughness[i] = 0.0f;
       mMetalness[i] = 0.0f;
       mPixelSpecular[i] = false;
+      
+      mRoughnessChan[i] = 0;
+      mAOChan[i] = 1;
+      mMetalChan[i] = 2;
 
       mAccuEnabled[i]   = false;
       mAccuScale[i]     = 1.0f;
@@ -164,6 +168,9 @@ Material::Material()
 
       // Deferred Shading
       mMatInfoFlags[i] = 0.0f;
+      mRoughMapFilename[i].clear();
+      mAOMapFilename[i].clear();
+      mMetalMapFilename[i].clear();
    }
 
    dMemset(mCellIndex, 0, sizeof(mCellIndex));
@@ -284,9 +291,24 @@ void Material::initPersistFields()
          "Changes specularity to this value where the accumulated material is present.");
 
       addField( "specularMap", TypeImageFilename, Offset(mSpecularMapFilename, Material), MAX_STAGES,
-         "The specular map texture. The RGB channels of this texture provide a per-pixel replacement for the 'specular' parameter on the material. "
-         "If this texture contains alpha information, the alpha channel of the texture will be used as the gloss map. "
-         "This provides a per-pixel replacement for the 'specularPower' on the material" );
+         "Prepacked specular map texture. The RGB channels of this texture provide per-pixel reference values for: "
+         "roughness (R), Ambient Occlusion (G), and metalness(B)");
+
+      addField("roughMap", TypeImageFilename, Offset(mRoughMapFilename, Material), MAX_STAGES,
+         "Roughness map. will be packed into the R channel of a packed 'specular' map");
+      addField("roughnessChan", TypeF32, Offset(mRoughnessChan, Material), MAX_STAGES,
+         "The input channel roughness maps use.");
+
+      addField("aoMap", TypeImageFilename, Offset(mAOMapFilename, Material), MAX_STAGES,
+         "Ambient Occlusion map. will be packed into the G channel of a packed 'specular' map");
+      addField("AOChan", TypeF32, Offset(mAOChan, Material), MAX_STAGES,
+         "The input channel AO maps use.");
+
+      addField("metalMap", TypeImageFilename, Offset(mMetalMapFilename, Material), MAX_STAGES,
+         "Metalness map. will be packed into the B channel of a packed 'specular' map");
+      addField("metalChan", TypeF32, Offset(mMetalChan, Material), MAX_STAGES,
+         "The input channel metalness maps use.");
+
 
       addField( "parallaxScale", TypeF32, Offset(mParallaxScale, Material), MAX_STAGES,
          "Enables parallax mapping and defines the scale factor for the parallax effect.  Typically "
