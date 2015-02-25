@@ -225,6 +225,12 @@ class OfflineLPV : public ScenePolyhedralSpace
       bool     save();
       bool     load();
 
+      // Settings
+      F32  mLightIntensity;
+      F32  mEmissiveIntensity;
+      F32  mPropagationMultiplier;
+      F32  mGIMultiplier;
+
       // Editor Triggered Flags
       bool mRegenVolume;
       bool mInjectLights;

@@ -125,6 +125,11 @@ OfflineLPV::OfflineLPV()
    mReflectShaderConsts    = NULL;
    mRenderTarget           = NULL;
 
+   mLightIntensity = 1.0f;
+   mEmissiveIntensity = 1.0f;
+   mPropagationMultiplier = 1.0f;
+   mGIMultiplier = 1.0f;
+
    resetWorldBox();
 
    RenderPassManager::getRenderBinSignal().notify( this, &OfflineLPV::_handleBinEvent );
@@ -154,7 +159,7 @@ OfflineLPV::~OfflineLPV()
 void OfflineLPV::initPersistFields()
 {
    //
-   addGroup("OfflineLPV - General");
+   addGroup("OfflineLPV - Geometry");
 
       addField("voxelSize", TypeF32, Offset(mVoxelSize, OfflineLPV), "");
 
@@ -163,20 +168,30 @@ void OfflineLPV::initPersistFields()
 
       addField("showVoxels", TypeBool, Offset(mShowVoxels, OfflineLPV), "");
 
+   endGroup("OfflineLPV - Geometry");
+
+   addGroup("OfflineLPV - Lights");
+
+      addField("lightIntensity", TypeF32, Offset(mLightIntensity, OfflineLPV), "");
+      addField("emissiveIntensity", TypeF32, Offset(mEmissiveIntensity, OfflineLPV), "");
+
       addProtectedField( "injectLights", TypeBool, Offset( mInjectLights, OfflineLPV ),
             &_setInjectLights, &defaultProtectedGetFn, "Inject scene lights into grid.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
 
       addField("showDirectLight", TypeBool, Offset(mShowDirectLight, OfflineLPV), "");
 
-   endGroup("OfflineLPV - General");
+   endGroup("OfflineLPV - Lights");
 
    //
    addGroup("OfflineLPV - Propagation");
+      addField("propagationMultiplier", TypeF32, Offset(mPropagationMultiplier, OfflineLPV), "Strength/Weaken propagation.");
 
       addProtectedField( "propagateLights", TypeBool, Offset( mPropagateLights, OfflineLPV ),
             &_setPropagateLights, &defaultProtectedGetFn, "Perform light propagation.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
 
       addField("showPropagated", TypeBool, Offset(mShowPropagated, OfflineLPV), "Render propagated light.");
+
+      addField("GIMultiplier", TypeF32, Offset(mGIMultiplier, OfflineLPV), "");
 
       addProtectedField( "exportPropagated", TypeBool, Offset( mExportPropagated, OfflineLPV ),
             &_setExportPropagated, &defaultProtectedGetFn, "Export propagated light grid to display.", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors );
@@ -573,6 +588,11 @@ U32 OfflineLPV::packUpdate( NetConnection *connection, U32 mask, BitStream *stre
    stream->writeFlag(mShowPropagated);
    stream->writeFlag(mRenderReflection);
 
+   stream->write(mLightIntensity);
+   stream->write(mEmissiveIntensity);
+   stream->write(mPropagationMultiplier);
+   stream->write(mGIMultiplier);
+
    stream->writeFlag(mRegenVolume);
    if ( mRegenVolume )
       mRegenVolume = false;
@@ -627,6 +647,11 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
    if ( mShowPropagated != old_show_prop ) _rebuildDebugVoxels();
 
    mRenderReflection = stream->readFlag();
+
+   stream->read(&mLightIntensity);
+   stream->read(&mEmissiveIntensity);
+   stream->read(&mPropagationMultiplier);
+   stream->read(&mGIMultiplier);
 
    // Regen Volume Triggered?
    if ( stream->readFlag() )
@@ -1182,7 +1207,7 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
 
    if ( emissive ) 
    {
-      SHVoxel encoded = encodeSH(Point3F(0, 0, 0), geometryColor);
+      SHVoxel encoded = encodeSH(Point3F(0, 0, 0), geometryColor * mEmissiveIntensity);
       result.red = encoded.red;
       result.green = encoded.green;
       result.blue = encoded.blue;
@@ -1252,7 +1277,7 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
             Point3F normal = getNearestFaceNormals(direction, true, voxelPosition.x, voxelPosition.y, voxelPosition.z);
             Point3F reflected = reflect(direction, normal);
          
-            SHVoxel encoded = encodeSH(reflected, geometryColor * info->getColor() * atten);
+            SHVoxel encoded = encodeSH(reflected, geometryColor * info->getColor() * atten * mLightIntensity);
             result.red += encoded.red;
             result.green += encoded.green;
             result.blue += encoded.blue;
@@ -1271,7 +1296,7 @@ OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryCo
             Point3F normal = getNearestFaceNormals(direction, true, voxelPosition.x, voxelPosition.y, voxelPosition.z);
             Point3F reflected = reflect(direction, normal);
 
-            SHVoxel encoded = encodeSH(reflected, geometryColor * info->getColor() * info->getBrightness());
+            SHVoxel encoded = encodeSH(reflected, geometryColor * info->getColor() * info->getBrightness() * mLightIntensity);
             result.red += encoded.red;
             result.green += encoded.green;
             result.blue += encoded.blue;
@@ -1400,7 +1425,7 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
                ColorF decoded_color = decodeSH(sample_directions[i] * -1, source[sampleOffset]);
 
                // Encode that color to be added into our grid.
-               SHVoxel encoded_color = encodeSH(sample_directions[i] * -1, decoded_color);
+               SHVoxel encoded_color = encodeSH(sample_directions[i] * -1, decoded_color * mPropagationMultiplier);
 
                // Add spherical harmonics.
                dest[pos].red     += encoded_color.red;
@@ -1444,7 +1469,7 @@ void OfflineLPV::exportPropagatedLight(ColorF* pSource, Point3I* pSize)
          {
             for(U32 x = 0; x < size.x; x++)
             {
-               ColorI cell_color = pSource[pos];
+               ColorI cell_color = pSource[pos] * mGIMultiplier;
                pos++;
 
                buffer[bufPos]     = cell_color.blue;    // Blue
@@ -1478,7 +1503,7 @@ void OfflineLPV::exportPropagatedLight(SHVoxel* pSource, Point3I* pSize)
          {
             for(U32 x = 0; x < size.x; x++)
             {
-               ColorI cell_color = decodeSH(Point3F(0, 0, 0), pSource[pos]);
+               ColorI cell_color = decodeSH(Point3F(0, 0, 0), pSource[pos]) * mGIMultiplier;
                pos++;
 
                buffer[bufPos]     = cell_color.blue;    // Blue
