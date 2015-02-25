@@ -122,8 +122,21 @@ class OfflineLPV : public ScenePolyhedralSpace
       void     _initVolumeTextures(Point3I volumeSize);
       bool     _initShaders();
 
+      // Geometry voxel with emissive flag
+      struct GeometryVoxel
+      {
+         ColorF color;
+         bool emissive;
+
+         GeometryVoxel()
+         {
+            color = ColorF::ZERO;
+            emissive = false;
+         }
+      };
+
       // Geometry Grid
-      ColorF*   mGeometryGrid;
+      GeometryVoxel* mGeometryGrid;
 
       // 2nd Order Spherical Harmonics require storage in (3) float4s.
       struct SHVoxel
@@ -131,14 +144,24 @@ class OfflineLPV : public ScenePolyhedralSpace
          ColorF red;
          ColorF green;
          ColorF blue;
+
+         // For debugging only.
          Point3F normal;
+
+         SHVoxel()
+         {
+            red = ColorF::ZERO;
+            green = ColorF::ZERO;
+            blue = ColorF::ZERO;
+            normal = Point3F::Zero;
+         }
       };
 
       // Spherical Harmonics functions
       Vector4F getClampedCosineSHCoeffs(Point3F dir);
       SHVoxel  encodeSH(Point3F dir, ColorF color);
       ColorF   decodeSH(Point3F dir, SHVoxel sh);
-      SHVoxel  calcSHLights(Point3F position, ColorF geometryColor, Point3I voxelPosition);
+      SHVoxel  calcSHLights(Point3F position, ColorF geometryColor, Point3I voxelPosition, bool emissive = false);
 
       // Helper functions
       Point3F  getNearestFaceNormals(Point3F dir, bool nonOccludedOnly = false, U32 x = 0, U32 y = 0, U32 z = 0);

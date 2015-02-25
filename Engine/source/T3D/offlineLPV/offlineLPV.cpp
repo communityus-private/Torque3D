@@ -351,9 +351,9 @@ void OfflineLPV::_rebuildDebugVoxels()
             // Geometry Grid Visualization.
             if ( mShowVoxels && mGeometryGrid )
             {
-               if ( mGeometryGrid[pos].alpha > 0.0f )
+               if ( mGeometryGrid[pos].color.alpha > 0.0f )
                {
-                  d.color = mGeometryGrid[pos];
+                  d.color = mGeometryGrid[pos].color;
                   mDebugVoxels.push_back(d);
                }
 
@@ -731,37 +731,13 @@ void OfflineLPV::regenVolume()
    SAFE_DELETE(mLightGrid);
    SAFE_DELETE(mPropagatedLightGridA);
    SAFE_DELETE(mPropagatedLightGridB);
-   mGeometryGrid           = new ColorF[voxelCount.x * voxelCount.y * voxelCount.z];
+   mGeometryGrid           = new GeometryVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
    mLightGrid              = new SHVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
    mPropagatedLightGridA   = new SHVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
    mPropagatedLightGridB   = new SHVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
 
    // Initialize the volume textures (if they aren't already.)
    _initVolumeTextures(voxelCount);
-
-   // Geometry Grid Visualization.
-   U32 pos = 0;
-   for ( U32 z = 0; z < voxelCount.z; z++ )
-   {
-      for ( U32 y = 0; y < voxelCount.y; y++ )
-      {
-         for ( U32 x = 0; x < voxelCount.x; x++ )
-         {
-            //mGeometryGrid[pos] = voxel_color;
-            mGeometryGrid[pos] = ColorF::ZERO;
-            mLightGrid[pos].red = ColorF::ZERO;
-            mLightGrid[pos].green = ColorF::ZERO;
-            mLightGrid[pos].blue = ColorF::ZERO;
-            mPropagatedLightGridA[pos].red = ColorF::ZERO;
-            mPropagatedLightGridA[pos].green = ColorF::ZERO;
-            mPropagatedLightGridA[pos].blue = ColorF::ZERO;
-            mPropagatedLightGridB[pos].red = ColorF::ZERO;
-            mPropagatedLightGridB[pos].green = ColorF::ZERO;
-            mPropagatedLightGridB[pos].blue = ColorF::ZERO;
-            pos++;
-         }
-      }
-   }
 
    mPropagationStage = 0;
    mPropagatedLightGrid = mPropagatedLightGridA;
@@ -911,6 +887,7 @@ void OfflineLPV::regenVolume()
                               continue;
 
                            ColorF voxel_color = ColorF(0, 0, 0, 0);
+                           bool emissive = false;
 
                            Box3F voxBox = Box3F(bottom_corner + Point3F(mVoxelSize * x, mVoxelSize * y, mVoxelSize * z),
                               bottom_corner + Point3F(mVoxelSize * (x + 1), mVoxelSize * (y + 1), mVoxelSize * (z + 1)));
@@ -943,12 +920,14 @@ void OfflineLPV::regenVolume()
                                     } else {
                                        voxel_color = mat->mDiffuse[0];
                                     }
+
+                                    emissive = mat->mEmissive[0];
                                  } else {
                                     voxel_color = ColorF(255, 255, 255, 255);
                                  }
 
                                  U32 voxelIdx = getVoxelIndex(x, y, z);
-                                 mGeometryGrid[voxelIdx] = voxel_color;
+                                 mGeometryGrid[voxelIdx].color = voxel_color;
                               }
                               else
                               {
@@ -987,13 +966,16 @@ void OfflineLPV::regenVolume()
                                        } else {
                                           voxel_color = mat->mDiffuse[0];
                                        }
+
+                                       emissive = mat->mEmissive[0];
                                     } else {
                                        voxel_color = ColorF(255, 255, 255, 255);
                                     }
 
                                     //indeed it does
                                     U32 voxelIdx = getVoxelIndex(x, y, z);
-                                    mGeometryGrid[voxelIdx] = voxel_color;
+                                    mGeometryGrid[voxelIdx].color = voxel_color;
+                                    mGeometryGrid[voxelIdx].emissive = emissive;
                                  }
                                  else
                                  {
@@ -1041,13 +1023,15 @@ void OfflineLPV::regenVolume()
                                              } else {
                                                 voxel_color = mat->mDiffuse[0];
                                              }
+
+                                             emissive = mat->mEmissive[0];
                                           } else {
                                              voxel_color = ColorF(255, 255, 255, 255);
                                           }
 
                                           U32 voxelIdx = getVoxelIndex(x, y, z);
-                                          mGeometryGrid[voxelIdx] = voxel_color;
-
+                                          mGeometryGrid[voxelIdx].color = voxel_color;
+                                          mGeometryGrid[voxelIdx].emissive = emissive;
                                           break;
                                        }
                                     }
@@ -1122,9 +1106,9 @@ Point3F OfflineLPV::getNearestFaceNormals(Point3F dir, bool nonOccludedOnly, U32
             U32 sampleOffset = (voxelCount.x * voxelCount.y * (z + face_normals[i].z)) + (voxelCount.x * (y + face_normals[i].y)) + (x + face_normals[i].x);
             if ( sampleOffset < (voxelCount.x * voxelCount.y * voxelCount.z) )
             {
-               if ( mGeometryGrid[sampleOffset].red > 0.0f || 
-                    mGeometryGrid[sampleOffset].green > 0.0f || 
-                    mGeometryGrid[sampleOffset].blue > 0.0f )
+               if ( mGeometryGrid[sampleOffset].color.red > 0.0f || 
+                    mGeometryGrid[sampleOffset].color.green > 0.0f || 
+                    mGeometryGrid[sampleOffset].color.blue > 0.0f )
                   continue;
             }
          }
@@ -1174,11 +1158,12 @@ void OfflineLPV::injectLights()
       {
          for ( U32 x = 0; x < voxelCount.x; x++ )
          {
-            if ( mGeometryGrid[pos].alpha > 0.0f )
+            if ( mGeometryGrid[pos].color.alpha > 0.0f )
             {
                Point3F point = bottom_corner + Point3F(wsVoxelSize.x * (x + 1), wsVoxelSize.y * (y + 1), wsVoxelSize.z * (z + 1));
                
-               mLightGrid[pos] = calcSHLights(point, mGeometryGrid[pos], Point3I(x, y, z));
+               mLightGrid[pos] = calcSHLights(point, mGeometryGrid[pos].color, Point3I(x, y, z), mGeometryGrid[pos].emissive);
+
                mPropagationStage = 0;
             }
             pos++;
@@ -1189,14 +1174,23 @@ void OfflineLPV::injectLights()
    _rebuildDebugVoxels();
 }
 
-OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryColor, Point3I voxelPosition)
+OfflineLPV::SHVoxel OfflineLPV::calcSHLights(Point3F position, ColorF geometryColor, Point3I voxelPosition, bool emissive)
 {
    PROFILE_SCOPE( OfflineLPV_calcLightColor );
 
    SHVoxel result;
-   result.red = ColorF::ZERO;
-   result.green = ColorF::ZERO;
-   result.blue = ColorF::ZERO;
+
+   if ( emissive ) 
+   {
+      SHVoxel encoded = encodeSH(Point3F(0, 0, 0), geometryColor);
+      result.red = encoded.red;
+      result.green = encoded.green;
+      result.blue = encoded.blue;
+   } else {
+      result.red = ColorF::ZERO;
+      result.green = ColorF::ZERO;
+      result.blue = ColorF::ZERO;
+   }
 
    if ( !LIGHTMGR )
       return result;
@@ -1390,10 +1384,6 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
             // Sample from 6 faces of the cube and sum the attenuated results
             for ( U32 i = 0; i < 6; i++ )
             {
-               /*if (  z + sample_directions[i].z < 0 || z + sample_directions[i].z >= voxelCount.z ||
-                     y + sample_directions[i].y < 0 || z + sample_directions[i].y >= voxelCount.y ||
-                     x + sample_directions[i].x < 0 || z + sample_directions[i].x >= voxelCount.x )
-                  continue;*/
                S32 zSample = z + sample_directions[i].z;
                S32 ySample = y + sample_directions[i].y;
                S32 xSample = x + sample_directions[i].x;
@@ -1405,15 +1395,6 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
 
                // Determine which voxel we'll be sampling from.
                U32 sampleOffset = (voxelCount.x * voxelCount.y * (z + sample_directions[i].z)) + (voxelCount.x * (y + sample_directions[i].y)) + (x + sample_directions[i].x);
-
-               if (sampleOffset == 677801)
-               {
-                  bool derp = true;
-
-                  SHVoxel fetchedVox = source[sampleOffset-1];
-
-                  fetchedVox = source[sampleOffset];
-               }
 
                // Decode the color from that voxel facing the opposite direction we sampled from.
                ColorF decoded_color = decodeSH(sample_directions[i] * -1, source[sampleOffset]);
