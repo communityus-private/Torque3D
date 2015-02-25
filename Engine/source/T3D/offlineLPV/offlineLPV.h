@@ -92,6 +92,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       NamedTexTarget*         mPrepassTarget;
       NamedTexTarget*         mLightInfoTarget;
       NamedTexTarget*         mMatInfoTarget;
+      NamedTexTarget*         mSSAOMaskTarget;
       GFXTextureTargetRef     mRenderTarget;
 
       // Stateblock for shaders
@@ -120,7 +121,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       // Volume Texture
       Point3I   mCachedVolumeSize;
       void     _initVolumeTextures(Point3I volumeSize);
-      bool     _initShaders();
+      void     _initShaders();
 
       // Geometry voxel with emissive flag
       struct GeometryVoxel

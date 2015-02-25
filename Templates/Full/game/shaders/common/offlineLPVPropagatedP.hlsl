@@ -30,8 +30,13 @@ struct Conn
    float3 wsEyeRay : TEXCOORD1;
 };
 
-uniform sampler2D prePassBuffer : register(S1);
 uniform sampler3D lpvData : register(S0);
+uniform sampler2D prePassBuffer : register(S1);
+
+#ifdef USE_SSAO_MASK
+uniform sampler2D ssaoMask : register(S2);
+#endif
+
 uniform float3 eyePosWorld;
 uniform float3 volumeStart;
 uniform float3 volumeSize;
@@ -54,5 +59,11 @@ float4 main( Conn IN ) : COLOR0
    }
 
    float4 color = tex3D(lpvData, volume_position);
+
+#ifdef USE_SSAO_MASK
+   float ao = 1.0 - tex2D( ssaoMask, IN.uv0 ).r;
+   color = color * ao;
+#endif
+
    return float4(color.rgb, 0.0);
 }

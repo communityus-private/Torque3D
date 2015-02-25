@@ -54,6 +54,7 @@
 #include "core/stream/fileStream.h"
 #include "core/fileObject.h"
 #include "math/mPolyhedron.impl.h"
+#include "lighting/advanced/advancedLightBinManager.h"
 
 #include "gui/controls/guiTextCtrl.h"
 
@@ -124,6 +125,7 @@ OfflineLPV::OfflineLPV()
    mReflectShader          = NULL;
    mReflectShaderConsts    = NULL;
    mRenderTarget           = NULL;
+   
 
    mLightIntensity = 1.0f;
    mEmissiveIntensity = 1.0f;
@@ -133,6 +135,11 @@ OfflineLPV::OfflineLPV()
    resetWorldBox();
 
    RenderPassManager::getRenderBinSignal().notify( this, &OfflineLPV::_handleBinEvent );
+
+   // SSAO Mask support.
+   mSSAOMaskTarget = NULL;
+   Con::NotifyDelegate callback( this, &OfflineLPV::_initShaders );
+   Con::addVariableNotify( "$AL::UseSSAOMask", callback );
 
    mDebugRender.wireMeshRender.clear();
 }
@@ -1635,12 +1642,13 @@ void OfflineLPV::_initVolumeTextures(Point3I volumeSize)
    SAFE_DELETE(buffer);
 }
 
-bool OfflineLPV::_initShaders()
+void OfflineLPV::_initShaders()
 {
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
    mReflectShaderConsts    = NULL;
+   mPrepassTarget          = NULL;
 
    // Need depth from pre-pass, so get the macros
    Vector<GFXShaderMacro> macros;
@@ -1657,12 +1665,16 @@ bool OfflineLPV::_initShaders()
    if ( !Sim::findObject( "OfflineLPVPropagatedShaderData", shaderData ) )
    {
       Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVPropagatedShaderData!" );
-      return false;
+      return;
    }
+
+   // SSAO MASK
+   if ( AdvancedLightBinManager::smUseSSAOMask )
+      macros.push_back( GFXShaderMacro( "USE_SSAO_MASK" ) );
 
    mPropagatedShader = shaderData->getShader( macros );
    if ( !mPropagatedShader )
-      return false;
+      return;
    
    mPropagatedShaderConsts = mPropagatedShader->allocConstBuffer();
    mEyePosWorldPropSC      = mPropagatedShader->getShaderConstHandle( "$eyePosWorld" );
@@ -1674,12 +1686,12 @@ bool OfflineLPV::_initShaders()
    if ( !Sim::findObject( "OfflineLPVReflectShaderData", shaderData ) )
    {
       Con::warnf( "OfflineLPV::_initShader - failed to locate shader OfflineLPVReflectShaderData!" );
-      return false;
+      return;
    }
 
    mReflectShader = shaderData->getShader( macros );
    if ( !mReflectShader )
-      return false;
+      return ;
 
    mReflectShaderConsts    = mReflectShader->allocConstBuffer();
    mInverseViewReflectSC   = mReflectShader->getShaderConstHandle( "$invViewMat" );
@@ -1687,8 +1699,6 @@ bool OfflineLPV::_initShaders()
    mRTParamsReflectSC      = mReflectShader->getShaderConstHandle( "$rtParams0" );
    mVolumeStartReflectSC   = mReflectShader->getShaderConstHandle( "$volumeStart" );
    mVolumeSizeReflectSC    = mReflectShader->getShaderConstHandle( "$volumeSize" );
-
-   return true;
 }
 
 void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
@@ -1781,6 +1791,20 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
    // Setup Textures
    GFX->setTexture(0, mPropagatedTexture);
    GFX->setTexture(1, prepassTexObject);
+
+   // and SSAO mask
+   if ( AdvancedLightBinManager::smUseSSAOMask )
+   {
+      if ( !mSSAOMaskTarget )
+         mSSAOMaskTarget = NamedTexTarget::find( "ssaoMask");
+
+      if ( mSSAOMaskTarget )
+      {
+         GFXTextureObject *SSAOMaskTexObject = mSSAOMaskTarget->getTexture();
+         if ( SSAOMaskTexObject ) 
+            GFX->setTexture(2, SSAOMaskTexObject);
+      }
+   }
 
    // Draw the screenspace quad.
    GFX->drawPrimitive( GFXTriangleFan, 0, 2 );

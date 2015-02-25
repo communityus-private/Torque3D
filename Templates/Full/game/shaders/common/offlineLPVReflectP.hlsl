@@ -30,8 +30,9 @@ struct Conn
    float3 wsEyeRay : TEXCOORD1;
 };
 
-uniform sampler2D prePassBuffer : register(S1);
 uniform sampler3D lpvData : register(S0);
+uniform sampler2D prePassBuffer : register(S1);
+uniform sampler2D matInfoBuffer : register(S2);
 uniform float4x4 invViewMat;
 uniform float3 eyePosWorld;
 uniform float3 volumeStart;
@@ -73,7 +74,10 @@ float4 main( Conn IN ) : COLOR0
             //break;
        }
    }
+   final_color = final_color / 16;
 
-   
-   return float4(final_color / 16, 0.0);
+   float4 matInfoSample = tex2D( matInfoBuffer, IN.uv0 );
+   final_color = final_color * matInfoSample.a;
+
+   return float4(final_color, 0.0);
 }
