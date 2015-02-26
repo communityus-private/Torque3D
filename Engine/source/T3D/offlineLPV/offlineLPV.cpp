@@ -932,30 +932,32 @@ void OfflineLPV::regenVolume()
                               bool containsVertC = voxBox.isContained(vertC);
                               if (containsVertA || containsVertB || containsVertC)
                               {
-                                 Point2F uv;
-                                 if ( containsVertA ) uv = uvA;
-                                 if ( containsVertB ) uv = uvB;
-                                 if ( containsVertC ) uv = uvC;
-
-                                 Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
-                                 if (mat)
+                                 voxel_color = ColorF(255, 255, 255, 255);
+                                 if ( poly.material > -1 )
                                  {
-                                    Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
-                                    if (diffuseTex != NULL)
+                                    Point2F uv;
+                                    if ( containsVertA ) uv = uvA;
+                                    if ( containsVertB ) uv = uvB;
+                                    if ( containsVertC ) uv = uvC;
+
+                                    Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
+                                    if (mat)
                                     {
-                                       U32 w = diffuseTex->getWidth();
-                                       U32 h = diffuseTex->getHeight();
+                                       Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                       if (diffuseTex != NULL)
+                                       {
+                                          U32 w = diffuseTex->getWidth();
+                                          U32 h = diffuseTex->getHeight();
 
-                                       ColorI result;
-                                       diffuseTex->getColor(uv.x * w, uv.y * h, result);
-                                       voxel_color = result;
-                                    } else {
-                                       voxel_color = mat->mDiffuse[0];
+                                          ColorI result;
+                                          diffuseTex->getColor(uv.x * w, uv.y * h, result);
+                                          voxel_color = result;
+                                       } else {
+                                          voxel_color = mat->mDiffuse[0];
+                                       }
+
+                                       emissive = mat->mEmissive[0];
                                     }
-
-                                    emissive = mat->mEmissive[0];
-                                 } else {
-                                    voxel_color = ColorF(255, 255, 255, 255);
                                  }
 
                                  U32 voxelIdx = getVoxelIndex(x, y, z);
@@ -978,30 +980,32 @@ void OfflineLPV::regenVolume()
 
                                  if (collideA || collideB || collideC)
                                  {
-                                    Point2F uv;
-                                    if ( collideA ) uv = uvA + (collideAPos * (uvB - uvA));
-                                    if ( collideB ) uv = uvB + (collideBPos * (uvC - uvB));
-                                    if ( collideC ) uv = uvC + (collideCPos * (uvA - uvC));
-
-                                    Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
-                                    if (mat)
+                                    voxel_color = ColorF(255, 255, 255, 255);
+                                    if ( poly.material > -1 )
                                     {
-                                       Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
-                                       if (diffuseTex != NULL)
+                                       Point2F uv;
+                                       if ( collideA ) uv = uvA + (collideAPos * (uvB - uvA));
+                                       if ( collideB ) uv = uvB + (collideBPos * (uvC - uvB));
+                                       if ( collideC ) uv = uvC + (collideCPos * (uvA - uvC));
+
+                                       Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
+                                       if (mat)
                                        {
-                                          U32 w = diffuseTex->getWidth();
-                                          U32 h = diffuseTex->getHeight();
+                                          Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                          if (diffuseTex != NULL)
+                                          {
+                                             U32 w = diffuseTex->getWidth();
+                                             U32 h = diffuseTex->getHeight();
 
-                                          ColorI result;
-                                          diffuseTex->getColor(uv.x * w, uv.y * h, result);
-                                          voxel_color = result;
-                                       } else {
-                                          voxel_color = mat->mDiffuse[0];
+                                             ColorI result;
+                                             diffuseTex->getColor(uv.x * w, uv.y * h, result);
+                                             voxel_color = result;
+                                          } else {
+                                             voxel_color = mat->mDiffuse[0];
+                                          }
+
+                                          emissive = mat->mEmissive[0];
                                        }
-
-                                       emissive = mat->mEmissive[0];
-                                    } else {
-                                       voxel_color = ColorF(255, 255, 255, 255);
                                     }
 
                                     //indeed it does
@@ -1029,36 +1033,38 @@ void OfflineLPV::regenVolume()
                                           if (intersect == edgeA || intersect == edgeB)
                                              continue;
 
-                                          VectorF f1 = vertA - intersect;
-                                          VectorF f2 = vertB - intersect;
-                                          VectorF f3 = vertC - intersect;
-
-                                          F32 a =  mCross(vertA - vertB, vertA - vertC).magnitudeSafe();
-                                          F32 a1 = mCross(f2, f3).magnitudeSafe() / a;
-                                          F32 a2 = mCross(f3, f1).magnitudeSafe() / a;
-                                          F32 a3 = mCross(f1, f2).magnitudeSafe() / a;
-
-                                          Point2F uv = (uvA * a1) + (uvB * a2) + (uvC * a3);
-
-                                          Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
-                                          if (mat)
+                                          voxel_color = ColorF(255, 255, 255, 255);
+                                          if ( poly.material > -1 )
                                           {
-                                             Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
-                                             if (diffuseTex != NULL)
+                                             VectorF f1 = vertA - intersect;
+                                             VectorF f2 = vertB - intersect;
+                                             VectorF f3 = vertC - intersect;
+
+                                             F32 a =  mCross(vertA - vertB, vertA - vertC).magnitudeSafe();
+                                             F32 a1 = mCross(f2, f3).magnitudeSafe() / a;
+                                             F32 a2 = mCross(f3, f1).magnitudeSafe() / a;
+                                             F32 a3 = mCross(f1, f2).magnitudeSafe() / a;
+
+                                             Point2F uv = (uvA * a1) + (uvB * a2) + (uvC * a3);
+
+                                             Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
+                                             if (mat)
                                              {
-                                                U32 w = diffuseTex->getWidth();
-                                                U32 h = diffuseTex->getHeight();
+                                                Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                                if (diffuseTex != NULL)
+                                                {
+                                                   U32 w = diffuseTex->getWidth();
+                                                   U32 h = diffuseTex->getHeight();
 
-                                                ColorI result;
-                                                diffuseTex->getColor(uv.x * w, uv.y * h, result);
-                                                voxel_color = result;
-                                             } else {
-                                                voxel_color = mat->mDiffuse[0];
+                                                   ColorI result;
+                                                   diffuseTex->getColor(uv.x * w, uv.y * h, result);
+                                                   voxel_color = result;
+                                                } else {
+                                                   voxel_color = mat->mDiffuse[0];
+                                                }
+
+                                                emissive = mat->mEmissive[0];
                                              }
-
-                                             emissive = mat->mEmissive[0];
-                                          } else {
-                                             voxel_color = ColorF(255, 255, 255, 255);
                                           }
 
                                           U32 voxelIdx = getVoxelIndex(x, y, z);
@@ -1426,7 +1432,7 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
                   continue;
 
                // Determine which voxel we'll be sampling from.
-               U32 sampleOffset = (voxelCount.x * voxelCount.y * (z + sample_directions[i].z)) + (voxelCount.x * (y + sample_directions[i].y)) + (x + sample_directions[i].x);
+               U32 sampleOffset = (voxelCount.x * voxelCount.y * zSample) + (voxelCount.x * ySample) + xSample;
 
                // Decode the color from that voxel facing the opposite direction we sampled from.
                ColorF decoded_color = decodeSH(sample_directions[i] * -1, source[sampleOffset]);
