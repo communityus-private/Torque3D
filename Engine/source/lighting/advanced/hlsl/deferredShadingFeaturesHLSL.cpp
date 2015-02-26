@@ -182,6 +182,6 @@ void DeferredEmptySpecHLSL::processPix( Vector<ShaderComponent*> &componentList,
    MultiLine * meta = new MultiLine;
    //matinfo.g slot reserved for AO later
    meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
-   meta->addStatement(new GenOp("   @.ba = 0.0;\r\n", material));
+   meta->addStatement(new GenOp("   @.ba = vec2(0.0);\r\n", material));
    output = meta;
 }
