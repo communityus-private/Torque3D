@@ -250,7 +250,7 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
    TSShapeInstance::smSmallestVisiblePixelSize = smSmallestVisiblePixelSize;
 
    Vector< Vector<PlaneF> > _extraCull;
-   _calcPlanesCullForShadowCasters( _extraCull, fullFrustum, mLight->getDirection() );
+   //_calcPlanesCullForShadowCasters( _extraCull, fullFrustum, mLight->getDirection() );
 
    for (U32 i = 0; i < mNumSplits; i++)
    {
@@ -369,8 +369,8 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
       shadowRenderState.setDiffuseCameraTransform( diffuseState->getCameraTransform() );
       shadowRenderState.setWorldToScreenScale( diffuseState->getWorldToScreenScale() );
 
-      PlaneSetF planeSet( _extraCull[i].address(), _extraCull[i].size() );
-      shadowRenderState.getCullingState().setExtraPlanesCull( planeSet );
+      //PlaneSetF planeSet( _extraCull[i].address(), _extraCull[i].size() );
+      //shadowRenderState.getCullingState().setExtraPlanesCull( planeSet );
 
       U32 objectMask = SHADOW_TYPEMASK;
       if ( i == mNumSplits-1 && params->lastSplitTerrainOnly )
@@ -378,7 +378,7 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
 
       sceneManager->renderSceneNoLights( &shadowRenderState, objectMask );
 
-      shadowRenderState.getCullingState().clearExtraPlanesCull();
+      //shadowRenderState.getCullingState().clearExtraPlanesCull();
 
       _debugRender( &shadowRenderState );
    }
@@ -548,7 +548,7 @@ void PSSMLightShadowMap::_calcPlanesCullForShadowCasters(Vector< Vector<PlaneF> 
       lightFarPlaneMat.mulP( pos3DA );
       lightFarPlaneMat.mulP( pos3DB );
 
-      PlaneF plane( pos3D, MathUtils::mTriangleNormal(pos3DB, pos3DA, (pos3DA - (1000*ligthDir) ) ) );
+      PlaneF plane(pos3D, MathUtils::mTriangleNormal(pos3DB, pos3DA, (pos3DA - (F32_MAX/2*ligthDir))));
       planes.push_back( plane );
    }   
 
