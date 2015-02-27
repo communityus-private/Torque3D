@@ -47,6 +47,7 @@
 #include "gfx/gfxDrawUtil.h"
 #include "materials/materialDefinition.h"
 
+#include "T3D/rigidShape.h"
 
 namespace {
 
@@ -215,7 +216,7 @@ bool VehicleData::preload(bool server, String &errorStr)
       return false;
 
    // Vehicle objects must define a collision detail
-   if (!collisionDetails.size() || collisionDetails[0] == -1)
+   if (!collisionDetails[0].size() || collisionDetails[0][0] == -1)
    {
       Con::errorf("VehicleData::preload failed: Vehicle models must define a collision-1 detail");
       errorStr = String::ToString("VehicleData: Couldn't load shape \"%s\"",shapeName);
@@ -1362,8 +1363,21 @@ bool Vehicle::resolveCollision(Rigid&  ns,CollisionList& cList)
 
             // Apply impulses to the rigid body to keep it from
             // penetrating the surface.
-            ns.resolveCollision(cList[i].point,
-               cList[i].normal);
+			 if ( c.object->getTypeMask() & VehicleObjectType )
+			 {
+				 Vehicle* other = dynamic_cast<Vehicle*>( c.object );
+				 if (other)
+					 ns.resolveCollision(cList[i].point , cList[i].normal, &other->mRigid );
+				 else
+				 {
+					 RigidShape* otherRigid = dynamic_cast<RigidShape*>( c.object );
+					 if (otherRigid)
+						 ns.resolveCollision(cList[i].point , cList[i].normal, &otherRigid->mRigid );
+					 else
+						 ns.resolveCollision(cList[i].point, cList[i].normal);
+				 }
+			 }
+			 else ns.resolveCollision(cList[i].point, cList[i].normal);
             collided  = true;
 
             // Keep track of objects we collide with

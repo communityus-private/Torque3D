@@ -22,6 +22,7 @@
 
 #include "platform/platform.h"
 #include "T3D/rigidShape.h"
+#include "T3D/vehicles/vehicle.h"
 
 #include "app/game.h"
 #include "math/mMath.h"
@@ -1234,9 +1235,22 @@ bool RigidShape::resolveCollision(Rigid&  ns,CollisionList& cList)
 
                // Apply impulses to the rigid body to keep it from
                // penetrating the surface.
-               ns.resolveCollision(cList[i].point,
-                  cList[i].normal);
-               colliding = collided  = true;
+				if ( c.object->getTypeMask() & VehicleObjectType )
+				{
+					Vehicle* other = dynamic_cast<Vehicle*>( c.object );
+					if (other)
+						ns.resolveCollision(cList[i].point , cList[i].normal, &other->mRigid );
+					else
+					{
+						RigidShape* otherRigid = dynamic_cast<RigidShape*>( c.object );
+						if (otherRigid)
+							ns.resolveCollision(cList[i].point , cList[i].normal, &otherRigid->mRigid );
+						else
+							ns.resolveCollision(cList[i].point, cList[i].normal);
+					}
+				}
+				else ns.resolveCollision(cList[i].point, cList[i].normal);
+				collided  = true;
 
                // Keep track of objects we collide with
                if (!isGhost() && c.object->getTypeMask() & ShapeBaseObjectType) 

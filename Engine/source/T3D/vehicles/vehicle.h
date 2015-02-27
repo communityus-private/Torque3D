@@ -200,7 +200,6 @@ class Vehicle: public ShapeBase
 
    CollisionList mCollisionList;
    CollisionList mContacts;
-   Rigid mRigid;
    ShapeBaseConvex mConvex;
    S32 restCount;
 
@@ -250,6 +249,7 @@ class Vehicle: public ShapeBase
    void _renderMuzzleVector( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );
 
 public:
+	Rigid mRigid;
    // Test code...
    static ClippedPolyList* sPolyList;
    static S32 sVehicleCount;
