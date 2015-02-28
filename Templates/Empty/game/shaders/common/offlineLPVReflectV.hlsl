@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 GarageGames, LLC
+// Copyright (c) 2015 Andrew Mac
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -20,31 +20,36 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-new GFXStateBlockData( ScatterSkySBData )
+#include "shadergen:/autogenConditioners.h"
+#include "torque.hlsl"
+
+// This is the shader input vertex structure.
+struct Vert
 {
-   //cullDefined = true;
-   cullMode = "GFXCullNone";
-   
-   zDefined = true;
-   zEnable = true;
-   zWriteEnable = false;
-   //zFunc = "GFXCmpLessEqual";
-   
-   samplersDefined = true;
-   samplerStates[0] = SamplerClampLinear;   
-   samplerStates[1] = SamplerClampLinear;
-   vertexColorEnable = true;
+   float4 position : POSITION;
+   float2 uv0      : TEXCOORD0;
+   float3 wsEyeRay : TEXCOORD1;
 };
 
-singleton ShaderData( ScatterSkyShaderData )
+// This is the shader output data.
+struct Conn
 {
-   DXVertexShaderFile     = "shaders/common/scatterSkyV.hlsl";
-   DXPixelShaderFile      = "shaders/common/scatterSkyP.hlsl";   
-   
-   OGLVertexShaderFile     = "shaders/common/gl/scatterSkyV.glsl";
-   OGLPixelShaderFile      = "shaders/common/gl/scatterSkyP.glsl";
-   
-   samplerNames[0] = "$nightSky";
-   
-   pixVersion = 2.0;
+   float4 position : POSITION;
+   float2 uv0      : TEXCOORD0;
+   float3 wsEyeRay : TEXCOORD1;
 };
+
+// Render Target Paramaters (width/height of depth/light buffers)
+float4 rtParams0;
+
+Conn main(  Vert IN,
+            uniform float4x4 modelView          : register(C0)
+            )	         
+{
+   Conn OUT;   
+   OUT.position = IN.position;
+   OUT.uv0 = viewportCoordToRenderTarget( IN.uv0, rtParams0 );
+   OUT.wsEyeRay = IN.wsEyeRay;
+   return OUT;
+}
+

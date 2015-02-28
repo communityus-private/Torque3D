@@ -20,8 +20,8 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef _LIGHTPROBEVOLUME_H_
-#define _LIGHTPROBEVOLUME_H_
+#ifndef _EnvVolume_H_
+#define _EnvVolume_H_
 
 #ifndef _SCENEPOLYHEDRALSPACE_H_
 #include "scene/scenePolyhedralSpace.h"
@@ -40,7 +40,7 @@
 #endif
 
 /// A volume in space that blocks visibility.
-class LightProbeVolume : public ScenePolyhedralSpace
+class EnvVolume : public ScenePolyhedralSpace
 {
    public:
 
@@ -68,11 +68,11 @@ class LightProbeVolume : public ScenePolyhedralSpace
       // Area environment cube map handle.
       CubemapData *mAreaEnvMap;
 
-      LightProbeVolume();
-      ~LightProbeVolume();
+      EnvVolume();
+      ~EnvVolume();
 
       // SimObject.
-      DECLARE_CONOBJECT( LightProbeVolume );
+      DECLARE_CONOBJECT( EnvVolume );
       DECLARE_DESCRIPTION( "Allows objects in an area to have a given envoronment map applied." );
       DECLARE_CATEGORY( "3D Scene" );
 
@@ -85,7 +85,7 @@ class LightProbeVolume : public ScenePolyhedralSpace
       static void consoleInit();
       static void initPersistFields();
       static Vector< SimObjectPtr<SceneObject> > smProbedObjects;
-      static Vector< SimObjectPtr<LightProbeVolume> > smLightProbeVolumes;
+      static Vector< SimObjectPtr<EnvVolume> > smEnvVolumes;
       static void addObject(SimObjectPtr<SceneObject> object);
       static void removeObject(SimObjectPtr<SceneObject> object);
       static void refreshVolumes();
@@ -99,4 +99,4 @@ class LightProbeVolume : public ScenePolyhedralSpace
       virtual void setTransform( const MatrixF& mat );
 };
 
-#endif // !_LIGHTPROBEVOLUME_H_
+#endif // !_EnvVolume_H_
