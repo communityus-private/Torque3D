@@ -88,6 +88,7 @@ ConsoleDocClass( AIPlayer,
  */
 AIPlayer::AIPlayer()
 {
+    mTypeMask |= PlayerObjectType | DynamicShapeObjectType | AIObjectType;
    mMoveDestination.set( 0.0f, 0.0f, 0.0f );
    mMoveSpeed = 1.0f;
    mMoveTolerance = 0.25f;

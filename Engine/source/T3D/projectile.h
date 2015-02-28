@@ -84,6 +84,11 @@ public:
    /// Should it arc?
    bool isBallistic;
 
+    /// Should it track target?  
+    bool isGuided;  
+    F32 precision;  
+    S32 trackDelay;  
+
    /// How HIGH should it bounce (parallel to normal), [0,1]
    F32 bounceElasticity;
    /// How much momentum should be lost when it bounces (perpendicular to normal), [0,1]
@@ -96,6 +101,9 @@ public:
    U32 lifetime;     // all times are internally represented as ticks
    /// How long it should not detonate on impact
    S32 armingDelay;  // the values are converted on initialization with
+   S32 explodingDelay;
+   bool explodeOnContact;
+   S32 interval;
    S32 fadeDelay;    // the IRangeValidatorScaled field validator
 
    ExplosionData* explosion;
@@ -134,6 +142,7 @@ public:
 
    static bool setLifetime( void *object, const char *index, const char *data );
    static bool setArmingDelay( void *object, const char *index, const char *data );
+   static bool setExplodingDelay( void *object, const char *index, const char *data );
    static bool setFadeDelay( void *object, const char *index, const char *data );
    static const char *getScaledValue( void *obj, const char *data);
    static S32 scaleValue( S32 value, bool down = true );
@@ -143,7 +152,7 @@ public:
 
    
    DECLARE_CALLBACK( void, onExplode, ( Projectile* proj, Point3F pos, F32 fade ) );
-   DECLARE_CALLBACK( void, onCollision, ( Projectile* proj, SceneObject* col, F32 fade, Point3F pos, Point3F normal ) );
+   DECLARE_CALLBACK( void, onCollision, ( Projectile* proj, SceneObject* col, F32 fade, Point3F pos, Point3F normal, S32 collisionBox) );
 };
 
 
@@ -168,7 +177,8 @@ public:
    enum UpdateMasks {
       BounceMask    = Parent::NextFreeMask,
       ExplosionMask = Parent::NextFreeMask << 1,
-      NextFreeMask  = Parent::NextFreeMask << 2
+      GuideMask = Parent::NextFreeMask << 2,
+      NextFreeMask  = Parent::NextFreeMask << 3
    };
 
    
@@ -204,7 +214,7 @@ public:
    void simulate( F32 dt );
 
    /// What to do once this projectile collides with something
-   virtual void onCollision(const Point3F& p, const Point3F& n, SceneObject*);
+   virtual void onCollision(const Point3F& p, const Point3F& n, SceneObject*, S32 collisionBox);
 
    /// What to do when this projectile explodes
    virtual void explode(const Point3F& p, const Point3F& n, const U32 collideType );
@@ -232,7 +242,8 @@ protected:
    PhysicsWorld *mPhysicsWorld;
 
    ProjectileData* mDataBlock;
-
+   SimObjectPtr<ShapeBase> mTarget;   
+   S32 mTargetId; 
    SimObjectPtr< ParticleEmitter > mParticleEmitter;
    SimObjectPtr< ParticleEmitter > mParticleWaterEmitter;
 
@@ -279,6 +290,8 @@ protected:
    Point3F mExplosionPosition;
    Point3F mExplosionNormal;
    U32     mCollideHitType;   
+
+   S32 mDamageCycle;
 };
 
 #endif // _PROJECTILE_H_
