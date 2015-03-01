@@ -250,7 +250,7 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
    TSShapeInstance::smSmallestVisiblePixelSize = smSmallestVisiblePixelSize;
 
    Vector< Vector<PlaneF> > _extraCull;
-   //_calcPlanesCullForShadowCasters( _extraCull, fullFrustum, mLight->getDirection() );
+   _calcPlanesCullForShadowCasters( _extraCull, fullFrustum, mLight->getDirection() );
 
    for (U32 i = 0; i < mNumSplits; i++)
    {
@@ -369,8 +369,8 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
       shadowRenderState.setDiffuseCameraTransform( diffuseState->getCameraTransform() );
       shadowRenderState.setWorldToScreenScale( diffuseState->getWorldToScreenScale() );
 
-      //PlaneSetF planeSet( _extraCull[i].address(), _extraCull[i].size() );
-      //shadowRenderState.getCullingState().setExtraPlanesCull( planeSet );
+      PlaneSetF planeSet( _extraCull[i].address(), _extraCull[i].size() );
+      shadowRenderState.getCullingState().setExtraPlanesCull( planeSet );
 
       U32 objectMask = SHADOW_TYPEMASK;
       if ( i == mNumSplits-1 && params->lastSplitTerrainOnly )
@@ -378,7 +378,7 @@ void PSSMLightShadowMap::_render(   RenderPassManager* renderPass,
 
       sceneManager->renderSceneNoLights( &shadowRenderState, objectMask );
 
-      //shadowRenderState.getCullingState().clearExtraPlanesCull();
+      shadowRenderState.getCullingState().clearExtraPlanesCull();
 
       _debugRender( &shadowRenderState );
    }
@@ -482,48 +482,48 @@ void PSSMLightShadowMap::setShaderParameters(GFXShaderConstBuffer* params, Light
 void PSSMLightShadowMap::_calcPlanesCullForShadowCasters(Vector< Vector<PlaneF> > &out, const Frustum &viewFrustum, const Point3F &_ligthDir)
 {
 
-//#define ENABLE_CULL_ASSERT
+#define ENABLE_CULL_ASSERT
 
    PROFILE_SCOPE(PSSMLightShadowMap_render_getCullFrustrum);
-     
+
    Point3F ligthDir = _ligthDir;
    PlaneF lightFarPlane, lightNearPlane;
    MatrixF lightFarPlaneMat(true);
    MatrixF invLightFarPlaneMat(true);
 
    // init data
-   {   
+   {
       ligthDir.normalize();
       Point3F viewDir = viewFrustum.getTransform().getForwardVector();
       viewDir.normalize();
-      Point3F viewFarPlaneCenter = viewFrustum.getPosition() + ( viewDir * viewFrustum.getFarDist() ) ;
-      F32 radius = viewFrustum.getBounds().len()/2;
-      lightNearPlane = PlaneF( viewFarPlaneCenter + (radius * -ligthDir), ligthDir);
+      const Point3F viewPosition = viewFrustum.getPosition();
+      const F32 viewDistance = viewFrustum.getBounds().len();
+      lightNearPlane = PlaneF(viewPosition + (viewDistance * -ligthDir), ligthDir);
 
-      Point3F lightFarPlanePos = viewFarPlaneCenter + (radius * ligthDir);
-      lightFarPlane = PlaneF( lightFarPlanePos, -ligthDir);
+      const Point3F lightFarPlanePos = viewPosition + (viewDistance * ligthDir);
+      lightFarPlane = PlaneF(lightFarPlanePos, -ligthDir);
 
-      lightFarPlaneMat = MathUtils::createOrientFromDir( -ligthDir );
-      lightFarPlaneMat.setPosition( lightFarPlanePos );
-      lightFarPlaneMat.invertTo( &invLightFarPlaneMat );
+      lightFarPlaneMat = MathUtils::createOrientFromDir(-ligthDir);
+      lightFarPlaneMat.setPosition(lightFarPlanePos);
+      lightFarPlaneMat.invertTo(&invLightFarPlaneMat);
    }
-   
+
    Vector<Point2F> projVertices;
 
    //project all frustum vertices into plane
    // all vertices are 2d and local to far plane
    projVertices.setSize(8);
-   for(int i = 0; i < 8; ++i) //
+   for (int i = 0; i < 8; ++i) //
    {
-      Point3F point = viewFrustum.getPoints()[i];
+      const Point3F &point = viewFrustum.getPoints()[i];
 #ifdef ENABLE_CULL_ASSERT
       AssertFatal( PlaneF::Front == lightNearPlane.whichSide(point), "" );
       AssertFatal( PlaneF::Front == lightFarPlane.whichSide(point), "" );
 #endif
 
-      Point3F localPoint( lightFarPlane.project( point ) );
-      invLightFarPlaneMat.mulP( localPoint );
-      projVertices[i] = Point2F(localPoint.x, localPoint.z);      
+      Point3F localPoint(lightFarPlane.project(point));
+      invLightFarPlaneMat.mulP(localPoint);
+      projVertices[i] = Point2F(localPoint.x, localPoint.z);
    }
 
    //create hull arround projected proints
@@ -533,50 +533,50 @@ void PSSMLightShadowMap::_calcPlanesCullForShadowCasters(Vector< Vector<PlaneF> 
    Vector<PlaneF> planes;
    planes.push_back(lightNearPlane);
    planes.push_back(lightFarPlane);
-   
-   //build planes
-   for(int i = 0; i < (hullVerts.size()-1); ++i)
-   {
-      Point2F pos2D = (hullVerts[i] + hullVerts[i+1])/2;
-      Point3F pos3D( pos2D.x, 0, pos2D.y );
 
-      Point3F pos3DA( hullVerts[i].x, 0, hullVerts[i].y );
-      Point3F pos3DB( hullVerts[i+1].x, 0, hullVerts[i+1].y );
+   //build planes
+   for (int i = 0; i < (hullVerts.size() - 1); ++i)
+   {
+      Point2F pos2D = (hullVerts[i] + hullVerts[i + 1]) / 2;
+      Point3F pos3D(pos2D.x, 0, pos2D.y);
+
+      Point3F pos3DA(hullVerts[i].x, 0, hullVerts[i].y);
+      Point3F pos3DB(hullVerts[i + 1].x, 0, hullVerts[i + 1].y);
 
       // move hull points to 3d space
-      lightFarPlaneMat.mulP( pos3D );
-      lightFarPlaneMat.mulP( pos3DA );
-      lightFarPlaneMat.mulP( pos3DB );
+      lightFarPlaneMat.mulP(pos3D);
+      lightFarPlaneMat.mulP(pos3DA);
+      lightFarPlaneMat.mulP(pos3DB);
 
-      PlaneF plane(pos3D, MathUtils::mTriangleNormal(pos3DB, pos3DA, (pos3DA - (F32_MAX/2*ligthDir))));
-      planes.push_back( plane );
-   }   
+      PlaneF plane(pos3D, MathUtils::mTriangleNormal(pos3DB, pos3DA, (pos3DA - ligthDir)));
+      planes.push_back(plane);
+   }
 
    //recalculate planes for each splits
-   for(int split = 0; split < mNumSplits; ++split)
+   for (int split = 0; split < mNumSplits; ++split)
    {
       Frustum subFrustum(viewFrustum);
-      subFrustum.cropNearFar(mSplitDist[split], mSplitDist[split+1]);
-      subFrustum.setFarDist( getMin( subFrustum.getFarDist()*2.5f, viewFrustum.getFarDist() )  );
+      subFrustum.cropNearFar(mSplitDist[split], mSplitDist[split + 1]);
+      subFrustum.setFarDist(getMin(subFrustum.getFarDist()*2.5f, viewFrustum.getFarDist()));
       subFrustum.update();
 
       Vector<PlaneF> subPlanes = planes;
-      
-      for(int planeIdx = 0; planeIdx < subPlanes.size(); ++planeIdx)
+
+      for (int planeIdx = 0; planeIdx < subPlanes.size(); ++planeIdx)
       {
-         PlaneF &plane = subPlanes[planeIdx];        
+         PlaneF &plane = subPlanes[planeIdx];
          F32 minDist = 0;
-         
+
          //calculate near vertex distance
-         for(int vertexIdx = 0; vertexIdx < 8; ++vertexIdx) 
+         for (int vertexIdx = 0; vertexIdx < 8; ++vertexIdx)
          {
             Point3F point = subFrustum.getPoints()[vertexIdx];
-            minDist = getMin( plane.distToPlane(point), minDist);
+            minDist = getMin(plane.distToPlane(point), minDist);
          }
 
-          // move plane to near vertex
-         Point3F newPos = plane.getPosition() + ( plane.getNormal() * minDist );
-         plane = PlaneF( newPos, plane.getNormal() );
+         // move plane to near vertex
+         Point3F newPos = plane.getPosition() + (plane.getNormal() * minDist);
+         plane = PlaneF(newPos, plane.getNormal());
 
 #ifdef ENABLE_CULL_ASSERT
          for(int x = 0; x < 8; ++x)
@@ -586,7 +586,7 @@ void PSSMLightShadowMap::_calcPlanesCullForShadowCasters(Vector< Vector<PlaneF> 
 #endif
       }
 
-      out.push_back( subPlanes );
+      out.push_back(subPlanes);
    }
 
 #undef ENABLE_CULL_ASSERT
