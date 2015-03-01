@@ -1168,6 +1168,7 @@ ConsoleValueRef evaluatef(const char* string, ...)
    va_list args;
    va_start(args, string);
    dVsprintf(buffer, sizeof(buffer), string, args);
+   va_end(args);
    CodeBlock *newCodeBlock = new CodeBlock();
    return newCodeBlock->compileExec(NULL, buffer, false, 0);
 }
