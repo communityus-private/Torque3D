@@ -49,7 +49,7 @@
 #include "materials/materialFeatureTypes.h"
 #include "console/engineAPI.h"
 #include "T3D/accumulationVolume.h"
-#include "T3D/lightProbeVolume.h"
+#include "T3D/envVolume.h"
 using namespace Torque;
 
 extern bool gEditingMission;
@@ -315,7 +315,7 @@ bool TSStatic::onAdd()
    {
       if ( mShapeInstance->hasAccumulation() ) 
          AccumulationVolume::addObject(this);
-      LightProbeVolume::addObject(this);
+      EnvVolume::addObject(this);
    }
 
    return true;
@@ -448,7 +448,7 @@ void TSStatic::onRemove()
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::removeObject(this);
-      LightProbeVolume::removeObject(this);
+      EnvVolume::removeObject(this);
    }
 
    mConvexList->nukeList();
@@ -734,7 +734,7 @@ void TSStatic::setTransform(const MatrixF & mat)
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::updateObject(this);
-      LightProbeVolume::updateObject(this);
+      EnvVolume::updateObject(this);
    }
 
    // Since this is a static it's render transform changes 1
