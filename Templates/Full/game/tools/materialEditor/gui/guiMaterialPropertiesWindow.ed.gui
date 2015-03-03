@@ -2711,7 +2711,7 @@
                               tooltipprofile = "ToolsGuiDefaultProfile";
                               ToolTip = "Sets Roughness.";
                               hovertime = "1000";
-                              range = "0 8";
+                              range = "0 1";
                               ticks = "0";
                               value = "0";
                            };

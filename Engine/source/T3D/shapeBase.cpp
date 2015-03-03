@@ -64,7 +64,6 @@
 #include "renderInstance/renderOcclusionMgr.h"
 #include "core/stream/fileStream.h"
 #include "T3D/accumulationVolume.h"
-#include "T3D/envVolume.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ShapeBaseData);
 
@@ -1052,7 +1051,6 @@ bool ShapeBase::onAdd()
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::addObject(this);
-      EnvVolume::addObject(this);
    }
    return true;
 }
@@ -1073,7 +1071,6 @@ void ShapeBase::onRemove()
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::removeObject(this);
-      EnvVolume::removeObject(this);
    }
 
    if ( isClientObject() )   
@@ -2529,9 +2526,6 @@ void ShapeBase::prepBatchRender(SceneRenderState* state, S32 mountedImageIndex )
    //area or per object cubemapping
    if (mCubeReflector.isEnabled())
       rdata.setCubemap(mCubeReflector.getCubemap());
-   else
-      if (mEnvMap)
-         rdata.setCubemap(mEnvMap);
 
    rdata.setFadeOverride( (1.0f - mCloakLevel) * mFadeVal );
 
@@ -3546,7 +3540,6 @@ void ShapeBase::setTransform(const MatrixF & mat)
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::updateObject(this);
-      EnvVolume::updateObject(this);
    }
 }
 //--------------------------------------------------------------------------

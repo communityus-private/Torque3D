@@ -69,9 +69,6 @@ extern ColorI gCanvasClearColor;
 /// @see DecalManager
 extern F32 gDecalBias;
 
-/// @see LightProbeVolume
-extern GFXCubemap * gLevelEnvMap;
-
 /// Default SFXAmbience used to reset the global soundscape.
 static SFXAmbience sDefaultAmbience;
 
@@ -103,9 +100,6 @@ LevelInfo::LevelInfo()
    // so the advanced light bin manager can be instructed about MRT lightmaps
    LightManager::smActivateSignal.notify(this, &LevelInfo::_onLMActivate, 0.01f);
 
-   // Accumulation Texture.
-   mLevelEnvMapName = "";
-   mLevelEnvMap = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -162,10 +156,7 @@ void LevelInfo::initPersistFields()
 
       addField( "advancedLightmapSupport", TypeBool, Offset( mAdvancedLightmapSupport, LevelInfo ),
          "Enable expanded support for mixing static and dynamic lighting (more costly)");
-
-      addField("LevelEnvMap", TypeCubemapName, Offset(mLevelEnvMapName, LevelInfo),
-         "Environment map applied to objects for a given area.");
-
+      
    endGroup( "Lighting" );
    
    addGroup( "Sound" );
@@ -212,9 +203,7 @@ U32 LevelInfo::packUpdate(NetConnection *conn, U32 mask, BitStream *stream)
 
    sfxWrite( stream, mSoundAmbience );
    stream->writeInt( mSoundDistanceModel, 1 );
-
-   stream->write(mLevelEnvMapName);
-
+   
    return retMask;
 }
 
@@ -259,8 +248,6 @@ void LevelInfo::unpackUpdate(NetConnection *conn, BitStream *stream)
 
       SFX->setDistanceModel( mSoundDistanceModel );
    }
-   stream->read(&mLevelEnvMapName);
-   setLevelEnvMap(mLevelEnvMapName);
 }
 
 //-----------------------------------------------------------------------------
@@ -354,21 +341,4 @@ void LevelInfo::_onLMActivate(const char *lm, bool enable)
       lightMgr->getLightBinManager()->MRTLightmapsDuringPrePass(mAdvancedLightmapSupport);
    }
 #endif
-}
-
-void LevelInfo::setLevelEnvMap(const String& name)
-{
-   mLevelEnvMapName = name;
-   if (isClientObject() && mLevelEnvMapName.isNotEmpty())
-   {
-      Sim::findObject(mLevelEnvMapName, mLevelEnvMap);
-      if (!mLevelEnvMap)
-         Con::warnf("LightProbeVolume::setTexture - Unable to load cubemap: %s", mLevelEnvMapName.c_str());
-      else
-      {
-         if (!mLevelEnvMap->mCubemap)
-            mLevelEnvMap->createMap();
-         gLevelEnvMap = mLevelEnvMap->mCubemap;         
-      }
-   }
 }

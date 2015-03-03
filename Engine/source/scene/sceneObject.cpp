@@ -144,7 +144,6 @@ SceneObject::SceneObject()
    mIsScopeAlways = false;
 
    mAccuTex = NULL;
-   mEnvMap = NULL;
 }
 
 //-----------------------------------------------------------------------------

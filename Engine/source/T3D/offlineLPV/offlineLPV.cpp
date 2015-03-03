@@ -120,6 +120,7 @@ OfflineLPV::OfflineLPV()
    mLightInfoTarget        = NULL;
    mPrepassTarget          = NULL;
    mMatInfoTarget          = NULL;
+   mColorTarget            = NULL;
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
@@ -156,6 +157,7 @@ OfflineLPV::~OfflineLPV()
    mLightInfoTarget        = NULL;
    mPrepassTarget          = NULL;
    mMatInfoTarget          = NULL;
+   mColorTarget            = NULL;
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
@@ -1846,12 +1848,20 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
    if ( !prepassTexObject ) return;
 
-   // and the material info buffer.
+
+   // the material info buffer.
    if ( !mMatInfoTarget )
       mMatInfoTarget = NamedTexTarget::find( "matinfo" );
 
    GFXTextureObject *matInfoTexObject = mMatInfoTarget->getTexture();
    if ( !matInfoTexObject ) return;
+
+   // and the color buffer.
+   if ( !mColorTarget )
+      mColorTarget = NamedTexTarget::find( "color" );
+
+   GFXTextureObject *colorTexObject = mColorTarget->getTexture();
+   if (!colorTexObject) return;
 
    // -- Setup screenspace quad to render (postfx) --
    Frustum frustum = state->getCameraFrustum();
@@ -1903,6 +1913,7 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    GFX->setTexture(0, mDirectLightTexture);
    GFX->setTexture(1, prepassTexObject);
    GFX->setTexture(2, matInfoTexObject);
+   GFX->setTexture(3, colorTexObject);
 
    // Draw the screenspace quad.
    GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
