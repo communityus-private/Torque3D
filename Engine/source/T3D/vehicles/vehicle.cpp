@@ -216,7 +216,7 @@ bool VehicleData::preload(bool server, String &errorStr)
       return false;
 
    // Vehicle objects must define a collision detail
-   if (!collisionDetails[0].size() || collisionDetails[0][0] == -1)
+   if (!collisionDetails.size() || collisionDetails[0] == -1)
    {
       Con::errorf("VehicleData::preload failed: Vehicle models must define a collision-1 detail");
       errorStr = String::ToString("VehicleData: Couldn't load shape \"%s\"",shapeName);
