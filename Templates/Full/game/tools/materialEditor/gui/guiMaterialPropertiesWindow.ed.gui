@@ -2671,8 +2671,8 @@
                               MinExtent = "8 2";
                               canSave = "1";
                               Visible = "1";
-                              Command = "MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()), true, true);";
-                              AltCommand = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()), true, false);";
+                              Command = "MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue(), true, true);";
+                              AltCommand = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue(), true, false);";
                               tooltipprofile = "ToolsGuiDefaultProfile";
                               ToolTip = "Sets Roughness.";
                               hovertime = "1000";
@@ -2693,7 +2693,7 @@
                               MinExtent = "8 2";
                               canSave = "1";
                               Visible = "1";
-                              Command = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", mCeil($ThisControl.getValue()));";
+                              Command = "$ThisControl.getParent().updateFromChild($ThisControl); MaterialEditorGui.updateActiveMaterial(\"Roughness[\" @ MaterialEditorGui.currentLayer @ \"]\", $ThisControl.getValue());";
                               hovertime = "1000";
                               AnchorTop = "1";
                               AnchorBottom = "0";
