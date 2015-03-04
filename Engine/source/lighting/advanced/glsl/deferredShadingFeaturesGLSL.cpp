@@ -155,7 +155,7 @@ void DeferredSpecVarsGLSL::processPix( Vector<ShaderComponent*> &componentList, 
 
 	MultiLine *meta = new MultiLine;
     meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
-    meta->addStatement(new GenOp("   @.b = @/8.0;\r\n", material, roughness));
+    meta->addStatement(new GenOp("   @.b = @;\r\n", material, roughness));
     meta->addStatement(new GenOp("   @.a = @;\r\n", material, metalness));
    output = meta;
 }

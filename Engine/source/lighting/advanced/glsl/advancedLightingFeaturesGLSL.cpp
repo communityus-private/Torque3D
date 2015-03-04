@@ -525,7 +525,7 @@ void DeferredPixelSpecularGLSL::processPix(  Vector<ShaderComponent*> &component
    // If the gloss map flag is set, than the specular power is in the alpha
    // channel of the specular map for the input texture
    if( fd.features[ MFT_GlossMap ] )
-       meta->addStatement(new GenOp("   @ = @.a * 255;\r\n", new DecOp(roughness), specCol));
+       meta->addStatement(new GenOp("   @ = @.a;\r\n", new DecOp(roughness), specCol));
    else
    {
        roughness->uniform = true;
