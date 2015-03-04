@@ -39,7 +39,7 @@ datablock RigidShapeData( BouncingBoulder )
    softImpactSpeed = 5;       // Play SoftImpact Sound
    hardImpactSpeed = 15;      // Play HardImpact Sound
    integration = 4;           // Physics integration: TickSec/Rate
-   collisionTol = 0.1;        // Collision distance tolerance
+   collisionTol = 1.0;        // Collision distance tolerance
    contactTol = 0.1;          // Contact velocity tolerance
    
    minRollSpeed = 10;
