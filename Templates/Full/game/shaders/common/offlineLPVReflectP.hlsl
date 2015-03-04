@@ -57,12 +57,11 @@ float4 main( Conn IN ) : COLOR0
    float3 reflected = normalize(reflect(normalEyeRay, wsNormal));
 
    float4 matInfoSample = tex2D( matInfoBuffer, IN.uv0 );
-   matInfoSample.b +=0.001;
    // Make 16 steps into the grid in search of color!
    float3 final_color = float3(0, 0, 0);
    for(int i = 1; i < 16; i++)
    {
-       float3 curPos = worldPos.rgb + (reflected * i * matInfoSample.b*2);
+       float3 curPos = worldPos.rgb + (reflected * i * float(matInfoSample.b/4.0));
        float3 volume_position = (curPos - volumeStart) / volumeSize;
        if ( volume_position.x < 0 || volume_position.x > 1 || 
             volume_position.y < 0 || volume_position.y > 1 || 
@@ -83,6 +82,6 @@ float4 main( Conn IN ) : COLOR0
    float3 colorSample = tex2D( colorBuffer, IN.uv0 ).rgb;
    
    //final_color = final_color * matInfoSample.a;
-   final_color = AL_CalcSpecular( final_color, colorSample, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
+   final_color = AL_CalcSpecular( colorSample, final_color, reflected, wsNormal, normalEyeRay, matInfoSample.b/8, matInfoSample.a );
    return float4(saturate(final_color), 0.0);
 }
