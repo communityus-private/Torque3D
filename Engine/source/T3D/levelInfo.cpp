@@ -97,7 +97,7 @@ LevelInfo::LevelInfo()
 
    mNetFlags.set( ScopeAlways | Ghostable );
 
-   mAdvancedLightmapSupport = false;
+   mAdvancedLightmapSupport = true;
 
    // Register with the light manager activation signal, and we need to do it first
    // so the advanced light bin manager can be instructed about MRT lightmaps
