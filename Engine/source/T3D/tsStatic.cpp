@@ -49,6 +49,7 @@
 #include "materials/materialFeatureTypes.h"
 #include "console/engineAPI.h"
 #include "T3D/accumulationVolume.h"
+#include "T3D/envVolume.h"
 using namespace Torque;
 
 extern bool gEditingMission;
@@ -314,6 +315,7 @@ bool TSStatic::onAdd()
    {
       if ( mShapeInstance->hasAccumulation() ) 
          AccumulationVolume::addObject(this);
+      EnvVolume::addObject(this);
    }
 
    return true;
@@ -446,6 +448,7 @@ void TSStatic::onRemove()
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::removeObject(this);
+      EnvVolume::removeObject(this);
    }
 
    mConvexList->nukeList();
@@ -618,6 +621,9 @@ void TSStatic::prepRenderImage( SceneRenderState* state )
    //area or per object cubemapping
    if ( mCubeReflector.isEnabled() )
       rdata.setCubemap( mCubeReflector.getCubemap() );
+   else 
+      if (mEnvMap)
+         rdata.setCubemap(mEnvMap);
 
    // Acculumation
    rdata.setAccuTex(mAccuTex);
@@ -728,6 +734,7 @@ void TSStatic::setTransform(const MatrixF & mat)
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::updateObject(this);
+      EnvVolume::updateObject(this);
    }
 
    // Since this is a static it's render transform changes 1
