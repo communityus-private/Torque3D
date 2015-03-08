@@ -46,6 +46,7 @@ public:
    // andremwac: Deferred Rendering
    static const String ColorBufferName;
    static const String MatInfoBufferName;
+   static const String LightMapBufferName;
 
    // Generic PrePass Render Instance Type
    static const RenderInstType RIT_PrePass;
@@ -104,8 +105,10 @@ protected:
    GFXStateBlockRef                    mStateblock;
    NamedTexTarget                      mColorTarget;
    NamedTexTarget                      mMatInfoTarget;
+   NamedTexTarget                      mLightMapTarget;
    GFXTexHandle                        mColorTex;
    GFXTexHandle                        mMatInfoTex;
+   GFXTexHandle                        mLightMapTex;
    GFXShaderConstBufferRef             mShaderConsts; 
    GFXShaderConstHandle                *mRoughnessSC;
    GFXShaderConstHandle                *mMetalnessSC; 

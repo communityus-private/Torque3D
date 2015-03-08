@@ -1921,12 +1921,15 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    }
    if (fd.features[MFT_isDeferred])
    {
-      Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
+      Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget3));
       //metalness: black(0) = color, white(1) = reflection
-      meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@*@).rgb, (@.a));\r\n", targ, targ, targ, texCube, lerpVal));
+      if (fd.features[MFT_ToneMap])
+         meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
+      else
+         meta->addStatement(new GenOp("   @ = vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
    }
    else
-        meta->addStatement( new GenOp( "   @;\r\n", assignColor( texCube, blendOp, lerpVal ) ) );         
+      meta->addStatement(new GenOp("   @;\r\n", assignColor(texCube, blendOp, lerpVal)));
    output = meta;
 }
 
