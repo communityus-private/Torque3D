@@ -16,7 +16,7 @@ new SimGroup(MissionGroup) {
       canvasClearColor = "233 220 143 255";
       ambientLightBlendPhase = "1";
       ambientLightBlendCurve = "0 0 -1 -1";
-      advancedLightmapSupport = "0";
+      advancedLightmapSupport = "1";
       LevelEnvMap = "DesertSkyCubemap";
       soundAmbience = "AudioAmbienceDefault";
       soundDistanceModel = "Linear";
@@ -152,30 +152,6 @@ new SimGroup(MissionGroup) {
       canSaveDynamicFields = "1";
    };
    new TSStatic() {
-      shapeName = "art/Gentleman/gentleman_rig.DAE";
-      playAmbient = "1";
-      meshCulling = "0";
-      originSort = "0";
-      collisionType = "Collision Mesh";
-      decalType = "Collision Mesh";
-      allowPlayerStep = "1";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
-      renderNormals = "0";
-      forceDetail = "-1";
-      position = "9.59543 9.05303 240.438";
-      rotation = "0 0 1 95.1726";
-      scale = "5 5 5";
-      canSave = "1";
-      canSaveDynamicFields = "1";
-         bot_gentleman = "bot_gentleman_mat";
-         bot_gentleman_gears = "bot_gentleman_gears_mat";
-         HB_Transparent = "HB_Transparent_mat";
-         HB_Transparent_Crit = "HB_Transparent_Crit_mat";
-   };
-   new TSStatic() {
       shapeName = "art/Cerberus/Cerberus.dae";
       playAmbient = "1";
       meshCulling = "0";
@@ -202,6 +178,8 @@ new SimGroup(MissionGroup) {
       ambient = "0.2 0.2 0.2 1";
       brightness = "1";
       castShadows = "1";
+      staticRefreshFreq = "250";
+      dynamicRefreshFreq = "8";
       coronaEnabled = "1";
       coronaMaterial = "Corona_Mat";
       coronaScale = "0.5";
@@ -234,6 +212,26 @@ new SimGroup(MissionGroup) {
       drawBottom = "1";
       fogBandHeight = "0";
       position = "-79.7465 2.70386 456.287";
+      rotation = "1 0 0 0";
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new TSStatic() {
+      shapeName = "art/shapes/textures/PBRTEST.dae";
+      playAmbient = "1";
+      meshCulling = "0";
+      originSort = "0";
+      collisionType = "Collision Mesh";
+      decalType = "Collision Mesh";
+      allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
+      renderNormals = "0";
+      forceDetail = "-1";
+      position = "17.8995 16.1596 241.136";
       rotation = "1 0 0 0";
       scale = "1 1 1";
       canSave = "1";
