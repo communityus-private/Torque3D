@@ -61,7 +61,7 @@ float4 main( Conn IN ) : COLOR0
    float3 final_color = float3(0, 0, 0);
    for(int i = 1; i < 16; i++)
    {
-       float3 curPos = worldPos.rgb + (reflected * i * (matInfoSample.b));
+       float3 curPos = worldPos.rgb + (reflected * i * (matInfoSample.b*4));
        float3 volume_position = (curPos - volumeStart) / volumeSize;
        if ( volume_position.x < 0 || volume_position.x > 1 || 
             volume_position.y < 0 || volume_position.y > 1 || 

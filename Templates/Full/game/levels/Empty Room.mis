@@ -16,7 +16,8 @@ new SimGroup(MissionGroup) {
       canvasClearColor = "0 0 0 255";
       ambientLightBlendPhase = "1";
       ambientLightBlendCurve = "0 0 -1 -1";
-      advancedLightmapSupport = "0";
+      advancedLightmapSupport = "1";
+      LevelEnvMap = "DesertSkyCubemap";
       soundAmbience = "AudioAmbienceDefault";
       soundDistanceModel = "Linear";
       canSave = "1";
@@ -26,7 +27,7 @@ new SimGroup(MissionGroup) {
          levelName = "Empty Room";
    };
    new SkyBox(theSky) {
-      Material = "BlackSkyMat";
+      Material = "DesertSkyMat";
       drawBottom = "0";
       fogBandHeight = "0";
       position = "0 0 0";
