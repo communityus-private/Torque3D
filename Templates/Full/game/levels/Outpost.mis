@@ -16,7 +16,7 @@ new SimGroup(MissionGroup) {
       canvasClearColor = "233 220 143 255";
       ambientLightBlendPhase = "1";
       ambientLightBlendCurve = "0 0 -1 -1";
-      advancedLightmapSupport = "0";
+      advancedLightmapSupport = "1";
       LevelEnvMap = "DesertSkyCubemap";
       soundAmbience = "AudioAmbienceDefault";
       soundDistanceModel = "Linear";
