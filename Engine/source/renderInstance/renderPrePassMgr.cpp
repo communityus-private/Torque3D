@@ -183,7 +183,6 @@ bool RenderPrePassMgr::_updateTargets()
                         mTargetChain[i]->attachTexture(GFXTextureTarget::Color2, mMatInfoTarget.getTexture());
    }
 
-   GFX->finalizeReset();
 
    // Attach the light info buffer as a second render target, if there is
    // lightmapped geometry in the scene.
@@ -210,6 +209,7 @@ bool RenderPrePassMgr::_updateTargets()
    }
 
    _initShaders();
+   GFX->finalizeReset();
 
    return ret;
 }
