@@ -57,8 +57,10 @@ float4 main( Conn IN ) : COLOR0
    float3 reflected = normalize(reflect(normalEyeRay, wsNormal));
 
    float4 matInfoSample = tex2D( matInfoBuffer, IN.uv0 );
+   matInfoSample.b+=0.1;
    // Make 16 steps into the grid in search of color!
    float3 final_color = float3(0, 0, 0);
+   float blends = 0;
    for(int i = 1; i < 16; i++)
    {
        float3 curPos = worldPos.rgb + (reflected * i * (matInfoSample.b*4));
@@ -74,10 +76,10 @@ float4 main( Conn IN ) : COLOR0
        if ( length(color) > 0.0 )
        {
             final_color += color;
-            //break;
+			blends++;
        }
    }
-   final_color = final_color / 16;
+   final_color = final_color / blends;
 
    float3 colorSample = tex2D( colorBuffer, IN.uv0 ).rgb;
    
