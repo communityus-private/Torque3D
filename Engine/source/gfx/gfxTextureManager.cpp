@@ -793,12 +793,13 @@ GFXTextureObject *GFXTextureManager::createTexture(   U32 width,
                                                       U32 depth,
                                                       void *pixels,
                                                       GFXFormat format,
-                                                      GFXTextureProfile *profile )
+                                                      GFXTextureProfile *profile,
+                                                      U32 numMipLevels)
 {
    PROFILE_SCOPE( GFXTextureManager_CreateTexture_3D );
 
    // Create texture...
-   GFXTextureObject *ret = _createTextureObject( height, width, depth, format, profile, 1 );
+   GFXTextureObject *ret = _createTextureObject( height, width, depth, format, profile, numMipLevels );
 
    if(!ret)
    {
