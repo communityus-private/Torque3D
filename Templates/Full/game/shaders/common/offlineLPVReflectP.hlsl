@@ -63,7 +63,7 @@ float4 main( Conn IN ) : COLOR0
    float blends = 0;
    for(int i = 1; i < 16; i++)
    {
-       float3 curPos = worldPos.rgb + (reflected * i * (matInfoSample.b*4));
+       float3 curPos = worldPos.rgb + (reflected * i * 0.4);
        float3 volume_position = (curPos - volumeStart) / volumeSize;
        if ( volume_position.x < 0 || volume_position.x > 1 || 
             volume_position.y < 0 || volume_position.y > 1 || 
@@ -72,7 +72,7 @@ float4 main( Conn IN ) : COLOR0
             break; 
        }
 
-       float3 color = tex3D(lpvData, volume_position).rgb;
+       float3 color = tex3Dlod(lpvData, float4(volume_position,matInfoSample.b/8)).rgb;
        if ( length(color) > 0.0 )
        {
             final_color += color;
