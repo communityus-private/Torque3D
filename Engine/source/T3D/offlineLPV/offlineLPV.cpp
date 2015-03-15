@@ -1673,7 +1673,7 @@ void OfflineLPV::_initVolumeTextures(Point3I volumeSize)
 
    // 
    mPropagatedTexture.set(volumeSize.x, volumeSize.y, volumeSize.z, &buffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "OfflineLPV_Propagated");
-   mDirectLightTexture.set(volumeSize.x, volumeSize.y, volumeSize.z, &buffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "OfflineLPV_DirectLight");
+   mDirectLightTexture.set(volumeSize.x, volumeSize.y, volumeSize.z, &buffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "OfflineLPV_DirectLight",8);
 
    // Clean up buffer.
    SAFE_DELETE(buffer);
