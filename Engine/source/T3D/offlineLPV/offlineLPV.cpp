@@ -1546,35 +1546,64 @@ bool OfflineLPV::_setExportDirectLight( void *object, const char *index, const c
 // Note: for some reason the volume texture insists on being BGRA.
 void OfflineLPV::exportDirectLight(ColorF* pSource, Point3I* pSize)
 {
-   if ( !mLightGrid && !pSource ) return;
+   if (!mLightGrid && !pSource) return;
    Point3I size = pSize ? *pSize : getVoxelCount();
 
-   GFXLockedRect* locked_rect = mDirectLightTexture->lock();
-   if ( locked_rect )
-   {
-      U8* buffer = new U8[size.x * size.y * size.z * 4];
-      U32 pos = 0;
-      U32 bufPos = 0;
-      for(U32 z = 0; z < size.z; z++)
-      {
-         for(U32 y = 0; y < size.y; y++)
-         {
-            for(U32 x = 0; x < size.x; x++)
-            {
-               ColorI cell_color = pSource[pos];
-               pos++;
+   Point3I voxelCount = getVoxelCount();
 
-               buffer[bufPos]     = cell_color.blue;    // Blue
-               buffer[bufPos + 1] = cell_color.green;   // Green
-               buffer[bufPos + 2] = cell_color.red;     // Red
-               buffer[bufPos + 3] = 255;                // Alpha
-               bufPos += 4;
+   for (U32 mip = 0; mip < mDirectLightTexture->getMipLevels(); mip++)
+   {
+      GFXLockedRect* locked_rect = mDirectLightTexture->lock(mip);
+      if (locked_rect)
+      {
+         U32 mip_factor = (U32)mPow(2.0f, mip);
+         U32 buf_size = (size.x / mip_factor) * (size.y / mip_factor) * (size.z / mip_factor) * 4;
+         U8* buffer = new U8[buf_size];
+         U32 bufPos = 0;
+         for (U32 z = 0; z < (size.z / mip_factor); z++)
+         {
+            for (U32 y = 0; y < (size.y / mip_factor); y++)
+            {
+               for (U32 x = 0; x < (size.x / mip_factor); x++)
+               {
+                  ColorI cell_color = ColorI::ZERO;
+                  U32 cell_count = 0;
+                  for (U32 z_off = 0; z_off < mip_factor; z_off++)
+                  {
+                     for (U32 y_off = 0; y_off < mip_factor; y_off++)
+                     {
+                        for (U32 x_off = 0; x_off < mip_factor; x_off++)
+                        {
+                           S32 zSample = (z * mip_factor) + z_off;
+                           S32 ySample = (y * mip_factor) + y_off;
+                           S32 xSample = (x * mip_factor) + x_off;
+
+                           if (zSample < 0 || zSample >= voxelCount.z ||
+                              ySample < 0 || ySample >= voxelCount.y ||
+                              xSample < 0 || xSample >= voxelCount.x)
+                              continue;
+
+                           U32 sampleOffset = (voxelCount.x * voxelCount.y * zSample) + (voxelCount.x * ySample) + xSample;
+                           cell_color += pSource[sampleOffset];
+                           cell_count++;
+                        }
+                     }
+                  }
+
+                  cell_color = cell_color / cell_count;
+
+                  buffer[bufPos] = cell_color.blue;    // Blue
+                  buffer[bufPos + 1] = cell_color.green;   // Green
+                  buffer[bufPos + 2] = cell_color.red;     // Red
+                  buffer[bufPos + 3] = 255;                // Alpha
+                  bufPos += 4;
+               }
             }
          }
+         dMemcpy(locked_rect->bits, buffer, buf_size * sizeof(U8));
+         mDirectLightTexture->unlock(mip);
+         SAFE_DELETE(buffer);
       }
-      dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
-      mDirectLightTexture->unlock();
-      SAFE_DELETE(buffer);
    }
 }
 
