@@ -72,7 +72,7 @@ float4 main( Conn IN ) : COLOR0
             break; 
        }
 
-       float3 color = tex3Dlod(lpvData, float4(volume_position,matInfoSample.b/8)).rgb;
+       float3 color = tex3Dlod(lpvData, float4(volume_position,1.1+matInfoSample.b/8)).rgb;
        if ( length(color) > 0.0 )
        {
             final_color += color;
