@@ -352,6 +352,7 @@ void OfflineLPV::_rebuildDebugVoxels()
                if ( decoded_color.red > 0.0f || decoded_color.green > 0.0f || decoded_color.blue > 0.0f )
                {
                   d.color = decoded_color;
+                  d.color.alpha = getMax(getMax(decoded_color.red, decoded_color.green), decoded_color.blue);
                   mDebugVoxels.push_back(d);
                }
 
@@ -366,6 +367,7 @@ void OfflineLPV::_rebuildDebugVoxels()
                if ( decoded_color.red > 0.0f || decoded_color.green > 0.0f || decoded_color.blue > 0.0f )
                {
                   d.color = decoded_color;
+                  d.color.alpha = getMax(getMax(decoded_color.red, decoded_color.green), decoded_color.blue);
                   mDebugVoxels.push_back(d);
                }
 
@@ -464,7 +466,7 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
 
    GFXStateBlockDesc desc;
    desc.setZReadWrite( true, true );
-   desc.setBlend( false );
+   desc.setBlend( true );
    desc.setFillModeSolid();
 
    GFX->setStateBlockByDesc( desc );
