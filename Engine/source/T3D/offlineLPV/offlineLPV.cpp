@@ -55,6 +55,7 @@
 #include "core/fileObject.h"
 #include "math/mPolyhedron.impl.h"
 #include "lighting/advanced/advancedLightBinManager.h"
+#include "gfx/gfxTransformSaver.h"
 
 #include "gui/controls/guiTextCtrl.h"
 
@@ -1784,8 +1785,19 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
    GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
    if ( !prepassTexObject ) return;
 
+   GFXTransformSaver saver;
    // -- Setup screenspace quad to render (postfx) --
-   Frustum frustum = state->getCameraFrustum();
+   Frustum frustum;
+   if (state)
+      frustum = state->getCameraFrustum();
+   else
+   {
+      // If we don't have a scene state then setup
+      // a dummy frustum... you better not be depending
+      // on this being related to the camera in any way.
+
+      frustum = Frustum();
+   }
    GFXVertexBufferHandle<PFXVertex> vb;
    _updateScreenGeometry( frustum, &vb );
 
@@ -1892,8 +1904,19 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    GFXTextureObject *colorTexObject = mColorTarget->getTexture();
    if (!colorTexObject) return;
 
+   GFXTransformSaver saver;
    // -- Setup screenspace quad to render (postfx) --
-   Frustum frustum = state->getCameraFrustum();
+   Frustum frustum;
+   if (state)
+      frustum = state->getCameraFrustum();
+   else
+   {
+      // If we don't have a scene state then setup
+      // a dummy frustum... you better not be depending
+      // on this being related to the camera in any way.
+
+      frustum = Frustum();
+   }
    GFXVertexBufferHandle<PFXVertex> vb;
    _updateScreenGeometry( frustum, &vb );
 
