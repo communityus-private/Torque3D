@@ -17,7 +17,7 @@ new SimGroup(MissionGroup) {
       ambientLightBlendPhase = "1";
       ambientLightBlendCurve = "0 0 -1 -1";
       advancedLightmapSupport = "1";
-      LevelEnvMap = "DesertSkyCubemap";
+      LevelEnvMap = "nightCubemap";
       soundAmbience = "AudioAmbienceDefault";
       soundDistanceModel = "Linear";
       canSave = "1";
@@ -119,7 +119,7 @@ new SimGroup(MissionGroup) {
       alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
-      position = "0 0 0";
+      position = "0 0 0.0771861";
       rotation = "1 0 0 0";
       scale = "1 1 1";
       canSave = "1";

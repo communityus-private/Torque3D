@@ -57,13 +57,13 @@ float4 main( Conn IN ) : COLOR0
    float3 reflected = normalize(reflect(normalEyeRay, wsNormal));
 
    float4 matInfoSample = tex2D( matInfoBuffer, IN.uv0 );
-   matInfoSample.b+=0.1;
+   matInfoSample.b= (matInfoSample.b*0.8)+0.2; //need a minimum to avoid asymptotic results
    // Make 16 steps into the grid in search of color!
    float3 final_color = float3(0, 0, 0);
    float blends = 0;
    for(int i = 1; i < 16; i++)
    {
-       float3 curPos = worldPos.rgb + (reflected * i * 0.4);
+       float3 curPos = worldPos.rgb + (reflected * i * 0.3);
        float3 volume_position = (curPos - volumeStart) / volumeSize;
        if ( volume_position.x < 0 || volume_position.x > 1 || 
             volume_position.y < 0 || volume_position.y > 1 || 
@@ -72,7 +72,7 @@ float4 main( Conn IN ) : COLOR0
             break; 
        }
 
-       float3 color = tex3Dlod(lpvData, float4(volume_position,1.1+matInfoSample.b)).rgb;
+       float3 color = tex3Dlod(lpvData, float4(volume_position,matInfoSample.b)).rgb;
        if ( length(color) > 0.0 )
        {
             final_color += color;

@@ -12,21 +12,9 @@ singleton Material(CornellBox_cornell_grey)
 {
    mapTo = "cornell_grey";
    diffuseColor[0] = "0.996078 0.996078 0.996078 1";
-   roughness[0] = "1";
+   roughness[0] = "0";
    metalness[0] = "1";
    translucentBlendOp = "None";
-   materialTag0 = "Miscellaneous";
-};
-
-singleton Material(CornellBox_cornell_grey)
-{
-   mapTo = "cornell_grey";
-   diffuseColor[0] = "0.996078 0.996078 0.996078 1";
-   roughness[0] = "1";
-   metalness[0] = "1";
-   translucentBlendOp = "None";
-   effectColor[1] = "InvisibleBlack";
-   effectColor[0] = "0 0 0 0";
    materialTag0 = "Miscellaneous";
 };
 
@@ -34,8 +22,8 @@ singleton Material(CornellBox_cornell_green)
 {
    mapTo = "cornell_green";
    diffuseColor[0] = "0.00675477 0.64 0 1";
-   roughness[0] = "1";
-   metalness[0] = "0";
+   roughness[0] = "0";
+   metalness[0] = "1";
    translucentBlendOp = "None";
    materialTag0 = "Miscellaneous";
 };
