@@ -951,12 +951,7 @@ void OfflineLPV::regenVolume()
                                        Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
                                        if (diffuseTex != NULL)
                                        {
-                                          U32 w = diffuseTex->getWidth();
-                                          U32 h = diffuseTex->getHeight();
-
-                                          ColorI result;
-                                          diffuseTex->getColor(uv.x * w, uv.y * h, result);
-                                          voxel_color = result;
+                                          voxel_color = diffuseTex->sampleTexel(uv.x, uv.y);
                                        } else {
                                           voxel_color = mat->mDiffuse[0];
                                        }
@@ -999,12 +994,7 @@ void OfflineLPV::regenVolume()
                                           Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
                                           if (diffuseTex != NULL)
                                           {
-                                             U32 w = diffuseTex->getWidth();
-                                             U32 h = diffuseTex->getHeight();
-
-                                             ColorI result;
-                                             diffuseTex->getColor(uv.x * w, uv.y * h, result);
-                                             voxel_color = result;
+                                             voxel_color = diffuseTex->sampleTexel(uv.x, uv.y);
                                           } else {
                                              voxel_color = mat->mDiffuse[0];
                                           }
@@ -1058,12 +1048,7 @@ void OfflineLPV::regenVolume()
                                                 Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
                                                 if (diffuseTex != NULL)
                                                 {
-                                                   U32 w = diffuseTex->getWidth();
-                                                   U32 h = diffuseTex->getHeight();
-
-                                                   ColorI result;
-                                                   diffuseTex->getColor(uv.x * w, uv.y * h, result);
-                                                   voxel_color = result;
+                                                   voxel_color = diffuseTex->sampleTexel(uv.x, uv.y);
                                                 } else {
                                                    voxel_color = mat->mDiffuse[0];
                                                 }
