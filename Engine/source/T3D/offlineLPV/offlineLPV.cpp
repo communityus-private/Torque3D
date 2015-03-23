@@ -1409,6 +1409,7 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
             dest[pos].green = ColorF::ZERO;
             dest[pos].blue = ColorF::ZERO;
 
+            U32 blends = 0;
             // Sample from 6 faces of the cube and sum the attenuated results
             for ( U32 i = 0; i < 6; i++ )
             {
@@ -1434,7 +1435,11 @@ void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFrom
                dest[pos].red     += encoded_color.red;
                dest[pos].green   += encoded_color.green;
                dest[pos].blue    += encoded_color.blue;
+               blends++;
             }
+            dest[pos].red /= blends;
+            dest[pos].green /= blends;
+            dest[pos].blue /= blends;
 
             pos++;
          }
