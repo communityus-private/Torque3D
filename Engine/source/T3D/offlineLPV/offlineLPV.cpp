@@ -951,7 +951,7 @@ void OfflineLPV::regenVolume()
                                        Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
                                        if (diffuseTex != NULL)
                                        {
-                                          voxel_color = diffuseTex->sampleTexel(uv.x, uv.y);
+                                          voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
                                        } else {
                                           voxel_color = mat->mDiffuse[0];
                                        }
@@ -994,7 +994,7 @@ void OfflineLPV::regenVolume()
                                           Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
                                           if (diffuseTex != NULL)
                                           {
-                                             voxel_color = diffuseTex->sampleTexel(uv.x, uv.y);
+                                             voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
                                           } else {
                                              voxel_color = mat->mDiffuse[0];
                                           }
@@ -1048,7 +1048,7 @@ void OfflineLPV::regenVolume()
                                                 Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
                                                 if (diffuseTex != NULL)
                                                 {
-                                                   voxel_color = diffuseTex->sampleTexel(uv.x, uv.y);
+                                                   voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
                                                 } else {
                                                    voxel_color = mat->mDiffuse[0];
                                                 }
