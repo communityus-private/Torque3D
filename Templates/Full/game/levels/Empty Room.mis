@@ -110,8 +110,8 @@ new SimGroup(MissionGroup) {
       playAmbient = "1";
       meshCulling = "0";
       originSort = "0";
-      collisionType = "Collision Mesh";
-      decalType = "Collision Mesh";
+      collisionType = "Visible Mesh";
+      decalType = "Visible Mesh";
       allowPlayerStep = "1";
       alphaFadeEnable = "0";
       alphaFadeStart = "100";
@@ -157,7 +157,7 @@ new SimGroup(MissionGroup) {
       canSaveDynamicFields = "1";
    };
    new OfflineLPV() {
-      voxelSize = "0.5";
+      voxelSize = "0.25";
       regenVolume = "0";
       showVoxels = "0";
       lightIntensity = "1";
