@@ -740,6 +740,27 @@ bool OfflineLPV::_setRegenVolume( void *object, const char *index, const char *d
    return false;
 }
 
+Resource<GBitmap> OfflineLPV::getOrCreateTexture(FileName textureName)
+{
+
+   for (U32 i = 0; i< mTextureCache.size(); i++)
+   {
+      if (mTextureCache[i].mFileReference == textureName)
+         return mTextureCache[i].mTexture;
+   }
+
+   Resource<GBitmap> texture = GBitmap::load(textureName);
+   if (texture != NULL)
+   {
+      TextureCache entry;
+      entry.mFileReference = textureName;
+      entry.mTexture = texture;
+      mTextureCache.push_back(entry);
+   }
+
+   return NULL;
+}
+
 void OfflineLPV::regenVolume()
 {
    Box3F worldBox          = getWorldBox();
@@ -748,6 +769,7 @@ void OfflineLPV::regenVolume()
    Point3F wsVoxelSize     = getWorldSpaceVoxelSize();
    Point3I voxelCount      = getVoxelCount();
 
+   mTextureCache.clear();
    //get our editor status bar so we can keep tabs on progress
    GuiTextCtrl * statusBarGuiCtrl = dynamic_cast<GuiTextCtrl*>(Sim::findObject("EWorldEditorStatusBarInfo"));
    String statusBarGuiText = "";
@@ -948,7 +970,7 @@ void OfflineLPV::regenVolume()
                                     Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
                                     if (mat)
                                     {
-                                       Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                       Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
                                        if (diffuseTex != NULL)
                                        {
                                           voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
@@ -991,7 +1013,7 @@ void OfflineLPV::regenVolume()
                                        Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
                                        if (mat)
                                        {
-                                          Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                          Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
                                           if (diffuseTex != NULL)
                                           {
                                              voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
@@ -1045,7 +1067,7 @@ void OfflineLPV::regenVolume()
                                              Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
                                              if (mat)
                                              {
-                                                Resource<GBitmap> diffuseTex = GBitmap::load(mat->mDiffuseMapFilename[0]);
+                                                Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
                                                 if (diffuseTex != NULL)
                                                 {
                                                    voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
@@ -1090,6 +1112,7 @@ void OfflineLPV::regenVolume()
        statusBarGuiCtrl->setText(statusBarGuiText);
    }
 
+   mTextureCache.clear();
    //_rebuildDebugVoxels();
 }
 
@@ -1970,6 +1993,13 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
 void OfflineLPV::_updateScreenGeometry(   const Frustum &frustum,
                                           GFXVertexBufferHandle<PFXVertex> *outVB )
 {
+
+   // NOTE: GFXTransformSaver does not save/restore the frustum
+   // so we must save it here before we modify it.
+   F32 l, r, b, t, n, f;
+   bool ortho;
+   GFX->getFrustum(&l, &r, &b, &t, &n, &f, &ortho);
+
    outVB->set( GFX, 4, GFXBufferTypeVolatile );
 
    const Point3F *frustumPoints = frustum.getPoints();
@@ -2025,6 +2055,12 @@ void OfflineLPV::_updateScreenGeometry(   const Frustum &frustum,
    vert++;
 
    outVB->unlock();
+
+   // Restore frustum
+   if (!ortho)
+      GFX->setFrustum(l, r, b, t, n, f);
+   else
+      GFX->setOrtho(l, r, b, t, n, f);
 }
 
 //--- Final Volume Saving & Loading ---
