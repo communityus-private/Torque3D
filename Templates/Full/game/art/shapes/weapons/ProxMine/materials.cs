@@ -31,7 +31,11 @@ singleton Material(ProxMine_Base)
    pixelSpecular[0] = "0";
    useAnisotropic[0] = "1";
    materialTag0 = "Miscellaneous";
-   specularMap[0] = "art/shapes/weapons/ProxMine/ProxMine_S.dds";
+   roughMap[0] = "art/shapes/weapons/ProxMine/ProxMine_S.dds";
+   metalMap[0] = "art/shapes/weapons/ProxMine/ProxMine_S.dds";
+   metalChan[0] = "3";
+   specular0 = "0.9 0.9 0.9 1";
+   specularPower0 = "10";
 };
 
 singleton Material(ProxMine_Glow_Base)

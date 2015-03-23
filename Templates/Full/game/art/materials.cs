@@ -1,27 +1,28 @@
 singleton Material(CornellBox_cornell_red)
 {
    mapTo = "cornell_red";
-   diffuseColor[0] = "0.64 0.00124607 0 1";
+   diffuseColor[0] = "1 1 1 1";
    roughness[0] = "0";
    metalness[0] = "1";
-   translucentBlendOp = "None";
    materialTag0 = "Miscellaneous";
 };
 
 singleton Material(CornellBox_cornell_grey)
 {
    mapTo = "cornell_grey";
-   diffuseColor[0] = "0.996078 0.996078 0.996078 1";
+   diffuseColor[0] = "1 1 1 1";
    roughness[0] = "0";
    metalness[0] = "1";
    translucentBlendOp = "None";
    materialTag0 = "Miscellaneous";
+   diffuseMap[0] = "art/shapes/station/building01walls.png";
+   emissive[0] = "0";
 };
 
 singleton Material(CornellBox_cornell_green)
 {
    mapTo = "cornell_green";
-   diffuseColor[0] = "0.00675477 0.64 0 1";
+   diffuseColor[0] = "0 1 0 1";
    roughness[0] = "0";
    metalness[0] = "1";
    translucentBlendOp = "None";
