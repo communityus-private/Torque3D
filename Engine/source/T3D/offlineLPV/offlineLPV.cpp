@@ -822,7 +822,8 @@ void OfflineLPV::regenVolume()
             tempIndices.setSize(poly.vertexCount);
             dMemset(tempIndices.address(), 0, poly.vertexCount);
 
-            if (poly.type == OptimizedPolyList::TriangleStrip)
+            if (poly.type == OptimizedPolyList::TriangleStrip||
+               poly.type == OptimizedPolyList::TriangleFan)
             {
                tempIndices[0] = 0;
                U32 idx = 1;
@@ -833,8 +834,7 @@ void OfflineLPV::regenVolume()
                for (U32 k = ((poly.vertexCount - 1) & (~0x1)); k > 0; k -= 2)
                   tempIndices[idx++] = k;
             }
-            else if (poly.type == OptimizedPolyList::TriangleList ||
-               poly.type == OptimizedPolyList::TriangleFan)
+            else if (poly.type == OptimizedPolyList::TriangleList)
             {
                for (U32 k = 0; k < poly.vertexCount; k++)
                   tempIndices[k] = k;
