@@ -500,10 +500,8 @@ void OfflineLPV::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, B
 
       for (U32 b = 0; b < mDebugRender.wireMeshRender.bufferData.size(); b++)
       {
-         U32 indexCnt = mDebugRender.wireMeshRender.bufferData[b].triCount * 3;
          PrimBuild::begin(GFXTriangleList, mDebugRender.wireMeshRender.bufferData[b].triCount * 3);
 
-         U32 triCnt = mDebugRender.wireMeshRender.bufferData[b].triCount;
          for (U32 i = 0; i < mDebugRender.wireMeshRender.bufferData[b].triCount; i++)
          {
             pnt = &mDebugRender.wireMeshRender.bufferData[b].vertA[i];
@@ -689,7 +687,7 @@ void OfflineLPV::unpackUpdate( NetConnection *connection, BitStream *stream )
       {
          case 0:
             mPropagatedLightGrid = mPropagatedLightGridA;
-            propagateLights(mLightGrid, mPropagatedLightGrid, true);
+            propagateLights(mLightGrid, mPropagatedLightGrid);
             mPropagationStage = 1;
             break;
 
@@ -940,7 +938,6 @@ void OfflineLPV::regenVolume()
                      {
                         for (U32 z = zStart; z < zStart + zVoxCount; z++)
                         {
-                           bool newVoxel = false;
 
                            S32 voxIndex = getVoxelIndex(x, y, z);
                            if (voxIndex == -1)
@@ -1130,9 +1127,7 @@ Point3I OfflineLPV::getVoxel(Point3F position)
 
    Box3F voxBox = Box3F(bottom_corner + Point3F(mVoxelSize * index.x, mVoxelSize * index.y, mVoxelSize * index.z),
       bottom_corner + Point3F(mVoxelSize * (index.x + 1), mVoxelSize * (index.y + 1), mVoxelSize * (index.z + 1)));
-
-   bool correct = voxBox.isContained(position);
-
+   
    if (!voxBox.isContained(position))
       return Point3I(-1, -1, -1);
 
@@ -1412,7 +1407,7 @@ bool OfflineLPV::_setPropagateLights( void *object, const char *index, const cha
    return false;
 }
 
-void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFromGeometry)
+void OfflineLPV::propagateLights(SHVoxel* source, SHVoxel* dest)
 {
    if ( !mGeometryGrid || !source || !dest ) return;
 

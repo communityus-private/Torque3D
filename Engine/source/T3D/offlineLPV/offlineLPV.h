@@ -264,7 +264,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       void exportDirectLight(ColorF* pSource, Point3I* pSize = NULL);
       void exportDirectLight(SHVoxel* pSource, Point3I* pSize = NULL);
       F32  getAttenuation(LightInfo* lightInfo, Point3F position);
-      void propagateLights(SHVoxel* source, SHVoxel* dest, bool sampleFromGeometry = false);
+      void propagateLights(SHVoxel* source, SHVoxel* dest);
 
       Point3I getVoxel(Point3F position);
       S32 getVoxelIndex(U32 x, U32 y, U32 z)
