@@ -1698,6 +1698,10 @@ void OfflineLPV::_initShaders()
    mReflectShader          = NULL;
    mReflectShaderConsts    = NULL;
    mPrepassTarget          = NULL;
+   mLightInfoTarget        = NULL;
+   mMatInfoTarget          = NULL;
+   mColorTarget            = NULL;
+   mSSAOMaskTarget         = NULL;
 
    // Need depth from pre-pass, so get the macros
    Vector<GFXShaderMacro> macros;
