@@ -1708,7 +1708,6 @@ void OfflineLPV::_initShaders()
    Vector<GFXShaderMacro> macros;
 
    if ( !mPrepassTarget )
-      mPrepassTarget = NamedTexTarget::find( "prepass" );
       mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
 
    if ( mPrepassTarget )
