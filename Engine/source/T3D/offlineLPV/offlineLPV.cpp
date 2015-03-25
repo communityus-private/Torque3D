@@ -1397,6 +1397,7 @@ ColorF OfflineLPV::decodeSH(Point3F dir, SHVoxel sh)
    color.red = mDot(sh.red, coeffs);
    color.green = mDot(sh.green, coeffs);
    color.blue = mDot(sh.blue, coeffs);
+   color.alpha = (color.red + color.green + color.blue)/3;
    return color;
 }
 
@@ -1502,7 +1503,7 @@ void OfflineLPV::exportPropagatedLight(ColorF* pSource, Point3I* pSize)
                buffer[bufPos]     = cell_color.blue;    // Blue
                buffer[bufPos + 1] = cell_color.green;   // Green
                buffer[bufPos + 2] = cell_color.red;     // Red
-               buffer[bufPos + 3] = 255;                // Alpha
+               buffer[bufPos + 3] = cell_color.alpha;   // Alpha
                bufPos += 4;
             }
          }
@@ -1536,7 +1537,7 @@ void OfflineLPV::exportPropagatedLight(SHVoxel* pSource, Point3I* pSize)
                buffer[bufPos]     = cell_color.blue;    // Blue
                buffer[bufPos + 1] = cell_color.green;   // Green
                buffer[bufPos + 2] = cell_color.red;     // Red
-               buffer[bufPos + 3] = 255;                // Alpha
+               buffer[bufPos + 3] = cell_color.alpha;   // Alpha
                bufPos += 4;
             }
          }
@@ -1607,7 +1608,7 @@ void OfflineLPV::exportDirectLight(ColorF* pSource, Point3I* pSize)
                   buffer[bufPos] = cell_color.blue;    // Blue
                   buffer[bufPos + 1] = cell_color.green;   // Green
                   buffer[bufPos + 2] = cell_color.red;     // Red
-                  buffer[bufPos + 3] = 255;                // Alpha
+                  buffer[bufPos + 3] = cell_color.alpha;   // Alpha
                   bufPos += 4;
                }
             }
@@ -1642,7 +1643,7 @@ void OfflineLPV::exportDirectLight(SHVoxel* pSource, Point3I* pSize)
                buffer[bufPos]     = cell_color.blue;    // Blue
                buffer[bufPos + 1] = cell_color.green;   // Green
                buffer[bufPos + 2] = cell_color.red;     // Red
-               buffer[bufPos + 3] = 255;                // Alpha
+               buffer[bufPos + 3] = cell_color.alpha;   // Alpha
                bufPos += 4;
             }
          }

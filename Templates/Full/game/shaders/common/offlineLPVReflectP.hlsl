@@ -58,12 +58,17 @@ float4 main( Conn IN ) : COLOR0
 
    float4 matInfoSample = tex2D( matInfoBuffer, IN.uv0 );
    matInfoSample.b= (matInfoSample.b*0.8)+0.2; //need a minimum to avoid asymptotic results
-   // Make 32 steps into the grid in search of color!
-   float3 final_color = float3(0, 0, 0);
-   for(int i = 1; i < 32; i++)
+   
+   // Make 'raycast' into the grid in search of color!
+   float4 final_color = float4(0, 0, 0, 0);
+   float3 curPos, volume_position;
+   float4 voxelcolor;
+   float leng = pow(length(volumeSize),2);
+   float blends =1;
+   for(int i = 0; i < leng; i++)
    {
-       float3 curPos = worldPos.rgb + (reflected * i * 0.3);
-       float3 volume_position = (curPos - volumeStart) / volumeSize;
+	   curPos = worldPos.rgb + (reflected * i * 0.1);
+	   volume_position = (curPos - volumeStart) / volumeSize;
        if ( volume_position.x < 0 || volume_position.x > 1 || 
             volume_position.y < 0 || volume_position.y > 1 || 
             volume_position.z < 0 || volume_position.z > 1 )
@@ -71,17 +76,19 @@ float4 main( Conn IN ) : COLOR0
             break; 
        }
 
-       float3 color = tex3Dlod(lpvData, float4(volume_position,matInfoSample.b)).rgb;
-       if ( length(color) > 0.0 )
+       voxelcolor = tex3Dlod(lpvData, float4(volume_position,matInfoSample.b));
+       if ( voxelcolor.a > 0.0 )
        {
-            final_color += color;
+            final_color += voxelcolor;
+			blends+=i/leng;
+			//if (final_color.a >=1) break;
        }
    }
-
+   final_color /= blends;
    float3 colorSample = tex2D( colorBuffer, IN.uv0 ).rgb;
    
    final_color = pow(final_color,2.2); //linearize diffused reflections 
    
-   final_color = AL_CalcSpecular( colorSample, final_color, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
-   return float4(saturate(final_color), 0.0);
+   final_color.rgb = AL_CalcSpecular( colorSample, final_color.rgb, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
+   return float4(saturate(final_color.rgb), 0.0);
 }
