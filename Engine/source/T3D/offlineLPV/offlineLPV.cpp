@@ -56,6 +56,7 @@
 #include "math/mPolyhedron.impl.h"
 #include "lighting/advanced/advancedLightBinManager.h"
 #include "gfx/gfxTransformSaver.h"
+#include "renderInstance/renderPrePassMgr.h"
 
 #include "gui/controls/guiTextCtrl.h"
 
@@ -1708,6 +1709,7 @@ void OfflineLPV::_initShaders()
 
    if ( !mPrepassTarget )
       mPrepassTarget = NamedTexTarget::find( "prepass" );
+      mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
 
    if ( mPrepassTarget )
       mPrepassTarget->getShaderMacros( &macros );
@@ -1781,22 +1783,19 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
 
    // -- Setup Render Target --
    if ( !mRenderTarget )
-      mRenderTarget = GFX->allocRenderToTextureTarget();
-         
-   if ( !mRenderTarget ) return;
-
-   if ( !mLightInfoTarget )
-      mLightInfoTarget = NamedTexTarget::find( "lightinfo" );
-
+      mRenderTarget = GFX->allocRenderToTextureTarget();         
+   if (mRenderTarget.isNull()) return;
+   
+   mLightInfoTarget = NamedTexTarget::find(AdvancedLightBinManager::smBufferName);
+   if (!mLightInfoTarget) return;
    GFXTextureObject *texObject = mLightInfoTarget->getTexture();
    if ( !texObject ) return;
 
    mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
 
    // We also need to sample from the depth buffer.
-   if ( !mPrepassTarget )
-      mPrepassTarget = NamedTexTarget::find( "prepass" );
-
+   mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
+   if (!mPrepassTarget) return;
    GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
    if ( !prepassTexObject ) return;
 
@@ -1888,9 +1887,9 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
       mRenderTarget = GFX->allocRenderToTextureTarget();
          
    if ( !mRenderTarget ) return;
-
-   if ( !mLightInfoTarget )
-      mLightInfoTarget = NamedTexTarget::find( "lightinfo" );
+   
+   mLightInfoTarget = NamedTexTarget::find(AdvancedLightBinManager::smBufferName);
+   if ( !mLightInfoTarget ) return;
 
    GFXTextureObject *texObject = mLightInfoTarget->getTexture();
    if ( !texObject ) return;
@@ -1898,24 +1897,21 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
 
    // We need to sample from the depth buffer.
-   if ( !mPrepassTarget )
-      mPrepassTarget = NamedTexTarget::find( "prepass" );
-
+   mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
+   if ( !mPrepassTarget ) return;
    GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
    if ( !prepassTexObject ) return;
 
 
    // the material info buffer.
-   if ( !mMatInfoTarget )
-      mMatInfoTarget = NamedTexTarget::find( "matinfo" );
-
+   mMatInfoTarget = NamedTexTarget::find(RenderPrePassMgr::MatInfoBufferName);
+   if ( !mMatInfoTarget ) return;
    GFXTextureObject *matInfoTexObject = mMatInfoTarget->getTexture();
    if ( !matInfoTexObject ) return;
 
    // and the color buffer.
-   if ( !mColorTarget )
-      mColorTarget = NamedTexTarget::find( "color" );
-
+   mColorTarget = NamedTexTarget::find(RenderPrePassMgr::ColorBufferName);
+   if (!mColorTarget) return;
    GFXTextureObject *colorTexObject = mColorTarget->getTexture();
    if (!colorTexObject) return;
 
