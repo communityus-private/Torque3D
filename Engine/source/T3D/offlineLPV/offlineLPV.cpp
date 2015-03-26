@@ -1753,6 +1753,7 @@ void OfflineLPV::_initShaders()
    mRTParamsReflectSC      = mReflectShader->getShaderConstHandle( "$rtParams0" );
    mVolumeStartReflectSC   = mReflectShader->getShaderConstHandle( "$volumeStart" );
    mVolumeSizeReflectSC    = mReflectShader->getShaderConstHandle( "$volumeSize" );
+   mVoxelSizeReflectSC     = mReflectShader->getShaderConstHandle( "$voxelSize" );
 }
 
 void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
@@ -1956,6 +1957,7 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    Point3F volume_size = (top_corner - bottom_corner);
    mReflectShaderConsts->setSafe(mVolumeStartReflectSC, bottom_corner);
    mReflectShaderConsts->setSafe(mVolumeSizeReflectSC, volume_size);
+   mReflectShaderConsts->setSafe(mVoxelSizeReflectSC, mVoxelSize);
 
    // Render Target Parameters.
    const Point3I &targetSz = texObject->getSize();

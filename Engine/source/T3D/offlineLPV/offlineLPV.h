@@ -116,6 +116,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       GFXShaderConstHandle    *mRTParamsReflectSC;
       GFXShaderConstHandle    *mVolumeStartReflectSC;
       GFXShaderConstHandle    *mVolumeSizeReflectSC;
+      GFXShaderConstHandle    *mVoxelSizeReflectSC;
 
       // Configuratable volume resolution
       F32       mVoxelSize;

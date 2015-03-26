@@ -39,7 +39,8 @@ uniform float4x4 invViewMat;
 uniform float3 eyePosWorld;
 uniform float3 volumeStart;
 uniform float3 volumeSize;
-
+uniform float voxelSize;
+ 
 float4 main( Conn IN ) : COLOR0
 { 
    float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
@@ -64,27 +65,46 @@ float4 main( Conn IN ) : COLOR0
    float3 curPos, volume_position;
    float4 voxelcolor;
    float leng = pow(length(volumeSize),2);
-   float blends =1;
+   
+   float halfVoxelSize = ( 0.5 * voxelSize );
+   //euclidean distance from voxel centre to an tip of the voxel
+   float3 minStep;
+   minStep.x = minStep.y = minStep.z = sqrt( 3 * ( halfVoxelSize * halfVoxelSize ) ) + 0.001;
+   //make sure that each step leads to a new voxel
+   float step = ( 0.5 * voxelSize );
+   
+   int counterCutoff = 5;
+   int counter = 0;
+   
    for(int i = 0; i < leng; i++)
    {
-	   curPos = worldPos.rgb + (reflected * i * 0.1);
-	   volume_position = (curPos - volumeStart) / volumeSize;
-       if ( volume_position.x < 0 || volume_position.x > 1 || 
-            volume_position.y < 0 || volume_position.y > 1 || 
+           curPos = worldPos.rgb + (reflected * i * step ) + minStep;
+           volume_position = (curPos - volumeStart) / volumeSize;
+       if ( volume_position.x < 0 || volume_position.x > 1 ||
+            volume_position.y < 0 || volume_position.y > 1 ||
             volume_position.z < 0 || volume_position.z > 1 )
        {
             break; 
        }
 
        voxelcolor = tex3Dlod(lpvData, float4(volume_position,matInfoSample.b));
-       if ( voxelcolor.a > 0.0 )
+           
+       // if we want to add this voxels color
+       if ( voxelcolor.a > 0 )
        {
-            final_color += voxelcolor;
-			blends+=i/leng;
-			//if (final_color.a >=1) break;
+            float dist = length( curPos - worldPos.rgb );
+            float3 reweightedColor = voxelcolor.rgb / ( 1 + ( dist ) );
+            final_color += float4( reweightedColor, voxelcolor.a );
+                       
+            //counter++;
+                       
+            if ( counter >= counterCutoff )
+            {
+                break;
+            }
        }
    }
-   final_color /= blends;
+   
    float3 colorSample = tex2D( colorBuffer, IN.uv0 ).rgb;
    
    final_color = pow(final_color,2.2); //linearize diffused reflections 
