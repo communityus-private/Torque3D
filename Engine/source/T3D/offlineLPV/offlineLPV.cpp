@@ -1397,7 +1397,6 @@ ColorF OfflineLPV::decodeSH(Point3F dir, SHVoxel sh)
    color.red = mDot(sh.red, coeffs);
    color.green = mDot(sh.green, coeffs);
    color.blue = mDot(sh.blue, coeffs);
-   color.alpha = (color.red + color.green + color.blue)/3;
    return color;
 }
 
@@ -1643,7 +1642,7 @@ void OfflineLPV::exportDirectLight(SHVoxel* pSource, Point3I* pSize)
                buffer[bufPos]     = cell_color.blue;    // Blue
                buffer[bufPos + 1] = cell_color.green;   // Green
                buffer[bufPos + 2] = cell_color.red;     // Red
-               buffer[bufPos + 3] = cell_color.alpha;   // Alpha
+               buffer[bufPos + 3] = mGeometryGrid[pos].color.alpha;   // Alpha
                bufPos += 4;
             }
          }
@@ -2095,14 +2094,14 @@ bool OfflineLPV::save()
                dtsStream.write(decoded_direct.red);
                dtsStream.write(decoded_direct.green);
                dtsStream.write(decoded_direct.blue);
-               dtsStream.write(decoded_direct.alpha);
+               dtsStream.write(mGeometryGrid[pos].color.alpha);   // Alpha stores geometry 
 
                // Propagated Light
                ColorF decoded_prop = decodeSH(Point3F(0, 0, 0), mPropagatedLightGrid[pos]);
                dtsStream.write(decoded_prop.red);
                dtsStream.write(decoded_prop.green);
                dtsStream.write(decoded_prop.blue);
-               dtsStream.write(decoded_prop.alpha);
+               dtsStream.write(mGeometryGrid[pos].color.alpha);   // Alpha stores geometry
 
                pos++;
             }
