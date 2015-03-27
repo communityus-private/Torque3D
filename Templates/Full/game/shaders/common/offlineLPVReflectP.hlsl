@@ -87,7 +87,7 @@ float4 main( Conn IN ) : COLOR0
        if ( voxelcolor.a > 0 )
        {
             float dist = length( curPos - worldPos.rgb );
-            float3 reweightedColor = voxelcolor.rgb;// / ( 1 + ( dist ) );
+            float3 reweightedColor = voxelcolor.rgb / ( 1 + dist );
             final_color += float4( reweightedColor, voxelcolor.a );
 			
 			if ( final_color.a >= 1 )
@@ -96,8 +96,6 @@ float4 main( Conn IN ) : COLOR0
             }
        }
    }
-      
-   final_color = pow(final_color,2.2); //linearize diffused reflections 
    
    final_color.rgb = AL_CalcSpecular( float3(1,1,1), final_color.rgb, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
    return float4(saturate(final_color.rgb), 0.0);
