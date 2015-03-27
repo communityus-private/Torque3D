@@ -68,13 +68,13 @@ float4 main( Conn IN ) : COLOR0
    
    //make sure that each step leads to a new voxel
    float step = ( 0.5 * voxelSize );
-   float coeff = 4/(step);
+   float coeff = 1/(voxelSize);
    
    for(int i = leng/(length(volumeSize)*2); i < leng; i++)
    {
            curPos = worldPos.rgb + (reflected * i * step );
-           volume_position = (curPos - volumeStart) / volumeSize;
-		   volume_position = round(volume_position*coeff)/coeff;
+		   volume_position = round((curPos - volumeStart)*coeff)/coeff;
+           volume_position /= volumeSize;
        if ( volume_position.x < 0 || volume_position.x > 1 ||
             volume_position.y < 0 || volume_position.y > 1 ||
             volume_position.z < 0 || volume_position.z > 1 )
