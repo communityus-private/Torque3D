@@ -66,20 +66,15 @@ float4 main( Conn IN ) : COLOR0
    float4 voxelcolor;
    float leng = pow(length(volumeSize),2);
    
-   float halfVoxelSize = ( 0.5 * voxelSize );
-   //euclidean distance from voxel centre to an tip of the voxel
-   float3 minStep;
-   minStep.x = minStep.y = minStep.z = sqrt( 3 * ( halfVoxelSize * halfVoxelSize ) ) + 0.001;
    //make sure that each step leads to a new voxel
    float step = ( 0.5 * voxelSize );
+   float coeff = 4/(step);
    
-   int counterCutoff = 5;
-   int counter = 0;
-   
-   for(int i = 0; i < leng; i++)
+   for(int i = leng/(length(volumeSize)*2); i < leng; i++)
    {
-           curPos = worldPos.rgb + (reflected * i * step ) + minStep;
+           curPos = worldPos.rgb + (reflected * i * step );
            volume_position = (curPos - volumeStart) / volumeSize;
+		   volume_position = round(volume_position*coeff)/coeff;
        if ( volume_position.x < 0 || volume_position.x > 1 ||
             volume_position.y < 0 || volume_position.y > 1 ||
             volume_position.z < 0 || volume_position.z > 1 )
@@ -93,22 +88,18 @@ float4 main( Conn IN ) : COLOR0
        if ( voxelcolor.a > 0 )
        {
             float dist = length( curPos - worldPos.rgb );
-            float3 reweightedColor = voxelcolor.rgb / ( 1 + ( dist ) );
+            float3 reweightedColor = voxelcolor.rgb;// / ( 1 + ( dist ) );
             final_color += float4( reweightedColor, voxelcolor.a );
-                       
-            //counter++;
-                       
-            if ( counter >= counterCutoff )
+			
+			if ( final_color.a >= 1 )
             {
                 break;
             }
        }
    }
-   
-   float3 colorSample = tex2D( colorBuffer, IN.uv0 ).rgb;
-   
+      
    final_color = pow(final_color,2.2); //linearize diffused reflections 
    
-   final_color.rgb = AL_CalcSpecular( colorSample, final_color.rgb, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
+   final_color.rgb = AL_CalcSpecular( float3(1,1,1), final_color.rgb, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
    return float4(saturate(final_color.rgb), 0.0);
 }
