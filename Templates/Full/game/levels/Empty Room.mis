@@ -137,6 +137,7 @@ new SimGroup(MissionGroup) {
       animate = "1";
       animationPeriod = "1";
       animationPhase = "1";
+      flareType = "SunFlareExample";
       flareScale = "1";
       attenuationRatio = "0 1 1";
       shadowType = "DualParaboloidSinglePass";
@@ -185,6 +186,26 @@ new SimGroup(MissionGroup) {
       position = "0 0 5";
       rotation = "1 0 0 0";
       scale = "15 15 15";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new TSStatic() {
+      shapeName = "art/shapes/rocks/boulder.dts";
+      playAmbient = "1";
+      meshCulling = "0";
+      originSort = "0";
+      collisionType = "Collision Mesh";
+      decalType = "Collision Mesh";
+      allowPlayerStep = "1";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
+      renderNormals = "0";
+      forceDetail = "-1";
+      position = "-0.718881 0.691964 3.57557";
+      rotation = "1 0 0 0";
+      scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
    };

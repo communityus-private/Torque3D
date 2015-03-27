@@ -82,14 +82,6 @@ new SimGroup(MissionGroup) {
       canSave = "1";
       canSaveDynamicFields = "1";
    };
-   new LightProbeVolume() {
-      AreaEnvMap = "MipCubemap";
-      position = "6.14464 20.4314 243.065";
-      rotation = "1 0 0 0";
-      scale = "10 10 10";
-      canSave = "1";
-      canSaveDynamicFields = "1";
-   };
    new TSStatic() {
       shapeName = "art/shapes/rocks/boulder.dts";
       playAmbient = "1";
@@ -236,6 +228,21 @@ new SimGroup(MissionGroup) {
       scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
+   };
+   new ConvexShape() {
+      Material = "Grid512_OrangeLines_Mat";
+      position = "8.58057 11.6688 239.583";
+      rotation = "1 0 0 0";
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+
+      surface = "0 0 0 1 1.29457 -0.426427 0.5";
+      surface = "0 1 0 0 1.29457 -0.426427 -0.5";
+      surface = "0.707107 0 0 0.707107 1.29457 5.75621 0";
+      surface = "0 0.707107 -0.707107 0 1.29457 -6.60907 0";
+      surface = "0.5 0.5 -0.5 0.5 -3.35148 -0.426427 0";
+      surface = "0.5 -0.5 0.5 0.5 5.94063 -0.426427 0";
    };
 };
 //--- OBJECT WRITE END ---

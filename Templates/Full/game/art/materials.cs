@@ -13,10 +13,8 @@ singleton Material(CornellBox_cornell_grey)
    diffuseColor[0] = "1 1 1 1";
    roughness[0] = "0";
    metalness[0] = "1";
-   translucentBlendOp = "None";
    materialTag0 = "Miscellaneous";
    diffuseMap[0] = "art/shapes/station/building01walls.png";
-   emissive[0] = "0";
 };
 
 singleton Material(CornellBox_cornell_green)
@@ -25,7 +23,6 @@ singleton Material(CornellBox_cornell_green)
    diffuseColor[0] = "0 1 0 1";
    roughness[0] = "0";
    metalness[0] = "1";
-   translucentBlendOp = "None";
    materialTag0 = "Miscellaneous";
 };
    
