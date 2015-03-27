@@ -93,7 +93,6 @@ class OfflineLPV : public ScenePolyhedralSpace
       NamedTexTarget*         mPrepassTarget;
       NamedTexTarget*         mLightInfoTarget;
       NamedTexTarget*         mMatInfoTarget;
-      NamedTexTarget*         mColorTarget;
       NamedTexTarget*         mSSAOMaskTarget;
       GFXTextureTargetRef     mRenderTarget;
 

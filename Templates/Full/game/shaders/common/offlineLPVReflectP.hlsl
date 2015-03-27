@@ -34,7 +34,6 @@ struct Conn
 uniform sampler3D lpvData : register(S0);
 uniform sampler2D prePassBuffer : register(S1);
 uniform sampler2D matInfoBuffer : register(S2);
-uniform sampler2D colorBuffer : register(S3);
 uniform float4x4 invViewMat;
 uniform float3 eyePosWorld;
 uniform float3 volumeStart;

@@ -122,7 +122,6 @@ OfflineLPV::OfflineLPV()
    mLightInfoTarget        = NULL;
    mPrepassTarget          = NULL;
    mMatInfoTarget          = NULL;
-   mColorTarget            = NULL;
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
@@ -149,17 +148,16 @@ OfflineLPV::OfflineLPV()
 
 OfflineLPV::~OfflineLPV()
 {
-   SAFE_DELETE(mGeometryGrid);
-   SAFE_DELETE(mLightGrid);
-   SAFE_DELETE(mPropagatedLightGridA);
-   SAFE_DELETE(mPropagatedLightGridB);
+   SAFE_DELETE_ARRAY(mGeometryGrid);
+   SAFE_DELETE_ARRAY(mLightGrid);
+   SAFE_DELETE_ARRAY(mPropagatedLightGridA);
+   SAFE_DELETE_ARRAY(mPropagatedLightGridB);
 
    mPropagatedTexture      = NULL;
    mDirectLightTexture     = NULL;
    mLightInfoTarget        = NULL;
    mPrepassTarget          = NULL;
    mMatInfoTarget          = NULL;
-   mColorTarget            = NULL;
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
@@ -785,10 +783,10 @@ void OfflineLPV::regenVolume()
    if ( !container ) return;
 
    // Allocate our grids.
-   SAFE_DELETE(mGeometryGrid);
-   SAFE_DELETE(mLightGrid);
-   SAFE_DELETE(mPropagatedLightGridA);
-   SAFE_DELETE(mPropagatedLightGridB);
+   SAFE_DELETE_ARRAY(mGeometryGrid);
+   SAFE_DELETE_ARRAY(mLightGrid);
+   SAFE_DELETE_ARRAY(mPropagatedLightGridA);
+   SAFE_DELETE_ARRAY(mPropagatedLightGridB);
    mGeometryGrid           = new GeometryVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
    mLightGrid              = new SHVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
    mPropagatedLightGridA   = new SHVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
@@ -1509,7 +1507,7 @@ void OfflineLPV::exportPropagatedLight(ColorF* pSource, Point3I* pSize)
       }
       dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mPropagatedTexture->unlock();
-      SAFE_DELETE(buffer);
+      SAFE_DELETE_ARRAY(buffer);
    }
 }
 
@@ -1543,7 +1541,7 @@ void OfflineLPV::exportPropagatedLight(SHVoxel* pSource, Point3I* pSize)
       }
       dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mPropagatedTexture->unlock();
-      SAFE_DELETE(buffer);
+      SAFE_DELETE_ARRAY(buffer);
    }
 }
 
@@ -1614,7 +1612,7 @@ void OfflineLPV::exportDirectLight(ColorF* pSource, Point3I* pSize)
          }
          dMemcpy(locked_rect->bits, buffer, buf_size * sizeof(U8));
          mDirectLightTexture->unlock(mip);
-         SAFE_DELETE(buffer);
+         SAFE_DELETE_ARRAY(buffer);
       }
    }
 }
@@ -1649,7 +1647,7 @@ void OfflineLPV::exportDirectLight(SHVoxel* pSource, Point3I* pSize)
       }
       dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mDirectLightTexture->unlock();
-      SAFE_DELETE(buffer);
+      SAFE_DELETE_ARRAY(buffer);
    }
 }
 
@@ -1688,7 +1686,7 @@ void OfflineLPV::_initVolumeTextures(Point3I volumeSize)
    mDirectLightTexture.set(volumeSize.x, volumeSize.y, volumeSize.z, &buffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "OfflineLPV_DirectLight",0);
 
    // Clean up buffer.
-   SAFE_DELETE(buffer);
+   SAFE_DELETE_ARRAY(buffer);
 }
 
 void OfflineLPV::_initShaders()
@@ -1700,7 +1698,6 @@ void OfflineLPV::_initShaders()
    mPrepassTarget          = NULL;
    mLightInfoTarget        = NULL;
    mMatInfoTarget          = NULL;
-   mColorTarget            = NULL;
    mSSAOMaskTarget         = NULL;
 
    // Need depth from pre-pass, so get the macros
@@ -1907,13 +1904,7 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    if ( !mMatInfoTarget ) return;
    GFXTextureObject *matInfoTexObject = mMatInfoTarget->getTexture();
    if ( !matInfoTexObject ) return;
-
-   // and the color buffer.
-   mColorTarget = NamedTexTarget::find(RenderPrePassMgr::ColorBufferName);
-   if (!mColorTarget) return;
-   GFXTextureObject *colorTexObject = mColorTarget->getTexture();
-   if (!colorTexObject) return;
-
+   
    GFXTransformSaver saver;
    // -- Setup screenspace quad to render (postfx) --
    Frustum frustum;
@@ -1976,7 +1967,6 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    GFX->setTexture(0, mDirectLightTexture);
    GFX->setTexture(1, prepassTexObject);
    GFX->setTexture(2, matInfoTexObject);
-   GFX->setTexture(3, colorTexObject);
 
    // Draw the screenspace quad.
    GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
@@ -2166,8 +2156,8 @@ bool OfflineLPV::load()
       exportPropagatedLight(propagatedLightGrid, &size);
       exportDirectLight(directLightGrid, &size);
 
-      SAFE_DELETE(propagatedLightGrid);
-      SAFE_DELETE(directLightGrid);
+      SAFE_DELETE_ARRAY(propagatedLightGrid);
+      SAFE_DELETE_ARRAY(directLightGrid);
 
       return true;
    }
