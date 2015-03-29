@@ -33,10 +33,11 @@ float4 main( PFXVertToPix IN,
    float4 lightBuffer = tex2D( lightPrePassTex, IN.uv0 );
    float4 colorBuffer = tex2D( colorBufferTex, IN.uv0 );
    float4 matInfo = tex2D( matInfoTex, IN.uv0 );
-   float specular = saturate(lightBuffer.a);
-
+   
    colorBuffer *= float4(lightBuffer.rgb, 1.0);
-   colorBuffer += float4(specular, specular, specular, 1.0);
-
+   float3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * 0.92 * matInfo.a);
+   lightBuffer.rgb = lerp( 0.08 * lightBuffer.rgb, diffuseColor, matInfo.a );
+   colorBuffer.rgb =  diffuseColor + lightBuffer.rgb;
+   
    return hdrEncode( colorBuffer );   
 }

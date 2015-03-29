@@ -87,7 +87,7 @@ float4 main( Conn IN ) : COLOR0
        if ( voxelcolor.a > 0 )
        {
             float dist = length( curPos - worldPos.rgb );
-            float3 reweightedColor = voxelcolor.rgb / ( 1 + dist );
+            float3 reweightedColor = voxelcolor.rgb / ( 1 + dist*dist );
             final_color += float4( reweightedColor, voxelcolor.a );
 			
 			if ( final_color.a >= 1 )

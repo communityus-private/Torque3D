@@ -36,10 +36,11 @@ void main()
    vec4 lightBuffer = texture( lightPrePassTex, uv0 );
    vec4 colorBuffer = texture( colorBufferTex, uv0 );
    vec4 matInfo = texture( matInfoTex, uv0 );
-   float specular = clamp(lightBuffer.a,0.0,1.0);
-
+   
    colorBuffer *= vec4(lightBuffer.rgb, 1.0);
-   colorBuffer += vec4(specular, specular, specular, 1.0);
+   vec3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * 0.92 * matInfo.a);
+   lightBuffer.rgb = mix( 0.08 * lightBuffer.rgb, diffuseColor, matInfo.a );
+   colorBuffer.rgb =  diffuseColor + lightBuffer.rgb;
 
    OUT_col = hdrEncode( colorBuffer );
 }
