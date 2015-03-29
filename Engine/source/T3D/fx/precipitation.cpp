@@ -42,10 +42,11 @@
 #include "sfx/sfxTypes.h"
 #include "console/engineAPI.h"
 #include "particleEmitter.h"
+#include "postFx/postEffect.h"
 
 static const U32 dropHitMask = 
-   TerrainObjectType |
-   WaterObjectType |
+TerrainObjectType |
+WaterObjectType |
    StaticShapeObjectType;
 
 IMPLEMENT_CO_NETOBJECT_V1(Precipitation);
@@ -107,14 +108,14 @@ ConsoleDocClass( Precipitation,
 ConsoleDocClass( PrecipitationData,
    "@brief Defines the droplets used in a storm (raindrops, snowflakes, etc).\n\n"
    "@tsexample\n"
-   "datablock PrecipitationData( HeavyRain )\n"
-   "{\n"
-   "   soundProfile = \"HeavyRainSound\";\n"
-   "   dropTexture = \"art/environment/precipitation/rain\";\n"
-   "   splashTexture = \"art/environment/precipitation/water_splash\";\n"
+   "datablock PrecipitationData(HeavyRain)\n"
+	"{\n"
+	"   soundProfile = \"HeavyRainSound\";\n"
+	"   dropTexture = \"art/environment/precipitation/rain\";\n"
+	"   splashTexture = \"art/environment/precipitation/water_splash\";\n"
    "   dropsPerSide = 4;\n"
    "   splashesPerSide = 2;\n"
-   "};\n"
+	"};\n"
    "@endtsexample\n"
    "@ingroup FX\n"
    "@ingroup Atmosphere\n"
@@ -479,10 +480,10 @@ DefineEngineMethod(Precipitation, setPercentage, void, (F32 percentage), (1.0f),
    "over a period of time.\n"
    "@param percentage New maximum number of drops value (as a percentage of "
    "#numDrops). Valid range is 0-1.\n"
-   "@tsexample\n"
+													"@tsexample\n"
    "%percentage = 0.5;  // The percentage, from 0 to 1, of the maximum drops to display\n"
    "%precipitation.setPercentage( %percentage );\n"
-   "@endtsexample\n"
+													"@endtsexample\n"
    "@see modifyStorm\n" )
 {
    object->setPercentage(percentage);
@@ -497,11 +498,11 @@ DefineEngineMethod(Precipitation, modifyStorm, void, (F32 percentage, F32 second
    "#numDrops). Valid range is 0-1.\n"
    "@param seconds Length of time (in seconds) over which to increase the drops "
    "percentage value. Set to 0 to change instantly.\n"
-   "@tsexample\n"
+													"@tsexample\n"
    "%percentage = 0.5;  // The percentage, from 0 to 1, of the maximum drops to display\n"
    "%seconds = 5.0;     // The length of time over which to make the change.\n"
    "%precipitation.modifyStorm( %percentage, %seconds );\n"
-   "@endtsexample\n" )
+													"@endtsexample\n")
 {
    object->modifyStorm(percentage, S32(seconds * 1000.0f));
 }
@@ -512,12 +513,12 @@ DefineEngineMethod(Precipitation, setTurbulence, void, (F32 max, F32 speed, F32 
    "@param speed New #turbulenceSpeed value.\n"
    "@param seconds Length of time (in seconds) over which to interpolate the "
    "turbulence settings. Set to 0 to change instantly.\n"
-   "@tsexample\n"
+													"@tsexample\n"
    "%turbulence = 0.5;     // Set the new turbulence value. Set to 0 to disable turbulence.\n"
    "%speed = 5.0;          // The new speed of the turbulance effect.\n"
    "%seconds = 5.0;        // The length of time over which to make the change.\n"
    "%precipitation.setTurbulence( %turbulence, %speed, %seconds );\n"
-   "@endtsexample\n" )
+													"@endtsexample\n")
 {
    object->setTurbulence( max, speed, S32(seconds * 1000.0f));
 }
@@ -529,6 +530,11 @@ bool Precipitation::onAdd()
 {
    if(!Parent::onAdd())
       return false;
+
+   PostEffect* postfx;
+   Sim::findObject("WetnessPostFX", postfx);
+   if(postfx != NULL)
+	   postfx->enable();
 
    if (mFollowCam)
    {
@@ -557,6 +563,11 @@ void Precipitation::onRemove()
 {
    removeFromScene();
    Parent::onRemove();
+
+   PostEffect* postfx;
+   Sim::findObject("WetnessPostFX", postfx);
+   if(postfx != NULL)
+	   postfx->disable();
 
    SFX_DELETE( mAmbientSound );
 
@@ -1503,11 +1514,11 @@ void Precipitation::prepRenderImage(SceneRenderState* state)
 
    // This should be sufficient for most objects that don't manage zones, and
    // don't need to return a specialized RenderImage...
-   ObjectRenderInst *ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
-   ri->renderDelegate.bind(this, &Precipitation::renderObject);
-   ri->type = RenderPassManager::RIT_Foliage;
-   state->getRenderPass()->addInst( ri );
-}
+      ObjectRenderInst *ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
+      ri->renderDelegate.bind(this, &Precipitation::renderObject);
+      ri->type = RenderPassManager::RIT_Foliage;
+      state->getRenderPass()->addInst( ri );
+   }
 
 void Precipitation::renderObject(ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance* overrideMat)
 {
