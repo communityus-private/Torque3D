@@ -470,6 +470,7 @@ void ProcessedMaterial::_setStageData()
             inputKey[0] = mMaterial->mRoughnessChan[i];
             inputKey[1] = mMaterial->mAOChan[i];
             inputKey[2] = mMaterial->mMetalChan[i];
+            inputKey[3] = NULL;
             mStages[i].setTex(MFT_SpecularMap, _createCompositeTexture(mMaterial->mRoughMapFilename[i], mMaterial->mAOMapFilename[i],
                                                                        mMaterial->mMetalMapFilename[i], "",
                                                                        inputKey, &GFXDefaultStaticDiffuseProfile));
