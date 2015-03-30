@@ -11,6 +11,7 @@ uniform sampler2D prepassTex        : register(S0);
 uniform sampler2D lightPrePassTex   : register(S1);
 uniform sampler2D wetMap            : register(S2);
 uniform sampler2D colorBufferTex    : register(S3);
+uniform sampler2D matinfoBufferTex    : register(S4);
 
 uniform float accumTime             : register(C1);
 
@@ -37,9 +38,11 @@ float4 main( PFXVertToPix In ) : COLOR
    // Early out if too far away
    if ( depth > 0.99999999 )
       return float4(0, 0, 0, 0);
-      
+	float4 matinfo = tex2D( matinfoBufferTex, In.uv0 );
+    float flowspeed = accumTime*((1-matinfo.b)*2+0.1);
+	  
    // Get world space normals
-   float ang = dot(float(normal.x), float(normal.z));
+   float ang = dot(float(normal.x), float(normal.y));
    
    animate = 1;
    if(ang == 0 || ang <= 0.2)
@@ -51,14 +54,14 @@ float4 main( PFXVertToPix In ) : COLOR
    {
       wetUV = float3(wetUV.x,
                      wetUV.y,
-                     wetUV.z + accumTime); // Animate our UV
+                     wetUV.z + flowspeed); // Animate our UV
       wetness = tex2D( wetMap, (wetUV.xz + wetUV.yz) * 0.2 ).rgb;
    }
    else
    {
       wetUV = float3(wetUV.x,
                      wetUV.y,
-                     wetUV.z + accumTime * 0.1); // Animate our UV
+                     wetUV.z + flowspeed * 0.1); // Animate our UV
       wetness = tex2D( wetMap, (wetUV.xz + wetUV.yz + wetUV.xy) * 0.2 ).rgb;
    }
    
@@ -79,10 +82,10 @@ float4 main( PFXVertToPix In ) : COLOR
    lightinfoUncondition( tex2D( lightPrePassTex, In.uv0 ), lightcolor, nl_Att, specular );
    color = tex2D( colorBufferTex, In.uv0 );
    
-   float wetsum = (wetSpec1 + wetSpec2);
+   float wetsum = saturate(wetSpec1 + wetSpec2);
    float3 diffuseColor = color.rgb - (color.rgb * 0.92 * wetsum);
    lightcolor.rgb = lerp( 0.08 * lightcolor.rgb, diffuseColor, wetsum );
    color.rgb =  diffuseColor + lightcolor.rgb;   
    
-   return hdrEncode( color ); 
+   return float4(lightcolor.rgb, wetsum); 
 }

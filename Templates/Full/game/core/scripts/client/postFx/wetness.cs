@@ -50,7 +50,7 @@ singleton GFXStateBlockData( WetnessStateBlock : PFX_DefaultStateBlock )
    
    blendDefined = true;
    blendEnable = true; 
-   blendSrc = GFXBlendOne;
+   blendSrc = GFXBlendSrcAlpha;
    blendDest = GFXBlendOne;
 };
 
@@ -143,6 +143,7 @@ singleton PostEffect( WetnessPostFX )
    texture[1] = "#lightinfo";
    texture[2] = "wetMap.png";
    texture[3] = "#color";
+   texture[4] = "#matinfo";
    
    singleton PostEffect()
    {
