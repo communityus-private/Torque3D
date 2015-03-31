@@ -816,13 +816,7 @@ void OfflineLPV::regenVolume()
    S32 totalTris = 0;
 
    Vector<OptimizedPolyList> polyLists;
-
-   Vector<Point3F> triList;
-   Vector<Point2F> uvList;
-   Vector<S32> materialIdxList;
-   Vector<Material*> materialList;
-
-
+   
    SimpleQueryList sql;
    container->findObjects(worldBox, STATIC_COLLISION_TYPEMASK, SimpleQueryList::insertionCallback, &sql);
    for (U32 i = 0; i < sql.mList.size(); i++)
@@ -836,16 +830,17 @@ void OfflineLPV::regenVolume()
       totalTris += polyList.mPolyList.size();
    }
 
-   for (U32 i = 0; i < polyLists.size(); i++)
+   for (U32 j = 0; j < polyLists.size(); j++)
    {
-      if (!polyLists[i].isEmpty())
+      if (!polyLists[j].isEmpty())
       {
-         getPolyList(&polyLists[i], &triList, &uvList, &materialIdxList, &materialList);
+         getPolyList(&polyLists[j]);
       }
    }
 
+   U32 materialIndex = 0;
    //we have our relevent tris, so lets walk through them
-   for (U32 i = 0; i < triList.size();)
+   for (U32 i = 0; i < mTris.size();)
    {
       //can only do 65000 verts in a call, so split it up
       if (mDebugRender.wireMeshRender.bufferData.empty() || mDebugRender.wireMeshRender.bufferData.last().triCount >= 21666)
@@ -854,15 +849,15 @@ void OfflineLPV::regenVolume()
          mDebugRender.wireMeshRender.bufferData.push_back(newBufferData);
       }
 
-      Point3F vertA = triList[i];
-      Point3F vertB = triList[i+1];
-      Point3F vertC = triList[i+2];
+      Point3F vertA = mTris[i];
+      Point3F vertB = mTris[i + 1];
+      Point3F vertC = mTris[i + 2];
 
-      Point2F uvA = uvList[i];
-      Point2F uvB = uvList[i + 1];
-      Point2F uvC = uvList[i + 2];
+      Point2F uvA = mUVs[i];
+      Point2F uvB = mUVs[i + 1];
+      Point2F uvC = mUVs[i + 2];
 
-      S32 material = materialIdxList[i];
+      S32 material = mMaterialsIdx[materialIndex];
 
       mDebugRender.wireMeshRender.bufferData.last().triCount++;
       mDebugRender.wireMeshRender.bufferData.last().vertA.push_back(vertA);
@@ -885,7 +880,7 @@ void OfflineLPV::regenVolume()
       //get the voxels our tri's bounds overlap
       Point3I minExtIdx = getVoxel(triBox.minExtents);
       Point3I maxExtIdx = getVoxel(triBox.maxExtents);
-
+      //Con::errorf("Testing: [%f,%f,%f] to [%f,%f,%f]", triBox.minExtents.x, triBox.minExtents.y, triBox.minExtents.z, triBox.maxExtents.x, triBox.maxExtents.y, triBox.maxExtents.z);
       U32 xVoxCount = mAbs(maxExtIdx.x - minExtIdx.x);
       U32 yVoxCount = mAbs(maxExtIdx.y - minExtIdx.y);
       U32 zVoxCount = mAbs(maxExtIdx.z - minExtIdx.z);
@@ -932,7 +927,7 @@ void OfflineLPV::regenVolume()
                         if (containsVertB) uv = uvB;
                         if (containsVertC) uv = uvC;
 
-                        Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[material]->getMaterial());
+                        Material* mat = dynamic_cast<Material*>(mMaterials[material]);
                         if (mat)
                         {
                            Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
@@ -976,7 +971,7 @@ void OfflineLPV::regenVolume()
                            if (collideB) uv = uvB + (collideBPos * (uvC - uvB));
                            if (collideC) uv = uvC + (collideCPos * (uvA - uvC));
 
-                           Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[material]->getMaterial());
+                           Material* mat = dynamic_cast<Material*>(mMaterials[material]);
                            if (mat)
                            {
                               Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
@@ -1031,7 +1026,7 @@ void OfflineLPV::regenVolume()
 
                                  Point2F uv = (uvA * a1) + (uvB * a2) + (uvC * a3);
 
-                                 Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[material]->getMaterial());
+                                 Material* mat = dynamic_cast<Material*>(mMaterials[material]);
                                  if (mat)
                                  {
                                     Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
@@ -1059,17 +1054,15 @@ void OfflineLPV::regenVolume()
             }
          }
       }
-
       i += 3;
-
+      materialIndex++;
       /*processedTris++;
-
       if (statusBarGuiCtrl)
       {
-         char buff[256];
-         F32 percetile = processedTris / triList.size();
-         dSprintf(buff, 256, "Voxelizing Static Geometry. %g % complete.", percetile);
-         statusBarGuiCtrl->setText(buff);
+      char buff[256];
+      F32 percetile = processedTris / triList.size();
+      dSprintf(buff, 256, "Voxelizing Static Geometry. %g % complete.", percetile);
+      statusBarGuiCtrl->setText(buff);
       }*/
    }
 
@@ -2140,8 +2133,14 @@ U32 OfflineLPV::getTriCount(OptimizedPolyList *polyList)
    return polyList->mPolyList.size();
 }
 
-void OfflineLPV::getPolyList(OptimizedPolyList *polyList, Vector<Point3F> *tris, Vector<Point2F> *uvs, Vector<S32> *materialsIdx, Vector<Material*> *materials)
+void OfflineLPV::getPolyList(OptimizedPolyList *polyList)
 {
+   //these exist inside OfflineLPV the class
+   //Vector<Point3F> *mTris;
+   //Vector<Point2F> *mUVs;
+   //Vector<S32> *mMaterialsIdx;
+   //Vector<Material*> mMaterials;
+
    if (!polyList->isEmpty())
    {
       Vector<U32> tempIndices;
@@ -2198,25 +2197,25 @@ void OfflineLPV::getPolyList(OptimizedPolyList *polyList, Vector<Point3F> *tris,
             //first, test if any of the verts are contained in our world box. If they are, then intersection is guarenteed
             if (worldBox.isContained(vertA) || worldBox.isContained(vertB) || worldBox.isContained(vertC))
             {
-               tris->push_back(vertA);
-               tris->push_back(vertB);
-               tris->push_back(vertC);
+               mTris.push_back(vertA);
+               mTris.push_back(vertB);
+               mTris.push_back(vertC);
 
                Point2F uvA = polyList->mUV0s[firstVertIdx.uv0Idx];
                Point2F uvB = polyList->mUV0s[secondVertIdx.uv0Idx];
                Point2F uvC = polyList->mUV0s[thirdVertIdx.uv0Idx];
 
-               uvs->push_back(uvA);
-               uvs->push_back(uvB);
-               uvs->push_back(uvC);
+               mUVs.push_back(uvA);
+               mUVs.push_back(uvB);
+               mUVs.push_back(uvC);
 
                Material* mat = dynamic_cast<Material*>(polyList->mMaterialList[poly.material]->getMaterial());
 
                S32 foundMatIndex = -1;
-               for (U32 m = 0; m < materials->size(); m++)
+               for (U32 m = 0; m < mMaterials.size(); m++)
                {
                   //walk through the existing mat list as we only want unique instances
-                  Material* tmpMat = materials[m];
+                  Material* tmpMat = mMaterials[m];
                   if (tmpMat->getId() == mat->getId())
                   {
                      foundMatIndex = m;
@@ -2226,12 +2225,12 @@ void OfflineLPV::getPolyList(OptimizedPolyList *polyList, Vector<Point3F> *tris,
 
                if (foundMatIndex != -1)
                {
-                  materialsIdx->push_back(foundMatIndex);
+                  mMaterialsIdx.push_back(foundMatIndex);
                }
                else
                {
-                  materials->push_back(mat);
-                  materialsIdx->push_back(materials->size()-1);
+                  mMaterials.push_back(mat);
+                  mMaterialsIdx.push_back(mMaterials.size() - 1);
                }
             }
          }

@@ -216,6 +216,12 @@ class OfflineLPV : public ScenePolyhedralSpace
       Vector<TextureCache> mTextureCache;
       Resource<GBitmap> getOrCreateTexture(FileName textureName);
 
+      //storage vectors
+      Vector<Point3F> mTris;
+      Vector<Point2F> mUVs;
+      Vector<S32> mMaterialsIdx;
+      Vector<Material*> mMaterials;
+
    public:
 
       OfflineLPV();
@@ -309,7 +315,7 @@ class OfflineLPV : public ScenePolyhedralSpace
       static bool _setLoadResults( void *object, const char *index, const char *data );
 
       U32 getTriCount(OptimizedPolyList *polyList);
-      void getPolyList(OptimizedPolyList *polyList, Vector<Point3F> *tris, Vector<Point2F> *uvs, Vector<S32> *materialList, Vector<Material*> *materials);
+      void getPolyList(OptimizedPolyList *polyList);
 };
 
 #endif // !_OFFLINELPV_H_
