@@ -42,6 +42,7 @@
 #include "materials/matTextureTarget.h"
 #include "renderInstance/renderBinManager.h"
 #include "core/resourceManager.h"
+#include "materials/materialDefinition.h"
 
 GFX_DeclareTextureProfile( LPVProfile );
 
@@ -306,6 +307,9 @@ class OfflineLPV : public ScenePolyhedralSpace
       static bool _setExportDirectLight( void *object, const char *index, const char *data );
       static bool _setSaveResults( void *object, const char *index, const char *data );
       static bool _setLoadResults( void *object, const char *index, const char *data );
+
+      U32 getTriCount(OptimizedPolyList *polyList);
+      void getPolyList(OptimizedPolyList *polyList, Vector<Point3F> *tris, Vector<Point2F> *uvs, Vector<S32> *materialList, Vector<Material*> *materials);
 };
 
 #endif // !_OFFLINELPV_H_

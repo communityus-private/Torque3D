@@ -28,7 +28,7 @@
 #include "gfx/gfxDrawUtil.h"
 #include "gfx/sim/debugDraw.h"
 #include "util/tempAlloc.h"
-#include "materials/materialDefinition.h"
+//#include "materials/materialDefinition.h"
 #include "materials/materialManager.h"
 #include "materials/materialFeatureTypes.h"
 #include "materials/matInstance.h"
@@ -61,6 +61,7 @@
 #include "gui/controls/guiTextCtrl.h"
 
 #include "collision/optimizedPolyList.h"
+#include "collision/concretePolyList.h"
 
 IMPLEMENT_CO_NETOBJECT_V1( OfflineLPV );
 
@@ -816,6 +817,12 @@ void OfflineLPV::regenVolume()
 
    Vector<OptimizedPolyList> polyLists;
 
+   Vector<Point3F> triList;
+   Vector<Point2F> uvList;
+   Vector<S32> materialIdxList;
+   Vector<Material*> materialList;
+
+
    SimpleQueryList sql;
    container->findObjects(worldBox, STATIC_COLLISION_TYPEMASK, SimpleQueryList::insertionCallback, &sql);
    for (U32 i = 0; i < sql.mList.size(); i++)
@@ -833,280 +840,243 @@ void OfflineLPV::regenVolume()
    {
       if (!polyLists[i].isEmpty())
       {
-         Vector<U32> tempIndices;
-         tempIndices.reserve(4);
+         getPolyList(&polyLists[i], &triList, &uvList, &materialIdxList, &materialList);
+      }
+   }
 
-         for (U32 j = 0; j < polyLists[i].mPolyList.size(); j++)
+   //we have our relevent tris, so lets walk through them
+   for (U32 i = 0; i < triList.size();)
+   {
+      //can only do 65000 verts in a call, so split it up
+      if (mDebugRender.wireMeshRender.bufferData.empty() || mDebugRender.wireMeshRender.bufferData.last().triCount >= 21666)
+      {
+         DebugRenderStash::WireMeshData::data newBufferData;
+         mDebugRender.wireMeshRender.bufferData.push_back(newBufferData);
+      }
+
+      Point3F vertA = triList[i];
+      Point3F vertB = triList[i+1];
+      Point3F vertC = triList[i+2];
+
+      Point2F uvA = uvList[i];
+      Point2F uvB = uvList[i + 1];
+      Point2F uvC = uvList[i + 2];
+
+      S32 material = materialIdxList[i];
+
+      mDebugRender.wireMeshRender.bufferData.last().triCount++;
+      mDebugRender.wireMeshRender.bufferData.last().vertA.push_back(vertA);
+      mDebugRender.wireMeshRender.bufferData.last().vertB.push_back(vertB);
+      mDebugRender.wireMeshRender.bufferData.last().vertC.push_back(vertC);
+
+      PlaneF triPlane = PlaneF(vertA, vertB, vertC);
+
+      Point3F triCenter = (vertA + vertB + vertC) / 3;
+
+      Box3F triBox;
+
+      Vector<Point3F> verts;
+      verts.push_back(vertA);
+      verts.push_back(vertB);
+      verts.push_back(vertC);
+
+      triBox = Box3F::aroundPoints(verts.address(), verts.size());
+
+      //get the voxels our tri's bounds overlap
+      Point3I minExtIdx = getVoxel(triBox.minExtents);
+      Point3I maxExtIdx = getVoxel(triBox.maxExtents);
+
+      U32 xVoxCount = mAbs(maxExtIdx.x - minExtIdx.x);
+      U32 yVoxCount = mAbs(maxExtIdx.y - minExtIdx.y);
+      U32 zVoxCount = mAbs(maxExtIdx.z - minExtIdx.z);
+
+      xVoxCount = xVoxCount > 0 ? xVoxCount : 1;
+      yVoxCount = yVoxCount > 0 ? yVoxCount : 1;
+      zVoxCount = zVoxCount > 0 ? zVoxCount : 1;
+
+      U32 xStart = maxExtIdx.x > minExtIdx.x ? minExtIdx.x : maxExtIdx.x;
+      U32 yStart = maxExtIdx.y > minExtIdx.y ? minExtIdx.y : maxExtIdx.y;
+      U32 zStart = maxExtIdx.z > minExtIdx.z ? minExtIdx.z : maxExtIdx.z;
+
+      //now, iterate through the smaller subset of voxels that this encompasses, and test them. Early out if it isn't valid
+      for (U32 x = xStart; x < xStart + xVoxCount; x++)
+      {
+         for (U32 y = yStart; y < yStart + yVoxCount; y++)
          {
-            const OptimizedPolyList::Poly& poly = polyLists[i].mPolyList[j];
-
-            if (poly.vertexCount < 3)
-               continue;
-
-            tempIndices.setSize(poly.vertexCount);
-            dMemset(tempIndices.address(), 0, poly.vertexCount);
-
-            if (poly.type == OptimizedPolyList::TriangleStrip||
-               poly.type == OptimizedPolyList::TriangleFan)
+            for (U32 z = zStart; z < zStart + zVoxCount; z++)
             {
-               tempIndices[0] = 0;
-               U32 idx = 1;
 
-               for (U32 k = 1; k < poly.vertexCount; k += 2)
-                  tempIndices[idx++] = k;
+               S32 voxIndex = getVoxelIndex(x, y, z);
+               if (voxIndex == -1)
+                  continue;
 
-               for (U32 k = ((poly.vertexCount - 1) & (~0x1)); k > 0; k -= 2)
-                  tempIndices[idx++] = k;
-            }
-            else if (poly.type == OptimizedPolyList::TriangleList)
-            {
-               for (U32 k = 0; k < poly.vertexCount; k++)
-                  tempIndices[k] = k;
-            }
-            else
-               continue;
+               ColorF voxel_color = ColorF(0, 0, 0, 0);
+               bool emissive = false;
 
-            const U32& firstIdx = polyLists[i].mIndexList[poly.vertexStart];
-            const OptimizedPolyList::VertIndex& firstVertIdx = polyLists[i].mVertexList[firstIdx];
+               Box3F voxBox = Box3F(bottom_corner + Point3F(mVoxelSize * x, mVoxelSize * y, mVoxelSize * z),
+                  bottom_corner + Point3F(mVoxelSize * (x + 1), mVoxelSize * (y + 1), mVoxelSize * (z + 1)));
 
-            for (U32 k = 1; k < poly.vertexCount - 1; k++)
-            {
-               const U32& secondIdx = polyLists[i].mIndexList[poly.vertexStart + tempIndices[k]];
-               const U32& thirdIdx = polyLists[i].mIndexList[poly.vertexStart + tempIndices[k + 1]];
-
-               const OptimizedPolyList::VertIndex& secondVertIdx = polyLists[i].mVertexList[secondIdx];
-               const OptimizedPolyList::VertIndex& thirdVertIdx = polyLists[i].mVertexList[thirdIdx];
-
-               Point3F vertA = polyLists[i].mPoints[firstVertIdx.vertIdx];
-               Point3F vertB = polyLists[i].mPoints[secondVertIdx.vertIdx];
-               Point3F vertC = polyLists[i].mPoints[thirdVertIdx.vertIdx];
-               
-               Point2F uvA = polyLists[i].mUV0s[firstVertIdx.uv0Idx];
-               Point2F uvB = polyLists[i].mUV0s[secondVertIdx.uv0Idx];
-               Point2F uvC = polyLists[i].mUV0s[thirdVertIdx.uv0Idx];
-
-               //First, test if any of them are contained inside. If they are, we're done
-               if (worldBox.isContained(vertA) || worldBox.isContained(vertB) || worldBox.isContained(vertC))
+               if (triPlane.whichSide(voxBox) == PlaneF::Side::On)
                {
-                  //can only do 65000 verts in a call, so split it up
-                  if (mDebugRender.wireMeshRender.bufferData.empty() || mDebugRender.wireMeshRender.bufferData.last().triCount >= 21666)
+                  //early out test. If the box containts any or all of the verts, it's assumed to intersect
+                  bool containsVertA = voxBox.isContained(vertA);
+                  bool containsVertB = voxBox.isContained(vertB);
+                  bool containsVertC = voxBox.isContained(vertC);
+                  if (containsVertA || containsVertB || containsVertC)
                   {
-                     DebugRenderStash::WireMeshData::data newBufferData;
-                     mDebugRender.wireMeshRender.bufferData.push_back(newBufferData);
-                  }
-
-                  mDebugRender.wireMeshRender.bufferData.last().triCount++;
-                  mDebugRender.wireMeshRender.bufferData.last().vertA.push_back(vertA);
-                  mDebugRender.wireMeshRender.bufferData.last().vertB.push_back(vertB);
-                  mDebugRender.wireMeshRender.bufferData.last().vertC.push_back(vertC);
-
-                  PlaneF triPlane = PlaneF(vertA, vertB, vertC);
-
-                  Point3F triCenter = (vertA + vertB + vertC) / 3;
-
-                  Box3F triBox;
-
-                  Vector<Point3F> verts;
-                  verts.push_back(vertA);
-                  verts.push_back(vertB);
-                  verts.push_back(vertC);
-
-                  triBox = Box3F::aroundPoints(verts.address(), verts.size());
-
-                  //get the voxels our tri's bounds overlap
-                  Point3I minExtIdx = getVoxel(triBox.minExtents);
-                  Point3I maxExtIdx = getVoxel(triBox.maxExtents);
-
-                  U32 xVoxCount = mAbs(maxExtIdx.x - minExtIdx.x);
-                  U32 yVoxCount = mAbs(maxExtIdx.y - minExtIdx.y);
-                  U32 zVoxCount = mAbs(maxExtIdx.z - minExtIdx.z);
-
-                  xVoxCount = xVoxCount > 0 ? xVoxCount : 1;
-                  yVoxCount = yVoxCount > 0 ? yVoxCount : 1;
-                  zVoxCount = zVoxCount > 0 ? zVoxCount : 1;
-
-                  U32 xStart = maxExtIdx.x > minExtIdx.x ? minExtIdx.x : maxExtIdx.x;
-                  U32 yStart = maxExtIdx.y > minExtIdx.y ? minExtIdx.y : maxExtIdx.y;
-                  U32 zStart = maxExtIdx.z > minExtIdx.z ? minExtIdx.z : maxExtIdx.z;
-
-                  //now, iterate through the smaller subset of voxels that this encompasses, and test them. Early out if it isn't valid
-                  for (U32 x = xStart; x < xStart + xVoxCount; x++)
-                  {
-                     for (U32 y = yStart; y < yStart + yVoxCount; y++)
+                     voxel_color = ColorF(255, 255, 255, 255);
+                     if (material > -1)
                      {
-                        for (U32 z = zStart; z < zStart + zVoxCount; z++)
+                        Point2F uv;
+                        if (containsVertA) uv = uvA;
+                        if (containsVertB) uv = uvB;
+                        if (containsVertC) uv = uvC;
+
+                        Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[material]->getMaterial());
+                        if (mat)
                         {
-
-                           S32 voxIndex = getVoxelIndex(x, y, z);
-                           if (voxIndex == -1)
-                              continue;
-
-                           ColorF voxel_color = ColorF(0, 0, 0, 0);
-                           bool emissive = false;
-
-                           Box3F voxBox = Box3F(bottom_corner + Point3F(mVoxelSize * x, mVoxelSize * y, mVoxelSize * z),
-                              bottom_corner + Point3F(mVoxelSize * (x + 1), mVoxelSize * (y + 1), mVoxelSize * (z + 1)));
-
-                           if (triPlane.whichSide(voxBox) == PlaneF::Side::On)
+                           Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
+                           if (diffuseTex != NULL)
                            {
-                              //early out test. If the box containts any or all of the verts, it's assumed to intersect
-                              bool containsVertA = voxBox.isContained(vertA);
-                              bool containsVertB = voxBox.isContained(vertB);
-                              bool containsVertC = voxBox.isContained(vertC);
-                              if (containsVertA || containsVertB || containsVertC)
+                              voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
+                           }
+                           else {
+                              voxel_color = mat->mDiffuse[0];
+                           }
+
+                           emissive = mat->mEmissive[0];
+                        }
+                     }
+
+                     U32 voxelIdx = getVoxelIndex(x, y, z);
+                     mGeometryGrid[voxelIdx].color = voxel_color;
+                  }
+                  else
+                  {
+                     //first, test if any of the tri edges intersect the box
+                     F32 collideAPos;
+                     Point3F collideANorm;
+                     bool collideA = voxBox.collideLine(vertA, vertB, &collideAPos, &collideANorm);
+
+                     F32 collideBPos;
+                     Point3F collideBNorm;
+                     bool collideB = voxBox.collideLine(vertB, vertC, &collideBPos, &collideBNorm);
+
+                     F32 collideCPos;
+                     Point3F collideCNorm;
+                     bool collideC = voxBox.collideLine(vertC, vertA, &collideCPos, &collideCNorm);
+
+                     if (collideA || collideB || collideC)
+                     {
+                        voxel_color = ColorF(255, 255, 255, 255);
+                        if (material > -1)
+                        {
+                           Point2F uv;
+                           if (collideA) uv = uvA + (collideAPos * (uvB - uvA));
+                           if (collideB) uv = uvB + (collideBPos * (uvC - uvB));
+                           if (collideC) uv = uvC + (collideCPos * (uvA - uvC));
+
+                           Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[material]->getMaterial());
+                           if (mat)
+                           {
+                              Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
+                              if (diffuseTex != NULL)
                               {
-                                 voxel_color = ColorF(255, 255, 255, 255);
-                                 if ( poly.material > -1 )
-                                 {
-                                    Point2F uv;
-                                    if ( containsVertA ) uv = uvA;
-                                    if ( containsVertB ) uv = uvB;
-                                    if ( containsVertC ) uv = uvC;
-
-                                    Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
-                                    if (mat)
-                                    {
-                                       Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
-                                       if (diffuseTex != NULL)
-                                       {
-                                          voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
-                                       } else {
-                                          voxel_color = mat->mDiffuse[0];
-                                       }
-
-                                       emissive = mat->mEmissive[0];
-                                    }
-                                 }
-
-                                 U32 voxelIdx = getVoxelIndex(x, y, z);
-                                 mGeometryGrid[voxelIdx].color = voxel_color;
+                                 voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
                               }
-                              else
+                              else {
+                                 voxel_color = mat->mDiffuse[0];
+                              }
+
+                              emissive = mat->mEmissive[0];
+                           }
+                        }
+
+                        //indeed it does
+                        U32 voxelIdx = getVoxelIndex(x, y, z);
+                        mGeometryGrid[voxelIdx].color = voxel_color;
+                        mGeometryGrid[voxelIdx].emissive = emissive;
+                     }
+                     else
+                     {
+                        //it doesn't, so we have to test if the voxel intersects the tri(like in cases where the triangle is larger than the voxel)
+                        //we do this second because it requires more tests and is thus slower.
+                        for (U32 e = 0; e < BoxBase::Edges::NUM_EDGES; e++)
+                        {
+                           BoxBase::Points a, b;
+                           voxBox.getEdgePointIndices((BoxBase::Edges)e, a, b);
+
+                           Point3F edgeA = voxBox.computeVertex(a);
+                           Point3F edgeB = voxBox.computeVertex(b);
+
+                           Point3F intersect;
+
+                           if (triPlane.clipSegment(edgeA, edgeB, intersect))
+                              //if (MathUtils::mLineTriangleCollide(edgeA, edgeB, vertA, vertB, vertC, NULL, &t))
+                           {
+                              if (intersect == edgeA || intersect == edgeB)
+                                 continue;
+
+                              voxel_color = ColorF(255, 255, 255, 255);
+                              if (material > -1)
                               {
-                                 //first, test if any of the tri edges intersect the box
-                                 F32 collideAPos;
-                                 Point3F collideANorm;
-                                 bool collideA = voxBox.collideLine(vertA, vertB, &collideAPos, &collideANorm);
+                                 VectorF f1 = vertA - intersect;
+                                 VectorF f2 = vertB - intersect;
+                                 VectorF f3 = vertC - intersect;
 
-                                 F32 collideBPos;
-                                 Point3F collideBNorm;
-                                 bool collideB = voxBox.collideLine(vertB, vertC, &collideBPos, &collideBNorm);
+                                 F32 a = mCross(vertA - vertB, vertA - vertC).magnitudeSafe();
+                                 F32 a1 = mCross(f2, f3).magnitudeSafe() / a;
+                                 F32 a2 = mCross(f3, f1).magnitudeSafe() / a;
+                                 F32 a3 = mCross(f1, f2).magnitudeSafe() / a;
 
-                                 F32 collideCPos;
-                                 Point3F collideCNorm;
-                                 bool collideC = voxBox.collideLine(vertC, vertA, &collideCPos, &collideCNorm);
+                                 Point2F uv = (uvA * a1) + (uvB * a2) + (uvC * a3);
 
-                                 if (collideA || collideB || collideC)
+                                 Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[material]->getMaterial());
+                                 if (mat)
                                  {
-                                    voxel_color = ColorF(255, 255, 255, 255);
-                                    if ( poly.material > -1 )
+                                    Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
+                                    if (diffuseTex != NULL)
                                     {
-                                       Point2F uv;
-                                       if ( collideA ) uv = uvA + (collideAPos * (uvB - uvA));
-                                       if ( collideB ) uv = uvB + (collideBPos * (uvC - uvB));
-                                       if ( collideC ) uv = uvC + (collideCPos * (uvA - uvC));
-
-                                       Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
-                                       if (mat)
-                                       {
-                                          Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
-                                          if (diffuseTex != NULL)
-                                          {
-                                             voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
-                                          } else {
-                                             voxel_color = mat->mDiffuse[0];
-                                          }
-
-                                          emissive = mat->mEmissive[0];
-                                       }
+                                       voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
+                                    }
+                                    else {
+                                       voxel_color = mat->mDiffuse[0];
                                     }
 
-                                    //indeed it does
-                                    U32 voxelIdx = getVoxelIndex(x, y, z);
-                                    mGeometryGrid[voxelIdx].color = voxel_color;
-                                    mGeometryGrid[voxelIdx].emissive = emissive;
-                                 }
-                                 else
-                                 {
-                                    //it doesn't, so we have to test if the voxel intersects the tri(like in cases where the triangle is larger than the voxel)
-                                    //we do this second because it requires more tests and is thus slower.
-                                    for (U32 e = 0; e < BoxBase::Edges::NUM_EDGES; e++)
-                                    {
-                                       BoxBase::Points a, b;
-                                       voxBox.getEdgePointIndices((BoxBase::Edges)e, a, b);
-
-                                       Point3F edgeA = voxBox.computeVertex(a);
-                                       Point3F edgeB = voxBox.computeVertex(b);
-
-                                       Point3F intersect;
-
-                                       if (triPlane.clipSegment(edgeA, edgeB, intersect))
-                                          //if (MathUtils::mLineTriangleCollide(edgeA, edgeB, vertA, vertB, vertC, NULL, &t))
-                                       {
-                                          if (intersect == edgeA || intersect == edgeB)
-                                             continue;
-
-                                          voxel_color = ColorF(255, 255, 255, 255);
-                                          if ( poly.material > -1 )
-                                          {
-                                             VectorF f1 = vertA - intersect;
-                                             VectorF f2 = vertB - intersect;
-                                             VectorF f3 = vertC - intersect;
-
-                                             F32 a =  mCross(vertA - vertB, vertA - vertC).magnitudeSafe();
-                                             F32 a1 = mCross(f2, f3).magnitudeSafe() / a;
-                                             F32 a2 = mCross(f3, f1).magnitudeSafe() / a;
-                                             F32 a3 = mCross(f1, f2).magnitudeSafe() / a;
-
-                                             Point2F uv = (uvA * a1) + (uvB * a2) + (uvC * a3);
-
-                                             Material* mat = dynamic_cast<Material*>(polyLists[i].mMaterialList[poly.material]->getMaterial());
-                                             if (mat)
-                                             {
-                                                Resource<GBitmap> diffuseTex = getOrCreateTexture(mat->mDiffuseMapFilename[0]);
-                                                if (diffuseTex != NULL)
-                                                {
-                                                   voxel_color = diffuseTex->sampleTexel(uv.x, uv.y)*mat->mDiffuse[0];
-                                                } else {
-                                                   voxel_color = mat->mDiffuse[0];
-                                                }
-
-                                                emissive = mat->mEmissive[0];
-                                             }
-                                          }
-
-                                          U32 voxelIdx = getVoxelIndex(x, y, z);
-                                          mGeometryGrid[voxelIdx].color = voxel_color;
-                                          mGeometryGrid[voxelIdx].emissive = emissive;
-                                          break;
-                                       }
-                                    }
+                                    emissive = mat->mEmissive[0];
                                  }
                               }
+
+                              U32 voxelIdx = getVoxelIndex(x, y, z);
+                              mGeometryGrid[voxelIdx].color = voxel_color;
+                              mGeometryGrid[voxelIdx].emissive = emissive;
+                              break;
                            }
                         }
                      }
                   }
                }
             }
-
-            processedTris++;
-
-            if (statusBarGuiCtrl)
-            {
-               char buff[256];
-               F32 percetile = processedTris / totalTris;
-               dSprintf(buff, 256, "Voxelizing Static Geometry. %g % complete.", percetile);
-               statusBarGuiCtrl->setText(buff);
-            }
          }
       }
+
+      i += 3;
+
+      /*processedTris++;
+
+      if (statusBarGuiCtrl)
+      {
+         char buff[256];
+         F32 percetile = processedTris / triList.size();
+         dSprintf(buff, 256, "Voxelizing Static Geometry. %g % complete.", percetile);
+         statusBarGuiCtrl->setText(buff);
+      }*/
    }
 
-   if (statusBarGuiCtrl)
+   /*if (statusBarGuiCtrl)
    {
        statusBarGuiCtrl->setText(statusBarGuiText);
-   }
+   }*/
 
    mTextureCache.clear();
    //_rebuildDebugVoxels();
@@ -2163,4 +2133,108 @@ bool OfflineLPV::load()
    }
 
    return false;
+}
+
+U32 OfflineLPV::getTriCount(OptimizedPolyList *polyList)
+{
+   return polyList->mPolyList.size();
+}
+
+void OfflineLPV::getPolyList(OptimizedPolyList *polyList, Vector<Point3F> *tris, Vector<Point2F> *uvs, Vector<S32> *materialsIdx, Vector<Material*> *materials)
+{
+   if (!polyList->isEmpty())
+   {
+      Vector<U32> tempIndices;
+      tempIndices.reserve(4);
+
+      Box3F worldBox = getWorldBox();
+
+      for (U32 j = 0; j < polyList->mPolyList.size(); j++)
+      {
+         const OptimizedPolyList::Poly& poly = polyList->mPolyList[j];
+
+         if (poly.vertexCount < 3)
+            continue;
+
+         tempIndices.setSize(poly.vertexCount);
+         dMemset(tempIndices.address(), 0, poly.vertexCount);
+
+         if (poly.type == OptimizedPolyList::TriangleStrip ||
+            poly.type == OptimizedPolyList::TriangleFan)
+         {
+            tempIndices[0] = 0;
+            U32 idx = 1;
+
+            for (U32 k = 1; k < poly.vertexCount; k += 2)
+               tempIndices[idx++] = k;
+
+            for (U32 k = ((poly.vertexCount - 1) & (~0x1)); k > 0; k -= 2)
+               tempIndices[idx++] = k;
+         }
+         else if (poly.type == OptimizedPolyList::TriangleList)
+         {
+            for (U32 k = 0; k < poly.vertexCount; k++)
+               tempIndices[k] = k;
+         }
+         else
+            continue;
+
+         const U32& firstIdx = polyList->mIndexList[poly.vertexStart];
+         const OptimizedPolyList::VertIndex& firstVertIdx = polyList->mVertexList[firstIdx];
+
+         for (U32 k = 1; k < poly.vertexCount - 1; k++)
+         {
+            const U32& secondIdx = polyList->mIndexList[poly.vertexStart + tempIndices[k]];
+            const U32& thirdIdx = polyList->mIndexList[poly.vertexStart + tempIndices[k + 1]];
+
+            const OptimizedPolyList::VertIndex& secondVertIdx = polyList->mVertexList[secondIdx];
+            const OptimizedPolyList::VertIndex& thirdVertIdx = polyList->mVertexList[thirdIdx];
+
+            Point3F vertA = polyList->mPoints[firstVertIdx.vertIdx];
+            Point3F vertB = polyList->mPoints[secondVertIdx.vertIdx];
+            Point3F vertC = polyList->mPoints[thirdVertIdx.vertIdx];
+
+            //filter out irrelevent tris that never intersect our volume
+            //first, test if any of the verts are contained in our world box. If they are, then intersection is guarenteed
+            if (worldBox.isContained(vertA) || worldBox.isContained(vertB) || worldBox.isContained(vertC))
+            {
+               tris->push_back(vertA);
+               tris->push_back(vertB);
+               tris->push_back(vertC);
+
+               Point2F uvA = polyList->mUV0s[firstVertIdx.uv0Idx];
+               Point2F uvB = polyList->mUV0s[secondVertIdx.uv0Idx];
+               Point2F uvC = polyList->mUV0s[thirdVertIdx.uv0Idx];
+
+               uvs->push_back(uvA);
+               uvs->push_back(uvB);
+               uvs->push_back(uvC);
+
+               Material* mat = dynamic_cast<Material*>(polyList->mMaterialList[poly.material]->getMaterial());
+
+               S32 foundMatIndex = -1;
+               for (U32 m = 0; m < materials->size(); m++)
+               {
+                  //walk through the existing mat list as we only want unique instances
+                  Material* tmpMat = materials[m];
+                  if (tmpMat->getId() == mat->getId())
+                  {
+                     foundMatIndex = m;
+                     break;
+                  }
+               }
+
+               if (foundMatIndex != -1)
+               {
+                  materialsIdx->push_back(foundMatIndex);
+               }
+               else
+               {
+                  materials->push_back(mat);
+                  materialsIdx->push_back(materials->size()-1);
+               }
+            }
+         }
+      }
+   }
 }
