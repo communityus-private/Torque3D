@@ -880,7 +880,7 @@ void OfflineLPV::regenVolume()
       //get the voxels our tri's bounds overlap
       Point3I minExtIdx = getVoxel(triBox.minExtents);
       Point3I maxExtIdx = getVoxel(triBox.maxExtents);
-      //Con::errorf("Testing: [%f,%f,%f] to [%f,%f,%f]", triBox.minExtents.x, triBox.minExtents.y, triBox.minExtents.z, triBox.maxExtents.x, triBox.maxExtents.y, triBox.maxExtents.z);
+
       U32 xVoxCount = mAbs(maxExtIdx.x - minExtIdx.x);
       U32 yVoxCount = mAbs(maxExtIdx.y - minExtIdx.y);
       U32 zVoxCount = mAbs(maxExtIdx.z - minExtIdx.z);
@@ -1019,13 +1019,18 @@ void OfflineLPV::regenVolume()
                                  VectorF f2 = vertB - intersect;
                                  VectorF f3 = vertC - intersect;
 
-                                 F32 a = mCross(vertA - vertB, vertA - vertC).magnitudeSafe();
-                                 F32 a1 = mCross(f2, f3).magnitudeSafe() / a;
-                                 F32 a2 = mCross(f3, f1).magnitudeSafe() / a;
-                                 F32 a3 = mCross(f1, f2).magnitudeSafe() / a;
+                                 VectorF vecA = mCross(vertA - vertB, vertA - vertC);
+                                 VectorF vecA1 = mCross(f2, f3);
+                                 VectorF vecA2 = mCross(f3, f1);
+                                 VectorF vecA3 = mCross(f1, f2);
+
+                                 F32 a = vecA.magnitudeSafe();
+                                 F32 a1 = vecA1.magnitudeSafe() / a*mSign(mDot(vecA, vecA1));
+                                 F32 a2 = vecA2.magnitudeSafe() / a*mSign(mDot(vecA, vecA2));
+                                 F32 a3 = vecA3.magnitudeSafe() / a*mSign(mDot(vecA, vecA3));
 
                                  Point2F uv = (uvA * a1) + (uvB * a2) + (uvC * a3);
-
+                                 
                                  Material* mat = dynamic_cast<Material*>(mMaterials[material]);
                                  if (mat)
                                  {
