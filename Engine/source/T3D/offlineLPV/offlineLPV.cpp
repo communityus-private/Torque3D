@@ -151,19 +151,23 @@ OfflineLPV::~OfflineLPV()
 {
    SAFE_DELETE_ARRAY(mGeometryGrid);
    SAFE_DELETE_ARRAY(mLightGrid);
+   SAFE_DELETE_ARRAY(mPropagatedLightGrid);
    SAFE_DELETE_ARRAY(mPropagatedLightGridA);
    SAFE_DELETE_ARRAY(mPropagatedLightGridB);
 
    mPropagatedTexture      = NULL;
    mDirectLightTexture     = NULL;
-   mLightInfoTarget        = NULL;
+
    mPrepassTarget          = NULL;
+   mLightInfoTarget        = NULL;
    mMatInfoTarget          = NULL;
+   mSSAOMaskTarget         = NULL;
+   mRenderTarget           = NULL;
+
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
    mReflectShaderConsts    = NULL;
-   mRenderTarget           = NULL;
 }
 
 void OfflineLPV::initPersistFields()
