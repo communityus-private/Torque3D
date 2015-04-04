@@ -158,11 +158,31 @@ OfflineLPV::~OfflineLPV()
    mPropagatedTexture      = NULL;
    mDirectLightTexture     = NULL;
 
-   mPrepassTarget          = NULL;
-   mLightInfoTarget        = NULL;
-   mMatInfoTarget          = NULL;
-   mSSAOMaskTarget         = NULL;
-   mRenderTarget           = NULL;
+   if (mPrepassTarget)
+   {
+      mPrepassTarget->release();
+      mPrepassTarget = NULL;
+   }
+
+   if (mLightInfoTarget)
+   {
+      mLightInfoTarget->release();
+      mPrepassTarget = NULL;
+   }
+
+   if (mMatInfoTarget)
+   {
+      mMatInfoTarget->release();
+      mPrepassTarget = NULL;
+   }
+
+   if (mSSAOMaskTarget)
+   {
+      mSSAOMaskTarget->release();
+      mPrepassTarget = NULL;
+   }
+
+   mRenderTarget = NULL;
 
    mPropagatedShader       = NULL;
    mPropagatedShaderConsts = NULL;
