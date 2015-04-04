@@ -20,31 +20,49 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-singleton ShaderData( OfflineLPVPropagatedShaderData )
-{
-   DXVertexShaderFile     = "shaders/common/offlineLPVPropagatedV.hlsl";
-   DXPixelShaderFile      = "shaders/common/offlineLPVPropagatedP.hlsl";
-   
-   OGLVertexShaderFile    = "shaders/common/gl/offlineLPVPropagatedV.glsl";
-   OGLPixelShaderFile     = "shaders/common/gl/offlineLPVPropagatedP.glsl";  
-   
-   samplerNames[0] = "$lpvData";
-   samplerNames[1] = "$prePassBuffer";
-   samplerNames[2] = "$matInfoBuffer";
-   pixVersion = 3.0;
-};
+#include "hlslCompat.glsl"
+#include "shadergen:/autogenConditioners.h"
+#include "torque.glsl"
 
-singleton ShaderData( OfflineLPVReflectShaderData )
-{
-   DXVertexShaderFile     = "shaders/common/offlineLPVReflectV.hlsl";
-   DXPixelShaderFile      = "shaders/common/offlineLPVReflectP.hlsl"; 
+in vec4 IN_position;
+in vec2 IN_uv0;
+in vec3 IN_wsEyeRay;
+
+uniform sampler3D lpvData;
+uniform sampler2D prePassBuffer;
+
+#ifdef USE_SSAO_MASK
+uniform sampler2D ssaoMask;
+#endif
+
+uniform vec3 eyePosWorld;
+uniform vec3 volumeStart;
+uniform vec3 volumeSize;
+
+out vec4 OUT_col;
+
+void main()
+{ 
+   vec4 prepassSample = prepassUncondition( prePassBuffer, IN_uv0 );
+   vec3 normal = prepassSample.rgb;
+   float depth = prepassSample.a;
+
+   // Use eye ray to get ws pos
+   vec4 worldPos = vec4(eyePosWorld + IN_wsEyeRay * depth, 1.0f);
+
+   vec3 volume_position = (worldPos.xyz - volumeStart) / volumeSize;
+   if ( volume_position.x < 0 || volume_position.x > 1 || 
+        volume_position.y < 0 || volume_position.y > 1 || 
+        volume_position.z < 0 || volume_position.z > 1 )
+   {
+        OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
+		return;
+   }
    
-   OGLVertexShaderFile     = "shaders/common/gl/offlineLPVReflectV.glsl";
-   OGLPixelShaderFile      = "shaders/common/gl/offlineLPVReflectP.glsl"; 
-   
-   samplerNames[0] = "$lpvData";
-   samplerNames[1] = "$prePassBuffer";
-   samplerNames[2] = "$matInfoBuffer";  
-   
-   pixVersion = 3.0;
-};
+    vec4 color = texture(lpvData, volume_position);
+    #ifdef USE_SSAO_MASK
+		float ao = 1.0 - tex2D( ssaoMask, IN_uv0 ).r;
+		color = color * ao;
+	#endif
+	OUT_col = vec4(color.rgb, 0.0);
+}

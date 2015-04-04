@@ -20,31 +20,32 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-singleton ShaderData( OfflineLPVPropagatedShaderData )
-{
-   DXVertexShaderFile     = "shaders/common/offlineLPVPropagatedV.hlsl";
-   DXPixelShaderFile      = "shaders/common/offlineLPVPropagatedP.hlsl";
-   
-   OGLVertexShaderFile    = "shaders/common/gl/offlineLPVPropagatedV.glsl";
-   OGLPixelShaderFile     = "shaders/common/gl/offlineLPVPropagatedP.glsl";  
-   
-   samplerNames[0] = "$lpvData";
-   samplerNames[1] = "$prePassBuffer";
-   samplerNames[2] = "$matInfoBuffer";
-   pixVersion = 3.0;
-};
+#include "hlslCompat.glsl"
+#include "shadergen:/autogenConditioners.h"
+#include "torque.glsl"
 
-singleton ShaderData( OfflineLPVReflectShaderData )
+// This is the shader input vertex structure.
+in vec4 IN_position;
+in vec2 IN_uv0;
+in vec3 IN_wsEyeRay;
+
+
+// This is the shader output data.
+out vec4 OUT_position;
+out vec2 OUT_uv0;
+out vec3 OUT_wsEyeRay;
+
+// Render Target Paramaters (width/height of depth/light buffers)
+in vec4 rtParams0;
+uniform mat4  modelview;
+
+void main()	         
 {
-   DXVertexShaderFile     = "shaders/common/offlineLPVReflectV.hlsl";
-   DXPixelShaderFile      = "shaders/common/offlineLPVReflectP.hlsl"; 
+
+   OUT_uv0 = viewportCoordToRenderTarget( IN_uv0, rtParams0 );
+   OUT_wsEyeRay = IN_wsEyeRay;
    
-   OGLVertexShaderFile     = "shaders/common/gl/offlineLPVReflectV.glsl";
-   OGLPixelShaderFile      = "shaders/common/gl/offlineLPVReflectP.glsl"; 
-   
-   samplerNames[0] = "$lpvData";
-   samplerNames[1] = "$prePassBuffer";
-   samplerNames[2] = "$matInfoBuffer";  
-   
-   pixVersion = 3.0;
-};
+   gl_Position = IN_position;
+   correctSSP(gl_Position);
+}
+
