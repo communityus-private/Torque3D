@@ -23,15 +23,23 @@
 singleton ShaderData( OfflineLPVPropagatedShaderData )
 {
    DXVertexShaderFile     = "shaders/common/offlineLPVPropagatedV.hlsl";
-   DXPixelShaderFile      = "shaders/common/offlineLPVPropagatedP.hlsl";   
+   DXPixelShaderFile      = "shaders/common/offlineLPVPropagatedP.hlsl";
    
+   
+   samplerNames[0] = "$lpvData";
+   samplerNames[1] = "$prePassBuffer";
+   samplerNames[2] = "$matInfoBuffer";
    pixVersion = 3.0;
 };
 
 singleton ShaderData( OfflineLPVReflectShaderData )
 {
    DXVertexShaderFile     = "shaders/common/offlineLPVReflectV.hlsl";
-   DXPixelShaderFile      = "shaders/common/offlineLPVReflectP.hlsl";   
+   DXPixelShaderFile      = "shaders/common/offlineLPVReflectP.hlsl"; 
+   
+   samplerNames[0] = "$lpvData";
+   samplerNames[1] = "$prePassBuffer";
+   samplerNames[2] = "$matInfoBuffer";  
    
    pixVersion = 3.0;
 };
