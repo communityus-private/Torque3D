@@ -1724,6 +1724,10 @@ void OfflineLPV::_initShaders()
    mVolumeStartPropSC      = mPropagatedShader->getShaderConstHandle( "$volumeStart" );
    mVolumeSizePropSC       = mPropagatedShader->getShaderConstHandle( "$volumeSize" );
 
+   mPrepassSC              = mPropagatedShader->getShaderConstHandle("$prePassBuffer");
+   mPropagatedSC           = mPropagatedShader->getShaderConstHandle("$lpvData");
+   mSSAOMaskSC             = mPropagatedShader->getShaderConstHandle("$ssaoMask");
+
    // Load Reflection Shader
    if ( !Sim::findObject( "OfflineLPVReflectShaderData", shaderData ) )
    {
@@ -1742,6 +1746,8 @@ void OfflineLPV::_initShaders()
    mVolumeStartReflectSC   = mReflectShader->getShaderConstHandle( "$volumeStart" );
    mVolumeSizeReflectSC    = mReflectShader->getShaderConstHandle( "$volumeSize" );
    mVoxelSizeReflectSC     = mReflectShader->getShaderConstHandle( "$voxelSize" );
+   mDirectLightSC          = mReflectShader->getShaderConstHandle("$lpvData");
+   mMatInfoTexSC           = mReflectShader->getShaderConstHandle("$matInfoBuffer");
 }
 
 void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
@@ -1840,8 +1846,8 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
    GFX->setShaderConstBuffer(mPropagatedShaderConsts);
 
    // Setup Textures
-   GFX->setTexture(0, mPropagatedTexture);
-   GFX->setTexture(1, prepassTexObject);
+   GFX->setTexture(mPropagatedSC->getSamplerRegister(), mPropagatedTexture);
+   GFX->setTexture(mPrepassSC->getSamplerRegister(), prepassTexObject);
 
    // and SSAO mask
    if ( AdvancedLightBinManager::smUseSSAOMask )
@@ -1853,7 +1859,7 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
       {
          GFXTextureObject *SSAOMaskTexObject = mSSAOMaskTarget->getTexture();
          if ( SSAOMaskTexObject ) 
-            GFX->setTexture(2, SSAOMaskTexObject);
+            GFX->setTexture(mSSAOMaskSC->getSamplerRegister(), SSAOMaskTexObject);
       }
    }
 
@@ -1956,9 +1962,9 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    GFX->setShaderConstBuffer(mReflectShaderConsts);
 
    // Setup Textures
-   GFX->setTexture(0, mDirectLightTexture);
-   GFX->setTexture(1, prepassTexObject);
-   GFX->setTexture(2, matInfoTexObject);
+   GFX->setTexture(mDirectLightSC->getSamplerRegister(), mDirectLightTexture);
+   GFX->setTexture(mPrepassSC->getSamplerRegister(), prepassTexObject);
+   GFX->setTexture(mMatInfoTexSC->getSamplerRegister(), matInfoTexObject);
 
    // Draw the screenspace quad.
    GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
