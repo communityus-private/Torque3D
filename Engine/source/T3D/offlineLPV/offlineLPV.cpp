@@ -124,9 +124,7 @@ OfflineLPV::OfflineLPV()
    mPrepassTarget          = NULL;
    mMatInfoTarget          = NULL;
    mPropagatedShader       = NULL;
-   mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
-   mReflectShaderConsts    = NULL;
    mRenderTarget           = NULL;
    
 
@@ -185,9 +183,7 @@ OfflineLPV::~OfflineLPV()
    mRenderTarget = NULL;
 
    mPropagatedShader       = NULL;
-   mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
-   mReflectShaderConsts    = NULL;
 }
 
 void OfflineLPV::initPersistFields()
@@ -1684,9 +1680,7 @@ void OfflineLPV::_initVolumeTextures(Point3I volumeSize)
 void OfflineLPV::_initShaders()
 {
    mPropagatedShader       = NULL;
-   mPropagatedShaderConsts = NULL;
    mReflectShader          = NULL;
-   mReflectShaderConsts    = NULL;
    mPrepassTarget          = NULL;
    mLightInfoTarget        = NULL;
    mMatInfoTarget          = NULL;
@@ -1718,15 +1712,15 @@ void OfflineLPV::_initShaders()
    if ( !mPropagatedShader )
       return;
    
-   mPropagatedShaderConsts = mPropagatedShader->allocConstBuffer();
-   mEyePosWorldPropSC      = mPropagatedShader->getShaderConstHandle( "$eyePosWorld" );
-   mRTParamsPropSC         = mPropagatedShader->getShaderConstHandle( "$rtParams0" );
-   mVolumeStartPropSC      = mPropagatedShader->getShaderConstHandle( "$volumeStart" );
-   mVolumeSizePropSC       = mPropagatedShader->getShaderConstHandle( "$volumeSize" );
+   mPropagatedShaderConsts.mShaderConsts = mPropagatedShader->allocConstBuffer();
+   mPropagatedShaderConsts.mEyePosWorldPropSC = mPropagatedShader->getShaderConstHandle("$eyePosWorld");
+   mPropagatedShaderConsts.mRTParamsPropSC = mPropagatedShader->getShaderConstHandle("$rtParams0");
+   mPropagatedShaderConsts.mVolumeStartPropSC = mPropagatedShader->getShaderConstHandle("$volumeStart");
+   mPropagatedShaderConsts.mVolumeSizePropSC = mPropagatedShader->getShaderConstHandle("$volumeSize");
 
-   mPrepassSC              = mPropagatedShader->getShaderConstHandle("$prePassBuffer");
-   mPropagatedSC           = mPropagatedShader->getShaderConstHandle("$lpvData");
-   mSSAOMaskSC             = mPropagatedShader->getShaderConstHandle("$ssaoMask");
+   mPropagatedShaderConsts.mPrepassSC = mPropagatedShader->getShaderConstHandle("$prePassBuffer");
+   mPropagatedShaderConsts.mPropagatedSC = mPropagatedShader->getShaderConstHandle("$lpvData");
+   mPropagatedShaderConsts.mSSAOMaskSC = mPropagatedShader->getShaderConstHandle("$ssaoMask");
 
    // Load Reflection Shader
    if ( !Sim::findObject( "OfflineLPVReflectShaderData", shaderData ) )
@@ -1739,15 +1733,17 @@ void OfflineLPV::_initShaders()
    if ( !mReflectShader )
       return ;
 
-   mReflectShaderConsts    = mReflectShader->allocConstBuffer();
-   mInverseViewReflectSC   = mReflectShader->getShaderConstHandle( "$invViewMat" );
-   mEyePosWorldReflectSC   = mReflectShader->getShaderConstHandle( "$eyePosWorld" );
-   mRTParamsReflectSC      = mReflectShader->getShaderConstHandle( "$rtParams0" );
-   mVolumeStartReflectSC   = mReflectShader->getShaderConstHandle( "$volumeStart" );
-   mVolumeSizeReflectSC    = mReflectShader->getShaderConstHandle( "$volumeSize" );
-   mVoxelSizeReflectSC     = mReflectShader->getShaderConstHandle( "$voxelSize" );
-   mDirectLightSC          = mReflectShader->getShaderConstHandle("$lpvData");
-   mMatInfoTexSC           = mReflectShader->getShaderConstHandle("$matInfoBuffer");
+   mReflectShaderConsts.mShaderConsts    = mReflectShader->allocConstBuffer();
+   mReflectShaderConsts.mInverseViewReflectSC = mReflectShader->getShaderConstHandle("$invViewMat");
+   mReflectShaderConsts.mEyePosWorldReflectSC = mReflectShader->getShaderConstHandle("$eyePosWorld");
+   mReflectShaderConsts.mRTParamsReflectSC = mReflectShader->getShaderConstHandle("$rtParams0");
+   mReflectShaderConsts.mVolumeStartReflectSC = mReflectShader->getShaderConstHandle("$volumeStart");
+   mReflectShaderConsts.mVolumeSizeReflectSC = mReflectShader->getShaderConstHandle("$volumeSize");
+   mReflectShaderConsts.mVoxelSizeReflectSC = mReflectShader->getShaderConstHandle("$voxelSize");
+
+   mReflectShaderConsts.mPrepassSC = mReflectShader->getShaderConstHandle("$prePassBuffer");
+   mReflectShaderConsts.mDirectLightSC = mReflectShader->getShaderConstHandle("$lpvData");
+   mReflectShaderConsts.mMatInfoTexSC = mReflectShader->getShaderConstHandle("$matInfoBuffer");
 }
 
 void OfflineLPV::_handleBinEvent(   RenderBinManager *bin,                           
@@ -1774,25 +1770,7 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
 {
    if ( !mPropagatedTexture || !isClientObject() ) 
       return;
-
-   // -- Setup Render Target --
-   if ( !mRenderTarget )
-      mRenderTarget = GFX->allocRenderToTextureTarget();         
-   if (mRenderTarget.isNull()) return;
-   
-   mLightInfoTarget = NamedTexTarget::find(AdvancedLightBinManager::smBufferName);
-   if (!mLightInfoTarget) return;
-   GFXTextureObject *texObject = mLightInfoTarget->getTexture();
-   if ( !texObject ) return;
-
-   mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
-
-   // We also need to sample from the depth buffer.
-   mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
-   if (!mPrepassTarget) return;
-   GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
-   if ( !prepassTexObject ) return;
-
+      
    GFXTransformSaver saver;
    // -- Setup screenspace quad to render (postfx) --
    Frustum frustum;
@@ -1821,45 +1799,56 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
 
    // Camera position, used to calculate World Space position from depth buffer.
    const Point3F &camPos = state->getCameraPosition();
-   mPropagatedShaderConsts->setSafe( mEyePosWorldPropSC, camPos );
+   mPropagatedShaderConsts.mShaderConsts->setSafe(mPropagatedShaderConsts.mEyePosWorldPropSC, camPos);
 
    // Volume position, used to calculate UV sampling.
    Box3F worldBox = getWorldBox();
    Point3F bottom_corner = worldBox.minExtents;
    Point3F top_corner = worldBox.maxExtents;
    Point3F volume_size = (top_corner - bottom_corner);
-   mPropagatedShaderConsts->setSafe(mVolumeStartPropSC, bottom_corner);
-   mPropagatedShaderConsts->setSafe(mVolumeSizePropSC, volume_size);
-
+   mPropagatedShaderConsts.mShaderConsts->setSafe(mPropagatedShaderConsts.mVolumeStartPropSC, bottom_corner);
+   mPropagatedShaderConsts.mShaderConsts->setSafe(mPropagatedShaderConsts.mVolumeSizePropSC, volume_size);
+   
+   GFX->pushActiveRenderTarget();
+   // -- Setup Render Target --
+   if (!mRenderTarget)
+      mRenderTarget = GFX->allocRenderToTextureTarget();
+   if (mRenderTarget.isNull()) return;
+   
    // Render Target Parameters.
+   mLightInfoTarget = NamedTexTarget::find(AdvancedLightBinManager::smBufferName);
+   GFXTextureObject *texObject = mLightInfoTarget ? mLightInfoTarget->getTexture(0) : NULL;
+   mRenderTarget->attachTexture(GFXTextureTarget::Color0, texObject);
+
    const Point3I &targetSz = texObject->getSize();
-   const RectI &targetVp = mLightInfoTarget->getViewport();
+   const RectI &targetVp = mLightInfoTarget ? mLightInfoTarget->getViewport() : RectI::Zero;
    Point4F rtParams;
    ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
-   mPropagatedShaderConsts->setSafe(mRTParamsPropSC, rtParams);
+   mPropagatedShaderConsts.mShaderConsts->setSafe(mPropagatedShaderConsts.mRTParamsPropSC, rtParams);
 
-   GFX->pushActiveRenderTarget();
    GFX->setActiveRenderTarget( mRenderTarget );
    GFX->setVertexBuffer( vb );
    GFX->setStateBlockByDesc( desc );
    GFX->setShader(mPropagatedShader);
-   GFX->setShaderConstBuffer(mPropagatedShaderConsts);
+   GFX->setShaderConstBuffer(mPropagatedShaderConsts.mShaderConsts);
 
-   // Setup Textures
-   GFX->setTexture(mPropagatedSC->getSamplerRegister(), mPropagatedTexture);
-   GFX->setTexture(mPrepassSC->getSamplerRegister(), prepassTexObject);
+   // Setup Output Texture
+   GFX->setTexture(mPropagatedShaderConsts.mPropagatedSC->getSamplerRegister(), mPropagatedTexture);
+
+   // We also need to sample from the depth buffer.
+   mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
+   GFXTextureObject *prepassTexObject = mPrepassTarget ? mPrepassTarget->getTexture(0) : NULL;
+   GFX->setTexture(mPropagatedShaderConsts.mPrepassSC->getSamplerRegister(), prepassTexObject);
 
    // and SSAO mask
    if ( AdvancedLightBinManager::smUseSSAOMask )
    {
       if ( !mSSAOMaskTarget )
          mSSAOMaskTarget = NamedTexTarget::find( "ssaoMask");
-
       if ( mSSAOMaskTarget )
       {
-         GFXTextureObject *SSAOMaskTexObject = mSSAOMaskTarget->getTexture();
-         if ( SSAOMaskTexObject ) 
-            GFX->setTexture(mSSAOMaskSC->getSamplerRegister(), SSAOMaskTexObject);
+         GFXTextureObject *SSAOMaskTexObject = mSSAOMaskTarget ? mSSAOMaskTarget->getTexture(0) : NULL;
+         GFX->setTexture(mPropagatedShaderConsts.mSSAOMaskSC->getSamplerRegister(), SSAOMaskTexObject);
       }
    }
 
@@ -1881,28 +1870,7 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
       mRenderTarget = GFX->allocRenderToTextureTarget();
          
    if ( !mRenderTarget ) return;
-   
-   mLightInfoTarget = NamedTexTarget::find(AdvancedLightBinManager::smBufferName);
-   if ( !mLightInfoTarget ) return;
-
-   GFXTextureObject *texObject = mLightInfoTarget->getTexture();
-   if ( !texObject ) return;
-
-   mRenderTarget->attachTexture( GFXTextureTarget::Color0, texObject );
-
-   // We need to sample from the depth buffer.
-   mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
-   if ( !mPrepassTarget ) return;
-   GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
-   if ( !prepassTexObject ) return;
-
-
-   // the material info buffer.
-   mMatInfoTarget = NamedTexTarget::find(RenderPrePassMgr::MatInfoBufferName);
-   if ( !mMatInfoTarget ) return;
-   GFXTextureObject *matInfoTexObject = mMatInfoTarget->getTexture();
-   if ( !matInfoTexObject ) return;
-   
+      
    GFXTransformSaver saver;
    // -- Setup screenspace quad to render (postfx) --
    Frustum frustum;
@@ -1931,40 +1899,52 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
 
    // Camera position, used to calculate World Space position from depth buffer.
    const Point3F &camPos = state->getCameraPosition();
-   mReflectShaderConsts->setSafe( mEyePosWorldReflectSC, camPos );
+   mReflectShaderConsts.mShaderConsts->setSafe(mReflectShaderConsts.mEyePosWorldReflectSC, camPos);
 
    MatrixF inverseViewMatrix = state->getWorldViewMatrix();
    inverseViewMatrix.fullInverse();
    inverseViewMatrix.transpose();
-   mReflectShaderConsts->setSafe( mInverseViewReflectSC, inverseViewMatrix );
+   mReflectShaderConsts.mShaderConsts->setSafe(mReflectShaderConsts.mInverseViewReflectSC, inverseViewMatrix);
 
    // Volume position, used to calculate UV sampling.
    Box3F worldBox = getWorldBox();
    Point3F bottom_corner = worldBox.minExtents;
    Point3F top_corner = worldBox.maxExtents;
    Point3F volume_size = (top_corner - bottom_corner);
-   mReflectShaderConsts->setSafe(mVolumeStartReflectSC, bottom_corner);
-   mReflectShaderConsts->setSafe(mVolumeSizeReflectSC, volume_size);
-   mReflectShaderConsts->setSafe(mVoxelSizeReflectSC, mVoxelSize);
+   mReflectShaderConsts.mShaderConsts->setSafe(mReflectShaderConsts.mVolumeStartReflectSC, bottom_corner);
+   mReflectShaderConsts.mShaderConsts->setSafe(mReflectShaderConsts.mVolumeSizeReflectSC, volume_size);
+   mReflectShaderConsts.mShaderConsts->setSafe(mReflectShaderConsts.mVoxelSizeReflectSC, mVoxelSize);
 
    // Render Target Parameters.
+   mLightInfoTarget = NamedTexTarget::find(AdvancedLightBinManager::smBufferName);
+   GFXTextureObject *texObject = mLightInfoTarget ? mLightInfoTarget->getTexture(0) : NULL;
+   mRenderTarget->attachTexture(GFXTextureTarget::Color0, texObject);
+
    const Point3I &targetSz = texObject->getSize();
-   const RectI &targetVp = mLightInfoTarget->getViewport();
+   const RectI &targetVp = mLightInfoTarget ? mLightInfoTarget->getViewport() : RectI::Zero;
    Point4F rtParams;
    ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
-   mReflectShaderConsts->setSafe(mRTParamsReflectSC, rtParams);
+   mReflectShaderConsts.mShaderConsts->setSafe(mReflectShaderConsts.mRTParamsReflectSC, rtParams);
 
    GFX->pushActiveRenderTarget();
    GFX->setActiveRenderTarget( mRenderTarget );
    GFX->setVertexBuffer( vb );
    GFX->setStateBlockByDesc( desc );
    GFX->setShader(mReflectShader);
-   GFX->setShaderConstBuffer(mReflectShaderConsts);
+   GFX->setShaderConstBuffer(mReflectShaderConsts.mShaderConsts);
 
    // Setup Textures
-   GFX->setTexture(mDirectLightSC->getSamplerRegister(), mDirectLightTexture);
-   GFX->setTexture(mPrepassSC->getSamplerRegister(), prepassTexObject);
-   GFX->setTexture(mMatInfoTexSC->getSamplerRegister(), matInfoTexObject);
+   GFX->setTexture(mReflectShaderConsts.mDirectLightSC->getSamplerRegister(), mDirectLightTexture);
+
+   // We also need to sample from the depth buffer.
+   mPrepassTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
+   GFXTextureObject *prepassTexObject = mPrepassTarget ? mPrepassTarget->getTexture(0) : NULL;
+   GFX->setTexture(mReflectShaderConsts.mPrepassSC->getSamplerRegister(), prepassTexObject);
+
+   // and the material info buffer.
+   mMatInfoTarget = NamedTexTarget::find(RenderPrePassMgr::MatInfoBufferName);
+   GFXTextureObject *matInfoTexObject = mMatInfoTarget ? mMatInfoTarget->getTexture(0) : NULL;
+   GFX->setTexture(mReflectShaderConsts.mMatInfoTexSC->getSamplerRegister(), matInfoTexObject);
 
    // Draw the screenspace quad.
    GFX->drawPrimitive( GFXTriangleFan, 0, 2 );

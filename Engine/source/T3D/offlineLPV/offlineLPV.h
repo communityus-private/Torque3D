@@ -102,28 +102,35 @@ class OfflineLPV : public ScenePolyhedralSpace
 
       // Propagated Shader
       GFXShaderRef            mPropagatedShader;
-      GFXShaderConstBufferRef mPropagatedShaderConsts;
-      GFXShaderConstHandle    *mEyePosWorldPropSC;
-      GFXShaderConstHandle    *mRTParamsPropSC;
-      GFXShaderConstHandle    *mVolumeStartPropSC;
-      GFXShaderConstHandle    *mVolumeSizePropSC;
-      //registers
-      GFXShaderConstHandle    *mPrepassSC;
-      GFXShaderConstHandle    *mPropagatedSC;
-      GFXShaderConstHandle    *mSSAOMaskSC;
+      struct PropagatedShaderConsts
+      {
+         GFXShaderConstBufferRef mShaderConsts;
+         GFXShaderConstHandle    *mEyePosWorldPropSC;
+         GFXShaderConstHandle    *mRTParamsPropSC;
+         GFXShaderConstHandle    *mVolumeStartPropSC;
+         GFXShaderConstHandle    *mVolumeSizePropSC;
+         //registers
+         GFXShaderConstHandle    *mPrepassSC;
+         GFXShaderConstHandle    *mPropagatedSC;
+         GFXShaderConstHandle    *mSSAOMaskSC;
+      } mPropagatedShaderConsts;
 
       // Reflection Shader
       GFXShaderRef            mReflectShader;
-      GFXShaderConstBufferRef mReflectShaderConsts;
-      GFXShaderConstHandle    *mInverseViewReflectSC;
-      GFXShaderConstHandle    *mEyePosWorldReflectSC;
-      GFXShaderConstHandle    *mRTParamsReflectSC;
-      GFXShaderConstHandle    *mVolumeStartReflectSC;
-      GFXShaderConstHandle    *mVolumeSizeReflectSC;
-      GFXShaderConstHandle    *mVoxelSizeReflectSC;
-      //registers
-      GFXShaderConstHandle    *mDirectLightSC;
-      GFXShaderConstHandle    *mMatInfoTexSC;
+      struct ReflectionShaderConsts
+      {
+         GFXShaderConstBufferRef mShaderConsts;
+         GFXShaderConstHandle    *mInverseViewReflectSC;
+         GFXShaderConstHandle    *mEyePosWorldReflectSC;
+         GFXShaderConstHandle    *mRTParamsReflectSC;
+         GFXShaderConstHandle    *mVolumeStartReflectSC;
+         GFXShaderConstHandle    *mVolumeSizeReflectSC;
+         GFXShaderConstHandle    *mVoxelSizeReflectSC;
+         //registers
+         GFXShaderConstHandle    *mPrepassSC;
+         GFXShaderConstHandle    *mDirectLightSC;
+         GFXShaderConstHandle    *mMatInfoTexSC;
+      }mReflectShaderConsts;
 
       // Configuratable volume resolution
       F32       mVoxelSize;
