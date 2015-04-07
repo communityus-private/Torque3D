@@ -1793,6 +1793,8 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
    desc.setBlend( true, GFXBlendOne, GFXBlendOne );
    desc.setFillModeSolid();
 
+   GFX->setShader(mPropagatedShader);
+   GFX->setShaderConstBuffer(mPropagatedShaderConsts.mShaderConsts);
    // Point sampling is useful for debugging to see the exact color values in each cell.
    //desc.samplers[0] = GFXSamplerStateDesc::getClampPoint();
    //desc.samplersDefined = true;
@@ -1829,8 +1831,6 @@ void OfflineLPV::_renderPropagated(const SceneRenderState* state)
    GFX->setActiveRenderTarget( mRenderTarget );
    GFX->setVertexBuffer( vb );
    GFX->setStateBlockByDesc( desc );
-   GFX->setShader(mPropagatedShader);
-   GFX->setShaderConstBuffer(mPropagatedShaderConsts.mShaderConsts);
 
    // Setup Output Texture
    GFX->setTexture(mPropagatedShaderConsts.mPropagatedSC->getSamplerRegister(), mPropagatedTexture);
@@ -1897,6 +1897,9 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    //desc.samplers[0] = GFXSamplerStateDesc::getClampPoint();
    //desc.samplersDefined = true;
 
+   GFX->setShader(mReflectShader);
+   GFX->setShaderConstBuffer(mReflectShaderConsts.mShaderConsts);
+
    // Camera position, used to calculate World Space position from depth buffer.
    const Point3F &camPos = state->getCameraPosition();
    mReflectShaderConsts.mShaderConsts->setSafe(mReflectShaderConsts.mEyePosWorldReflectSC, camPos);
@@ -1930,8 +1933,6 @@ void OfflineLPV::_renderReflect(const SceneRenderState* state)
    GFX->setActiveRenderTarget( mRenderTarget );
    GFX->setVertexBuffer( vb );
    GFX->setStateBlockByDesc( desc );
-   GFX->setShader(mReflectShader);
-   GFX->setShaderConstBuffer(mReflectShaderConsts.mShaderConsts);
 
    // Setup Textures
    GFX->setTexture(mReflectShaderConsts.mDirectLightSC->getSamplerRegister(), mDirectLightTexture);
