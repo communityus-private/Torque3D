@@ -147,6 +147,7 @@ OfflineLPV::OfflineLPV()
 
 OfflineLPV::~OfflineLPV()
 {
+   RenderPassManager::getRenderBinSignal().remove(this, &OfflineLPV::_handleBinEvent);
    SAFE_DELETE_ARRAY(mGeometryGrid);
    SAFE_DELETE_ARRAY(mLightGrid);
    SAFE_DELETE_ARRAY(mPropagatedLightGrid);
