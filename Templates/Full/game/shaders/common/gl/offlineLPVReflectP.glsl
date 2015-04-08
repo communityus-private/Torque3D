@@ -85,7 +85,7 @@ void main()
        if ( voxelcolor.a > 0 )
        {
             float dist = length( curPos - worldPos.rgb );
-            vec3 reweightedColor = voxelcolor.rgb / ( 1 + dist );
+            vec3 reweightedColor = voxelcolor.rgb / ( 1 + dist*step );
             final_color += vec4( reweightedColor, voxelcolor.a );
 			
 			if ( final_color.a >= 1 )

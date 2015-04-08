@@ -50,7 +50,7 @@ float4 main( Conn IN ) : COLOR0
    float4 worldPos = float4(eyePosWorld + IN.wsEyeRay * depth, 1.0f);
 
    // Need world-space normal.
-   float3 wsNormal = mul(normal, invViewMat);
+   float3 wsNormal = mul(float4(normal,0), invViewMat).rgb;
 
    // Calculate angle to potential light
    float3 normalEyeRay = normalize(eyePosWorld + IN.wsEyeRay);
@@ -87,7 +87,7 @@ float4 main( Conn IN ) : COLOR0
        if ( voxelcolor.a > 0 )
        {
             float dist = length( curPos - worldPos.rgb );
-            float3 reweightedColor = voxelcolor.rgb / ( 1 + dist*dist );
+            float3 reweightedColor = voxelcolor.rgb / ( 1 + dist*step );
             final_color += float4( reweightedColor, voxelcolor.a );
 			
 			if ( final_color.a >= 1 )
