@@ -1547,7 +1547,7 @@ void OfflineLPV::exportDirectLight(ColorF* pSource, Point3I* pSize)
                for (U32 x = 0; x < (size.x / mip_factor); x++)
                {
                   ColorI cell_color = ColorI::ZERO;
-                  U32 cell_count = 0;
+                  U32 cell_count = 1;
                   for (U32 z_off = 0; z_off < mip_factor; z_off++)
                   {
                      for (U32 y_off = 0; y_off < mip_factor; y_off++)
@@ -1610,7 +1610,10 @@ void OfflineLPV::exportDirectLight(SHVoxel* pSource, Point3I* pSize)
                buffer[bufPos]     = cell_color.blue;    // Blue
                buffer[bufPos + 1] = cell_color.green;   // Green
                buffer[bufPos + 2] = cell_color.red;     // Red
-               buffer[bufPos + 3] = mGeometryGrid[pos].color.alpha;   // Alpha
+               cell_color.alpha = getMax(cell_color.red, getMax(cell_color.green, cell_color.blue));
+               if (cell_color.alpha == 0)
+                  cell_color.alpha = mGeometryGrid[pos].color.alpha;
+               buffer[bufPos + 3] = cell_color.alpha;   // Alpha
                bufPos += 4;
             }
          }
@@ -2045,14 +2048,20 @@ bool OfflineLPV::save()
                dtsStream.write(decoded_direct.red);
                dtsStream.write(decoded_direct.green);
                dtsStream.write(decoded_direct.blue);
-               dtsStream.write(mGeometryGrid[pos].color.alpha);   // Alpha stores geometry 
+               decoded_direct.alpha = getMax(decoded_direct.red, getMax(decoded_direct.green, decoded_direct.blue));
+               if (decoded_direct.alpha == 0)
+                  decoded_direct.alpha = mGeometryGrid[pos].color.alpha;
+               dtsStream.write(decoded_direct.alpha);   // Alpha stores geometry 
 
                // Propagated Light
                ColorF decoded_prop = decodeSH(Point3F(0, 0, 0), mPropagatedLightGrid[pos]);
                dtsStream.write(decoded_prop.red);
                dtsStream.write(decoded_prop.green);
                dtsStream.write(decoded_prop.blue);
-               dtsStream.write(mGeometryGrid[pos].color.alpha);   // Alpha stores geometry
+               decoded_prop.alpha = getMax(decoded_prop.red, getMax(decoded_prop.green, decoded_prop.blue));
+               if (decoded_prop.alpha == 0)
+                  decoded_prop.alpha = mGeometryGrid[pos].color.alpha;
+               dtsStream.write(decoded_prop.alpha);   // Alpha stores geometry 
 
                pos++;
             }
