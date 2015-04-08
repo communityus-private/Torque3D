@@ -154,32 +154,13 @@ OfflineLPV::~OfflineLPV()
    SAFE_DELETE_ARRAY(mPropagatedLightGridA);
    SAFE_DELETE_ARRAY(mPropagatedLightGridB);
 
-   mPropagatedTexture      = NULL;
-   mDirectLightTexture     = NULL;
+   mPropagatedTexture.free();
+   mDirectLightTexture.free();
 
-   if (mPrepassTarget)
-   {
-      mPrepassTarget->release();
-      mPrepassTarget = NULL;
-   }
-
-   if (mLightInfoTarget)
-   {
-      mLightInfoTarget->release();
-      mPrepassTarget = NULL;
-   }
-
-   if (mMatInfoTarget)
-   {
-      mMatInfoTarget->release();
-      mPrepassTarget = NULL;
-   }
-
-   if (mSSAOMaskTarget)
-   {
-      mSSAOMaskTarget->release();
-      mPrepassTarget = NULL;
-   }
+   mPrepassTarget = NULL;
+   mPrepassTarget = NULL;
+   mPrepassTarget = NULL;
+   mPrepassTarget = NULL;
 
    mRenderTarget = NULL;
 
