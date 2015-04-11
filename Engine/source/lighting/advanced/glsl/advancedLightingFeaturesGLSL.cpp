@@ -518,18 +518,20 @@ void DeferredPixelSpecularGLSL::processPix(  Vector<ShaderComponent*> &component
       specCol->constSortPos = cspPotentialPrimitive;
    }
 
-   Var *roughness = new Var;
-   roughness->setType("float");
-   roughness->setName("roughness");
-
-   // If the gloss map flag is set, than the specular power is in the alpha
-   // channel of the specular map for the input texture
-   if( fd.features[ MFT_GlossMap ] )
-       meta->addStatement(new GenOp("   @ = @.a * 255;\r\n", new DecOp(roughness), specCol));
-   else
+   Var *roughness = (Var*)LangElement::find("roughness");
+   if (!roughness)
    {
-       roughness->uniform = true;
-       roughness->constSortPos = cspPotentialPrimitive;
+      roughness = new Var("roughness", "float");
+
+      // If the gloss map flag is set, than the specular power is in the alpha
+      // channel of the specular map
+      if (fd.features[MFT_GlossMap])
+         meta->addStatement(new GenOp("   @ = @.a;\r\n", new DecOp(roughness), specCol));
+      else
+      {
+         roughness->uniform = true;
+         roughness->constSortPos = cspPotentialPrimitive;
+      }
    }
 
    Var *metalness = (Var*)LangElement::find("metalness");

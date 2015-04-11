@@ -1933,6 +1933,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    }
    else
    {
+      meta->addStatement(new GenOp("   //forward lit cubemapping\r\n"));
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
       if (lerpVal)
          meta->addStatement(new GenOp("   @ *= float4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, lerpVal));
@@ -2179,10 +2180,17 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    Var *lightSpotFalloff  = new Var( "inLightSpotFalloff", "float4" );
    lightSpotFalloff->uniform = true;
    lightSpotFalloff->constSortPos = cspPotentialPrimitive;
-
-   Var *roughness = new Var("roughness", "float");
-   roughness->uniform = true;
-   roughness->constSortPos = cspPotentialPrimitive;
+   
+   Var *roughness = (Var*)LangElement::find("roughness");
+   if (!fd.features[MFT_SpecularMap])
+   {
+      if (!roughness)
+      {
+         roughness = new Var("roughness", "float");
+         roughness->uniform = true;
+         roughness->constSortPos = cspPotentialPrimitive;
+      }
+   }
 
    Var *specularColor = (Var*)LangElement::find( "specularColor" );
    if ( !specularColor )

@@ -2177,9 +2177,16 @@ void RTLightingFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    lightSpotFalloff->uniform = true;
    lightSpotFalloff->constSortPos = cspPotentialPrimitive;
 
-   Var *roughness = new Var("roughness", "float");
-   roughness->uniform = true;
-   roughness->constSortPos = cspPotentialPrimitive;
+   Var *roughness = (Var*)LangElement::find("roughness");
+   if (!fd.features[MFT_SpecularMap])
+   {
+      if (!roughness)
+      {
+         roughness = new Var("roughness", "float");
+         roughness->uniform = true;
+         roughness->constSortPos = cspPotentialPrimitive;
+      }
+   }
 
    Var *specularColor = (Var*)LangElement::find( "specularColor" );
    if ( !specularColor )
