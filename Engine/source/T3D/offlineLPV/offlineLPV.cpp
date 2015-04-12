@@ -148,11 +148,11 @@ OfflineLPV::OfflineLPV()
 OfflineLPV::~OfflineLPV()
 {
    RenderPassManager::getRenderBinSignal().remove(this, &OfflineLPV::_handleBinEvent);
-   SAFE_DELETE_ARRAY(mGeometryGrid);
-   SAFE_DELETE_ARRAY(mLightGrid);
-   SAFE_DELETE_ARRAY(mPropagatedLightGrid);
-   SAFE_DELETE_ARRAY(mPropagatedLightGridA);
-   SAFE_DELETE_ARRAY(mPropagatedLightGridB);
+   SAFE_DELETE(mGeometryGrid);
+   SAFE_DELETE(mLightGrid);
+   SAFE_DELETE(mPropagatedLightGrid);
+   SAFE_DELETE(mPropagatedLightGridA);
+   SAFE_DELETE(mPropagatedLightGridB);
 
    mPropagatedTexture.free();
    mDirectLightTexture.free();
@@ -786,10 +786,10 @@ void OfflineLPV::regenVolume()
    if ( !container ) return;
 
    // Allocate our grids.
-   SAFE_DELETE_ARRAY(mGeometryGrid);
-   SAFE_DELETE_ARRAY(mLightGrid);
-   SAFE_DELETE_ARRAY(mPropagatedLightGridA);
-   SAFE_DELETE_ARRAY(mPropagatedLightGridB);
+   SAFE_DELETE(mGeometryGrid);
+   SAFE_DELETE(mLightGrid);
+   SAFE_DELETE(mPropagatedLightGridA);
+   SAFE_DELETE(mPropagatedLightGridB);
    mGeometryGrid           = new GeometryVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
    mLightGrid              = new SHVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
    mPropagatedLightGridA   = new SHVoxel[voxelCount.x * voxelCount.y * voxelCount.z];
@@ -1477,7 +1477,7 @@ void OfflineLPV::exportPropagatedLight(ColorF* pSource, Point3I* pSize)
       }
       dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mPropagatedTexture->unlock();
-      SAFE_DELETE_ARRAY(buffer);
+      SAFE_DELETE(buffer);
    }
 }
 
@@ -1511,7 +1511,7 @@ void OfflineLPV::exportPropagatedLight(SHVoxel* pSource, Point3I* pSize)
       }
       dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mPropagatedTexture->unlock();
-      SAFE_DELETE_ARRAY(buffer);
+      SAFE_DELETE(buffer);
    }
 }
 
@@ -1582,7 +1582,7 @@ void OfflineLPV::exportDirectLight(ColorF* pSource, Point3I* pSize)
          }
          dMemcpy(locked_rect->bits, buffer, buf_size * sizeof(U8));
          mDirectLightTexture->unlock(mip);
-         SAFE_DELETE_ARRAY(buffer);
+         SAFE_DELETE(buffer);
       }
    }
 }
@@ -1620,7 +1620,7 @@ void OfflineLPV::exportDirectLight(SHVoxel* pSource, Point3I* pSize)
       }
       dMemcpy(locked_rect->bits, buffer, size.x * size.y * size.z * 4 * sizeof(U8));
       mDirectLightTexture->unlock();
-      SAFE_DELETE_ARRAY(buffer);
+      SAFE_DELETE(buffer);
    }
 }
 
@@ -1659,7 +1659,7 @@ void OfflineLPV::_initVolumeTextures(Point3I volumeSize)
    mDirectLightTexture.set(volumeSize.x, volumeSize.y, volumeSize.z, &buffer[0], GFXFormat::GFXFormatR8G8B8A8, &LPVProfile, "OfflineLPV_DirectLight",0);
 
    // Clean up buffer.
-   SAFE_DELETE_ARRAY(buffer);
+   SAFE_DELETE(buffer);
 }
 
 void OfflineLPV::_initShaders()
@@ -2126,8 +2126,8 @@ bool OfflineLPV::load()
       exportPropagatedLight(propagatedLightGrid, &size);
       exportDirectLight(directLightGrid, &size);
 
-      SAFE_DELETE_ARRAY(propagatedLightGrid);
-      SAFE_DELETE_ARRAY(directLightGrid);
+      SAFE_DELETE(propagatedLightGrid);
+      SAFE_DELETE(directLightGrid);
 
       return true;
    }
