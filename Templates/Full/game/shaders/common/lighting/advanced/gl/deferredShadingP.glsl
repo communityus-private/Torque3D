@@ -39,7 +39,7 @@ void main()
    
    colorBuffer *= vec4(lightBuffer.rgb, 1.0);
    vec3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * 0.92 * matInfo.a);
-   lightBuffer.rgb = mix( 0.08 * lightBuffer.rgb, diffuseColor, min(matInfo.a, 0.92));
+   lightBuffer.rgb = mix( 0.08 * lightBuffer.rgb, colorBuffer.rgb, min(matInfo.a, 0.92));
    colorBuffer.rgb =  diffuseColor + lightBuffer.rgb;
 
    OUT_col = hdrEncode( colorBuffer );
