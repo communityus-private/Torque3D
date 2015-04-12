@@ -1694,6 +1694,9 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
                item[ 10 ] = "Convert to Portal" TAB "" TAB "EWorldEditor.convertSelectionToPolyhedralObjects( \"Portal\" );";
                item[ 11 ] = "Convert to Occluder" TAB "" TAB "EWorldEditor.convertSelectionToPolyhedralObjects( \"OcclusionVolume\" );";
                item[ 12 ] = "Convert to Sound Space" TAB "" TAB "EWorldEditor.convertSelectionToPolyhedralObjects( \"SFXSpace\" );";
+               item[ 13 ] = "Convert to Accumulation Volume" TAB "" TAB "EWorldEditor.convertSelectionToPolyhedralObjects( \"AccumulationVolume\" );";
+               item[ 14 ] = "Convert to LPV" TAB "" TAB "EWorldEditor.convertSelectionToPolyhedralObjects( \"OfflineLPV\" );";
+               item[ 15 ] = "Convert to Environment Volume" TAB "" TAB "EWorldEditor.convertSelectionToPolyhedralObjects( \"EnvVolume\" );";
             };
       }
       
@@ -1701,7 +1704,10 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
       else if( %obj.isMemberOfClass( "Zone" ) ||
                %obj.isMemberOfClass( "Portal" ) ||
                %obj.isMemberOfClass( "OcclusionVolume" ) ||
-               %obj.isMemberOfClass( "SFXSpace" ) )
+               %obj.isMemberOfClass( "SFXSpace" ) ||
+               %obj.isMemberOfClass( "AccumulationVolume" ) ||
+               %obj.isMemberOfClass( "OfflineLPV" ) ||
+               %obj.isMemberOfClass( "EnvVolume" ) )
       {
          %popup = ETPolyObjectContextPopup;      
          if( !isObject( %popup ) )
@@ -2404,7 +2410,7 @@ function EWToolsToolbar::toggleSize( %this, %useDynamics )
          EWToolsToolbarDecoy.setVisible(false);
          EWToolsToolbar.isDynamic = 0;
       }
-
+error((29 + 4) * %count + 4);
       EWToolsToolbarDecoy.setExtent((29 + 4) * %count + 4, 32);
    }
 
