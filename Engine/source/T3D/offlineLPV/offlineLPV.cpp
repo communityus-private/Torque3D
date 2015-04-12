@@ -2216,14 +2216,14 @@ void OfflineLPV::getPolyList(OptimizedPolyList *polyList)
                mUVs.push_back(uvB);
                mUVs.push_back(uvC);
 
-               Material* mat = dynamic_cast<Material*>(polyList->mMaterialList[poly.material]->getMaterial());
+               Material* mat = (poly.material != -1) ? dynamic_cast<Material*>(polyList->mMaterialList[poly.material]->getMaterial()) : NULL;
 
                S32 foundMatIndex = -1;
                for (U32 m = 0; m < mMaterials.size(); m++)
                {
                   //walk through the existing mat list as we only want unique instances
                   Material* tmpMat = mMaterials[m];
-                  if (tmpMat->getId() == mat->getId())
+                  if (tmpMat && mat && tmpMat->getId() == mat->getId())
                   {
                      foundMatIndex = m;
                      break;
