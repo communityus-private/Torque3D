@@ -1840,8 +1840,8 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
       if (fd.features[MFT_isDeferred])
          glossColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
-      if (!glossColor)
-         glossColor = (Var*)LangElement::find("specularColor");  
+      //if (!glossColor)
+         //glossColor = (Var*)LangElement::find("specularColor");  
       if (!glossColor)
          glossColor = (Var*)LangElement::find("diffuseColor");
       if (!glossColor)
@@ -1929,7 +1929,22 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
          meta->addStatement(new GenOp("   @ = vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
    }
    else
-      meta->addStatement(new GenOp("   @;\r\n", assignColor(texCube, blendOp, lerpVal)));
+   {
+      Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
+      if (lerpVal)
+         meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, lerpVal));
+      else
+      {
+         Var *metalness = (Var*)LangElement::find("metalness");
+         if (metalness)
+         {
+            meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@, @);\r\n", targ, texCube, metalness, metalness));
+         }
+         else
+            meta->addStatement(new GenOp("   @.rgb *= @.rgb;\r\n", targ, texCube));
+      }
+
+   }
    output = meta;
 }
 
@@ -2162,9 +2177,16 @@ void RTLightingFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    lightSpotFalloff->uniform = true;
    lightSpotFalloff->constSortPos = cspPotentialPrimitive;
 
-   Var *roughness = new Var("roughness", "float");
-   roughness->uniform = true;
-   roughness->constSortPos = cspPotentialPrimitive;
+   Var *roughness = (Var*)LangElement::find("roughness");
+   if (!fd.features[MFT_SpecularMap])
+   {
+      if (!roughness)
+      {
+         roughness = new Var("roughness", "float");
+         roughness->uniform = true;
+         roughness->constSortPos = cspPotentialPrimitive;
+      }
+   }
 
    Var *specularColor = (Var*)LangElement::find( "specularColor" );
    if ( !specularColor )

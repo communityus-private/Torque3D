@@ -141,8 +141,15 @@ void SpecularMapGLSL::processPix( Vector<ShaderComponent*> &componentList, const
    LangElement *texOp = new GenOp( "texture(@, @)", specularMap, texCoord );
 
    Var *specularColor = new Var( "specularColor", "vec4" );
-
-   output = new GenOp( "   @ = @;\r\n", new DecOp( specularColor ), texOp );
+   Var *metalness = (Var*)LangElement::find("metalness");
+   if (!metalness) metalness = new Var("metalness", "float");
+   Var *roughness = (Var*)LangElement::find("roughness");
+   if (!roughness) roughness = new Var("roughness", "float");
+   MultiLine * meta = new MultiLine;
+   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(roughness), texOp));
+   meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
+   meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
+   output = meta;
 }
 
 ShaderFeature::Resources SpecularMapGLSL::getResources( const MaterialFeatureData &fd )
