@@ -36,7 +36,7 @@ float4 main( PFXVertToPix IN,
    
    colorBuffer *= float4(lightBuffer.rgb, 1.0);
    float3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * 0.92 * matInfo.a);
-   lightBuffer.rgb = lerp( 0.08 * lightBuffer.rgb, diffuseColor, matInfo.a );
+   lightBuffer.rgb = lerp( 0.08 * lightBuffer.rgb, diffuseColor, min(matInfo.a, 0.92));
    colorBuffer.rgb =  diffuseColor + lightBuffer.rgb;
    
    return hdrEncode( colorBuffer );   
