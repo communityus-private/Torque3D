@@ -322,10 +322,6 @@ ExplosionData::ExplosionData(const ExplosionData& other, bool temp_clone) : Game
    explosionAnimation = other.explosionAnimation; // -- from explosionShape sequence "ambient"
    dMemcpy( emitterList, other.emitterList, sizeof( emitterList ) );
    dMemcpy( emitterIDList, other.emitterIDList, sizeof( emitterIDList ) ); // -- for pack/unpack of emitterList ptrs
-   // NOT REFERENCED BY Explosion...
-   shockwave = other.shockwave; // -- unused
-   shockwaveID = other.shockwaveID; // -- unused
-   shockwaveOnTerrain = other.shockwaveOnTerrain; // -- unused
    dMemcpy( debrisList, other.debrisList, sizeof( debrisList ) );
    dMemcpy( debrisIDList, other.debrisIDList, sizeof( debrisIDList ) ); // -- for pack/unpack of debrisList ptrs 
    debrisThetaMin = other.debrisThetaMin;
