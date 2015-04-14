@@ -20,6 +20,19 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+// Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
+// Copyright (C) 2015 Faust Logic, Inc.
+//
+//    Changes:
+//        canvas -- Added a way for a child control to handle an event but still have
+//            GuiCanvas::processInputEvent() return false, therefore allowing the event
+//            to also be handled by the ActionMap. (see DemoGame::processInputEvent()) 
+//            Also added methods for clearing "down" status of mouse buttons in cases
+//            where ActionMap grabs the mouse for dragging and masks the up events from
+//            GuiCanvas.           
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+
 #include "platform/platform.h"
 #include "gui/core/guiCanvas.h"
 
@@ -572,12 +585,29 @@ bool GuiCanvas::tabPrev(void)
    return false;
 }
 
+// AFX CODE BLOCK (canvas) <<
+// GuiCanvas::processInputEvent() has been modified to return the value of
+// mConsumeLastInputEvent rather than a hardwired "true". Normally it still
+// returns "true", but a child control can call setConsumeLastInputEvent() to
+// change the value and force a return of "false". A control will do this to
+// make sure the event will still be handled by the ActionMap after GuiCanvas
+// is done with it.
+// AFX CODE BLOCK (canvas) >>
 bool GuiCanvas::processInputEvent(InputEventInfo &inputEvent)
 {
+   // AFX CODE BLOCK (canvas) <<
+   mConsumeLastInputEvent = true;
+   // AFX CODE BLOCK (canvas) >>
+
 	// First call the general input handler (on the extremely off-chance that it will be handled):
 	if (mFirstResponder &&  mFirstResponder->onInputEvent(inputEvent))
    {
+		// AFX CODE BLOCK (canvas) <<
+		return mConsumeLastInputEvent;  
+		/* ORIGINAL CODE
 		return(true);
+		*/
+		// AFX CODE BLOCK (canvas) >>
    }
 
    switch (inputEvent.deviceType)
@@ -633,7 +663,12 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
       if (mFirstResponder)
       {
          if(mFirstResponder->onKeyDown(mLastEvent))
+            // AFX CODE BLOCK (canvas) <<
+            return mConsumeLastInputEvent;
+            /* ORIGINAL CODE
             return true;
+            */
+            // AFX CODE BLOCK (canvas) >>
       }
 
       //see if we should tab next/prev
@@ -644,12 +679,22 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
             if (inputEvent.modifier & SI_SHIFT)
             {
                if(tabPrev())
+                  // AFX CODE BLOCK (canvas) <<
+                  return mConsumeLastInputEvent;
+                  /* ORIGINAL CODE
                   return true;
+                  */
+                  // AFX CODE BLOCK (canvas) >>
             }
             else if (inputEvent.modifier == 0)
             {
                if(tabNext())
+                  // AFX CODE BLOCK (canvas) <<
+                  return mConsumeLastInputEvent;
+                  /* ORIGINAL CODE
                   return true;
+                  */
+                  // AFX CODE BLOCK (canvas) >>
             }
          }
       }
@@ -660,14 +705,24 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyPress(mAcceleratorMap[i].index);
+            // AFX CODE BLOCK (canvas) <<
+            return mConsumeLastInputEvent;
+            /* ORIGINAL CODE
             return true;
+            */
+            // AFX CODE BLOCK (canvas) >>
          }
       }
    }
    else if(inputEvent.action == SI_BREAK)
    {
       if(mFirstResponder && mFirstResponder->onKeyUp(mLastEvent))
+         // AFX CODE BLOCK (canvas) <<
+         return mConsumeLastInputEvent;
+         /* ORIGINAL CODE
          return true;
+         */
+         // AFX CODE BLOCK (canvas) >>
 
       //see if there's an accelerator
       for (U32 i = 0; i < mAcceleratorMap.size(); i++)
@@ -675,7 +730,12 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyRelease(mAcceleratorMap[i].index);
+            // AFX CODE BLOCK (canvas) <<
+            return mConsumeLastInputEvent;
+            /* ORIGINAL CODE
             return true;
+            */
+            // AFX CODE BLOCK (canvas) >>
          }
       }
    }
@@ -687,13 +747,24 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyPress(mAcceleratorMap[i].index);
+            // AFX CODE BLOCK (canvas) <<
+            return mConsumeLastInputEvent;
+            /* ORIGINAL CODE
             return true;
+            */
+            // AFX CODE BLOCK (canvas) >>
          }
       }
 
       if(mFirstResponder)
       {
+         // AFX CODE BLOCK (canvas) <<
+         bool ret = mFirstResponder->onKeyRepeat(mLastEvent);
+         return ret && mConsumeLastInputEvent;
+         /* ORIGINAL CODE
          return mFirstResponder->onKeyRepeat(mLastEvent);
+         */
+         // AFX CODE BLOCK (canvas) >>
       }
    }
    return false;
@@ -762,7 +833,12 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          rootMiddleMouseDragged(mLastEvent);
       else
          rootMouseMove(mLastEvent);
+      // AFX CODE BLOCK (canvas) <<
+      return mConsumeLastInputEvent;
+      /* ORIGINAL CODE
       return true;
+      */
+      // AFX CODE BLOCK (canvas) >>
    }
    else if ( inputEvent.objInst == SI_ZAXIS
              || inputEvent.objInst == SI_RZAXIS )
@@ -821,7 +897,12 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
             rootMouseUp(mLastEvent);
          }
 
+         // AFX CODE BLOCK (canvas) <<
+         return mConsumeLastInputEvent;
+         /* ORIGINAL CODE
          return true;
+         */
+         // AFX CODE BLOCK (canvas) >>
       }
       else if(inputEvent.objInst == KEY_BUTTON1) // right button
       {
@@ -852,7 +933,12 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          else // it was a mouse up
             rootRightMouseUp(mLastEvent);
 
+         // AFX CODE BLOCK (canvas) <<
+         return mConsumeLastInputEvent;
+         /* ORIGINAL CODE
          return true;
+         */
+         // AFX CODE BLOCK (canvas) >>
       }
       else if(inputEvent.objInst == KEY_BUTTON2) // middle button
       {
@@ -883,7 +969,12 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          else // it was a mouse up
             rootMiddleMouseUp(mLastEvent);
 
+         // AFX CODE BLOCK (canvas) <<
+         return mConsumeLastInputEvent;  
+         /* ORIGINAL CODE
          return true;
+         */
+         // AFX CODE BLOCK (canvas) >>
       }
    }
    return false;
@@ -2761,3 +2852,25 @@ ConsoleMethod( GuiCanvas, hideWindow, void, 2, 2, "" )
    WindowManager->setDisplayWindow(false);
    object->getPlatformWindow()->setDisplayWindow(false);
 }
+
+// AFX CODE BLOCK (canvas) <<
+// This function allows resetting of the video-mode from script. It was motivated by
+// the need to temporarily disable vsync during datablock cache load to avoid a 
+// significant slowdown.
+bool AFX_forceVideoReset = false;
+
+ConsoleMethod( GuiCanvas, resetVideoMode, void, 2,2, "()")
+{
+   PlatformWindow* window = object->getPlatformWindow();
+   if( window )
+   {
+      GFXWindowTarget* gfx_target =  window->getGFXTarget();
+      if ( gfx_target )
+      {
+         AFX_forceVideoReset = true;
+         gfx_target->resetMode();
+         AFX_forceVideoReset = false;
+      }
+   }
+}
+// AFX CODE BLOCK (canvas) >>
