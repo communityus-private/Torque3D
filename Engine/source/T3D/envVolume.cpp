@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
-#include "T3D/lightProbeVolume.h"
+#include "T3D/EnvVolume.h"
 
 #include "scene/sceneManager.h"
 #include "scene/sceneRenderState.h"
@@ -43,16 +43,16 @@
 
 #include "math/mPolyhedron.impl.h"
 
-Vector< SimObjectPtr<SceneObject> > LightProbeVolume::smProbedObjects;
-Vector< SimObjectPtr<LightProbeVolume> > LightProbeVolume::smLightProbeVolumes;
+Vector< SimObjectPtr<SceneObject> > EnvVolume::smProbedObjects;
+Vector< SimObjectPtr<EnvVolume> > EnvVolume::smEnvVolumes;
 
 GFXCubemap * gLevelEnvMap;
 
 //#define DEBUG_DRAW
 
-IMPLEMENT_CO_NETOBJECT_V1( LightProbeVolume );
+IMPLEMENT_CO_NETOBJECT_V1( EnvVolume );
 
-ConsoleDocClass( LightProbeVolume,
+ConsoleDocClass( EnvVolume,
    "@brief An invisible shape that overrides cubemapping on objects it encloses.\n\n"
 
    "@ingroup enviroMisc"
@@ -60,7 +60,7 @@ ConsoleDocClass( LightProbeVolume,
 
 //-----------------------------------------------------------------------------
 
-LightProbeVolume::LightProbeVolume()
+EnvVolume::EnvVolume()
    : mTransformDirty( true )
 {
    VECTOR_SET_ASSOCIATION( mWSPoints );
@@ -85,14 +85,14 @@ LightProbeVolume::LightProbeVolume()
    resetWorldBox();
 }
 
-LightProbeVolume::~LightProbeVolume()
+EnvVolume::~EnvVolume()
 {
    mAreaEnvMap = NULL;
 }
 
-void LightProbeVolume::initPersistFields()
+void EnvVolume::initPersistFields()
 {
-      addField( "AreaEnvMap", TypeCubemapName, Offset( mAreaEnvMapName, LightProbeVolume ),
+      addField( "AreaEnvMap", TypeCubemapName, Offset( mAreaEnvMapName, EnvVolume ),
          "Environment map applied to objects for a given area." );
 
    Parent::initPersistFields();
@@ -100,7 +100,7 @@ void LightProbeVolume::initPersistFields()
 
 //-----------------------------------------------------------------------------
 
-void LightProbeVolume::consoleInit()
+void EnvVolume::consoleInit()
 {
    // Disable rendering of occlusion volumes by default.
    getStaticClassRep()->mIsRenderEnabled = false;
@@ -108,7 +108,7 @@ void LightProbeVolume::consoleInit()
 
 //-----------------------------------------------------------------------------
 
-bool LightProbeVolume::onAdd()
+bool EnvVolume::onAdd()
 {
    if( !Parent::onAdd() )
       return false;
@@ -116,18 +116,18 @@ bool LightProbeVolume::onAdd()
    // Prepare some client side things.
    if ( isClientObject() )  
    {
-      smLightProbeVolumes.push_back(this);
+      smEnvVolumes.push_back(this);
       refreshVolumes();
    }
    
    return true;
 }
 
-void LightProbeVolume::onRemove()
+void EnvVolume::onRemove()
 {
    if ( isClientObject() )  
    {
-      smLightProbeVolumes.remove(this);
+      smEnvVolumes.remove(this);
       refreshVolumes();
    }
    Parent::onRemove();
@@ -135,7 +135,7 @@ void LightProbeVolume::onRemove()
 
 //-----------------------------------------------------------------------------
 
-void LightProbeVolume::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat )
+void EnvVolume::_renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat )
 {
    Parent::_renderObject( ri, state, overrideMat );
 
@@ -147,7 +147,7 @@ void LightProbeVolume::_renderObject( ObjectRenderInst* ri, SceneRenderState* st
 
 //-----------------------------------------------------------------------------
 
-void LightProbeVolume::setTransform( const MatrixF& mat )
+void EnvVolume::setTransform( const MatrixF& mat )
 {
    Parent::setTransform( mat );
    mTransformDirty = true;
@@ -156,7 +156,7 @@ void LightProbeVolume::setTransform( const MatrixF& mat )
 
 //-----------------------------------------------------------------------------
 
-U32 LightProbeVolume::packUpdate( NetConnection *connection, U32 mask, BitStream *stream )
+U32 EnvVolume::packUpdate( NetConnection *connection, U32 mask, BitStream *stream )
 {
    U32 retMask = Parent::packUpdate( connection, mask, stream );
 
@@ -168,7 +168,7 @@ U32 LightProbeVolume::packUpdate( NetConnection *connection, U32 mask, BitStream
    return retMask;  
 }
 
-void LightProbeVolume::unpackUpdate( NetConnection *connection, BitStream *stream )
+void EnvVolume::unpackUpdate( NetConnection *connection, BitStream *stream )
 {
    Parent::unpackUpdate( connection, stream );
 
@@ -181,20 +181,20 @@ void LightProbeVolume::unpackUpdate( NetConnection *connection, BitStream *strea
 
 //-----------------------------------------------------------------------------
 
-void LightProbeVolume::inspectPostApply()
+void EnvVolume::inspectPostApply()
 {
    Parent::inspectPostApply();
    setMaskBits(U32(-1) );
 }
 
-void LightProbeVolume::setTexture( const String& name )
+void EnvVolume::setTexture( const String& name )
 {
    mAreaEnvMapName = name;
    if ( isClientObject() && mAreaEnvMapName.isNotEmpty() )
    {
       Sim::findObject(mAreaEnvMapName, mAreaEnvMap);
       if (!mAreaEnvMap)
-         Con::warnf("LightProbeVolume::setTexture - Unable to load cubemap: %s", mAreaEnvMapName.c_str());
+         Con::warnf("EnvVolume::setTexture - Unable to load cubemap: %s", mAreaEnvMapName.c_str());
       else
       {
          if (!mAreaEnvMap->mCubemap)
@@ -205,7 +205,7 @@ void LightProbeVolume::setTexture( const String& name )
    refreshVolumes();
 }
 
-void LightProbeVolume::refreshVolumes()
+void EnvVolume::refreshVolumes()
 {
    // This function tests each accumulation object to
    // see if it's within the bounds of an accumulation
@@ -224,9 +224,9 @@ void LightProbeVolume::refreshVolumes()
    }
 
    // 
-   for (S32 i = 0; i < smLightProbeVolumes.size(); ++i)
+   for (S32 i = 0; i < smEnvVolumes.size(); ++i)
    {
-      SimObjectPtr<LightProbeVolume> volume = smLightProbeVolumes[i];
+      SimObjectPtr<EnvVolume> volume = smEnvVolumes[i];
 
       if ( volume.isNull() ) continue;
 
@@ -253,19 +253,19 @@ void LightProbeVolume::refreshVolumes()
 }
 
 // LightProbe Object Management.
-void LightProbeVolume::addObject(SimObjectPtr<SceneObject> object)
+void EnvVolume::addObject(SimObjectPtr<SceneObject> object)
 {
    smProbedObjects.push_back(object);
    refreshVolumes();
 }
 
-void LightProbeVolume::removeObject(SimObjectPtr<SceneObject> object)
+void EnvVolume::removeObject(SimObjectPtr<SceneObject> object)
 {
    smProbedObjects.remove(object);
    refreshVolumes();
 }
 
-void LightProbeVolume::updateObject(SceneObject* object)
+void EnvVolume::updateObject(SceneObject* object)
 {
    // This function is called when an individual object
    // has been moved. Tests to see if it's in any of the
@@ -275,9 +275,9 @@ void LightProbeVolume::updateObject(SceneObject* object)
    // texture will be updated in renderMeshMgr.
    object->mEnvMap = gLevelEnvMap;
 
-   for (S32 i = 0; i < smLightProbeVolumes.size(); ++i)
+   for (S32 i = 0; i < smEnvVolumes.size(); ++i)
    {
-      SimObjectPtr<LightProbeVolume> volume = smLightProbeVolumes[i];
+      SimObjectPtr<EnvVolume> volume = smEnvVolumes[i];
       if (volume.isNull()) continue;
 
       if ((volume->mAreaEnvMap) && !(volume->mAreaEnvMap->mCubemap))

@@ -64,7 +64,7 @@
 #include "renderInstance/renderOcclusionMgr.h"
 #include "core/stream/fileStream.h"
 #include "T3D/accumulationVolume.h"
-#include "T3D/lightProbeVolume.h"
+#include "T3D/envVolume.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ShapeBaseData);
 
@@ -1052,7 +1052,7 @@ bool ShapeBase::onAdd()
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::addObject(this);
-      LightProbeVolume::addObject(this);
+      EnvVolume::addObject(this);
    }
    return true;
 }
@@ -1073,7 +1073,7 @@ void ShapeBase::onRemove()
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::removeObject(this);
-      LightProbeVolume::removeObject(this);
+      EnvVolume::removeObject(this);
    }
 
    if ( isClientObject() )   
@@ -3546,7 +3546,7 @@ void ShapeBase::setTransform(const MatrixF & mat)
    {
       if (mShapeInstance->hasAccumulation())
          AccumulationVolume::updateObject(this);
-      LightProbeVolume::updateObject(this);
+      EnvVolume::updateObject(this);
    }
 }
 //--------------------------------------------------------------------------
