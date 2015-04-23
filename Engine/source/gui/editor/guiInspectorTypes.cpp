@@ -412,7 +412,7 @@ ConsoleDocClass( GuiInspectorTypeCheckBox,
 
 GuiControl* GuiInspectorTypeCheckBox::constructEditControl()
 {
-   if ( mField->flag.test(AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors) )
+   if ( mField->flag.test(AbstractClassRep::FIELD_ButtonInInspectors) )
    {
       // This checkbox (bool field) is meant to be treated as a button.
       GuiControl* retCtrl = new GuiButtonCtrl();
@@ -438,30 +438,30 @@ GuiControl* GuiInspectorTypeCheckBox::constructEditControl()
 
       return retCtrl;
    } else {
-      GuiControl* retCtrl = new GuiCheckBoxCtrl();
+   GuiControl* retCtrl = new GuiCheckBoxCtrl();
 
-      // If we couldn't construct the control, bail!
-      if( retCtrl == NULL )
-         return retCtrl;
-
-      GuiCheckBoxCtrl *check = dynamic_cast<GuiCheckBoxCtrl*>(retCtrl);
-
-      // Let's make it look pretty.
-      retCtrl->setDataField( StringTable->insert("profile"), NULL, "InspectorTypeCheckboxProfile" );
-      retCtrl->setField( "text", "" );
-
-      check->setIndent( 4 );
-
-      retCtrl->setScriptValue( getData() );
-
-      _registerEditControl( retCtrl );
-
-      // Configure it to update our value when the popup is closed
-      char szBuffer[512];
-      dSprintf( szBuffer, 512, "%d.apply(%d.getValue());",getId(),check->getId() );
-      check->setField("Command", szBuffer );
-
+   // If we couldn't construct the control, bail!
+   if( retCtrl == NULL )
       return retCtrl;
+
+   GuiCheckBoxCtrl *check = dynamic_cast<GuiCheckBoxCtrl*>(retCtrl);
+
+   // Let's make it look pretty.
+   retCtrl->setDataField( StringTable->insert("profile"), NULL, "InspectorTypeCheckboxProfile" );
+   retCtrl->setField( "text", "" );
+
+   check->setIndent( 4 );
+
+   retCtrl->setScriptValue( getData() );
+
+   _registerEditControl( retCtrl );
+
+   // Configure it to update our value when the popup is closed
+   char szBuffer[512];
+   dSprintf( szBuffer, 512, "%d.apply(%d.getValue());",getId(),check->getId() );
+   check->setField("Command", szBuffer );
+
+   return retCtrl;
    }
 }
 
