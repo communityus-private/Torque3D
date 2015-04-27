@@ -57,7 +57,7 @@ GFXGLTextureObject::~GFXGLTextureObject()
 
 GFXLockedRect* GFXGLTextureObject::lock(U32 mipLevel, RectI *inRect)
 {
-   AssertFatal(mBinding != GL_TEXTURE_3D, "GFXGLTextureObject::lock - We don't support locking 3D textures yet");
+   //AssertFatal(mBinding != GL_TEXTURE_3D, "GFXGLTextureObject::lock - We don't support locking 3D textures yet");
    U32 width = mTextureSize.x >> mipLevel;
    U32 height = mTextureSize.y >> mipLevel;
 
@@ -76,7 +76,7 @@ GFXLockedRect* GFXGLTextureObject::lock(U32 mipLevel, RectI *inRect)
    mLockedRect.pitch = mLockedRectRect.extent.x * mBytesPerTexel;
 
    // CodeReview [ags 12/19/07] This one texel boundary is necessary to keep the clipmap code from crashing.  Figure out why.
-   U32 size = (mLockedRectRect.extent.x + 1) * (mLockedRectRect.extent.y + 1) * mBytesPerTexel;
+   U32 size = (mLockedRectRect.extent.x + 1) * (mLockedRectRect.extent.y + 1) * getDepth() * mBytesPerTexel;
    AssertFatal(!mFrameAllocatorMark && !mFrameAllocatorPtr, "");
    mFrameAllocatorMark = FrameAllocator::getWaterMark();
    mFrameAllocatorPtr = (U8*)FrameAllocator::alloc( size );
@@ -101,7 +101,10 @@ void GFXGLTextureObject::unlock(U32 mipLevel)
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mBuffer);
    glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, (mLockedRectRect.extent.x + 1) * (mLockedRectRect.extent.y + 1) * mBytesPerTexel, mFrameAllocatorPtr, GL_STREAM_DRAW);
 
-   if(mBinding == GL_TEXTURE_2D)
+   if (mBinding == GL_TEXTURE_3D)
+      glTexSubImage3D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, getDepth(),
+      mLockedRectRect.extent.x, mLockedRectRect.extent.y, getDepth(), GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
+   else if(mBinding == GL_TEXTURE_2D)
 	   glTexSubImage2D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, 
 		  mLockedRectRect.extent.x, mLockedRectRect.extent.y, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
    else if(mBinding == GL_TEXTURE_1D)
