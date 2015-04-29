@@ -110,8 +110,6 @@ protected:
    GFXTexHandle                        mMatInfoTex;
    GFXTexHandle                        mLightMapTex;
    GFXShaderConstBufferRef             mShaderConsts; 
-   GFXShaderConstHandle                *mRoughnessSC;
-   GFXShaderConstHandle                *mMetalnessSC; 
 
 public:
    void clearBuffers();
