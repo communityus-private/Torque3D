@@ -100,10 +100,10 @@ void GFXGLTextureObject::unlock(U32 mipLevel)
    glBindTexture(mBinding, mHandle);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mBuffer);
    glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, (mLockedRectRect.extent.x + 1) * (mLockedRectRect.extent.y + 1) * mBytesPerTexel, mFrameAllocatorPtr, GL_STREAM_DRAW);
-
+   S32 z = getDepth();
    if (mBinding == GL_TEXTURE_3D)
-      glTexSubImage3D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, getDepth(),
-      mLockedRectRect.extent.x, mLockedRectRect.extent.y, getDepth(), GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
+      glTexSubImage3D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, z,
+      mLockedRectRect.extent.x, mLockedRectRect.extent.y, z, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
    else if(mBinding == GL_TEXTURE_2D)
 	   glTexSubImage2D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, 
 		  mLockedRectRect.extent.x, mLockedRectRect.extent.y, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
