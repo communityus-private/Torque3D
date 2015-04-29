@@ -64,7 +64,18 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    specularMap->constNum = Var::getTexUnitNum();
    LangElement *texOp = new GenOp( "tex2D(@, @)", specularMap, texCoord );
 
-   meta->addStatement(new GenOp("   @.bga = tex2D(@, @).rgb;\r\n", material, specularMap, texCoord));
+   Var *specularColor = (Var*)LangElement::find("specularColor");
+   if (!specularColor) specularColor = new Var("specularColor", "float4");
+   Var *metalness = (Var*)LangElement::find("metalness");
+   if (!metalness) metalness = new Var("metalness", "float");
+   Var *roughness = (Var*)LangElement::find("roughness");
+   if (!roughness) roughness = new Var("roughness", "float");
+
+   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(roughness), texOp));
+   meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
+   meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
+
+   meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, roughness, specularColor, metalness));
    output = meta;
 }
 
