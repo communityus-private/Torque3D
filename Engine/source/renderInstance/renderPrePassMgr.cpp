@@ -205,8 +205,8 @@ bool RenderPrePassMgr::_updateTargets()
          // Attach light info buffer to Color1 for each target in the chain
          for (U32 i = 0; i < mTargetChainLength; i++)
          {
-            GFXTexHandle mLightMapTarget = lightBin->getTargetTexture(0, i);
-            mTargetChain[i]->attachTexture(GFXTextureTarget::Color3, mLightMapTarget);
+            mLightMapTarget.setTexture(lightBin->getTargetTexture(0, i));
+            mTargetChain[i]->attachTexture(GFXTextureTarget::Color3, mLightMapTarget.getTexture());
          }
       }
    }
@@ -1100,8 +1100,6 @@ void RenderPrePassMgr::_initShaders()
 
    // Set up shader constants.
    mShaderConsts = mClearGBufferShader->allocConstBuffer();
-   mRoughnessSC = mClearGBufferShader->getShaderConstHandle("$roughness");
-   mMetalnessSC = mClearGBufferShader->getShaderConstHandle("$metalness");
 }
 
 void RenderPrePassMgr::clearBuffers()
