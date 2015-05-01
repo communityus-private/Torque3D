@@ -68,14 +68,14 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    if (!specularColor) specularColor = new Var("specularColor", "float4");
    Var *metalness = (Var*)LangElement::find("metalness");
    if (!metalness) metalness = new Var("metalness", "float");
-   Var *roughness = (Var*)LangElement::find("roughness");
-   if (!roughness) roughness = new Var("roughness", "float");
+   Var *smoothness = (Var*)LangElement::find("smoothness");
+   if (!smoothness) smoothness = new Var("smoothness", "float");
 
-   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(roughness), texOp));
+   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
    meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
    meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
 
-   meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, roughness, specularColor, metalness));
+   meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
    output = meta;
 }
 
@@ -157,14 +157,14 @@ void DeferredSpecVarsHLSL::processPix( Vector<ShaderComponent*> &componentList, 
    metalness->uniform = true;
    metalness->constSortPos = cspPotentialPrimitive;
 
-   Var *roughness = new Var("roughness", "float");
-   roughness->uniform = true;
-   roughness->constSortPos = cspPotentialPrimitive;
+   Var *smoothness = new Var("smoothness", "float");
+   smoothness->uniform = true;
+   smoothness->constSortPos = cspPotentialPrimitive;
 
    MultiLine * meta = new MultiLine;
    //matinfo.g slot reserved for AO later
    meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
-   meta->addStatement(new GenOp("   @.b = @;\r\n", material, roughness));
+   meta->addStatement(new GenOp("   @.b = @;\r\n", material, smoothness));
    meta->addStatement(new GenOp("   @.a = @;\r\n", material, metalness));
    output = meta;
 }

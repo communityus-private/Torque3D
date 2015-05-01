@@ -1878,19 +1878,19 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_isDeferred] && matinfo)
    {
        //scale by 8 to derive the full range of mips from the g channel of the 'specular map'
-       texCube = new GenOp("texCUBElod( @, float4(@, (@.b*8.0)) )", cubeMap, reflectVec, matinfo);
+       texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*11.0 + 1.0, 5.0)))", cubeMap, reflectVec, matinfo);
    }
    else
    {
-       Var *roughness = (Var*)LangElement::find("roughness");
-       if (roughness)
+       Var *smoothness = (Var*)LangElement::find("smoothness");
+       if (smoothness)
        {
-           texCube = new GenOp("texCUBElod( @, float4(@, (@*8.0)) )", cubeMap, reflectVec, roughness);
+           texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*11.0 + 1.0, 5.0)))", cubeMap, reflectVec, smoothness);
        }
        else
        {
            if (glossColor) //failing that, try and find color data
-               texCube = new GenOp("texCUBElod( @, float4(@, @.r*8.0))", cubeMap, reflectVec, glossColor);
+               texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*11.0 + 1.0, 5.0)))", cubeMap, reflectVec, glossColor);
            else //failing *that*, just draw the cubemap
                texCube = new GenOp("texCUBE( @, @)", cubeMap, reflectVec);
        }
@@ -2181,14 +2181,14 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    lightSpotFalloff->uniform = true;
    lightSpotFalloff->constSortPos = cspPotentialPrimitive;
    
-   Var *roughness = (Var*)LangElement::find("roughness");
+   Var *smoothness = (Var*)LangElement::find("smoothness");
    if (!fd.features[MFT_SpecularMap])
    {
-      if (!roughness)
+      if (!smoothness)
       {
-         roughness = new Var("roughness", "float");
-         roughness->uniform = true;
-         roughness->constSortPos = cspPotentialPrimitive;
+         smoothness = new Var("smoothness", "float");
+         smoothness->uniform = true;
+         smoothness->constSortPos = cspPotentialPrimitive;
       }
    }
 
@@ -2209,7 +2209,7 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
                                   "      @, @, @, @, @, @, @, @,\r\n"
                                   "      @, @ );\r\n", 
       wsView, wsPosition, wsNormal, lightMask,
-      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, roughness, specularColor,
+      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, smoothness, specularColor,
       rtShading, specular ) );
 
    // Apply the lighting to the diffuse color.

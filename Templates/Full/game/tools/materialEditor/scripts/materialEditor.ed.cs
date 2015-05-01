@@ -969,8 +969,8 @@ function MaterialEditorGui::guiSync( %this, %material )
    MaterialEditorPropertiesWindow-->colorTintSwatch.color = (%material).diffuseColor[%layer];
    MaterialEditorPropertiesWindow-->specularColorSwatch.color = (%material).specular[%layer];     
    
-   MaterialEditorPropertiesWindow-->RoughnessTextEdit.setText((%material).Roughness[%layer]);
-   MaterialEditorPropertiesWindow-->RoughnessSlider.setValue((%material).Roughness[%layer]);
+   MaterialEditorPropertiesWindow-->SmoothnessTextEdit.setText((%material).Smoothness[%layer]);
+   MaterialEditorPropertiesWindow-->SmoothnessSlider.setValue((%material).Smoothness[%layer]);
    MaterialEditorPropertiesWindow-->MetalnessTextEdit.setText((%material).Metalness[%layer]);
    MaterialEditorPropertiesWindow-->MetalnessSlider.setValue((%material).Metalness[%layer]);
    MaterialEditorPropertiesWindow-->pixelSpecularCheckbox.setValue((%material).pixelSpecular[%layer]);
@@ -1048,7 +1048,7 @@ function MaterialEditorGui::guiSync( %this, %material )
    
    MaterialEditorPropertiesWindow-->accuCheckbox.setValue((%material).accuEnabled[%layer]);
    
-   %this.getRoughChan((%material).roughnessChan[%layer]);
+   %this.getRoughChan((%material).SmoothnessChan[%layer]);
    %this.getAOChan((%material).AOChan[%layer]);
    %this.getMetalChan((%material).metalChan[%layer]);
    %this.preventUndo = false;
@@ -2447,7 +2447,7 @@ function MaterialEditorGui::updateAccuCheckbox(%this, %value)
 // channel in selectors
 function MaterialEditorGui::setRoughChan(%this, %value)
 {
-   MaterialEditorGui.updateActiveMaterial("roughnessChan[" @ MaterialEditorGui.currentLayer @ "]", %value);   
+   MaterialEditorGui.updateActiveMaterial("SmoothnessChan[" @ MaterialEditorGui.currentLayer @ "]", %value);   
    MaterialEditorGui.guiSync( materialEd_previewMaterial );
 }
 

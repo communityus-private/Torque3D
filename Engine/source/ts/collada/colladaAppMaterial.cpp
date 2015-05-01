@@ -61,7 +61,7 @@ ColladaAppMaterial::ColladaAppMaterial(const char* matName)
 
    diffuseColor = ColorF::ONE;
    specularColor = ColorF::ONE;
-   roughness = 0.0f;
+   smoothness = 0.0f;
    metalness = 0.0f;
    doubleSided = false;
 }
@@ -70,7 +70,7 @@ ColladaAppMaterial::ColladaAppMaterial(const domMaterial *pMat)
 :  mat(pMat),
    diffuseColor(ColorF::ONE),
    specularColor(ColorF::ONE),
-   roughness(0.0f),
+   smoothness(0.0f),
    metalness(0.0f),
    doubleSided(false)
 {
@@ -97,14 +97,14 @@ ColladaAppMaterial::ColladaAppMaterial(const domMaterial *pMat)
          const domProfile_COMMON::domTechnique::domConstant* constant = commonProfile->getTechnique()->getConstant();
          diffuseColor.set(1.0f, 1.0f, 1.0f, 1.0f);
          resolveColor(constant->getReflective(), &specularColor);
-         resolveFloat(constant->getReflectivity(), &roughness);
+         resolveFloat(constant->getReflectivity(), &smoothness);
          resolveTransparency(constant, &transparency);
       }
       else if (commonProfile->getTechnique()->getLambert()) {
          const domProfile_COMMON::domTechnique::domLambert* lambert = commonProfile->getTechnique()->getLambert();
          resolveColor(lambert->getDiffuse(), &diffuseColor);
          resolveColor(lambert->getReflective(), &specularColor);
-         resolveFloat(lambert->getReflectivity(), &roughness);
+         resolveFloat(lambert->getReflectivity(), &smoothness);
          resolveTransparency(lambert, &transparency);
       }
       else if (commonProfile->getTechnique()->getPhong()) {
@@ -124,9 +124,9 @@ ColladaAppMaterial::ColladaAppMaterial(const domMaterial *pMat)
 
       // Normalize specularPower (1-128). Values > 1 are assumed to be
       // already normalized.
-      if (roughness <= 1.0f)
-          roughness *= 128;
-      roughness = mClampF(roughness, 1.0f, 128.0f);
+      if (smoothness <= 1.0f)
+          smoothness *= 128;
+      smoothness = mClampF(smoothness, 1.0f, 128.0f);
 
       // Set translucency
       if (transparency != 0.0f) {
@@ -216,7 +216,7 @@ Material *ColladaAppMaterial::createMaterial(const Torque::Path& path) const
    newMat->mSpecularMapFilename[0] = specularMap;
 
    newMat->mDiffuse[0] = diffuseColor;
-   newMat->mRoughness[0] = roughness;
+   newMat->msmoothness[0] = smoothness;
    newMat->mMetalness[0] = metalness;
 
    newMat->mDoubleSided = doubleSided;

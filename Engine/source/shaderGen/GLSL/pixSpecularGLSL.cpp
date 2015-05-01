@@ -143,10 +143,10 @@ void SpecularMapGLSL::processPix( Vector<ShaderComponent*> &componentList, const
    Var *specularColor = new Var( "specularColor", "vec4" );
    Var *metalness = (Var*)LangElement::find("metalness");
    if (!metalness) metalness = new Var("metalness", "float");
-   Var *roughness = (Var*)LangElement::find("roughness");
-   if (!roughness) roughness = new Var("roughness", "float");
+   Var *smoothness = (Var*)LangElement::find("smoothness");
+   if (!smoothness) smoothness = new Var("smoothness", "float");
    MultiLine * meta = new MultiLine;
-   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(roughness), texOp));
+   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
    meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
    meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
    output = meta;
