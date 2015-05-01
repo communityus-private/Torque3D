@@ -1878,17 +1878,17 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_isDeferred] && matinfo)
    {
        //scale by 8 to derive the full range of mips from the g channel of the 'specular map'
-       texCube = new GenOp("textureLod(  @, @, (@.b*8.0) )", cubeMap, reflectVec, matinfo);
+       texCube = new GenOp("textureLod(  @, @, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, matinfo);
    }
    else
    {
-       Var *roughness = (Var*)LangElement::find("roughness");
-       if (roughness)
+       Var *smoothness = (Var*)LangElement::find("smoothness");
+       if (smoothness)
        {
-           texCube = new GenOp("textureLod(  @, @, (@) )", cubeMap, reflectVec, roughness);
+           texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, smoothness);
        }
        else if (glossColor) //failing that, rtry and find color data
-           texCube = new GenOp("textureLod( @, @, @.g*8.0)", cubeMap, reflectVec, glossColor);
+           texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, glossColor);
        else
            texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
    }
@@ -2177,14 +2177,14 @@ void RTLightingFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
    lightSpotFalloff->uniform = true;
    lightSpotFalloff->constSortPos = cspPotentialPrimitive;
 
-   Var *roughness = (Var*)LangElement::find("roughness");
+   Var *smoothness = (Var*)LangElement::find("smoothness");
    if (!fd.features[MFT_SpecularMap])
    {
-      if (!roughness)
+      if (!smoothness)
       {
-         roughness = new Var("roughness", "float");
-         roughness->uniform = true;
-         roughness->constSortPos = cspPotentialPrimitive;
+         smoothness = new Var("smoothness", "float");
+         smoothness->uniform = true;
+         smoothness->constSortPos = cspPotentialPrimitive;
       }
    }
 
@@ -2205,7 +2205,7 @@ void RTLightingFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
                                   "      @, @, @, @, @, @, @, @,\r\n"
                                   "      @, @ );\r\n", 
       wsView, wsPosition, wsNormal, lightMask,
-      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, roughness, specularColor,
+      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, smoothness, specularColor,
       rtShading, specular ) );
 
    // Apply the lighting to the diffuse color.

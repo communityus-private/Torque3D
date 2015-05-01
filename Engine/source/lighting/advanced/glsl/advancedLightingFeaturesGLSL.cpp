@@ -518,19 +518,19 @@ void DeferredPixelSpecularGLSL::processPix(  Vector<ShaderComponent*> &component
       specCol->constSortPos = cspPotentialPrimitive;
    }
 
-   Var *roughness = (Var*)LangElement::find("roughness");
-   if (!roughness)
+   Var *smoothness = (Var*)LangElement::find("smoothness");
+   if (!smoothness)
    {
-      roughness = new Var("roughness", "float");
+      smoothness = new Var("smoothness", "float");
 
       // If the gloss map flag is set, than the specular power is in the alpha
       // channel of the specular map
       if (fd.features[MFT_GlossMap])
-         meta->addStatement(new GenOp("   @ = @.a;\r\n", new DecOp(roughness), specCol));
+         meta->addStatement(new GenOp("   @ = @.a;\r\n", new DecOp(smoothness), specCol));
       else
       {
-         roughness->uniform = true;
-         roughness->constSortPos = cspPotentialPrimitive;
+         smoothness->uniform = true;
+         smoothness->constSortPos = cspPotentialPrimitive;
       }
    }
 
@@ -559,7 +559,7 @@ void DeferredPixelSpecularGLSL::processPix(  Vector<ShaderComponent*> &component
    }
    // (a^m)^n = a^(m*n)
    		meta->addStatement( new GenOp( "   @ = pow( abs(@), max((@ / AL_ConstantSpecularPower),1.0f)) * @;\r\n", 
-            specDecl, d_specular, roughness, metalness));
+            specDecl, d_specular, smoothness, metalness));
 
    LangElement *specMul = new GenOp( "vec4( @.rgb, 0 ) * @", specCol, specular );
    LangElement *final = specMul;

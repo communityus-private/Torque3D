@@ -116,11 +116,11 @@ Material::Material()
    {
       mDiffuse[i].set( 1.0f, 1.0f, 1.0f, 1.0f );
 
-      mRoughness[i] = 0.0f;
+      msmoothness[i] = 0.0f;
       mMetalness[i] = 0.0f;
       mPixelSpecular[i] = false;
       
-      mRoughnessChan[i] = 0;
+      msmoothnessChan[i] = 0;
       mAOChan[i] = 1;
       mMetalChan[i] = 2;
 
@@ -261,17 +261,17 @@ void Material::initPersistFields()
       addField( "detailNormalMapStrength", TypeF32, Offset(mDetailNormalMapStrength, Material), MAX_STAGES,
          "Used to scale the strength of the detail normal map when blended with the base normal map." );
       
-      addField("roughness", TypeF32, Offset(mRoughness, Material), MAX_STAGES,
-         "The degree of roughness when not using a specularMap." );
+      addField("smoothness", TypeF32, Offset(msmoothness, Material), MAX_STAGES,
+         "The degree of smoothness when not using a specularMap." );
 
 		addField("metalness", TypeF32, Offset(mMetalness, Material), MAX_STAGES,
          "The degree of Metalness when not using a specularMap." );
 
-      addField("pixelSpecular", TypeBool, Offset(mPixelSpecular, Material), MAX_STAGES, 
+      /*addField("pixelSpecular", TypeBool, Offset(mPixelSpecular, Material), MAX_STAGES, 
          "This enables per-pixel specular highlights controlled by the alpha channel of the "
          "normal map texture.  Note that if pixel specular is enabled the DXTnm format will not "
          "work with your normal map, unless you are also using a specular map." );
-
+         */
       addProtectedField( "accuEnabled", TYPEID< bool >(), Offset( mAccuEnabled, Material ),
             &_setAccuEnabled, &defaultProtectedGetFn, MAX_STAGES, "Accumulation texture." );
 
@@ -292,12 +292,12 @@ void Material::initPersistFields()
 
       addField( "specularMap", TypeImageFilename, Offset(mSpecularMapFilename, Material), MAX_STAGES,
          "Prepacked specular map texture. The RGB channels of this texture provide per-pixel reference values for: "
-         "roughness (R), Ambient Occlusion (G), and metalness(B)");
+         "smoothness (R), Ambient Occlusion (G), and metalness(B)");
 
       addField("roughMap", TypeImageFilename, Offset(mRoughMapFilename, Material), MAX_STAGES,
-         "Roughness map. will be packed into the R channel of a packed 'specular' map");
-      addField("roughnessChan", TypeF32, Offset(mRoughnessChan, Material), MAX_STAGES,
-         "The input channel roughness maps use.");
+         "smoothness map. will be packed into the R channel of a packed 'specular' map");
+      addField("smoothnessChan", TypeF32, Offset(msmoothnessChan, Material), MAX_STAGES,
+         "The input channel smoothness maps use.");
 
       addField("aoMap", TypeImageFilename, Offset(mAOMapFilename, Material), MAX_STAGES,
          "Ambient Occlusion map. will be packed into the G channel of a packed 'specular' map");

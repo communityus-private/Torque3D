@@ -53,7 +53,7 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/ 
    mTexMatSC = shader->getShaderConstHandle(ShaderGenVars::texMat);
    mToneMapTexSC = shader->getShaderConstHandle(ShaderGenVars::toneMap);
    mSpecularColorSC = shader->getShaderConstHandle(ShaderGenVars::specularColor);
-   mRoughnessSC = shader->getShaderConstHandle(ShaderGenVars::roughness);
+   msmoothnessSC = shader->getShaderConstHandle(ShaderGenVars::smoothness);
    mMetalnessSC = shader->getShaderConstHandle(ShaderGenVars::metalness);
    mAccuScaleSC = shader->getShaderConstHandle("$accuScale");
    mAccuDirectionSC = shader->getShaderConstHandle("$accuDirection");
@@ -1068,7 +1068,7 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
    if ( !shaderConsts->wasLost() )
       return;
 
-   shaderConsts->setSafe(handles->mRoughnessSC, mMaterial->mRoughness[stageNum]);
+   shaderConsts->setSafe(handles->msmoothnessSC, mMaterial->msmoothness[stageNum]);
    shaderConsts->setSafe(handles->mMetalnessSC, mMaterial->mMetalness[stageNum]);
 
    shaderConsts->setSafe(handles->mParallaxInfoSC, mMaterial->mParallaxScale[stageNum]);   

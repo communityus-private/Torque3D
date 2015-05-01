@@ -214,7 +214,7 @@ public:
 
    FileName mSpecularMapFilename[MAX_STAGES];
    FileName mRoughMapFilename[MAX_STAGES];
-   F32      mRoughnessChan[MAX_STAGES];
+   F32      msmoothnessChan[MAX_STAGES];
    FileName mAOMapFilename[MAX_STAGES];
    F32      mAOChan[MAX_STAGES];
    FileName mMetalMapFilename[MAX_STAGES];
@@ -232,7 +232,7 @@ public:
    /// the diffuse texture color.
    ColorF mDiffuse[MAX_STAGES];
    
-   F32 mRoughness[MAX_STAGES];
+   F32 msmoothness[MAX_STAGES];
    F32 mMetalness[MAX_STAGES];
    bool mPixelSpecular[MAX_STAGES];
 

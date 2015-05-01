@@ -46,7 +46,7 @@ public:
    String                     specularMap;
    ColorF                     diffuseColor;
    ColorF                     specularColor;
-   F32                        roughness;
+   F32                        smoothness;
    F32                        metalness;
    bool                       doubleSided;
 
