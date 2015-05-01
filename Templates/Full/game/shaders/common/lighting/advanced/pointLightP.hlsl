@@ -219,13 +219,14 @@ float4 main(   ConvexConnectP IN,
 
    #endif // !NO_SHADOW
    
+   float3 lightcol = lightColor.rgb;
    #ifdef USE_COOKIE_TEX
 
       // Lookup the cookie sample.
       float4 cookie = texCUBE( cookieMap, mul( viewToLightProj, -lightVec ) );
 
       // Multiply the light with the cookie tex.
-      lightColor.rgb *= cookie.rgb;
+      lightcol *= cookie.rgb;
 
       // Use a maximum channel luminance to attenuate 
       // the lighting else we get specular in the dark
@@ -241,7 +242,7 @@ float4 main(   ConvexConnectP IN,
    float4 colorSample = tex2D( colorBuffer, uvScene );
    float specular = 0;
    float3 real_specular = AL_CalcSpecular(  colorSample.rgb,
-                                      lightColor.rgb,
+                                      lightcol,
                                       lightVec, 
                                       normal, 
                                       viewSpacePos,
@@ -249,7 +250,7 @@ float4 main(   ConvexConnectP IN,
                                       matInfo.a );
                                     
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   float3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed * atten;
+   float3 lightColorOut = (lightcol + real_specular) * lightBrightness * shadowed * atten;
    float4 addToResult = 0.0;
     
    // TODO: This needs to be removed when lightmapping is disabled
