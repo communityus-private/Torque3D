@@ -57,8 +57,7 @@ float4 main( Conn IN ) : COLOR0
    float3 reflected = normalize(reflect(normalEyeRay, wsNormal));
 
    float4 matInfoSample = tex2D( matInfoBuffer, IN.uv0 );
-   matInfoSample.b= (matInfoSample.b*0.8)+0.2; //need a minimum to avoid asymptotic results
-   
+   float roughness = min((1.0 - matInfoSample.b)*11.0 + 1.0, 5.0);
    // Make 'raycast' into the grid in search of color!
    float4 final_color = float4(0, 0, 0, 0);
    float3 curPos, volume_position;
@@ -81,7 +80,7 @@ float4 main( Conn IN ) : COLOR0
             break; 
        }
 
-       voxelcolor = tex3Dlod(lpvData, float4(volume_position,matInfoSample.b));
+       voxelcolor = tex3Dlod(lpvData, float4(volume_position,roughness));
            
        // if we want to add this voxels color
        if ( voxelcolor.a > 0 )
@@ -97,6 +96,6 @@ float4 main( Conn IN ) : COLOR0
        }
    }
    
-   final_color.rgb = AL_CalcSpecular( float3(1,1,1), final_color.rgb, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
+   final_color.rgb = AL_CalcSpecular( float3(1,1,1), final_color.rgb, reflected, wsNormal, normalEyeRay, roughness, matInfoSample.a );
    return float4(saturate(final_color.rgb), 0.0);
 }

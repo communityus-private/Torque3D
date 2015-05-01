@@ -55,7 +55,7 @@ void main()
    vec3 reflected = normalize(reflect(normalEyeRay, wsNormal));
 
    vec4 matInfoSample = texture( matInfoBuffer, IN_uv0 );
-   matInfoSample.b= (matInfoSample.b*0.8)+0.2; //need a minimum to avoid asymptotic results
+   float roughness = min((1.0 - matInfoSample.b)*11.0 + 1.0, 5.0);
    
    // Make 'raycast' into the grid in search of color!
    vec4 final_color = vec4(0, 0, 0, 0);
@@ -79,7 +79,7 @@ void main()
             break; 
        }
 
-       voxelcolor = texture(lpvData, volume_position, matInfoSample.b);
+       voxelcolor = texture(lpvData, volume_position, roughness);
            
        // if we want to add this voxels color
        if ( voxelcolor.a > 0 )
@@ -95,6 +95,6 @@ void main()
        }
    }
    
-   final_color.rgb = AL_CalcSpecular( vec3(1.0,1.0,1.0), final_color.rgb, reflected, wsNormal, normalEyeRay, matInfoSample.b, matInfoSample.a );
+   final_color.rgb = AL_CalcSpecular( vec3(1.0,1.0,1.0), final_color.rgb, reflected, wsNormal, normalEyeRay, roughness, matInfoSample.a );
    OUT_col = vec4(saturate(final_color.rgb), 0.0);
 }
