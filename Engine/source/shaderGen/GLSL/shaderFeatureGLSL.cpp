@@ -1878,17 +1878,17 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_isDeferred] && matinfo)
    {
        //scale by 8 to derive the full range of mips from the g channel of the 'specular map'
-       texCube = new GenOp("textureLod(  @, @, min((1.0 - @.b)*11.0 + 1.0, 5.0))", cubeMap, reflectVec, matinfo);
+       texCube = new GenOp("textureLod(  @, @, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, matinfo);
    }
    else
    {
        Var *smoothness = (Var*)LangElement::find("smoothness");
        if (smoothness)
        {
-           texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*11.0 + 1.0, 5.0))", cubeMap, reflectVec, smoothness);
+           texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, smoothness);
        }
        else if (glossColor) //failing that, rtry and find color data
-           texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*11.0 + 1.0, 5.0))", cubeMap, reflectVec, glossColor);
+           texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, glossColor);
        else
            texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
    }
