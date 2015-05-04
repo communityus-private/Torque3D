@@ -226,7 +226,7 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
     //  Microfacet Specular Cook-Torrance
     //
         
-        float alphaSqr = pow( roughness, 2 );
+        float alphaSqr = pow( 1.0-roughness, 4 );
  
         float D = alphaSqr / ( PI * pow( (pow( nDotH, 2 ) * ( alphaSqr - 1.0f ) + 1.0f ), 2 ) );
  
@@ -235,7 +235,7 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
     //
 
  
-        float k = pow( ( roughness + 1.0f ), 2 ) / 8;
+        float k = pow( ( (1.0-roughness) + 1.0f ), 2 ) / 8;
  
         float G  = (nDotL / ( nDotL * ( 1.0f - k ) + k )) * (nDotV/( nDotV * ( 1.0f - k ) + k ));
 
