@@ -263,6 +263,8 @@ void main()
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
+   float4 ibl = texture( lightBuffer, uvScene )*Sat_NL_Att;
+   addToResult+=ibl;
    addToResult.rgb *= matInfo.ggg;
 
    OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);

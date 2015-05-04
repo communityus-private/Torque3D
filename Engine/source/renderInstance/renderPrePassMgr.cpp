@@ -187,6 +187,18 @@ bool RenderPrePassMgr::_updateTargets()
                         mTargetChain[i]->attachTexture(GFXTextureTarget::Color2, mMatInfoTarget.getTexture());
    }
 
+   if (mLightMapTex.getFormat() != colorFormat || mLightMapTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
+   {
+      mLightMapTarget.release();
+      mLightMapTex.set(mTargetSize.x, mTargetSize.y, colorFormat,
+         &GFXDefaultRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
+         1, GFXTextureManager::AA_MATCH_BACKBUFFER);
+      mLightMapTarget.setTexture(mLightMapTex);
+
+      for (U32 i = 0; i < mTargetChainLength; i++)
+         mTargetChain[i]->attachTexture(GFXTextureTarget::Color3, mLightMapTarget.getTexture());
+   }
+   /*
    // Attach the light info buffer as a second render target, if there is
    // lightmapped geometry in the scene.
    AdvancedLightBinManager *lightBin;
@@ -210,7 +222,7 @@ bool RenderPrePassMgr::_updateTargets()
          }
       }
    }
-
+   */
    _initShaders();
    GFX->finalizeReset();
 
