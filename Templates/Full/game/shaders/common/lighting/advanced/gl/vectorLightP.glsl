@@ -298,6 +298,8 @@ void main()
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
+   float4 ibl = texture( lightBuffer, uv0 )*Sat_NL_Att;
+   addToResult+=ibl;
    addToResult.rgb *= matInfo.ggg;
 
    // Sample the AO texture.      

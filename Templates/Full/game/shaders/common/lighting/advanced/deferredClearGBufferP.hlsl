@@ -25,6 +25,7 @@ struct Fragout
    float4 col : COLOR0;
    float4 col1 : COLOR1;
    float4 col2 : COLOR2;
+   float4 col3 : COLOR3;
 };
 
 //-----------------------------------------------------------------------------
@@ -42,6 +43,9 @@ Fragout main( )
 
    // Clear Material Info Buffer.
    OUT.col2 = float4(0.0, 0.0, 0.0, 1.0);
+   
+   // Clear Light Info Buffer.
+   OUT.col3 = float4(0.0, 0.0, 0.0, 1.0);
 
    return OUT;
 }
