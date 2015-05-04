@@ -282,7 +282,8 @@ void main()
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
 
    vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
-   vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
+   float4 ibl = tex2D( lightBuffer, IN.uv0 )*Sat_NL_Att+lightAmbient;
+   vec4 addToResult = (ibl * (1 - ambientCameraFactor)) + ( ibl * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
    // TODO: This needs to be removed when lightmapping is disabled
    // as its extra work per-pixel on dynamic lit scenes.
@@ -298,8 +299,6 @@ void main()
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-   float4 ibl = texture( lightBuffer, uv0 )*Sat_NL_Att;
-   addToResult+=ibl;
    addToResult.rgb *= matInfo.ggg;
 
    // Sample the AO texture.      
