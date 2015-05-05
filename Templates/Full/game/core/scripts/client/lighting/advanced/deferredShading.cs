@@ -158,7 +158,6 @@ singleton PostEffect( AL_MetalMapVisualize )
    renderPriority = 9999;
 };
 
-/// Toggles the visualization of the AL lighting specular power buffer.
 function toggleMetalMapViz( %enable )
 {   
    if ( %enable $= "" )
@@ -170,4 +169,39 @@ function toggleMetalMapViz( %enable )
       AL_MetalMapVisualize.enable();
    else if ( !%enable )
       AL_MetalMapVisualize.disable();    
+}
+
+//Light map display (lightmapinfo)
+new ShaderData( AL_LightMapShader )
+{
+   DXVertexShaderFile = "shaders/common/postFx/postFxV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/dbgLightMapVisualizeP.hlsl";
+
+   OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
+   OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgLightMapVisualizeP.glsl";
+
+   samplerNames[0] = "lightMapTex";
+   pixVersion = 2.0;
+};
+
+singleton PostEffect( AL_LightMapVisualize )
+{   
+   shader = AL_LightMapShader;
+   stateBlock = AL_DefaultVisualizeState;
+   texture[0] = "#lightmapinfo";
+   target = "$backBuffer";
+   renderPriority = 9999;
+};
+
+function toggleLightMapViz( %enable )
+{   
+   if ( %enable $= "" )
+   {
+      $AL_LightMapShaderVar = AL_LightMapVisualize.isEnabled() ? false : true;
+      AL_LightMapVisualize.toggle();
+   }
+   else if ( %enable )
+      AL_LightMapVisualize.enable();
+   else if ( !%enable )
+      AL_LightMapVisualize.disable();    
 }
