@@ -39,6 +39,10 @@
 #include "gfx/sim/cubemapData.h"
 #endif
 
+#ifndef _REFLECTOR_H_
+#include "scene/reflector.h"
+#endif
+
 /// A volume in space that blocks visibility.
 class EnvVolume : public ScenePolyhedralSpace
 {
@@ -60,6 +64,12 @@ class EnvVolume : public ScenePolyhedralSpace
       // Name (path) of the area environment cube map.
       String mAreaEnvMapName;
       
+      // reflector
+      String cubeDescName;
+      U32 cubeDescId;
+      ReflectorDesc *reflectorDesc;
+      CubeReflector mCubeReflector;
+
       // SceneSpace.
       virtual void _renderObject( ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat );
 
@@ -80,6 +90,7 @@ class EnvVolume : public ScenePolyhedralSpace
       virtual void onRemove();
       void inspectPostApply();
       void setTexture( const String& name );
+      void refreshVolume();
 
       // Static Functions.
       static void consoleInit();

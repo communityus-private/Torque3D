@@ -61,7 +61,9 @@ ConsoleDocClass( EnvVolume,
 //-----------------------------------------------------------------------------
 
 EnvVolume::EnvVolume()
-   : mTransformDirty( true )
+   : mTransformDirty( true ),
+   cubeDescId( 0 ),
+   reflectorDesc( NULL )
 {
    VECTOR_SET_ASSOCIATION( mWSPoints );
    VECTOR_SET_ASSOCIATION( mVolumeQueryList );
@@ -88,12 +90,19 @@ EnvVolume::EnvVolume()
 EnvVolume::~EnvVolume()
 {
    mAreaEnvMap = NULL;
+   if (isClientObject())
+      mCubeReflector.unregisterReflector();
 }
 
 void EnvVolume::initPersistFields()
 {
       addField( "AreaEnvMap", TypeCubemapName, Offset( mAreaEnvMapName, EnvVolume ),
          "Environment map applied to objects for a given area." );
+
+      addGroup("Reflection");
+      addField("cubeReflectorDesc", TypeRealString, Offset(cubeDescName, EnvVolume ),
+         "References a ReflectorDesc datablock that defines performance and quality properties for dynamic reflections.\n");
+      endGroup("Reflection");
 
    Parent::initPersistFields();
 }
@@ -113,6 +122,23 @@ bool EnvVolume::onAdd()
    if( !Parent::onAdd() )
       return false;
 
+   // Resolve CubeReflectorDesc.
+   if (cubeDescName.isNotEmpty())
+   {
+      Sim::findObject(cubeDescName, reflectorDesc);
+   }
+   else if (cubeDescId > 0)
+   {
+      Sim::findObject(cubeDescId, reflectorDesc);
+   }
+
+   if (isClientObject())
+   {
+      mCubeReflector.unregisterReflector();
+
+      if (reflectorDesc)
+         mCubeReflector.registerReflector(this, reflectorDesc);
+   }
    // Prepare some client side things.
    if ( isClientObject() )  
    {
@@ -160,6 +186,11 @@ U32 EnvVolume::packUpdate( NetConnection *connection, U32 mask, BitStream *strea
 {
    U32 retMask = Parent::packUpdate( connection, mask, stream );
 
+   if (stream->writeFlag(reflectorDesc != NULL))
+   {
+      stream->writeRangedU32(reflectorDesc->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
+   }
+
    if (stream->writeFlag(mask & InitialUpdateMask))
    {
       stream->write( mAreaEnvMapName );
@@ -171,12 +202,20 @@ U32 EnvVolume::packUpdate( NetConnection *connection, U32 mask, BitStream *strea
 void EnvVolume::unpackUpdate( NetConnection *connection, BitStream *stream )
 {
    Parent::unpackUpdate( connection, stream );
+   bool refresh = false;
+   if( stream->readFlag() )
+   {
+      cubeDescId = stream->readRangedU32( DataBlockObjectIdFirst, DataBlockObjectIdLast );
+      refresh = true;
+   }
 
    if (stream->readFlag())
    {
       stream->read( &mAreaEnvMapName );
       setTexture(mAreaEnvMapName);
+      refresh = true;
    }
+   refreshVolume();
 }
 
 //-----------------------------------------------------------------------------
@@ -205,6 +244,41 @@ void EnvVolume::setTexture( const String& name )
    refreshVolumes();
 }
 
+void EnvVolume::refreshVolume()
+{
+   // This function tests each accumulation object to
+   // see if it's within the bounds of an accumulation
+   // volume. If so, it will pass on the accumulation
+   // texture of the volume to the object.
+
+   // This function should only be called when something
+   // global like change of volume or material occurs.
+
+   // Clear old data.
+   mEnvMap = gLevelEnvMap;
+
+   for (S32 n = 0; n < smProbedObjects.size(); ++n)
+   {
+      SimObjectPtr<SceneObject> object = smProbedObjects[n];
+      if (object.isNull()) continue;
+      //area or per object cubemapping
+      if (mCubeReflector.isEnabled())
+            mAreaEnvMap->mCubemap = mCubeReflector.getCubemap();
+         else if ((mAreaEnvMap) && !(mAreaEnvMap->mCubemap))
+            mAreaEnvMap->createMap();
+
+         if (containsPoint(object->getPosition()))
+         {
+            if (mAreaEnvMap)
+            {
+               object->mEnvMap = mAreaEnvMap->mCubemap;
+            }
+            else
+               Con::errorf("Invalid area environment map!");
+         }
+   }
+}
+
 void EnvVolume::refreshVolumes()
 {
    // This function tests each accumulation object to
@@ -228,27 +302,8 @@ void EnvVolume::refreshVolumes()
    {
       SimObjectPtr<EnvVolume> volume = smEnvVolumes[i];
 
-      if ( volume.isNull() ) continue;
-
-      for (S32 n = 0; n < smProbedObjects.size(); ++n)
-      {
-         SimObjectPtr<SceneObject> object = smProbedObjects[n];
-         if ( object.isNull() ) continue;
-
-         if ((volume->mAreaEnvMap) && !(volume->mAreaEnvMap->mCubemap))
-            volume->mAreaEnvMap->createMap();
-
-         if (volume->containsPoint(object->getPosition()))
-         {
-            if (volume->mAreaEnvMap)
-            {
-               object->mEnvMap = volume->mAreaEnvMap->mCubemap;
-            }
-            else
-               Con::errorf("Invalid area environment map!");
-
-         }
-      }
+      if (volume.isNull()) continue; 
+      volume->refreshVolume();
    }
 }
 
@@ -279,19 +334,6 @@ void EnvVolume::updateObject(SceneObject* object)
    {
       SimObjectPtr<EnvVolume> volume = smEnvVolumes[i];
       if (volume.isNull()) continue;
-
-      if ((volume->mAreaEnvMap) && !(volume->mAreaEnvMap->mCubemap))
-         volume->mAreaEnvMap->createMap();
-
-      if (volume->containsPoint(object->getPosition()))
-      {
-         if (volume->mAreaEnvMap)
-         {
-            object->mEnvMap = volume->mAreaEnvMap->mCubemap;
-         }
-         else
-            Con::errorf("Invalid area environment map!");
-
-      }
+      volume->refreshVolume();
    }
 }
