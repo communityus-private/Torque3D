@@ -199,8 +199,6 @@ float4 main(   ConvexConnectP IN,
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-   float4 ibl = tex2D( lightBuffer, uvScene )*Sat_NL_Att;
-   addToResult+=ibl;
    addToResult.rgb *= matInfo.ggg;
    
    return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
