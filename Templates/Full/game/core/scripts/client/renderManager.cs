@@ -45,25 +45,25 @@ function initRenderManager()
       // provided in $inTex
       resolveEffect = "AL_FormatCopy";
    };
-   DiffuseRenderPassManager.addManager( new RenderPassStateBin() { renderOrder = 0.001; stateToken = AL_FormatToken; } );
+   DiffuseRenderPassManager.addManager( new RenderPassStateBin()           { renderOrder = 0.001; stateToken = AL_FormatToken; } );
      
    // We really need to fix the sky to render after all the 
    // meshes... but that causes issues in reflections.
-   DiffuseRenderPassManager.addManager( new RenderObjectMgr(SkyBin) { bintype = "Sky"; renderOrder = 0.1; processAddOrder = 0.1; } );
+   DiffuseRenderPassManager.addManager( new RenderObjectMgr(SkyBin)        { bintype = "Sky"; renderOrder = 0.1; processAddOrder = 0.1; } );
    
-   //DiffuseRenderPassManager.addManager( new RenderVistaMgr()               { bintype = "Vista"; renderOrder = 0.15; processAddOrder = 0.15; } );
+   //DiffuseRenderPassManager.addManager( new RenderVistaMgr()             { bintype = "Vista"; renderOrder = 0.15; processAddOrder = 0.15; } );
    
-   DiffuseRenderPassManager.addManager( new RenderObjectMgr()              { bintype = "Begin"; renderOrder = 0.2; processAddOrder = 0.2; } );
+   DiffuseRenderPassManager.addManager( new RenderObjectMgr(BeginBin)      { bintype = "Begin"; renderOrder = 0.2; processAddOrder = 0.2; } );
    // Normal mesh rendering.
-   DiffuseRenderPassManager.addManager( new RenderTerrainMgr()             { renderOrder = 0.4; processAddOrder = 0.4; basicOnly = true; } );
-   DiffuseRenderPassManager.addManager( new RenderMeshMgr()                { bintype = "Mesh"; renderOrder = 0.5; processAddOrder = 0.5; basicOnly = true; } );
-   DiffuseRenderPassManager.addManager( new RenderImposterMgr()            { renderOrder = 0.56; processAddOrder = 0.56; basicOnly = true; } );
-   DiffuseRenderPassManager.addManager( new RenderObjectMgr()              { bintype = "Object"; renderOrder = 0.6; processAddOrder = 0.6; } );
+   DiffuseRenderPassManager.addManager( new RenderTerrainMgr(TerrainBin)   { renderOrder = 0.4; processAddOrder = 0.4; basicOnly = true; } );
+   DiffuseRenderPassManager.addManager( new RenderMeshMgr(MeshBin)         { bintype = "Mesh"; renderOrder = 0.5; processAddOrder = 0.5; basicOnly = true; } );
+   DiffuseRenderPassManager.addManager( new RenderImposterMgr(ImposterBin) { renderOrder = 0.56; processAddOrder = 0.56; basicOnly = true; } );
+   DiffuseRenderPassManager.addManager( new RenderObjectMgr(ObjectBin)     { bintype = "Object"; renderOrder = 0.6; processAddOrder = 0.6; } );
      
-   DiffuseRenderPassManager.addManager( new RenderObjectMgr()              { bintype = "Shadow"; renderOrder = 0.7; processAddOrder = 0.7; } );
-   DiffuseRenderPassManager.addManager( new RenderMeshMgr()                { bintype = "DecalRoad"; renderOrder = 0.8; processAddOrder = 0.8; basicOnly = true; } );
-   DiffuseRenderPassManager.addManager( new RenderMeshMgr()                { bintype = "Decal"; renderOrder = 0.81; processAddOrder = 0.81; } );
-   DiffuseRenderPassManager.addManager( new RenderOcclusionMgr()           { bintype = "Occluder"; renderOrder = 0.9; processAddOrder = 0.9; } );
+   DiffuseRenderPassManager.addManager( new RenderObjectMgr(ShadowBin)     { bintype = "Shadow"; renderOrder = 0.7; processAddOrder = 0.7; } );
+   DiffuseRenderPassManager.addManager( new RenderMeshMgr(DecalRoadBin)    { bintype = "DecalRoad"; renderOrder = 0.8; processAddOrder = 0.8; basicOnly = true; } );
+   DiffuseRenderPassManager.addManager( new RenderMeshMgr(DecalBin)        { bintype = "Decal"; renderOrder = 0.81; processAddOrder = 0.81; } );
+   DiffuseRenderPassManager.addManager( new RenderOcclusionMgr(OccluderBin){ bintype = "Occluder"; renderOrder = 0.9; processAddOrder = 0.9; } );
      
    // We now render translucent objects that should handle
    // their own fogging and lighting.
@@ -71,20 +71,20 @@ function initRenderManager()
    // Note that the fog effect is triggered before this bin.
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(ObjTranslucentBin) { bintype = "ObjectTranslucent"; renderOrder = 1.0; processAddOrder = 1.0; } );
          
-   DiffuseRenderPassManager.addManager( new RenderObjectMgr()              { bintype = "Water"; renderOrder = 1.2; processAddOrder = 1.2; } );
-   DiffuseRenderPassManager.addManager( new RenderObjectMgr()              { bintype = "Foliage"; renderOrder = 1.3; processAddOrder = 1.3; } );
-	DiffuseRenderPassManager.addManager( new RenderParticleMgr()            { renderOrder = 1.35; processAddOrder = 1.35; } );
-   DiffuseRenderPassManager.addManager( new RenderTranslucentMgr()         { renderOrder = 1.4; processAddOrder = 1.4; } );
+   DiffuseRenderPassManager.addManager( new RenderObjectMgr(WaterBin)          { bintype = "Water"; renderOrder = 1.2; processAddOrder = 1.2; } );
+   DiffuseRenderPassManager.addManager( new RenderObjectMgr(FoliageBin)        { bintype = "Foliage"; renderOrder = 1.3; processAddOrder = 1.3; } );
+	DiffuseRenderPassManager.addManager( new RenderParticleMgr(ParticleBin)    { renderOrder = 1.35; processAddOrder = 1.35; } );
+   DiffuseRenderPassManager.addManager( new RenderTranslucentMgr(TranslucentBin){ renderOrder = 1.4; processAddOrder = 1.4; } );
    
    // Note that the GlowPostFx is triggered after this bin.
-   DiffuseRenderPassManager.addManager( new RenderGlowMgr(GlowBin) { renderOrder = 1.5; processAddOrder = 1.5; } );
+   DiffuseRenderPassManager.addManager( new RenderGlowMgr(GlowBin)             { renderOrder = 1.5; processAddOrder = 1.5; } );
    
    // We render any editor stuff from this bin.  Note that the HDR is
    // completed before this bin to keep editor elements from tone mapping.   
-   DiffuseRenderPassManager.addManager( new RenderObjectMgr(EditorBin) { bintype = "Editor"; renderOrder = 1.6; processAddOrder = 1.6; } );
+   DiffuseRenderPassManager.addManager( new RenderObjectMgr(EditorBin)         { bintype = "Editor"; renderOrder = 1.6; processAddOrder = 1.6; } );
                
    // Resolve format change token last.
-   DiffuseRenderPassManager.addManager( new RenderPassStateBin() { renderOrder = 1.7; stateToken = AL_FormatToken; } );
+   DiffuseRenderPassManager.addManager( new RenderPassStateBin(FinalBin)       { renderOrder = 1.7; stateToken = AL_FormatToken; } );
 }
 
 /// This post effect is used to copy data from the non-MSAA back-buffer to the
