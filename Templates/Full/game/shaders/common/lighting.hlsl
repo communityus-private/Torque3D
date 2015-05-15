@@ -220,30 +220,29 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
  
     float nDotH = saturate( dot( normal, H ) );
     float nDotV = saturate( dot( normal, V ) );
-    float HDotV = saturate(  dot( H, V )  );
+    float vDotH = saturate(  dot( V, H )  );
  
     //
     //  Microfacet Specular Cook-Torrance
     //
-        
-        float alphaSqr = pow( 1.0-roughness, 4 );
+       
+        float alphaSqr = pow( 1.0-roughness, 2 );
  
         float D = alphaSqr / ( PI * pow( (pow( nDotH, 2 ) * ( alphaSqr - 1.0f ) + 1.0f ), 2 ) );
  
     //
     //  G( l, v, h ) ==> Geometric attenution, basicly a visibility term
     //
-
  
-        float k = pow( ( (1.0-roughness) + 1.0f ), 2 ) / 8;
- 
-        float G  = (nDotL / ( nDotL * ( 1.0f - k ) + k )) * (nDotV/( nDotV * ( 1.0f - k ) + k ));
-
+    float geo_b = (2.0f * nDotH * nDotV ) / vDotH;
+    float geo_c = (2.0f * nDotH * nDotL ) / vDotH;
+    float G   = min( 1.0f, min( geo_b, geo_c ) );
+       
     //
     //  F( v, h ) ==> frensel term, slicks approach.
     //
-
-        float Fc = pow( 1.0f - HDotV,  5.0f );
+ 
+        float Fc = pow( vDotH,  5.0f );
  
         float Fdielectric = 0.04 + ( 1.0 - 0.04 ) * Fc;
        
