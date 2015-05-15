@@ -28,16 +28,18 @@
 float4 main( PFXVertToPix IN, 
              uniform sampler2D colorBufferTex : register(S0),
              uniform sampler2D lightPrePassTex : register(S1),
-             uniform sampler2D matInfoTex : register(S2)) : COLOR0
+             uniform sampler2D matInfoTex : register(S2),
+             uniform sampler2D lightMapTex : register(S3)) : COLOR0
 {        
    float4 lightBuffer = tex2D( lightPrePassTex, IN.uv0 );
    float4 colorBuffer = tex2D( colorBufferTex, IN.uv0 );
    float4 matInfo = tex2D( matInfoTex, IN.uv0 );
+   float4 lightMapBuffer = tex2D( lightMapTex, IN.uv0 );
    
    colorBuffer *= float4(lightBuffer.rgb, 1.0);
    float3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * 0.92 * matInfo.a);
-   lightBuffer.rgb = lerp( 0.08 * lightBuffer.rgb, colorBuffer.rgb, min(matInfo.a, 0.92));
-   colorBuffer.rgb =  diffuseColor + lightBuffer.rgb;
+   lightBuffer.rgb = lerp( 0.08 * lightMapBuffer.rgb, colorBuffer.rgb, min(matInfo.a, 0.92));
+   colorBuffer.rgb =  diffuseColor + lightMapBuffer.rgb*lightBuffer.rgb;
    
    return hdrEncode( colorBuffer );   
 }

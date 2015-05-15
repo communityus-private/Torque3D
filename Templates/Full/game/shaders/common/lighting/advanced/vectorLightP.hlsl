@@ -283,8 +283,7 @@ float4 main( FarFrustumQuadConnectP IN,
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    float3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
    
-   float4 ibl = tex2D( lightBuffer, IN.uv0 )*Sat_NL_Att+lightAmbient;
-   float4 addToResult = ( ibl * (1 - ambientCameraFactor)) + ( ibl * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
+   float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
 
    // TODO: This needs to be removed when lightmapping is disabled
    // as its extra work per-pixel on dynamic lit scenes.

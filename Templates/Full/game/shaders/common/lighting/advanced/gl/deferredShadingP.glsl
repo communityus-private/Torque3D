@@ -28,6 +28,7 @@
 uniform sampler2D colorBufferTex;
 uniform sampler2D lightPrePassTex;
 uniform sampler2D matInfoTex;
+uniform sampler2D lightMapTex;
 
 out vec4 OUT_col;
 
@@ -36,11 +37,12 @@ void main()
    vec4 lightBuffer = texture( lightPrePassTex, uv0 );
    vec4 colorBuffer = texture( colorBufferTex, uv0 );
    vec4 matInfo = texture( matInfoTex, uv0 );
+   vec4 lightMapBuffer = texture( lightMapTex, uv0 );
    
    colorBuffer *= vec4(lightBuffer.rgb, 1.0);
    vec3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * 0.92 * matInfo.a);
-   lightBuffer.rgb = mix( 0.08 * lightBuffer.rgb, colorBuffer.rgb, min(matInfo.a, 0.92));
-   colorBuffer.rgb =  diffuseColor + lightBuffer.rgb;
+   lightBuffer.rgb = mix( 0.08 * lightMapBuffer.rgb, colorBuffer.rgb, min(matInfo.a, 0.92));
+   colorBuffer.rgb =  diffuseColor + lightMapBuffer.rgb*lightBuffer.rgb;
 
    OUT_col = hdrEncode( colorBuffer );
 }
