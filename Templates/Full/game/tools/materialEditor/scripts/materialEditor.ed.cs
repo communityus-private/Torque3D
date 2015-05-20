@@ -918,6 +918,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->specMapNameText.setText( (%material).specularMap[%layer] );
       MaterialEditorPropertiesWindow-->specMapDisplayBitmap.setBitmap( (%material).specularMap[%layer] );
    }
+   MaterialEditorPropertiesWindow-->FlipRBCheckbox.setValue((%material).FlipRB[%layer]);
    
    if((%material).roughMap[%layer] $= "") 
    {

@@ -34,15 +34,15 @@ out vec4 OUT_col;
 
 void main()
 {        
-   vec4 lightBuffer = texture( lightPrePassTex, uv0 );
-   vec4 colorBuffer = texture( colorBufferTex, uv0 );
-   vec4 matInfo = texture( matInfoTex, uv0 );
-   vec4 lightMapBuffer = texture( lightMapTex, uv0 );
+   vec3 lightBuffer = texture( lightPrePassTex, uv0 ).rgb;
+   vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb;
+   vec3 lightMapBuffer = texture( lightMapTex, uv0 ).rgb;
+   float metalness = texture( matInfoTex, uv0 ).a;
    
-   colorBuffer *= vec4(lightBuffer.rgb, 1.0);
-   vec3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * 0.92 * matInfo.a);
-   lightBuffer.rgb = mix( 0.08 * lightMapBuffer.rgb, colorBuffer.rgb, min(matInfo.a, 0.92));
-   colorBuffer.rgb =  diffuseColor + lightMapBuffer.rgb*lightBuffer.rgb;
-
-   OUT_col = hdrEncode( colorBuffer );
+   vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
+   vec3 reflectColor = mix( colorBuffer, lightMapBuffer, metalness);
+   colorBuffer = diffuseColor + reflectColor;
+   colorBuffer *= lightBuffer;
+   
+   OUT_col = hdrEncode( vec4(colorBuffer, 1.0) );
 }

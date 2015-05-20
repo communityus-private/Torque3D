@@ -1836,7 +1836,7 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
          meta->addStatement( new GenOp( "   @ = tex2D( @, @ );\r\n", colorDecl, newMap, inTex ) );
       }
    }
-   else
+   if (!glossColor)
    {
       if (fd.features[MFT_isDeferred])
          glossColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
@@ -1878,17 +1878,17 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_isDeferred] && matinfo)
    {
        //scale by 8 to derive the full range of mips from the g channel of the 'specular map'
-       texCube = new GenOp("textureLod(  @, @, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, matinfo);
+       texCube = new GenOp("textureLod(  @, @, min((1.0 - @.b)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, matinfo);
    }
    else
    {
        Var *smoothness = (Var*)LangElement::find("smoothness");
        if (smoothness)
        {
-           texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, smoothness);
+           texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, smoothness);
        }
        else if (glossColor) //failing that, rtry and find color data
-           texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, glossColor);
+           texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, glossColor);
        else
            texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
    }
@@ -1924,9 +1924,9 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget3));
       //metalness: black(0) = color, white(1) = reflection
       if (fd.features[MFT_ToneMap])
-         meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
+         meta->addStatement(new GenOp("   @ *= vec4(pow(@,vec4(2.2)));\r\n", targ, texCube));
       else
-         meta->addStatement(new GenOp("   @ = vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
+         meta->addStatement(new GenOp("   @ = vec4(pow(@,vec4(2.2)));\r\n", targ, texCube));
    }
    else
    {

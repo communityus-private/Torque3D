@@ -284,21 +284,7 @@ void main()
    vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
    vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
-   // TODO: This needs to be removed when lightmapping is disabled
-   // as its extra work per-pixel on dynamic lit scenes.
-   //
-   // Special lightmapping pass.
-   if ( lightMapParams.a < 0.0 )
-   {
-      // This disables shadows on the backsides of objects.
-      shadowed = dotNL < 0.0f ? 1.0f : shadowed;
-
-      Sat_NL_Att = 1.0f;
-      lightColorOut = vec3(shadowed);
-      specular *= lightBrightness;
-      addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
-   }
-   addToResult.rgb *= matInfo.ggg;
+   addToResult.rgb *= matInfo.g;
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK

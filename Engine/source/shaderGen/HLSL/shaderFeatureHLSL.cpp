@@ -1878,19 +1878,19 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_isDeferred] && matinfo)
    {
        //scale by 8 to derive the full range of mips from the g channel of the 'specular map'
-       texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, matinfo);
+       texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*9.0 + 3.0, 8.0)))", cubeMap, reflectVec, matinfo);
    }
    else
    {
        Var *smoothness = (Var*)LangElement::find("smoothness");
        if (smoothness)
        {
-           texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, smoothness);
+           texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*9.0 + 3.0, 8.0)))", cubeMap, reflectVec, smoothness);
        }
        else
        {
            if (glossColor) //failing that, try and find color data
-               texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, glossColor);
+               texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*9.0 + 3.0, 8.0)))", cubeMap, reflectVec, glossColor);
            else //failing *that*, just draw the cubemap
                texCube = new GenOp("texCUBE( @, @)", cubeMap, reflectVec);
        }
@@ -1927,9 +1927,9 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
        Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget3));
        //metalness: black(0) = color, white(1) = reflection
        if (fd.features[MFT_ToneMap])
-          meta->addStatement(new GenOp("   @ *= float4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
+          meta->addStatement(new GenOp("   @ *= pow(@,2.2);\r\n", targ, texCube));
        else
-          meta->addStatement(new GenOp("   @ = float4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
+          meta->addStatement(new GenOp("   @ = pow(@,2.2);\r\n", targ, texCube));
    }
    else
    {

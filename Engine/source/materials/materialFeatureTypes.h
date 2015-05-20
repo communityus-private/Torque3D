@@ -123,6 +123,7 @@ DeclareFeatureType( MFT_VertLitTone );
 
 DeclareFeatureType( MFT_CubeMap );
 DeclareFeatureType( MFT_PixSpecular );
+DeclareFeatureType( MFT_FlipRB );
 DeclareFeatureType( MFT_SpecularMap );
 DeclareFeatureType( MFT_GlossMap );
 

@@ -119,7 +119,8 @@ Material::Material()
       msmoothness[i] = 0.0f;
       mMetalness[i] = 0.0f;
       mPixelSpecular[i] = false;
-      
+      mFlipRB[i] = false;
+
       msmoothnessChan[i] = 0;
       mAOChan[i] = 1;
       mMetalChan[i] = 2;
@@ -289,6 +290,9 @@ void Material::initPersistFields()
 		 
       addField("accuSpecular",   TypeF32, Offset(mAccuSpecular, Material), MAX_STAGES,
          "Changes specularity to this value where the accumulated material is present.");
+
+      addField("FlipRB", TypeBool, Offset(mFlipRB, Material), MAX_STAGES,
+         "Substance Designer Workaround.");
 
       addField( "specularMap", TypeImageFilename, Offset(mSpecularMapFilename, Material), MAX_STAGES,
          "Prepacked specular map texture. The RGB channels of this texture provide per-pixel reference values for: "
