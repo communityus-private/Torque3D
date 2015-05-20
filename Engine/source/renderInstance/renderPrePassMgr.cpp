@@ -640,6 +640,11 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    }
    newFeatures.addFeature( MFT_DiffuseColor );
 
+   if (mMaterial->mFlipRB[stageNum])
+   {
+      newFeatures.addFeature(MFT_FlipRB);
+   }
+
    // Deferred Shading : Specular
    if( mStages[stageNum].getTex( MFT_SpecularMap ) )
        newFeatures.addFeature( MFT_DeferredSpecMap );

@@ -71,9 +71,17 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    Var *smoothness = (Var*)LangElement::find("smoothness");
    if (!smoothness) smoothness = new Var("smoothness", "float");
 
-   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
+   if (fd.features[MFT_FlipRB])
+   {
+      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(metalness), texOp));
+      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(smoothness), texOp));
+   }
+   else
+   {
+      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
+      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
+   }
    meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
-   meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
 
    meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
    output = meta;
