@@ -697,12 +697,6 @@ void DeferredMinnaertGLSL::processPix( Vector<ShaderComponent*> &componentList,
 void DeferredSubSurfaceGLSL::processPix(  Vector<ShaderComponent*> &componentList, 
                                           const MaterialFeatureData &fd )
 {
-   // If there is no deferred information, bail on this feature
-   if( fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting] )
-   {
-      output = NULL;
-      return;
-   }
 
    Var *subSurfaceParams = new Var;
    subSurfaceParams->setType( "vec4" );
@@ -714,9 +708,13 @@ void DeferredSubSurfaceGLSL::processPix(  Vector<ShaderComponent*> &componentLis
    Var *d_NL_Att = (Var*)LangElement::find( "d_NL_Att" );
 
    MultiLine *meta = new MultiLine;
-   meta->addStatement( new GenOp( "   float subLamb = smoothstep(-@.a, 1.0, @) - smoothstep(0.0, 1.0, @);\r\n", subSurfaceParams, d_NL_Att, d_NL_Att ) );
-   meta->addStatement( new GenOp( "   subLamb = max(0.0, subLamb);\r\n" ) );
-   meta->addStatement( new GenOp( "   @;\r\n", assignColor( new GenOp( "vec4(@ + (subLamb * @.rgb), 1.0)", d_lightcolor, subSurfaceParams ), Material::Mul ) ) );
+   if (fd.features[MFT_isDeferred])
+   {
+      Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget3));
+      meta->addStatement(new GenOp("   @.rgb += @.rgb*@.a;\r\n", targ, subSurfaceParams, subSurfaceParams));
+      output = meta;
+      return;
+   }
 
    output = meta;
 }

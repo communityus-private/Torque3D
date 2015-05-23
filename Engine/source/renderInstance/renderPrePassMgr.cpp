@@ -767,6 +767,14 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
       newFeatures.addFeature( MFT_CubeMap );
       newFeatures.removeFeature(MFT_UseInstancing);
    }
+   if (mMaterial->mVertLit[stageNum])
+      newFeatures.addFeature(MFT_VertLit);
+
+   if (mMaterial->mMinnaertConstant[stageNum] > 0.0f)
+      newFeatures.addFeature(MFT_MinnaertShading);
+
+   if (mMaterial->mSubSurface[stageNum])
+      newFeatures.addFeature(MFT_SubSurface);
    
 #endif
    

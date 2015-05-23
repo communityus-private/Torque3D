@@ -52,14 +52,14 @@ ImplementFeatureType( MFT_Imposter, U32(-1), -1, true );
 ImplementFeatureType( MFT_AccuMap, MFG_PreLighting, 2.0f, true );
 
 ImplementFeatureType( MFT_RTLighting, MFG_Lighting, 2.0f, true );
-ImplementFeatureType( MFT_SubSurface, MFG_Lighting, 3.0f, true );
-ImplementFeatureType( MFT_LightMap, MFG_Lighting, 4.0f, true );
-ImplementFeatureType( MFT_ToneMap, MFG_Lighting, 5.0f, true );
-ImplementFeatureType( MFT_VertLitTone, MFG_Lighting, 6.0f, false );
-ImplementFeatureType( MFT_VertLit, MFG_Lighting, 7.0f, true );
-ImplementFeatureType( MFT_PixSpecular, MFG_Lighting, 9.0f, true );
+ImplementFeatureType( MFT_LightMap, MFG_Lighting, 3.0f, true );
+ImplementFeatureType( MFT_ToneMap, MFG_Lighting, 4.0f, true );
+ImplementFeatureType( MFT_VertLitTone, MFG_Lighting, 5.0f, false );
+ImplementFeatureType( MFT_PixSpecular, MFG_Lighting, 6.0f, true );
+ImplementFeatureType( MFT_CubeMap, MFG_Lighting, 7.0f, true );
+ImplementFeatureType( MFT_SubSurface, MFG_Lighting, 8.0f, true );
+ImplementFeatureType( MFT_VertLit, MFG_Lighting, 9.0f, true );
 ImplementFeatureType( MFT_MinnaertShading, MFG_Lighting, 10.0f, true );
-ImplementFeatureType( MFT_CubeMap, MFG_Lighting, 11.0f, true );
 
 ImplementFeatureType( MFT_GlowMask, MFG_PostLighting, 1.0f, true );
 ImplementFeatureType( MFT_Visibility, MFG_PostLighting, 2.0f, true );

@@ -334,8 +334,6 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    if ( mMaterial->mAnimFlags[stageNum] )
       fd.features.addFeature( MFT_TexAnim );  
 
-   if ( mMaterial->mVertLit[stageNum] )
-      fd.features.addFeature( MFT_VertLit );
 
    bool envmapped = false;
    SceneObject * test = dynamic_cast<SceneObject *>(mUserObject);
@@ -363,13 +361,7 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
             fd.features.hasFeature( MFT_IsTranslucent ) ||
             fd.features.hasFeature( MFT_ForwardShading )) )
       fd.features.addFeature( MFT_Fog );
-
-   if ( mMaterial->mMinnaertConstant[stageNum] > 0.0f )
-      fd.features.addFeature( MFT_MinnaertShading );
-
-   if ( mMaterial->mSubSurface[stageNum] )
-      fd.features.addFeature( MFT_SubSurface );
-
+   
    if ( !mMaterial->mCellLayout[stageNum].isZero() )
    {
       fd.features.addFeature( MFT_DiffuseMapAtlas );
