@@ -558,8 +558,8 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
 
-   meta->addStatement( new GenOp( "      @ = lerp( @, @ + @, @ );\r\n",
-                                    outColor, outColor, baseColor, detailColor, detailBlend ) );
+   meta->addStatement( new GenOp( "      @ += @ * @;\r\n",
+                                    outColor, detailColor, detailBlend));
 
    meta->addStatement( new GenOp( "   }\r\n" ) );
 
@@ -760,6 +760,29 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
    // Add to the blend total.
    meta->addStatement( new GenOp( "   @ += @;\r\n", blendTotal, detailBlend ) );
 
+   // If this is a prepass then we skip color.
+   if ( fd.features.hasFeature( MFT_PrePassConditioner ) )
+   {
+      // Check to see if we have a gbuffer normal.
+      Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
+
+      // If we have a gbuffer normal and we don't have a
+      // normal map feature then we need to lerp in a 
+      // default normal else the normals below this layer
+      // will show thru.
+      if (  gbNormal && 
+            !fd.features.hasFeature( MFT_TerrainNormalMap, detailIndex ) )
+      {
+         Var *viewToTangent = getInViewToTangent( componentList );
+
+         meta->addStatement( new GenOp( "   @ = lerp( @, @[2], min( @, @.w ) );\r\n", 
+            gbNormal, gbNormal, viewToTangent, detailBlend, inDet ) );
+      }
+
+      output = meta;
+      return;
+   }
+
    Var *detailColor = (Var*)LangElement::find( "macroColor" ); 
    if ( !detailColor )
    {
@@ -814,9 +837,8 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
 
-   meta->addStatement( new GenOp( "      @ = lerp( @, @ + @, @ );\r\n",
-                                    outColor, outColor, outColor, detailColor, detailBlend ) );
-   //outColor, outColor, baseColor, detailColor, detailBlend ) );
+   meta->addStatement(new GenOp("      @ += @ * @;\r\n",
+                                    outColor, detailColor, detailBlend));
 
    meta->addStatement( new GenOp( "   }\r\n" ) );
 
