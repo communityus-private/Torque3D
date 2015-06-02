@@ -201,6 +201,9 @@ ProjectileData::ProjectileData()
 
 //--------------------------------------------------------------------------
 
+FRangeValidator projectilePrecisionValidator(0.f, 100.f);
+FRangeValidator projectileTrackDelayValidator(0, 100000);
+
 void ProjectileData::initPersistFields()
 {
    addField("particleEmitter", TYPEID< ParticleEmitterData >(), Offset(particleEmitter, ProjectileData),
@@ -242,8 +245,8 @@ void ProjectileData::initPersistFields()
       "it bounces before exploding.\n\n");
 
     addNamedField(isGuided, TypeBool, ProjectileData);  
-    addNamedFieldV(precision, TypeF32, ProjectileData, new FRangeValidator(0, 100));   
-    addNamedFieldV(trackDelay, TypeS32, ProjectileData, new FRangeValidator(0, 100000));
+    addNamedFieldV(precision, TypeF32, ProjectileData, &projectilePrecisionValidator);
+    addNamedFieldV(trackDelay, TypeS32, ProjectileData, &projectileTrackDelayValidator);
 
    addField("velInheritFactor", TypeF32, Offset(velInheritFactor, ProjectileData),
       "@brief Amount of velocity the projectile recieves from the source that created it.\n\n"
