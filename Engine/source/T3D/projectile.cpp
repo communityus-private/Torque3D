@@ -1288,12 +1288,12 @@ void Projectile::simulate( F32 dt )
          //F32 timeLeft = 1.0f - rInfo.t;
          newPosition = oldPosition = rInfo.point + rInfo.normal * 0.05f;
       }
-		  else explode( oldPosition, Point3F(0.0f,0.0f,0.0f), VehicleObjectType );
+		  else explode( oldPosition, Point3F::UnitZ, VehicleObjectType );
 	  }
       }
    else if ( mCurrTick > mDataBlock->lifetime )
    {
-	   explode( oldPosition, Point3F(0.0f,0.0f,0.0f), VehicleObjectType );
+      explode(oldPosition, Point3F::UnitZ, VehicleObjectType);
    }
 
    // re-enable the collision response on the source object now
