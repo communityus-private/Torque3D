@@ -100,7 +100,7 @@ LightShadowMap::LightShadowMap( LightInfo *light )
    mTarget = GFX->allocRenderToTextureTarget();
    mVizQuery = GFX->createOcclusionQuery();
 
-   smShadowMaps.push_back(this);
+   smShadowMaps.push_back( this );
    mStaticRefreshTimer = PlatformTimer::create();
    mDynamicRefreshTimer = PlatformTimer::create();
 }
@@ -109,7 +109,9 @@ LightShadowMap::~LightShadowMap()
 {
    mTarget = NULL;
    SAFE_DELETE( mVizQuery );   
-   
+   SAFE_DELETE(mStaticRefreshTimer);
+   SAFE_DELETE(mDynamicRefreshTimer);
+
    releaseTextures();
 
    smShadowMaps.remove( this );
@@ -283,8 +285,8 @@ bool LightShadowMap::setTextureStage( U32 currTexFlag, LightingShaderConstants* 
    {
       S32 reg = lsc->mDynamicShadowMapSC->getSamplerRegister();
 
-      if ( reg != -1 )
-         GFX->setTexture( reg, mShadowMapTex);
+   	if ( reg != -1 )
+      	GFX->setTexture( reg, mShadowMapTex);
 
       return true;
    }
@@ -478,7 +480,7 @@ LightingShaderConstants::LightingShaderConstants()
       mLightInvRadiusSqSC(NULL),
       mLightSpotDirSC(NULL),
       mLightSpotAngleSC(NULL),
-      mLightSpotFalloffSC(NULL),
+	  mLightSpotFalloffSC(NULL),
       mShadowMapSC(NULL), 
       mDynamicShadowMapSC(NULL), 
       mShadowMapSizeSC(NULL), 
@@ -720,8 +722,8 @@ LightShadowMap* ShadowMapParams::getOrCreateShadowMap(bool _isDynamic)
    {
       newShadowMap->setDynamic(false);
       mShadowMap = newShadowMap;
-      return mShadowMap;
-   }
+   return mShadowMap;
+}
 }
 
 GFXTextureObject* ShadowMapParams::getCookieTex()
