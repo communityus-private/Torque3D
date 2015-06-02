@@ -1044,10 +1044,13 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(const Torque::Path &
    }
 
    // Could put in a final check for 'retTexObj == NULL' here as an error message.
-   for (U32 i=0; i < 4; i++)
+   for (U32 i = 0; i < 4; i++)
    {
       if (bitmap[i])
+      {
          bitmap[i]->deleteImage();
+         delete bitmap[i];
+      }
    }
    return retTexObj;
 }
