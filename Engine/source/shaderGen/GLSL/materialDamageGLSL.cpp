@@ -21,8 +21,8 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
-#include "shaderGen/HLSL/shaderFeatureHLSL.h"
-#include "shaderGen/HLSL/materialDamageHLSL.h"
+#include "shaderGen/GLSL/shaderFeatureGLSL.h"
+#include "shaderGen/GLSL/materialDamageGLSL.h"
 
 #include "shaderGen/langElement.h"
 #include "shaderGen/shaderOp.h"
@@ -38,12 +38,12 @@
 //****************************************************************************
 // Damage Texture -Albedo
 //****************************************************************************
-U32 AlbedoDamageFeatHLSL::getOutputTargets(const MaterialFeatureData &fd) const
+U32 AlbedoDamageFeatGLSL::getOutputTargets(const MaterialFeatureData &fd) const
 {
    return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
 }
 
-void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
+void AlbedoDamageFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
    const MaterialFeatureData &fd)
 {
    //determine output target
@@ -54,7 +54,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    }
 
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "vec2", true, componentList);
 
    Var *damage = new Var("materialDamage", "float");
    damage->uniform = true;
@@ -71,7 +71,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    LangElement *statement = NULL;
    if (fd.features[MFT_Imposter])
    {
-      statement = new GenOp("tex2D(@, @)", albedoDamage, texCoord);
+      statement = new GenOp("texture(@, @)", albedoDamage, texCoord);
    }
    else
    {
@@ -81,7 +81,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    output = new GenOp("   @ = lerp(@,@,@);\r\n", targ, targ, statement, damage);
 }
 
-ShaderFeature::Resources AlbedoDamageFeatHLSL::getResources(const MaterialFeatureData &fd)
+ShaderFeature::Resources AlbedoDamageFeatGLSL::getResources(const MaterialFeatureData &fd)
 {
    Resources res;
    res.numTex = 1;
@@ -90,7 +90,7 @@ ShaderFeature::Resources AlbedoDamageFeatHLSL::getResources(const MaterialFeatur
    return res;
 }
 
-void AlbedoDamageFeatHLSL::setTexData(Material::StageData &stageDat,
+void AlbedoDamageFeatGLSL::setTexData(Material::StageData &stageDat,
    const MaterialFeatureData &fd,
    RenderPassData &passData,
    U32 &texIndex)
@@ -104,12 +104,12 @@ void AlbedoDamageFeatHLSL::setTexData(Material::StageData &stageDat,
    }
 }
 
-void AlbedoDamageFeatHLSL::processVert(Vector<ShaderComponent*> &componentList,
+void AlbedoDamageFeatGLSL::processVert(Vector<ShaderComponent*> &componentList,
    const MaterialFeatureData &fd)
 {
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
-      "float2",
+      "vec2",
       true,
       fd.features[MFT_TexAnim],
       meta,
@@ -120,11 +120,11 @@ void AlbedoDamageFeatHLSL::processVert(Vector<ShaderComponent*> &componentList,
 //****************************************************************************
 // Damage Texture -Composite
 //****************************************************************************
-void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
+void CompositeDamageFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
    const MaterialFeatureData &fd)
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "vec2", true, componentList);
 
    Var *damage = (Var*)LangElement::find("materialDamage");
    if (!damage){
@@ -151,7 +151,7 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
 
    Var *specularColor = (Var*)LangElement::find("specularColor");
    if (!specularColor) {
-      specularColor = new Var("specularColor", "float4");
+      specularColor = new Var("specularColor", "vec4");
       declareSpec = true;
    };
 
@@ -168,7 +168,7 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    }
 
    MultiLine * meta = new MultiLine;
-   meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n",
+   meta->addStatement(new GenOp("   @ = texture(@, @);\r\n",
       new DecOp(damageComposite), damageCMap, texCoord));
    if (declareSmooth)
       meta->addStatement(new GenOp("   @ = lerp(0.0,@.r,@);\r\n", new DecOp(smoothness), damageComposite, damage));
@@ -198,12 +198,12 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
          material->setStructName("OUT");
       }
       
-      meta->addStatement(new GenOp("   @ = float4(0.0,@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
+      meta->addStatement(new GenOp("   @ = vec4(0.0,@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
    }
    output = meta;
 }
 
-ShaderFeature::Resources CompositeDamageFeatHLSL::getResources(const MaterialFeatureData &fd)
+ShaderFeature::Resources CompositeDamageFeatGLSL::getResources(const MaterialFeatureData &fd)
 {
    Resources res;
    res.numTex = 1;
@@ -212,7 +212,7 @@ ShaderFeature::Resources CompositeDamageFeatHLSL::getResources(const MaterialFea
    return res;
 }
 
-void CompositeDamageFeatHLSL::setTexData(Material::StageData &stageDat,
+void CompositeDamageFeatGLSL::setTexData(Material::StageData &stageDat,
    const MaterialFeatureData &fd,
    RenderPassData &passData,
    U32 &texIndex)
@@ -226,12 +226,12 @@ void CompositeDamageFeatHLSL::setTexData(Material::StageData &stageDat,
    }
 }
 
-void CompositeDamageFeatHLSL::processVert(Vector<ShaderComponent*> &componentList,
+void CompositeDamageFeatGLSL::processVert(Vector<ShaderComponent*> &componentList,
    const MaterialFeatureData &fd)
 {
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
-      "float2",
+      "vec2",
       true,
       fd.features[MFT_TexAnim],
       meta,
