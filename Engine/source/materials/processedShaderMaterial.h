@@ -87,6 +87,9 @@ public:
    GFXShaderConstHandle *mImposterUVs;
    GFXShaderConstHandle *mImposterLimits;
 
+   // Material Damage
+   GFXShaderConstHandle* mMaterialDamageSC;
+
    // Deferred Shading : Material Info Flags
    GFXShaderConstHandle* mMatInfoFlagsSC;
 

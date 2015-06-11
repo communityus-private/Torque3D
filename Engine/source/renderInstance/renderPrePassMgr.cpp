@@ -654,6 +654,15 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    // Deferred Shading : Material Info Flags
    newFeatures.addFeature( MFT_DeferredMatInfoFlags );
 
+   //Damage 
+   if (mStages[stageNum].getTex(MFT_AlbedoDamage))
+      newFeatures.addFeature(MFT_AlbedoDamage);
+   if (mStages[stageNum].getTex(MFT_NormalDamage))
+      newFeatures.addFeature(MFT_NormalDamage);
+   if (mStages[stageNum].getTex(MFT_CompositeDamage))
+      newFeatures.addFeature(MFT_CompositeDamage);
+
+
    for ( U32 i=0; i < fd.features.getCount(); i++ )
    {
       const FeatureType &type = fd.features.getAt( i );

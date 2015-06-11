@@ -172,6 +172,31 @@ void BumpFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       meta->addStatement( new GenOp( "   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale ) );
    }
 
+   if (fd.features.hasFeature(MFT_NormalDamage))
+   {
+      bumpMap = new Var;
+      bumpMap->setType("sampler2D");
+      bumpMap->setName("normalDamageMap");
+      bumpMap->uniform = true;
+      bumpMap->sampler = true;
+      bumpMap->constNum = Var::getTexUnitNum();
+
+      texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+      texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+
+      Var *damageBump = new Var;
+      damageBump->setName("damageBump");
+      damageBump->setType("float4");
+      meta->addStatement(expandNormalMap(texOp, new DecOp(damageBump), damageBump, fd));
+
+      Var *damage = (Var*)LangElement::find("materialDamage");
+      if (!damage){
+         damage = new Var("materialDamage", "float");
+         damage->uniform = true;
+         damage->constSortPos = cspPrimitive;
+      }
+      meta->addStatement(new GenOp("   @.xyz = lerp(@.xyz, @.xyz, @);\r\n", bumpNorm, bumpNorm, damageBump, damage));
+   }
    // We transform it into world space by reversing the 
    // multiplication by the worldToTanget transform.
    Var *wsNormal = new Var( "wsNormal", "float3" );
@@ -206,6 +231,14 @@ ShaderFeature::Resources BumpFeatHLSL::getResources( const MaterialFeatureData &
          res.numTexReg++;
    }
 
+   // Do we have damage normal mapping?
+   if (fd.features[MFT_NormalDamage])
+   {
+      res.numTex++;
+      if (!fd.features[MFT_NormalDamage])
+         res.numTexReg++;
+   }
+
    return res;
 }
 
@@ -231,6 +264,13 @@ void BumpFeatHLSL::setTexData(   Material::StageData &stageDat,
       passData.mTexType[ texIndex ] = Material::DetailBump;
       passData.mSamplerNames[ texIndex ] = "detailBumpMap";
       passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
+   }
+
+   if (fd.features[MFT_NormalDamage])
+   {
+      passData.mTexType[texIndex] = Material::Bump;
+      passData.mSamplerNames[texIndex] = "normalDamageMap";
+      passData.mTexSlot[texIndex++].texObject = stageDat.getTex(MFT_NormalDamage);
    }
 }
 

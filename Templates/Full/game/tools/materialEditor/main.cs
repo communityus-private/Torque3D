@@ -126,6 +126,7 @@ function MaterialEditorPlugin::onActivated( %this )
    lightingPropertiesRollout.Expanded = false;
    materialAnimationPropertiesRollout.Expanded = false;
    materialAdvancedPropertiesRollout.Expanded = false;
+   materialDamagePropertiesRollout.Expanded = false;
    WorldEditorPlugin.onActivated();
 
    EditorGui-->MatEdPropertiesWindow.setVisible( true );

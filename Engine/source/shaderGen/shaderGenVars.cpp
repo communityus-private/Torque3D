@@ -40,6 +40,7 @@ const String ShaderGenVars::nearPlaneWorld("$nearPlaneWorld");
 const String ShaderGenVars::fogData("$fogData");
 const String ShaderGenVars::fogColor("$fogColor");
 const String ShaderGenVars::detailScale("$detailScale");
+const String ShaderGenVars::materialDamage("$materialDamage");
 const String ShaderGenVars::visibility("$visibility");
 const String ShaderGenVars::colorMultiply("$colorMultiply");
 const String ShaderGenVars::alphaTestValue("$alphaTestValue");

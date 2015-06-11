@@ -310,6 +310,31 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
          detailBumpScale->constSortPos = cspPass;
          meta->addStatement( new GenOp( "   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale ) );
       }
+      if (fd.features.hasFeature(MFT_NormalDamage))
+      {
+         bumpMap = new Var;
+         bumpMap->setType("sampler2D");
+         bumpMap->setName("normalDamageMap");
+         bumpMap->uniform = true;
+         bumpMap->sampler = true;
+         bumpMap->constNum = Var::getTexUnitNum();
+
+         texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+         texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+
+         Var *damageBump = new Var;
+         damageBump->setName("damageBump");
+         damageBump->setType("float4");
+         meta->addStatement(expandNormalMap(texOp, new DecOp(damageBump), damageBump, fd));
+
+         Var *damage = (Var*)LangElement::find("materialDamage");
+         if (!damage){
+            damage = new Var("materialDamage", "float");
+            damage->uniform = true;
+            damage->constSortPos = cspPrimitive;
+         }
+         meta->addStatement(new GenOp("   @.xyz = lerp(@.xyz, @.xyz, @);\r\n", bumpNorm, bumpNorm, damageBump, damage));
+      }
 
       // This var is read from GBufferConditionerHLSL and 
       // used in the prepass output.
@@ -461,6 +486,13 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
          passData.mSamplerNames[texIndex] = "detailBumpMap";
          passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
       }
+      
+      if (  fd.features.hasFeature( MFT_NormalDamage ) )
+      {
+         passData.mTexType[texIndex] = Material::Bump;
+         passData.mSamplerNames[texIndex] = "normalDamageMap";
+         passData.mTexSlot[texIndex++].texObject = stageDat.getTex(MFT_NormalDamage);
+      }
    }
    else if (  !fd.features[MFT_Parallax] && !fd.features[MFT_SpecularMap] &&
          ( fd.features[MFT_PrePassConditioner] ||
@@ -476,6 +508,14 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
          passData.mTexType[ texIndex ] = Material::DetailBump;
          passData.mSamplerNames[ texIndex ] = "detailBumpMap";
          passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
+      }
+
+      if (fd.features[MFT_PrePassConditioner] &&
+         fd.features.hasFeature(MFT_NormalDamage))
+      {
+         passData.mTexType[texIndex] = Material::Bump;
+         passData.mSamplerNames[texIndex] = "normalDamageMap";
+         passData.mTexSlot[texIndex++].texObject = stageDat.getTex(MFT_NormalDamage);
       }
    }
 }

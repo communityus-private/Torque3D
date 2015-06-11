@@ -896,18 +896,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->toneMapNameText.setText( (%material).toneMap[%layer] );
       MaterialEditorPropertiesWindow-->toneMapDisplayBitmap.setBitmap( (%material).toneMap[%layer] );
    }
-   
-   if((%material).translucencyMap[%layer] $= "") 
-   {
-      MaterialEditorPropertiesWindow-->translucencyMapNameText.setText( "None" );
-      MaterialEditorPropertiesWindow-->translucencyMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
-   }
-   else
-   {
-      MaterialEditorPropertiesWindow-->translucencyMapNameText.setText( (%material).translucencyMap[%layer] );
-      MaterialEditorPropertiesWindow-->translucencyMapDisplayBitmap.setBitmap( (%material).translucencyMap[%layer] );
-   }
-   
+      
    if((%material).specularMap[%layer] $= "") 
    {
       MaterialEditorPropertiesWindow-->specMapNameText.setText( "None" );
@@ -953,6 +942,41 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->metalMapDisplayBitmap.setBitmap( (%material).metalMap[%layer] );
    }
    
+   // material damage
+      
+   if((%material).albedoDamageMap[%layer] $= "") 
+   {
+      MaterialEditorPropertiesWindow-->albedoDamageMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->albedoDamageMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->albedoDamageMapNameText.setText( (%material).albedoDamageMap[%layer] );
+      MaterialEditorPropertiesWindow-->albedoDamageMapDisplayBitmap.setBitmap( (%material).albedoDamageMap[%layer] );
+   }
+   
+   if((%material).normalDamageMap[%layer] $= "") 
+   {
+      MaterialEditorPropertiesWindow-->normalDamageMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->normalDamageMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->normalDamageMapNameText.setText( (%material).normalDamageMap[%layer] );
+      MaterialEditorPropertiesWindow-->normalDamageMapDisplayBitmap.setBitmap( (%material).normalDamageMap[%layer] );
+   }
+   
+   if((%material).compositeDamageMap[%layer] $= "") 
+   {
+      MaterialEditorPropertiesWindow-->compositeDamageMapNameText.setText( "None" );
+      MaterialEditorPropertiesWindow-->compositeDamageMapDisplayBitmap.setBitmap( "tools/materialeditor/gui/unknownImage" );
+   }
+   else
+   {
+      MaterialEditorPropertiesWindow-->compositeDamageMapNameText.setText( (%material).normalDamageMap[%layer] );
+      MaterialEditorPropertiesWindow-->compositeDamageMapDisplayBitmap.setBitmap( (%material).compositeDamageMap[%layer] );
+   }
+   
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
    MaterialEditorPropertiesWindow-->accuDirectionTextEdit.setText((%material).accuDirection[%layer]);
@@ -974,7 +998,6 @@ function MaterialEditorGui::guiSync( %this, %material )
    MaterialEditorPropertiesWindow-->SmoothnessSlider.setValue((%material).Smoothness[%layer]);
    MaterialEditorPropertiesWindow-->MetalnessTextEdit.setText((%material).Metalness[%layer]);
    MaterialEditorPropertiesWindow-->MetalnessSlider.setValue((%material).Metalness[%layer]);
-   MaterialEditorPropertiesWindow-->pixelSpecularCheckbox.setValue((%material).pixelSpecular[%layer]);
    MaterialEditorPropertiesWindow-->glowCheckbox.setValue((%material).glow[%layer]);
    MaterialEditorPropertiesWindow-->emissiveCheckbox.setValue((%material).emissive[%layer]);
    MaterialEditorPropertiesWindow-->parallaxTextEdit.setText((%material).parallaxScale[%layer]);

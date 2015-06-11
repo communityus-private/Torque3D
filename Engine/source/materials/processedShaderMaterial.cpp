@@ -92,6 +92,9 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/ 
    mDetailBumpStrength = shader->getShaderConstHandle( "$detailBumpStrength" );
    mViewProjSC = shader->getShaderConstHandle( "$viewProj" );
 
+   // Material Damage
+   mMaterialDamageSC = shader->getShaderConstHandle(ShaderGenVars::materialDamage);
+
    // MFT_ImposterVert
    mImposterUVs = shader->getShaderConstHandle( "$imposterUVs" );
    mImposterLimits = shader->getShaderConstHandle( "$imposterLimits" );
@@ -482,6 +485,15 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
          mVertexFormat->hasColor() )
       fd.features.addFeature( MFT_DiffuseVertColor );
 
+   if (mStages[stageNum].getTex(MFT_AlbedoDamage))
+      fd.features.addFeature(MFT_AlbedoDamage);
+   if (mStages[stageNum].getTex(MFT_NormalDamage))
+      fd.features.addFeature(MFT_NormalDamage);
+   if (mStages[stageNum].getTex(MFT_CompositeDamage))
+   {
+      fd.features.addFeature(MFT_CompositeDamage);
+      fd.features.addFeature(MFT_PixSpecular);
+   }
    // Allow features to add themselves.
    for ( U32 i = 0; i < FEATUREMGR->getFeatureCount(); i++ )
    {
@@ -1224,6 +1236,8 @@ void ProcessedShaderMaterial::setSceneInfo(SceneRenderState * state, const Scene
 
    GFXShaderConstBuffer* shaderConsts = _getShaderConstBuffer(pass);
    ShaderConstHandles* handles = _getShaderConstHandles(pass);
+
+   shaderConsts->setSafe( handles->mMaterialDamageSC, sgData.mMaterialDamage);
 
    // Set cubemap stuff here (it's convenient!)
    const Point3F &eyePosWorld = state->getCameraPosition();

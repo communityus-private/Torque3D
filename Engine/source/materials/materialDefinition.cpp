@@ -413,6 +413,20 @@ void Material::initPersistFields()
 
    endArray( "Stages" );
 
+   addGroup("Damage");
+
+   addField("albedoDamageMap", TypeImageFilename, Offset(mAlbedoDamageMapFilename, Material), MAX_STAGES,
+      "Prepacked specular map texture. The RGB channels of this texture provide per-pixel reference values for: "
+      "smoothness (R), Ambient Occlusion (G), and metalness(B)");
+
+   addField("normalDamageMap", TypeImageFilename, Offset(mNormalDamageMapFilename, Material), MAX_STAGES,
+      "smoothness map. will be packed into the R channel of a packed 'specular' map");
+
+   addField("compositeDamageMap", TypeImageFilename, Offset(mCompositeDamageMapFilename, Material), MAX_STAGES,
+      "Ambient Occlusion map. will be packed into the G channel of a packed 'specular' map");
+
+   endGroup("Damage");
+
    addField( "castShadows", TypeBool, Offset(mCastShadows, Material),
       "If set to false the lighting system will not cast shadows from this material." );
 
