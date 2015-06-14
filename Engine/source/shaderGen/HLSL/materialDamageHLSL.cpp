@@ -68,6 +68,22 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    albedoDamage->sampler = true;
    albedoDamage->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
+   Var *floor = (Var*)LangElement::find("materialDamageMin");
+   if (!floor){
+      floor = new Var("materialDamageMin", "float");
+      floor->uniform = true;
+      floor->constSortPos = cspPrimitive;
+   }
+
+   MultiLine * meta = new MultiLine;
+   Var *damageResult = (Var*)LangElement::find("damageResult");
+   if (!damageResult){
+      damageResult = new Var("damageResult", "float");
+      meta->addStatement(new GenOp("   @ = max(@,@);\r\n", new DecOp(damageResult), floor, damage));
+   }
+   else
+      meta->addStatement(new GenOp("   @ = max(@,@);\r\n", damageResult, floor, damage));
+
    LangElement *statement = NULL;
    if (fd.features[MFT_Imposter])
    {
@@ -77,8 +93,8 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    {
       statement = new GenOp("tex2DLinear(@, @)", albedoDamage, texCoord);
    }
-
-   output = new GenOp("   @ = lerp(@,@,@);\r\n", targ, targ, statement, damage);
+   meta->addStatement(new GenOp("   @ = lerp(@,@,@);\r\n", targ, targ, statement, damageResult));
+   output = meta;
 }
 
 ShaderFeature::Resources AlbedoDamageFeatHLSL::getResources(const MaterialFeatureData &fd)
@@ -168,22 +184,38 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    }
 
    MultiLine * meta = new MultiLine;
+   
+   Var *floor = (Var*)LangElement::find("materialDamageMin");
+   if (!floor){
+      floor = new Var("materialDamageMin", "float");
+      floor->uniform = true;
+      floor->constSortPos = cspPrimitive;
+   }
+
+   Var *damageResult = (Var*)LangElement::find("damageResult");
+   if (!damageResult){
+      damageResult = new Var("damageResult", "float");
+      meta->addStatement(new GenOp("   @ = max(@,@);\r\n", new DecOp(damageResult), floor, damage));
+   }
+   else
+      meta->addStatement(new GenOp("   @ = max(@,@);\r\n", damageResult, floor, damage));
+
    meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n",
       new DecOp(damageComposite), damageCMap, texCoord));
    if (declareSmooth)
-      meta->addStatement(new GenOp("   @ = lerp(0.0,@.r,@);\r\n", new DecOp(smoothness), damageComposite, damage));
+      meta->addStatement(new GenOp("   @ = lerp(0.0,@.r,@);\r\n", new DecOp(smoothness), damageComposite, damageResult));
    else
-      meta->addStatement(new GenOp("   @ = lerp(@,@.r,@);\r\n", smoothness, smoothness, damageComposite, damage));
+      meta->addStatement(new GenOp("   @ = lerp(@,@.r,@);\r\n", smoothness, smoothness, damageComposite, damageResult));
 
    if (declareSpec)
-      meta->addStatement(new GenOp("   @ = lerp(float4(1.0,1.0,1.0,1.0),@.ggga,@);\r\n", new DecOp(specularColor), damageComposite, damage));
+      meta->addStatement(new GenOp("   @ = lerp(float4(1.0,1.0,1.0,1.0),@.ggga,@);\r\n", new DecOp(specularColor), damageComposite, damageResult));
    else
-      meta->addStatement(new GenOp("   @ = lerp(@,@.ggga,@);\r\n", specularColor, specularColor, damageComposite, damage));
+      meta->addStatement(new GenOp("   @ = lerp(@,@.ggga,@);\r\n", specularColor, specularColor, damageComposite, damageResult));
 
    if (declareMetal)
-      meta->addStatement(new GenOp("   @ = lerp(0.0,@.b,@);\r\n", new DecOp(metalness), damageComposite, damage));
+      meta->addStatement(new GenOp("   @ = lerp(0.0,@.b,@);\r\n", new DecOp(metalness), damageComposite, damageResult));
    else
-      meta->addStatement(new GenOp("   @ = lerp(@,@.b,@);\r\n", metalness, metalness, damageComposite, damage));
+      meta->addStatement(new GenOp("   @ = lerp(@,@.b,@);\r\n", metalness, metalness, damageComposite, damageResult));
 
    if (fd.features.hasFeature(MFT_isDeferred))
    {

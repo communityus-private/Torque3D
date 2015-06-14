@@ -235,6 +235,8 @@ public:
    FileName mNormalDamageMapFilename[MAX_STAGES];
    /// Damage blend maps (Roughness, AO, Metalness)
    FileName mCompositeDamageMapFilename[MAX_STAGES];
+   /// Damage blend minimum
+   F32      mMaterialDamageMin[MAX_STAGES];
 
    /// This color is the diffuse color of the material
    /// or if it has a texture it is multiplied against 

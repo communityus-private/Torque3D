@@ -195,7 +195,21 @@ void BumpFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
          damage->uniform = true;
          damage->constSortPos = cspPrimitive;
       }
-      meta->addStatement(new GenOp("   @.xyz = mix(@.xyz, @.xyz, @);\r\n", bumpNorm, bumpNorm, damageBump, damage));
+      Var *floor = (Var*)LangElement::find("materialDamageMin");
+      if (!floor){
+         floor = new Var("materialDamageMin", "float");
+         floor->uniform = true;
+         floor->constSortPos = cspPrimitive;
+      }
+
+      Var *damageResult = (Var*)LangElement::find("damageResult");
+      if (!damageResult){
+         damageResult = new Var("damageResult", "float");
+         meta->addStatement(new GenOp("   @ = max(@,@);\r\n", new DecOp(damageResult), floor, damage));
+      }
+      else
+         meta->addStatement(new GenOp("   @ = max(@,@);\r\n", damageResult, floor, damage));
+      meta->addStatement(new GenOp("   @.xyz = mix(@.xyz, @.xyz, @);\r\n", bumpNorm, bumpNorm, damageBump, damageResult));
    }
 	
    // We transform it into world space by reversing the 

@@ -89,6 +89,7 @@ public:
 
    // Material Damage
    GFXShaderConstHandle* mMaterialDamageSC;
+   GFXShaderConstHandle* mMaterialDamageMinSC;
 
    // Deferred Shading : Material Info Flags
    GFXShaderConstHandle* mMatInfoFlagsSC;

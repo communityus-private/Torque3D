@@ -94,6 +94,7 @@ void ShaderConstHandles::init( GFXShader *shader, CustomMaterial* mat /*=NULL*/ 
 
    // Material Damage
    mMaterialDamageSC = shader->getShaderConstHandle(ShaderGenVars::materialDamage);
+   mMaterialDamageMinSC = shader->getShaderConstHandle(ShaderGenVars::materialDamageMin);
 
    // MFT_ImposterVert
    mImposterUVs = shader->getShaderConstHandle( "$imposterUVs" );
@@ -1180,6 +1181,10 @@ void ProcessedShaderMaterial::_setShaderConstants(SceneRenderState * state, cons
       shaderConsts->set( handles->mAccuCoverageSC, mMaterial->mAccuCoverage[stageNum] );
    if( handles->mAccuSpecularSC->isValid() )
       shaderConsts->set( handles->mAccuSpecularSC, mMaterial->mAccuSpecular[stageNum] );
+   
+   // Damage: minimum damage applied (for editor previewing, mostly)
+   if (handles->mMaterialDamageMinSC->isValid())
+      shaderConsts->set(handles->mMaterialDamageMinSC, mMaterial->mMaterialDamageMin[stageNum]);
 }
 
 bool ProcessedShaderMaterial::_hasCubemap(U32 pass)

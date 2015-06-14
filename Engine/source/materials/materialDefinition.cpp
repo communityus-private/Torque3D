@@ -172,6 +172,8 @@ Material::Material()
       mRoughMapFilename[i].clear();
       mAOMapFilename[i].clear();
       mMetalMapFilename[i].clear();
+
+      mMaterialDamageMin[i] = 0.0f;
    }
 
    dMemset(mCellIndex, 0, sizeof(mCellIndex));
@@ -425,6 +427,8 @@ void Material::initPersistFields()
    addField("compositeDamageMap", TypeImageFilename, Offset(mCompositeDamageMapFilename, Material), MAX_STAGES,
       "Ambient Occlusion map. will be packed into the G channel of a packed 'specular' map");
 
+   addField("minDamage", TypeF32, Offset(mMaterialDamageMin, Material), MAX_STAGES,
+      "The minimum ammount of blended damage.");
    endGroup("Damage");
 
    addField( "castShadows", TypeBool, Offset(mCastShadows, Material),
