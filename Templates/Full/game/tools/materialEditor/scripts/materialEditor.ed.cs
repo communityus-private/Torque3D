@@ -977,6 +977,9 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->compositeDamageMapDisplayBitmap.setBitmap( (%material).compositeDamageMap[%layer] );
    }
    
+   MaterialEditorPropertiesWindow-->minDamageTextEdit.setText((%material).minDamage[%layer]);
+   MaterialEditorPropertiesWindow-->minDamageSlider.setValue((%material).minDamage[%layer]);
+   
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
    MaterialEditorPropertiesWindow-->accuScaleTextEdit.setText((%material).accuScale[%layer]);
    MaterialEditorPropertiesWindow-->accuDirectionTextEdit.setText((%material).accuDirection[%layer]);
