@@ -36,7 +36,7 @@ void DeferredRTLightingFeatHLSL::processPixMacros( Vector<GFXShaderMacro> &macro
                                                    const MaterialFeatureData &fd  )
 {
    // Skip deferred features, and use forward shading instead
-   if ( fd.features[MFT_ForwardShading] )
+   if ( !fd.features[MFT_isDeferred] )
    {
       Parent::processPixMacros( macros, fd );
       return;
@@ -56,7 +56,7 @@ void DeferredRTLightingFeatHLSL::processVert(   Vector<ShaderComponent*> &compon
                                                 const MaterialFeatureData &fd )
 {
    // Skip deferred features, and use forward shading instead
-   if ( fd.features[MFT_ForwardShading] )
+   if ( !fd.features[MFT_isDeferred] )
    {
       Parent::processVert( componentList, fd );
       return;
@@ -79,7 +79,7 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
                                              const MaterialFeatureData &fd )
 {
    // Skip deferred features, and use forward shading instead
-   if ( fd.features[MFT_ForwardShading] )
+   if ( !fd.features[MFT_isDeferred] )
    {
       Parent::processPix( componentList, fd );
       return;
@@ -175,7 +175,7 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
 ShaderFeature::Resources DeferredRTLightingFeatHLSL::getResources( const MaterialFeatureData &fd )
 {
    // Skip deferred features, and use forward shading instead
-   if ( fd.features[MFT_ForwardShading] )
+   if ( !fd.features[MFT_isDeferred] )
       return Parent::getResources( fd );
 
    // HACK: See DeferredRTLightingFeatHLSL::setTexData.
@@ -193,7 +193,7 @@ void DeferredRTLightingFeatHLSL::setTexData( Material::StageData &stageDat,
                                              U32 &texIndex )
 {
    // Skip deferred features, and use forward shading instead
-   if ( fd.features[MFT_ForwardShading] )
+   if ( !fd.features[MFT_isDeferred] )
    {
       Parent::setTexData( stageDat, fd, passData, texIndex );
       return;
@@ -246,7 +246,7 @@ void DeferredBumpFeatHLSL::processVert(   Vector<ShaderComponent*> &componentLis
       output = meta;
    }
    else if (   fd.materialFeatures[MFT_NormalsOut] || 
-               fd.features[MFT_ForwardShading] || 
+               !fd.features[MFT_isDeferred] || 
                !fd.features[MFT_RTLighting] )
    {
       Parent::processVert( componentList, fd );
@@ -422,7 +422,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       }
    } 
    else if (   fd.materialFeatures[MFT_NormalsOut] || 
-               fd.features[MFT_ForwardShading] || 
+               !fd.features[MFT_isDeferred] || 
                !fd.features[MFT_RTLighting] )
    {
       Parent::processPix( componentList, fd );
@@ -453,7 +453,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
 ShaderFeature::Resources DeferredBumpFeatHLSL::getResources( const MaterialFeatureData &fd )
 {
    if (  fd.materialFeatures[MFT_NormalsOut] || 
-         fd.features[MFT_ForwardShading] || 
+         !fd.features[MFT_isDeferred] || 
          fd.features[MFT_Parallax] ||
          !fd.features[MFT_RTLighting] )
       return Parent::getResources( fd );
@@ -482,7 +482,7 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
                                        U32 &texIndex )
 {
    if (  fd.materialFeatures[MFT_NormalsOut] || 
-         fd.features[MFT_ForwardShading] || 
+         !fd.features[MFT_isDeferred] || 
          !fd.features[MFT_RTLighting] )
    {
       Parent::setTexData( stageDat, fd, passData, texIndex );
@@ -539,7 +539,7 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
 void DeferredPixelSpecularHLSL::processVert( Vector<ShaderComponent*> &componentList, 
                                              const MaterialFeatureData &fd )
 {
-   if( fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting] )
+   if( !fd.features[MFT_isDeferred] || !fd.features[MFT_RTLighting] )
    {
       Parent::processVert( componentList, fd );
       return;
@@ -550,7 +550,7 @@ void DeferredPixelSpecularHLSL::processVert( Vector<ShaderComponent*> &component
 void DeferredPixelSpecularHLSL::processPix(  Vector<ShaderComponent*> &componentList, 
                                              const MaterialFeatureData &fd )
 {
-   if( fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting] )
+   if( !fd.features[MFT_isDeferred] || !fd.features[MFT_RTLighting] )
    {
       Parent::processPix( componentList, fd );
       return;
@@ -635,7 +635,7 @@ void DeferredPixelSpecularHLSL::processPix(  Vector<ShaderComponent*> &component
 
 ShaderFeature::Resources DeferredPixelSpecularHLSL::getResources( const MaterialFeatureData &fd )
 {
-   if( fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting] )
+   if( !fd.features[MFT_isDeferred] || !fd.features[MFT_RTLighting] )
       return Parent::getResources( fd );
 
    Resources res; 
@@ -646,7 +646,7 @@ ShaderFeature::Resources DeferredPixelSpecularHLSL::getResources( const Material
 ShaderFeature::Resources DeferredMinnaertHLSL::getResources( const MaterialFeatureData &fd )
 {
    Resources res;
-   if( !fd.features[MFT_ForwardShading] && fd.features[MFT_RTLighting] )
+   if( fd.features[MFT_isDeferred] && fd.features[MFT_RTLighting] )
    {
       res.numTex = 1;
       res.numTexReg = 1;
@@ -659,7 +659,7 @@ void DeferredMinnaertHLSL::setTexData( Material::StageData &stageDat,
                                        RenderPassData &passData, 
                                        U32 &texIndex )
 {
-   if( !fd.features[MFT_ForwardShading] && fd.features[MFT_RTLighting] )
+   if( fd.features[MFT_isDeferred] && fd.features[MFT_RTLighting] )
    {
       NamedTexTarget *texTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
       if ( texTarget )
@@ -674,7 +674,7 @@ void DeferredMinnaertHLSL::setTexData( Material::StageData &stageDat,
 void DeferredMinnaertHLSL::processPixMacros( Vector<GFXShaderMacro> &macros, 
                                              const MaterialFeatureData &fd  )
 {
-   if( !fd.features[MFT_ForwardShading] && fd.features[MFT_RTLighting] )
+   if( fd.features[MFT_isDeferred] && fd.features[MFT_RTLighting] )
    {
       // Pull in the uncondition method for the g buffer
       NamedTexTarget *texTarget = NamedTexTarget::find( RenderPrePassMgr::BufferName );
@@ -691,7 +691,7 @@ void DeferredMinnaertHLSL::processVert(   Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    // If there is no deferred information, bail on this feature
-   if( fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting] )
+   if( !fd.features[MFT_isDeferred] || !fd.features[MFT_RTLighting] )
    {
       output = NULL;
       return;
@@ -708,7 +708,7 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
                                        const MaterialFeatureData &fd )
 {
    // If there is no deferred information, bail on this feature
-   if( fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting] )
+   if( !fd.features[MFT_isDeferred] || !fd.features[MFT_RTLighting] )
    {
       output = NULL;
       return;
