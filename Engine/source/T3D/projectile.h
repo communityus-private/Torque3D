@@ -20,6 +20,16 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+// Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
+// Copyright (C) 2015 Faust Logic, Inc.
+//
+//    Changes:
+//        enhanced-projectile -- ...
+//        datablock-temp-clone -- Implements creation of temporary datablock clones to
+//            allow late substitution of datablock fields.
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+
 #ifndef _PROJECTILE_H_
 #define _PROJECTILE_H_
 
@@ -112,6 +122,9 @@ public:
    ExplosionData* waterExplosion;      // Water Explosion Datablock
    S32 waterExplosionId;               // Water Explosion ID
 
+   ExplosionData* spark;
+   S32 sparkId;
+
    SplashData* splash;                 // Water Splash Datablock
    S32 splashId;                       // Water splash ID
 
@@ -153,6 +166,12 @@ public:
    
    DECLARE_CALLBACK( void, onExplode, ( Projectile* proj, Point3F pos, F32 fade ) );
    DECLARE_CALLBACK( void, onCollision, ( Projectile* proj, SceneObject* col, F32 fade, Point3F pos, Point3F normal, S32 collisionBox) );
+
+   // AFX CODE BLOCK (datablock-temp-clone) <<
+public:
+   ProjectileData(const ProjectileData&, bool = false);
+   virtual bool allowSubstitutions() const { return true; }
+   // AFX CODE BLOCK (datablock-temp-clone) >>
 };
 
 
@@ -217,7 +236,8 @@ public:
    virtual void onCollision(const Point3F& p, const Point3F& n, SceneObject*, S32 collisionBox);
 
    /// What to do when this projectile explodes
-   virtual void explode(const Point3F& p, const Point3F& n, const U32 collideType );
+   virtual void explode(const Point3F& p, const Point3F& n, const U32 collideType);
+   virtual void ricochet(const Point3F& p, const Point3F& n, const U32 collideType);
       
    bool pointInWater(const Point3F &point);
 
@@ -292,6 +312,12 @@ protected:
    U32     mCollideHitType;   
 
    S32 mDamageCycle;
+   // AFX CODE BLOCK (enhanced-projectile) <<
+public:
+   bool   ignoreSourceTimeout;
+   U32    dynamicCollisionMask;
+   U32    staticCollisionMask;
+   // AFX CODE BLOCK (enhanced-projectile) >>
 };
 
 #endif // _PROJECTILE_H_
