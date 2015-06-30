@@ -1874,24 +1874,13 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
 
    LangElement *texCube = NULL;
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
-   //first try and grab the gbuffer
-   if (fd.features[MFT_isDeferred] && matinfo)
-   {
-       //scale by 8 to derive the full range of mips from the g channel of the 'specular map'
-       texCube = new GenOp("textureLod(  @, @, min((1.0 - @.b)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, matinfo);
-   }
-   else
-   {
-       Var *smoothness = (Var*)LangElement::find("smoothness");
-       if (smoothness)
-       {
-           texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, smoothness);
-       }
-       else if (glossColor) //failing that, rtry and find color data
-           texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, glossColor);
-       else
-           texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
-   }
+   Var *smoothness = (Var*)LangElement::find("smoothness");
+   if (smoothness) //try to grab smoothness directly
+      texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, smoothness);
+   else if (glossColor) //failing that, try and find color data
+      texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*9.0 + 3.0, 8.0))", cubeMap, reflectVec, glossColor);
+   else //failing *that*, just draw the cubemap
+      texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
    LangElement *lerpVal = NULL;
    Material::BlendOp blendOp = Material::LerpAlpha;
 
@@ -1931,19 +1920,15 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    else
    {
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-      if (lerpVal)
+      Var *metalness = (Var*)LangElement::find("metalness");
+      if (metalness)
+      {
+         meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@, @);\r\n", targ, texCube, metalness, metalness));
+      }
+      else if (lerpVal)
          meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, lerpVal));
       else
-      {
-         Var *metalness = (Var*)LangElement::find("metalness");
-         if (metalness)
-         {
-            meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@, @);\r\n", targ, texCube, metalness, metalness));
-         }
-         else
-            meta->addStatement(new GenOp("   @.rgb *= @.rgb;\r\n", targ, texCube));
-      }
-
+         meta->addStatement(new GenOp("   @.rgb *= @.rgb;\r\n", targ, texCube));
    }
    output = meta;
 }
