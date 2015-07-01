@@ -199,7 +199,5 @@ float4 main(   ConvexConnectP IN,
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-   addToResult.rgb *= matInfo.ggg;
-   
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
+   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, matInfo.g*Sat_NL_Att);
 }

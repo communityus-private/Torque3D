@@ -284,8 +284,6 @@ void main()
    vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
    vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
-   addToResult.rgb *= matInfo.g;
-
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
       float ao = 1.0 - texture( ssaoMask, viewportCoordToRenderTarget( uv0.xy, rtParams3 ) ).r;
@@ -296,5 +294,5 @@ void main()
       lightColorOut = debugColor;
    #endif
 
-   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);   
+   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, matInfo.g*Sat_NL_Att);   
 }
