@@ -226,7 +226,7 @@ TCPObject::~TCPObject()
    }
 }
 
-bool TCPObject::processArguments(S32 argc, const char **argv)
+bool TCPObject::processArguments(S32 argc, ConsoleValueRef *argv)
 {
    if(argc == 0)
       return true;
@@ -421,7 +421,7 @@ DefineEngineMethod(TCPObject, send, void, (const char *data),,
    object->send( (const U8*)data, dStrlen(data) );
 }
 
-DefineEngineMethod(TCPObject, listen, void, (int port),, 
+DefineEngineMethod(TCPObject, listen, void, (U32 port),, 
    "@brief Start listening on the specified port for connections.\n\n"
 
    "This method starts a listener which looks for incoming TCP connections to a port.  "

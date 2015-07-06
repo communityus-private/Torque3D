@@ -148,8 +148,8 @@ U32 GFXDrawUtil::drawTextN( GFont *font, const Point2I &ptDraw, const UTF8 *in_s
 
    // Convert to UTF16 temporarily.
    n++; // space for null terminator
-   FrameTemp<UTF16> ubuf( n * sizeof(UTF16) );
-   convertUTF8toUTF16(in_string, ubuf, n);
+   FrameTemp<UTF16> ubuf( n );
+   convertUTF8toUTF16N(in_string, ubuf, n);
 
    return drawTextN( font, ptDraw, ubuf, n, colorTable, maxColorIndex, rot );
 }
@@ -474,7 +474,7 @@ void GFXDrawUtil::drawRect( const Point2F &upperLeft, const Point2F &lowerRight,
    verts[8].point.set( upperLeft.x + ulOffset + nw.x, upperLeft.y + ulOffset + nw.y, 0.0f ); // same as 0
    verts[9].point.set( upperLeft.x + ulOffset - nw.x, upperLeft.y + ulOffset - nw.y, 0.0f ); // same as 1
 
-   for (int i=0; i<10; i++)
+   for (S32 i=0; i<10; i++)
       verts[i].color = color;
 
    verts.unlock();
@@ -531,7 +531,7 @@ void GFXDrawUtil::drawRectFill( const Point2F &upperLeft, const Point2F &lowerRi
    verts[2].point.set( upperLeft.x-ne.x+ulOffset, lowerRight.y-ne.y, 0.0f );
    verts[3].point.set( lowerRight.x-nw.x, lowerRight.y-nw.y, 0.0f );
 
-   for (int i=0; i<4; i++)
+   for (S32 i=0; i<4; i++)
       verts[i].color = color;
 
    verts.unlock();
@@ -558,7 +558,12 @@ void GFXDrawUtil::draw2DSquare( const Point2F &screenPoint, F32 width, F32 spinA
 
    verts[0].color = verts[1].color = verts[2].color = verts[3].color = mBitmapModulation;
 
-   if(spinAngle != 0.f)
+   if (spinAngle == 0.0f)
+   {
+      for( S32 i = 0; i < 4; i++ )
+         verts[i].point += offset;
+   }
+   else
    {
       MatrixF rotMatrix( EulerF( 0.0, 0.0, spinAngle ) );
 
@@ -616,6 +621,7 @@ void GFXDrawUtil::drawLine( F32 x1, F32 y1, F32 z1, F32 x2, F32 y2, F32 z2, cons
 
    mDevice->setVertexBuffer( verts );
    mDevice->setStateBlock( mRectFillSB );
+   mDevice->setupGenericShaders();
    mDevice->drawPrimitive( GFXLineList, 0, 1 );
 }
 
@@ -828,11 +834,11 @@ void GFXDrawUtil::_drawWireCube( const GFXStateBlockDesc &desc, const Point3F &s
 
    // setup 6 line loops
    U32 vertexIndex = 0;
-   for(int i = 0; i < 6; i++)
+   for(S32 i = 0; i < 6; i++)
    {
-      for(int j = 0; j < 5; j++)
+      for(S32 j = 0; j < 5; j++)
       {
-         int idx = cubeFaces[i][j%4];
+         S32 idx = cubeFaces[i][j%4];
 
          verts[vertexIndex].point = cubePoints[idx] * halfSize;
          verts[vertexIndex].color = color;
@@ -872,7 +878,7 @@ void GFXDrawUtil::_drawSolidCube( const GFXStateBlockDesc &desc, const Point3F &
    // setup 6 line loops
    U32 vertexIndex = 0;
    U32 idx;
-   for(int i = 0; i < 6; i++)
+   for(S32 i = 0; i < 6; i++)
    {
       idx = cubeFaces[i][0];
       verts[vertexIndex].point = cubePoints[idx] * halfSize;      

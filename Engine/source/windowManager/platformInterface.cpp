@@ -70,7 +70,7 @@ static struct ModifierBitMap {
    { IM_LOPT,   SI_MAC_LOPT },
    { IM_ROPT,   SI_MAC_ROPT },
 };
-static int _ModifierBitMapCount = sizeof(_ModifierBitMap) / sizeof(ModifierBitMap);
+static S32 _ModifierBitMapCount = sizeof(_ModifierBitMap) / sizeof(ModifierBitMap);
 
 InputModifiers convertModifierBits(const U32 in)
 {
@@ -136,7 +136,7 @@ HWND getWin32WindowHandle()
          return NULL;
    }
 
-   return ( ( Win32Window* ) window )->getHWND();
+   return (HWND)window->getSystemWindow( PlatformWindow::WindowSystem_Windows );
 }
 
 #endif

@@ -98,10 +98,10 @@ GuiWindowCtrl::GuiWindowCtrl()
    mMouseMovingWin = false;
    mMouseResizeWidth = false;
    mMouseResizeHeight = false;
-   setExtent(100, 200);
    mMinimizeIndex = -1;
    mTabIndex = -1;
    mBitmapBounds = NULL;
+   setExtent(100, 200);
 
    RectI closeRect(80, 2, 16, 16);
    mCloseButton = closeRect;
@@ -1478,7 +1478,7 @@ void GuiWindowCtrl::positionButtons(void)
 
    // Until a pref, if alignment is LEFT, put buttons RIGHT justified.
    // ELSE, put buttons LEFT justified.
-   int closeLeft = mainOff.x, closeTop = mainOff.y, closeOff = buttonWidth + 2;
+   S32 closeLeft = mainOff.x, closeTop = mainOff.y, closeOff = buttonWidth + 2;
    if ( mProfile->mAlignment == GuiControlProfile::LeftJustify )
    {
       closeOff = -closeOff;

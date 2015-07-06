@@ -212,11 +212,14 @@ Profiler::~Profiler()
 void Profiler::reset()
 {
    mEnabled = false; // in case we're in a profiler call.
-   while(mProfileList)
+   ProfilerData * head = mProfileList;
+   ProfilerData * curr = NULL;
+   while ((curr = head) != NULL)
    {
-      free(mProfileList);
-      mProfileList = NULL;
+      head = head->mNextProfilerData;
+      free(curr);
    }
+
    for(ProfilerRootData *walk = ProfilerRootData::sRootList; walk; walk = walk->mNextRoot)
    {
       walk->mFirstProfilerData = 0;
@@ -476,8 +479,8 @@ void Profiler::hashPop(ProfilerRootData *expected)
          else
          {
             Con::warnf("Warning: the Torque profiler thread may now run on any cpu.");
-            DWORD procMask;
-            DWORD sysMask;
+            DWORD_PTR procMask;
+            DWORD_PTR sysMask;
             GetProcessAffinityMask( GetCurrentProcess(), &procMask, &sysMask);
             SetThreadAffinityMask( GetCurrentThread(), procMask);
          }

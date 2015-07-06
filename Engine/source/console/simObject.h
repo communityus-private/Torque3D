@@ -411,7 +411,7 @@ class SimObject: public ConsoleObject
       virtual void _onUnselected() {}
    
       /// We can provide more detail, like object name and id.
-      virtual String _getLogMessage(const char* fmt, void* args) const;
+      virtual String _getLogMessage(const char* fmt, va_list args) const;
    
       DEFINE_CREATE_METHOD
       {
@@ -540,7 +540,7 @@ class SimObject: public ConsoleObject
       
       virtual ~SimObject();
 
-      virtual bool processArguments(S32 argc, const char **argv);  ///< Process constructor options. (ie, new SimObject(1,2,3))
+      virtual bool processArguments(S32 argc, ConsoleValueRef *argv);  ///< Process constructor options. (ie, new SimObject(1,2,3))
 
       /// @}
 
@@ -781,7 +781,7 @@ class SimObject: public ConsoleObject
       void setCanSaveDynamicFields( bool bCanSave ) { mCanSaveFieldDictionary	=	bCanSave; }
       
       /// Get whether fields created at runtime should be saved. Default is true.
-      bool getCanSaveDynamicFields( bool bCanSave ) { return mCanSaveFieldDictionary;}
+      bool getCanSaveDynamicFields( ) { return mCanSaveFieldDictionary;}
 
       /// Return the object that this object is copying fields from.
       SimObject* getCopySource() const { return mCopySource; }

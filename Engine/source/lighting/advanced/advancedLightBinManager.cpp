@@ -243,10 +243,7 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
       return;
 
    // Get the sunlight. If there's no sun, and no lights in the bins, no draw
-   LightInfo *sunLight = mLightManager->getSpecialLight( LightManager::slSunLightType );
-   if( !sunLight && mLightBin.empty() )
-      return;
-
+   LightInfo *sunLight = mLightManager->getSpecialLight( LightManager::slSunLightType, false );
    GFXDEBUGEVENT_SCOPE( AdvancedLightBinManager_Render, ColorI::RED );
 
    // Tell the superclass we're about to render

@@ -73,7 +73,7 @@ IMPLEMENT_CALLBACK( GuiMLTextCtrl, onURL, void, ( const char* url ),( url ),
    "@see GuiControl\n\n"
 );
 
-IMPLEMENT_CALLBACK( GuiMLTextCtrl, onResize, void, ( const char* width, const char* maxY ),( width, maxY ),
+IMPLEMENT_CALLBACK( GuiMLTextCtrl, onResize, void, ( S32 width, S32 maxY ),( width, maxY ),
    "@brief Called whenever the control size changes.\n\n"
    "@param width The new width value for the control\n"
    "@param maxY The current maximum allowed Y value for the control\n\n"
@@ -91,7 +91,7 @@ GFX_ImplementTextureProfile(GFXMLTextureProfile,
                             GFXTextureProfile::DiffuseMap, 
                             GFXTextureProfile::PreserveSize |
                             GFXTextureProfile::Static, 
-                            GFXTextureProfile::None);
+                            GFXTextureProfile::NONE);
 
 const U32 GuiMLTextCtrl::csmTextBufferGrowthSize = 1024;
 
@@ -138,7 +138,7 @@ DefineEngineMethod( GuiMLTextCtrl, addText, void, ( const char* text, bool refor
    object->addText(text, dStrlen(text), reformat);
 }
 
-DefineEngineMethod( GuiMLTextCtrl, setCursorPosition, bool, (int newPos),,
+DefineEngineMethod( GuiMLTextCtrl, setCursorPosition, bool, (S32 newPos),,
    "@brief Change the text cursor's position to a new defined offset within the text in the control.\n\n"
    "@param newPos Offset to place cursor.\n"
    "@tsexample\n"
@@ -153,7 +153,7 @@ DefineEngineMethod( GuiMLTextCtrl, setCursorPosition, bool, (int newPos),,
    return object->setCursorPosition(newPos);
 }
 
-DefineEngineMethod( GuiMLTextCtrl, scrollToTag, void, (int tagID),,
+DefineEngineMethod( GuiMLTextCtrl, scrollToTag, void, (S32 tagID),,
    "@brief Scroll down to a specified tag.\n\n"
    "Detailed description\n\n"
    "@param tagID TagID to scroll the control to\n"
@@ -2133,7 +2133,7 @@ textemit:
    processEmitAtoms();
    emitNewLine(mScanPos);
    setHeight( mMaxY );
-   onResize_callback(Con::getIntArg( getWidth() ), Con::getIntArg( mMaxY ) );
+   onResize_callback( getWidth(), mMaxY );
 	
    //make sure the cursor is still visible - this handles if we're a child of a scroll ctrl...
    ensureCursorOnScreen();

@@ -486,8 +486,8 @@ protected:
 
    /// @}
 
-   virtual void render( const TSRenderState &rdata );
-   virtual void render( const TSRenderState &rdata, S32 dl, F32 intraDL = 0.0f );
+   void render( const TSRenderState &rdata );
+   void render( const TSRenderState &rdata, S32 dl, F32 intraDL = 0.0f );
 
    void animate() { animate( mCurrentDetailLevel ); }
    void animate(S32 dl);
@@ -673,6 +673,12 @@ protected:
    void *mData; ///< available for use by app...initialized to 0
 
    void prepCollision();
+
+//-------------------------------------------------------------------------------------
+// accumulation
+//-------------------------------------------------------------------------------------
+
+   bool hasAccumulation();
 };
 
 

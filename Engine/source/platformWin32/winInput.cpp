@@ -20,11 +20,13 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#if !defined( TORQUE_SDL )
 #include "platformWin32/platformWin32.h"
 
 #include "platform/platformInput.h"
 #include "platformWin32/winDirectInput.h"
 #include "console/console.h"
+#include "console/engineAPI.h"
 #include "core/util/journal/process.h"
 #include "windowManager/platformWindowMgr.h"
 
@@ -32,8 +34,6 @@
 #include <time.h>
 #include <stdarg.h>
 #endif
-
-#include <sstream>
 
 // Static class variables:
 InputManager*  Input::smManager;
@@ -80,10 +80,6 @@ void Input::init()
    Con::printf( "Input Init:" );
 
    destroy();
-
-#ifdef TORQUE_DEFAULT_KEYBOARD_LAYOUT
-   attemptSwitchToKeyboardLayout( TORQUE_DEFAULT_KEYBOARD_LAYOUT );
-#endif
 
 #ifdef LOG_INPUT
    struct tm* newTime;
@@ -161,19 +157,17 @@ void Input::init()
 }
 
 //------------------------------------------------------------------------------
-ConsoleFunction( isJoystickDetected, bool, 1, 1, "isJoystickDetected()" )
+DefineConsoleFunction( isJoystickDetected, bool, (), , "isJoystickDetected()")
 {
-   argc; argv;
    return( DInputDevice::joystickDetected() );
 }
 
 //------------------------------------------------------------------------------
-ConsoleFunction( getJoystickAxes, const char*, 2, 2, "getJoystickAxes( instance )" )
+DefineConsoleFunction( getJoystickAxes, const char*, (U32 deviceID), , "getJoystickAxes( instance )")
 {
-   argc;
    DInputManager* mgr = dynamic_cast<DInputManager*>( Input::getManager() );
    if ( mgr )
-      return( mgr->getJoystickAxesString( dAtoi( argv[1] ) ) );
+      return( mgr->getJoystickAxesString( deviceID ) );
 
    return( "" );
 }
@@ -493,18 +487,6 @@ InputManager* Input::getManager()
    return( smManager );
 }
 
-//------------------------------------------------------------------------------
-void Input::attemptSwitchToKeyboardLayout( U32 layout )
-{
-   const LANGID lang = MAKELANGID( layout, SUBLANG_DEFAULT );
-   std::wstringstream ss;
-   ss << std::hex << lang;
-   const wchar_t* hexLang = ss.str().c_str();
-   ActivateKeyboardLayout( LoadKeyboardLayout(
-       hexLang,  KLF_ACTIVATE | KLF_REPLACELANG
-   ), KLF_REORDER );
-}
-
 #ifdef LOG_INPUT
 //------------------------------------------------------------------------------
 void Input::log( const char* format, ... )
@@ -523,10 +505,9 @@ void Input::log( const char* format, ... )
    va_end( argptr );
 }
 
-ConsoleFunction( inputLog, void, 2, 2, "inputLog( string )" )
+DefineConsoleFunction( inputLog, void, (const char * log), , "inputLog( string )")
 {
-   argc;
-   Input::log( "%s\n", argv[1] );
+   Input::log( "%s\n", log );
 }
 #endif // LOG_INPUT
 
@@ -883,3 +864,4 @@ bool Platform::setClipboard(const char *text)
 	return true;
 }
 
+#endif

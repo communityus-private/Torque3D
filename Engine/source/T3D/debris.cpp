@@ -41,7 +41,7 @@
 #include "lighting/lightQuery.h"
 
 
-const U32 csmStaticCollisionMask =  TerrainObjectType;
+const U32 csmStaticCollisionMask = TerrainObjectType | StaticShapeObjectType | StaticObjectType;
 
 const U32 csmDynamicCollisionMask = StaticShapeObjectType;
 
@@ -99,7 +99,6 @@ DebrisData::DebrisData()
    friction   = 0.2f;
    numBounces = 0;
    bounceVariance = 0;
-   minSpinSpeed = maxSpinSpeed = 0.0;
    staticOnMaxBounce = false;
    explodeOnMaxBounce = false;
    snapOnMaxBounce = false;
@@ -122,7 +121,7 @@ bool DebrisData::onAdd()
    if(!Parent::onAdd())
       return false;
 
-   for( int i=0; i<DDC_NUM_EMITTERS; i++ )
+   for( S32 i=0; i<DDC_NUM_EMITTERS; i++ )
    {
       if( !emitterList[i] && emitterIDList[i] != 0 )
       {
@@ -303,7 +302,7 @@ void DebrisData::packData(BitStream* stream)
    stream->writeString( textureName );
    stream->writeString( shapeName );
 
-   for( int i=0; i<DDC_NUM_EMITTERS; i++ )
+   for( S32 i=0; i<DDC_NUM_EMITTERS; i++ )
    {
       if( stream->writeFlag( emitterList[i] != NULL ) )
       {
@@ -313,7 +312,7 @@ void DebrisData::packData(BitStream* stream)
 
    if( stream->writeFlag( explosion ) )
    {
-      stream->writeRangedU32(packed? SimObjectId(explosion):
+      stream->writeRangedU32(packed? SimObjectId((uintptr_t)explosion):
          explosion->getId(),DataBlockObjectIdFirst,DataBlockObjectIdLast);
    }
 
@@ -346,7 +345,7 @@ void DebrisData::unpackData(BitStream* stream)
    textureName = stream->readSTString();
    shapeName   = stream->readSTString();
 
-   for( int i=0; i<DDC_NUM_EMITTERS; i++ )
+   for( S32 i=0; i<DDC_NUM_EMITTERS; i++ )
    {
       if( stream->readFlag() )
       {
@@ -511,8 +510,14 @@ bool Debris::onAdd()
       return false;
    }
 
+   if( !mDataBlock )
+   {
+      Con::errorf("Debris::onAdd - Fail - No datablock");
+      return false;
+   }
+
    // create emitters
-   for( int i=0; i<DebrisData::DDC_NUM_EMITTERS; i++ )
+   for( S32 i=0; i<DebrisData::DDC_NUM_EMITTERS; i++ )
    {
       if( mDataBlock->emitterList[i] != NULL )
       {
@@ -631,7 +636,7 @@ bool Debris::onAdd()
 
 void Debris::onRemove()
 {
-   for( int i=0; i<DebrisData::DDC_NUM_EMITTERS; i++ )
+   for( S32 i=0; i<DebrisData::DDC_NUM_EMITTERS; i++ )
    {
       if( mEmitterList[i] )
       {
@@ -653,8 +658,7 @@ void Debris::onRemove()
       }
    }
 
-   getSceneManager()->removeObjectFromScene(this);
-   getContainer()->removeObject(this);
+   removeFromScene();
 
    Parent::onRemove();
 }
@@ -848,7 +852,7 @@ void Debris::updateEmitters( Point3F &pos, Point3F &vel, U32 ms )
 
    Point3F lastPos = mLastPos;
 
-   for( int i=0; i<DebrisData::DDC_NUM_EMITTERS; i++ )
+   for( S32 i=0; i<DebrisData::DDC_NUM_EMITTERS; i++ )
    {
       if( mEmitterList[i] )
       {

@@ -89,8 +89,9 @@ bool GuiGradientSwatchCtrl::onWake()
 	if ( !Parent::onWake() )
       return false;
 	
-	char* altCommand = Con::getReturnBuffer(512);
-	dSprintf( altCommand, 512, "%s(%i.color, \"%i.setColor\");", mColorFunction, getId(), getId() );
+	static const U32 bufSize = 512;
+	char* altCommand = Con::getReturnBuffer(bufSize);
+	dSprintf( altCommand, bufSize, "%s(%i.color, \"%i.setColor\");", mColorFunction, getId(), getId() );
 	setField( "altCommand", altCommand );
 
 	return true;
@@ -598,7 +599,7 @@ void GuiGradientCtrl::sortColorRange()
 		dQsort( mAlphaRange.address(), mAlphaRange.size(), sizeof(ColorRange), _numIncreasing);
 }
 
-ConsoleMethod(GuiGradientCtrl, getColorCount, S32, 2, 2, "Get color count")
+DefineConsoleMethod(GuiGradientCtrl, getColorCount, S32, (), , "Get color count")
 {
 	if( object->getDisplayMode() == GuiGradientCtrl::pHorizColorRange )
 		return object->mColorRange.size();
@@ -608,42 +609,25 @@ ConsoleMethod(GuiGradientCtrl, getColorCount, S32, 2, 2, "Get color count")
 	return 0;
 }
 
-ConsoleMethod(GuiGradientCtrl, getColor, const char*, 3, 3, "Get color value")
+DefineConsoleMethod(GuiGradientCtrl, getColor, ColorF, (S32 idx), , "Get color value")
 {
-	S32 idx = dAtoi(argv[2]);
 
 	if( object->getDisplayMode() == GuiGradientCtrl::pHorizColorRange )
 	{
 		if ( idx >= 0 && idx < object->mColorRange.size() )
 		{
-			char* rColor = Con::getReturnBuffer(256);
-			rColor[0] = 0;
 
-			dSprintf(rColor, 256, "%f %f %f %f",
-				object->mColorRange[idx].swatch->getColor().red,
-				object->mColorRange[idx].swatch->getColor().green,
-				object->mColorRange[idx].swatch->getColor().blue,
-				object->mColorRange[idx].swatch->getColor().alpha);
-
-			return rColor;
+			return object->mColorRange[idx].swatch->getColor();
 		}
 	}
 	else if( object->getDisplayMode() == GuiGradientCtrl::pHorizColorRange )
 	{
 		if ( idx >= 0 && idx < object->mAlphaRange.size() )
 		{
-			char* rColor = Con::getReturnBuffer(256);
-			rColor[0] = 0;
 
-			dSprintf(rColor, 256, "%f %f %f %f",
-				object->mAlphaRange[idx].swatch->getColor().red,
-				object->mAlphaRange[idx].swatch->getColor().green,
-				object->mAlphaRange[idx].swatch->getColor().blue,
-				object->mAlphaRange[idx].swatch->getColor().alpha);
-
-			return rColor;
+			return object->mAlphaRange[idx].swatch->getColor();
 		}
 	}
 
-	return "1 1 1 1";
+	return ColorF::ONE;
 }

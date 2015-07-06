@@ -63,7 +63,6 @@
    #include "console/dynamicTypes.h"
 #endif
 
-
 class GFXCubemap;
 class TSShapeInstance;
 class SceneRenderState;
@@ -324,7 +323,10 @@ struct ShapeBaseImageData: public GameBaseData {
    /// @{
    bool              shakeCamera;
    VectorF           camShakeFreq;
-   VectorF           camShakeAmp;         
+   VectorF           camShakeAmp;
+   F32               camShakeDuration;
+   F32               camShakeRadius;
+   F32               camShakeFalloff;
    /// @}
 
    /// Maximum number of sounds this image can play at a time.
@@ -649,7 +651,7 @@ public:
    DECLARE_CALLBACK( void, onCollision, ( ShapeBase* obj, SceneObject* collObj, VectorF vec, F32 len ) );
    DECLARE_CALLBACK( void, onDamage, ( ShapeBase* obj, F32 delta ) );
    DECLARE_CALLBACK( void, onTrigger, ( ShapeBase* obj, S32 index, bool state ) );
-   DECLARE_CALLBACK( void, onEndSequence, ( ShapeBase* obj, S32 slot ) );
+   DECLARE_CALLBACK(void, onEndSequence, (ShapeBase* obj, S32 slot, const char* name));
    DECLARE_CALLBACK( void, onForceUncloak, ( ShapeBase* obj, const char* reason ) );
    /// @}
 };
@@ -690,7 +692,6 @@ public:
       MaxMountedImages = 4,            ///< Should be a power of 2
       MaxImageEmitters = 3,
       NumImageBits = 3,
-      ShieldNormalBits = 8,
       CollisionTimeoutValue = 250      ///< Timeout in ms.
    };
 
@@ -731,28 +732,14 @@ protected:
          Play, Stop, Pause, Destroy
       };
       TSThread* thread; ///< Pointer to 3space data.
-      U32 state;        ///< State of the thread
-                        ///
-                        ///  @see Thread::State
+      State state;      ///< State of the thread
       S32 sequence;     ///< The animation sequence which is running in this thread.
-	  F32 timescale;    ///< Timescale
-      U32 sound;        ///< Handle to sound.
+      F32 timescale;    ///< Timescale
       bool atEnd;       ///< Are we at the end of this thread?
       F32 position;
    };
    Thread mScriptThread[MaxScriptThreads];
 
-   /// @}
-
-   /// @name Invincibility
-   /// @{
-   F32 mInvincibleCount;
-   F32 mInvincibleTime;
-   F32 mInvincibleSpeed;
-   F32 mInvincibleDelta;
-   F32 mInvincibleEffect;
-   F32 mInvincibleFade;
-   bool mInvincibleOn;
    /// @}
 
    /// @name Motion
@@ -918,12 +905,6 @@ protected:
    F32 mWhiteOut;
 
    bool mFlipFadeVal;
-
-   /// Last shield direction (cur. unused)
-   Point3F mShieldNormal;
-
-   /// Camera shake caused by weapon fire.
-   CameraShake *mWeaponCamShake;
 
  public:
 
@@ -1120,6 +1101,7 @@ protected:
    virtual void onImageAnimThreadChange(U32 imageSlot, S32 imageShapeIndex, ShapeBaseImageData::StateData* lastState, const char* anim, F32 pos, F32 timeScale, bool reset=false);
    virtual void onImageAnimThreadUpdate(U32 imageSlot, S32 imageShapeIndex, F32 dt);
    virtual void ejectShellCasing( U32 imageSlot );
+   virtual void shakeCamera( U32 imageSlot );
    virtual void updateDamageLevel();
    virtual void updateDamageState();
    virtual void onImpact(SceneObject* obj, VectorF vec);
@@ -1157,11 +1139,9 @@ public:
       DamageMask      = Parent::NextFreeMask << 1,
       NoWarpMask      = Parent::NextFreeMask << 2,
       CloakMask       = Parent::NextFreeMask << 3,
-      ShieldMask      = Parent::NextFreeMask << 4,
-      InvincibleMask  = Parent::NextFreeMask << 5,
-      SkinMask        = Parent::NextFreeMask << 6,
-      MeshHiddenMask  = Parent::NextFreeMask << 7,
-      SoundMaskN      = Parent::NextFreeMask << 8,       ///< Extends + MaxSoundThreads bits
+      SkinMask        = Parent::NextFreeMask << 4,
+      MeshHiddenMask  = Parent::NextFreeMask << 5,
+      SoundMaskN      = Parent::NextFreeMask << 6,       ///< Extends + MaxSoundThreads bits
       ThreadMaskN     = SoundMaskN  << MaxSoundThreads,  ///< Extends + MaxScriptThreads bits
       ImageMaskN      = ThreadMaskN << MaxScriptThreads, ///< Extends + MaxMountedImage bits
       NextFreeMask    = ImageMaskN  << MaxMountedImages
@@ -1371,14 +1351,6 @@ public:
    /// @param   slot   Mount slot ID
    /// @param   timescale   Timescale
    bool setThreadTimeScale( U32 slot, F32 timeScale );
-
-   /// Start the sound associated with an animation thread
-   /// @param   thread   Thread
-   void startSequenceSound(Thread& thread);
-
-   /// Stop the sound associated with an animation thread
-   /// @param   thread   Thread
-   void stopThreadSound(Thread& thread);
 
    /// Advance all animation threads attached to this shapebase
    /// @param   dt   Change in time from last call to this function
@@ -1611,6 +1583,13 @@ public:
    /// @param   mat   Camera transform (out)
    virtual void getCameraTransform(F32* pos,MatrixF* mat);
 
+   /// Gets the view transform for a particular eye, taking into account the current absolute 
+   /// orient and position values of the display device.
+   virtual void getEyeCameraTransform( IDisplayDevice *display, U32 eyeId, MatrixF *outMat );
+
+   /// Calculates a delta camera angle and view position based on inPose
+   virtual DisplayPose calcCameraDeltaPose(GameConnection *con, DisplayPose inPose);
+
    /// Gets the index of a node inside a mounted image given the name
    /// @param   imageSlot   Image slot
    /// @param   nodeName    Node name
@@ -1701,26 +1680,6 @@ public:
 
    /// Set the level of flash blindness
    virtual void setWhiteOut(const F32);
-   /// @}
-
-   /// @name Invincibility effect
-   /// This is the screen effect when invincible in the HUD
-   /// @see GameRenderFilters()
-   /// @{
-
-   /// Returns the level of invincibility effect
-   virtual F32 getInvincibleEffect() const;
-
-   /// Initializes invincibility effect and interpolation parameters
-   ///
-   /// @param   time   Time it takes to become invincible
-   /// @param   speed  Speed at which invincibility effects progress
-   virtual void setupInvincibleEffect(F32 time, F32 speed);
-
-   /// Advance invincibility effect animation
-   /// @param   dt   Time since last call of this function
-   virtual void updateInvincibleEffect(F32 dt);
-
    /// @}
 
    /// @name Movement & velocity

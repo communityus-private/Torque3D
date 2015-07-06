@@ -54,7 +54,7 @@ bool dFileDelete(const char * name)
    TempAlloc< TCHAR > buf( dStrlen( name ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( name, buf, buf.size );
+   convertUTF8toUTF16N( name, buf, buf.size );
 #else
    dStrcpy( buf, name );
 #endif
@@ -74,8 +74,8 @@ bool dFileRename(const char *oldName, const char *newName)
    TempAlloc< TCHAR > newf( dStrlen( newName ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( oldName, oldf, oldf.size );
-   convertUTF8toUTF16( newName, newf, newf.size );
+   convertUTF8toUTF16N( oldName, oldf, oldf.size );
+   convertUTF8toUTF16N( newName, newf, newf.size );
 #else
    dStrcpy(oldf, oldName);
    dStrcpy(newf, newName);
@@ -93,7 +93,7 @@ bool dFileTouch(const char * name)
    TempAlloc< TCHAR > buf( dStrlen( name ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( name, buf, buf.size );
+   convertUTF8toUTF16N( name, buf, buf.size );
 #else
    dStrcpy( buf, name );
 #endif
@@ -119,8 +119,8 @@ bool dPathCopy(const char *fromName, const char *toName, bool nooverwrite)
    TempAlloc< TCHAR > to( dStrlen( toName ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( fromName, from, from.size );
-   convertUTF8toUTF16( toName, to, to.size );
+   convertUTF8toUTF16N( fromName, from, from.size );
+   convertUTF8toUTF16N( toName, to, to.size );
 #else
    dStrcpy( from, fromName );
    dStrcpy( to, toName );
@@ -187,8 +187,8 @@ bool dPathCopy(const char *fromName, const char *toName, bool nooverwrite)
          backslash(toFile);
          
 #ifdef UNICODE
-         convertUTF8toUTF16( tempBuf, wtempBuf, wtempBuf.size );
-         convertUTF8toUTF16( tempBuf1, wtempBuf1, wtempBuf1.size );
+         convertUTF8toUTF16N( tempBuf, wtempBuf, wtempBuf.size );
+         convertUTF8toUTF16N( tempBuf1, wtempBuf1, wtempBuf1.size );
          WCHAR* f = wtempBuf1;
          WCHAR* t = wtempBuf;
 #else
@@ -248,7 +248,7 @@ File::~File()
 // Sets capability appropriate to the openMode.
 // Returns the currentStatus of the file.
 //-----------------------------------------------------------------------------
-File::Status File::open(const char *filename, const AccessMode openMode)
+File::FileStatus File::open(const char *filename, const AccessMode openMode)
 {
    AssertFatal(NULL != filename, "File::open: NULL fname");
    AssertWarn(INVALID_HANDLE_VALUE == (HANDLE)handle, "File::open: handle already valid");
@@ -256,7 +256,7 @@ File::Status File::open(const char *filename, const AccessMode openMode)
    TempAlloc< TCHAR > fname( dStrlen( filename ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( filename, fname, fname.size );
+   convertUTF8toUTF16N( filename, fname, fname.size );
 #else
    dStrcpy(fname, filename);
 #endif
@@ -363,7 +363,7 @@ U32 File::getPosition() const
 //
 // Returns the currentStatus of the file.
 //-----------------------------------------------------------------------------
-File::Status File::setPosition(S32 position, bool absolutePos)
+File::FileStatus File::setPosition(S32 position, bool absolutePos)
 {
     AssertFatal(Closed != currentStatus, "File::setPosition: file closed");
     AssertFatal(INVALID_HANDLE_VALUE != (HANDLE)handle, "File::setPosition: invalid file handle");
@@ -425,7 +425,7 @@ U32 File::getSize() const
 // It is an error to flush a read-only file.
 // Returns the currentStatus of the file.
 //-----------------------------------------------------------------------------
-File::Status File::flush()
+File::FileStatus File::flush()
 {
     AssertFatal(Closed != currentStatus, "File::flush: file closed");
     AssertFatal(INVALID_HANDLE_VALUE != (HANDLE)handle, "File::flush: invalid file handle");
@@ -442,7 +442,7 @@ File::Status File::flush()
 //
 // Returns the currentStatus
 //-----------------------------------------------------------------------------
-File::Status File::close()
+File::FileStatus File::close()
 {
     // check if it's already closed...
     if (Closed == currentStatus)
@@ -461,7 +461,7 @@ File::Status File::close()
 //-----------------------------------------------------------------------------
 // Self-explanatory.
 //-----------------------------------------------------------------------------
-File::Status File::getStatus() const
+File::FileStatus File::getStatus() const
 {
     return currentStatus;
 }
@@ -469,7 +469,7 @@ File::Status File::getStatus() const
 //-----------------------------------------------------------------------------
 // Sets and returns the currentStatus when an error has been encountered.
 //-----------------------------------------------------------------------------
-File::Status File::setStatus()
+File::FileStatus File::setStatus()
 {
     switch (GetLastError())
     {
@@ -489,7 +489,7 @@ File::Status File::setStatus()
 //-----------------------------------------------------------------------------
 // Sets and returns the currentStatus to status.
 //-----------------------------------------------------------------------------
-File::Status File::setStatus(File::Status status)
+File::FileStatus File::setStatus(File::FileStatus status)
 {
     return currentStatus = status;
 }
@@ -500,7 +500,7 @@ File::Status File::setStatus(File::Status status)
 // The number of bytes read is available in bytesRead if a non-Null pointer is
 // provided.
 //-----------------------------------------------------------------------------
-File::Status File::read(U32 size, char *dst, U32 *bytesRead)
+File::FileStatus File::read(U32 size, char *dst, U32 *bytesRead)
 {
     AssertFatal(Closed != currentStatus, "File::read: file closed");
     AssertFatal(INVALID_HANDLE_VALUE != (HANDLE)handle, "File::read: invalid file handle");
@@ -531,7 +531,7 @@ File::Status File::read(U32 size, char *dst, U32 *bytesRead)
 // The number of bytes written is available in bytesWritten if a non-Null
 // pointer is provided.
 //-----------------------------------------------------------------------------
-File::Status File::write(U32 size, const char *src, U32 *bytesWritten)
+File::FileStatus File::write(U32 size, const char *src, U32 *bytesWritten)
 {
     AssertFatal(Closed != currentStatus, "File::write: file closed");
     AssertFatal(INVALID_HANDLE_VALUE != (HANDLE)handle, "File::write: invalid file handle");
@@ -586,7 +586,7 @@ static bool recurseDumpPath(const char *path, const char *pattern, Vector<Platfo
 
 #ifdef UNICODE
    TempAlloc< WCHAR > searchBuf( buf.size );
-   convertUTF8toUTF16( buf, searchBuf, searchBuf.size );
+   convertUTF8toUTF16N( buf, searchBuf, searchBuf.size );
    WCHAR* search = searchBuf;
 #else
    char *search = buf;
@@ -601,7 +601,7 @@ static bool recurseDumpPath(const char *path, const char *pattern, Vector<Platfo
    do
    {
 #ifdef UNICODE
-      convertUTF16toUTF8( findData.cFileName, buf, buf.size );
+      convertUTF16toUTF8N( findData.cFileName, buf, buf.size );
       char* fnbuf = buf;
 #else
       char *fnbuf = findData.cFileName;
@@ -665,7 +665,7 @@ bool Platform::getFileTimes(const char *filePath, FileTime *createTime, FileTime
    TempAlloc< TCHAR > fp( dStrlen( filePath ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( filePath, fp, fp.size );
+   convertUTF8toUTF16N( filePath, fp, fp.size );
 #else
    dStrcpy( fp, filePath );
 #endif
@@ -697,7 +697,7 @@ bool Platform::createPath(const char *file)
 
 #ifdef UNICODE
    TempAlloc< WCHAR > fileBuf( pathbuf.size );
-   convertUTF8toUTF16( file, fileBuf, fileBuf.size );
+   convertUTF8toUTF16N( file, fileBuf, fileBuf.size );
    const WCHAR* fileName = fileBuf;
    const WCHAR* dir;
 #else
@@ -802,7 +802,7 @@ StringTableEntry Platform::getCurrentDirectory()
    forwardslash( buf );
 
 #ifdef UNICODE
-   char* utf8 = convertUTF16toUTF8( buf );
+   char* utf8 = createUTF8string( buf );
    StringTableEntry result = StringTable->insert( utf8 );
    SAFE_DELETE_ARRAY( utf8 );
    return result;
@@ -820,7 +820,7 @@ bool Platform::setCurrentDirectory(StringTableEntry newDir)
    TempAlloc< TCHAR > buf( dStrlen( newDir ) + 2 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( newDir, buf, buf.size - 1 );
+   convertUTF8toUTF16N( newDir, buf, buf.size - 1 );
 #else
    dStrcpy( buf, newDir );
 #endif
@@ -847,8 +847,8 @@ static void getExecutableInfo( StringTableEntry* path, StringTableEntry* exe )
          if( delimiter )
             *delimiter = '\0';
 
-         char* pathBuf = convertUTF16toUTF8( cen_buf );
-         char* exeBuf = convertUTF16toUTF8( delimiter + 1 );
+         char* pathBuf = createUTF8string( cen_buf );
+         char* exeBuf = createUTF8string( delimiter + 1 );
 
          pathEntry = StringTable->insert( pathBuf );
          exeEntry = StringTable->insert( exeBuf );
@@ -935,7 +935,7 @@ bool Platform::isFile(const char *pFilePath)
    TempAlloc< TCHAR > buf( dStrlen( pFilePath ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( pFilePath, buf, buf.size );
+   convertUTF8toUTF16N( pFilePath, buf, buf.size );
 #else
    dStrcpy( buf, pFilePath );
 #endif
@@ -974,7 +974,7 @@ S32 Platform::getFileSize(const char *pFilePath)
    TempAlloc< TCHAR > buf( dStrlen( pFilePath ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( pFilePath, buf, buf.size );
+   convertUTF8toUTF16N( pFilePath, buf, buf.size );
 #else
    dStrcpy( buf, pFilePath );
 #endif
@@ -1011,7 +1011,7 @@ bool Platform::isDirectory(const char *pDirPath)
    TempAlloc< TCHAR > buf( dStrlen( pDirPath ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( pDirPath, buf, buf.size );
+   convertUTF8toUTF16N( pDirPath, buf, buf.size );
 #else
    dStrcpy( buf, pDirPath );
 #endif
@@ -1057,8 +1057,8 @@ bool Platform::isSubDirectory(const char *pParent, const char *pDir)
    TempAlloc< TCHAR > dir( dStrlen( pDir ) + 1 );
 
 #ifdef UNICODE
-   convertUTF8toUTF16( fileName, file, file.size );
-   convertUTF8toUTF16( pDir, dir, dir.size );
+   convertUTF8toUTF16N( fileName, file, file.size );
+   convertUTF8toUTF16N( pDir, dir, dir.size );
 #else
    dStrcpy( file, fileName );
    dStrcpy( dir, pDir );
@@ -1140,7 +1140,7 @@ void Platform::getVolumeNamesList( Vector<const char*>& out_rNameVector, bool bO
 
    out_rNameVector.clear();
 		
-	for(int i = 0; i < 32; i++ )
+	for(S32 i = 0; i < 32; i++ )
 	{
 		dMemset(driveLetter,0,12);
 		if( dwDrives & dwMask )
@@ -1213,10 +1213,10 @@ void Platform::getVolumeInformationList( Vector<VolumeInformation>& out_rVolumeI
 
 #ifdef UNICODE
             char buf[ sizeof( lpszFileSystem ) / sizeof( lpszFileSystem[ 0 ] ) * 3 + 1 ];
-            convertUTF16toUTF8( lpszFileSystem, buf, sizeof( buf ) / sizeof( buf[ 0 ] ) );
+            convertUTF16toUTF8( lpszFileSystem, buf );
             info.FileSystem = StringTable->insert( buf );
 
-            convertUTF16toUTF8( lpszVolumeName, buf, sizeof( buf ) / sizeof( buf[ 0 ] ) );
+            convertUTF16toUTF8( lpszVolumeName, buf );
             info.Name = StringTable->insert( buf );
 #else
             info.FileSystem = StringTable->insert( lpszFileSystem );
@@ -1251,7 +1251,7 @@ bool Platform::hasSubDirectory(const char *pPath)
 
 #ifdef UNICODE
    WCHAR buf[ 1024 ];
-   convertUTF8toUTF16( searchBuf, buf, sizeof( buf ) / sizeof( buf[ 0 ] ) );
+   convertUTF8toUTF16( searchBuf, buf );
    WCHAR* search = buf;
 #else
    char* search = searchBuf;
@@ -1276,7 +1276,7 @@ bool Platform::hasSubDirectory(const char *pPath)
 
 #ifdef UNICODE
          char fileName[ 1024 ];
-         convertUTF16toUTF8( findData.cFileName, fileName, sizeof( fileName ) / sizeof( fileName[ 0 ] ) );
+         convertUTF16toUTF8( findData.cFileName, fileName );
 #else
          char* fileName = findData.cFileName;
 #endif
@@ -1306,8 +1306,10 @@ static bool recurseDumpDirectories(const char *basePath, const char *subPath, Ve
    // Compose our search string - Format : ([path]/[subpath]/*)
    //-----------------------------------------------------------------------------
 
-   char trail = basePath[ dStrlen(basePath) - 1 ];
-   char subTrail = subPath ? subPath[ dStrlen(subPath) - 1 ] : '\0';
+   dsize_t trLen = basePath ? dStrlen(basePath) : 0;
+   dsize_t subtrLen = subPath ? dStrlen(subPath) : 0;
+   char trail = trLen > 0 ? basePath[ trLen - 1 ] : '\0';
+   char subTrail = subtrLen > 0 ? subPath[ subtrLen - 1 ] : '\0';
 
    if( trail == '/' )
    {
@@ -1335,7 +1337,7 @@ static bool recurseDumpDirectories(const char *basePath, const char *subPath, Ve
 
 #ifdef UNICODE
    TempAlloc< WCHAR > searchStr( dStrlen( search ) + 1 );
-   convertUTF8toUTF16( search, searchStr, searchStr.size );
+   convertUTF8toUTF16N( search, searchStr, searchStr.size );
 #else
    char* searchStr = search;
 #endif
@@ -1397,7 +1399,7 @@ static bool recurseDumpDirectories(const char *basePath, const char *subPath, Ve
             continue;
 
 #ifdef UNICODE
-         convertUTF16toUTF8( findData.cFileName, fileName, fileName.size );
+         convertUTF16toUTF8N( findData.cFileName, fileName, fileName.size );
 #else
          char* fileName = findData.cFileName;
 #endif
@@ -1472,7 +1474,7 @@ StringTableEntry osGetTemporaryDirectory()
 #ifdef UNICODE
    TempAlloc< char > dirBuffer( len * 3 + 1 );
    char* dir = dirBuffer;
-   convertUTF16toUTF8( buffer, dir, dirBuffer.size );
+   convertUTF16toUTF8N( buffer, dir, dirBuffer.size );
 #else
    char* dir = buf;
 #endif

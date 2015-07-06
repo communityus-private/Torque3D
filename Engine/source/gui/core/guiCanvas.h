@@ -108,6 +108,8 @@ protected:
    bool        mClampTorqueCursor;
    bool        mAlwaysHandleMouseButtons;
 
+   bool        mDisplayWindow;
+
    /// @}
 
    /// @name Mouse Input
@@ -188,6 +190,8 @@ protected:
    
    void checkLockMouseMove( const GuiEvent& event );
 
+   GuiControl *mMenuBarCtrl;
+
 public:
    DECLARE_CONOBJECT(GuiCanvas);
    DECLARE_CATEGORY( "Gui Core" );
@@ -197,6 +201,8 @@ public:
 
    virtual bool onAdd();
    virtual void onRemove();
+
+   void setMenuBar(SimObject *obj);
 
    static void initPersistFields();
 
@@ -325,6 +331,10 @@ public:
 
    /// Returns true if the cursor is being rendered.
    virtual bool isCursorShown();
+
+   void cursorClick(S32 buttonId, bool isDown);
+
+   void cursorNudge(F32 x, F32 y);
    /// @}
 
    ///used by the tooltip resource

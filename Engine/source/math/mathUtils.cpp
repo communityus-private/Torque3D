@@ -21,6 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
+#include "math/util/frustum.h"
 #include "math/mathUtils.h"
 
 #include "math/mMath.h"
@@ -819,7 +820,7 @@ U32 greatestCommonDivisor( U32 u, U32 v )
 {
    // http://en.wikipedia.org/wiki/Binary_GCD_algorithm
       
-   int shift;
+   S32 shift;
 
    /* GCD(0,x) := x */
    if (u == 0 || v == 0)
@@ -845,7 +846,7 @@ U32 greatestCommonDivisor( U32 u, U32 v )
       if (u < v) {
          v -= u;
       } else {
-         unsigned int diff = u - v;
+         U32 diff = u - v;
          u = v;
          v = diff;
       }
@@ -1086,7 +1087,7 @@ struct QuadSortPoint
 };
 
 // Used by sortQuadWindingOrder.
-int QSORT_CALLBACK cmpAngleAscending( const void *a, const void *b )
+S32 QSORT_CALLBACK cmpAngleAscending( const void *a, const void *b )
 {
    const QuadSortPoint *p0 = (const QuadSortPoint*)a;
    const QuadSortPoint *p1 = (const QuadSortPoint*)b;   
@@ -1102,7 +1103,7 @@ int QSORT_CALLBACK cmpAngleAscending( const void *a, const void *b )
 }
 
 // Used by sortQuadWindingOrder.
-int QSORT_CALLBACK cmpAngleDescending( const void *a, const void *b )
+S32 QSORT_CALLBACK cmpAngleDescending( const void *a, const void *b )
 {
 	const QuadSortPoint *p0 = (const QuadSortPoint*)a;
 	const QuadSortPoint *p1 = (const QuadSortPoint*)b;   
@@ -1405,6 +1406,29 @@ void makeProjection( MatrixF *outMatrix,
    F32 left, right, top, bottom;
    makeFrustum( &left, &right, &top, &bottom, fovYInRadians, aspectRatio, nearPlane );
    makeProjection( outMatrix, left, right, top, bottom, nearPlane, farPlane, gfxRotate );
+}
+
+//-----------------------------------------------------------------------------
+
+void makeFovPortFrustum(
+   Frustum *outFrustum,
+   bool isOrtho,
+   F32 nearDist,
+   F32 farDist,
+   const FovPort &inPort,
+   const MatrixF &transform)
+{
+   F32 leftSize = nearDist * inPort.leftTan;
+   F32 rightSize = nearDist * inPort.rightTan;
+   F32 upSize = nearDist * inPort.upTan;
+   F32 downSize = nearDist * inPort.downTan;
+
+   F32 left = -leftSize;
+   F32 right = rightSize;
+   F32 top = upSize;
+   F32 bottom = -downSize;
+
+   outFrustum->set(isOrtho, left, right, top, bottom, nearDist, farDist, transform);
 }
 
 //-----------------------------------------------------------------------------

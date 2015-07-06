@@ -24,6 +24,7 @@
 #include "platform/types.h"
 #include "console/consoleTypes.h"
 #include "console/console.h"
+#include "console/engineAPI.h"
 #include "gui/core/guiTypes.h"
 #include "gui/core/guiControl.h"
 #include "gfx/gFont.h"
@@ -63,13 +64,13 @@ GFX_ImplementTextureProfile(GFXGuiCursorProfile,
                             GFXTextureProfile::DiffuseMap, 
                             GFXTextureProfile::PreserveSize |
                             GFXTextureProfile::Static, 
-                            GFXTextureProfile::None);
+                            GFXTextureProfile::NONE);
 GFX_ImplementTextureProfile(GFXDefaultGUIProfile,
                             GFXTextureProfile::DiffuseMap, 
                             GFXTextureProfile::PreserveSize |
                             GFXTextureProfile::Static |
                             GFXTextureProfile::NoPadding, 
-                            GFXTextureProfile::None);
+                            GFXTextureProfile::NONE);
 
 
 GuiCursor::GuiCursor()
@@ -694,9 +695,12 @@ bool GuiControlProfile::loadFont()
    return true;
 }
 
-ConsoleMethod( GuiControlProfile, getStringWidth, S32, 3, 3, "( pString )" )
+DefineEngineMethod( GuiControlProfile, getStringWidth, S32, (const char* string),,
+   "Get the width of the string in pixels.\n"
+   "@param string String to get the width of."
+   "@return width of the string in pixels." )
 {
-    return object->mFont->getStrNWidth( argv[2], dStrlen( argv[2] ) );
+   return object->mFont->getStrNWidth( string, dStrlen( string ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -719,8 +723,9 @@ ImplementConsoleTypeCasters( TypeRectSpacingI, RectSpacingI )
 ConsoleGetType( TypeRectSpacingI )
 {
    RectSpacingI *rect = (RectSpacingI *) dptr;
-   char* returnBuffer = Con::getReturnBuffer(256);
-   dSprintf(returnBuffer, 256, "%d %d %d %d", rect->top, rect->bottom,
+   static const U32 bufSize = 256;
+   char* returnBuffer = Con::getReturnBuffer(bufSize);
+   dSprintf(returnBuffer, bufSize, "%d %d %d %d", rect->top, rect->bottom,
       rect->left, rect->right);
    return returnBuffer;
 }

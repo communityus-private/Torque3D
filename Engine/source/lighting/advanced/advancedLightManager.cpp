@@ -34,7 +34,10 @@
 #include "materials/materialManager.h"
 #include "math/util/sphereMesh.h"
 #include "console/consoleTypes.h"
+#include "console/engineAPI.h"
 #include "scene/sceneRenderState.h"
+#include "gfx/gfxCardProfile.h"
+#include "gfx/gfxTextureProfile.h"
 
 
 ImplementEnumType( ShadowType,
@@ -81,6 +84,9 @@ bool AdvancedLightManager::isCompatible() const
       return false;
 
    // TODO: Test for the necessary texture formats!
+   bool autoMips;
+   if(!GFX->getCardProfiler()->checkFormat(GFXFormatR16F, &GFXDefaultRenderTargetProfile, autoMips))
+      return false;
 
    return true;
 }
@@ -606,7 +612,7 @@ GFXVertexBufferHandle<AdvancedLightManager::LightVertex> AdvancedLightManager::g
       mConeIndices.lock( &idx );
       // Build the cone
       U32 idxIdx = 0;
-      for( int i = 1; i < numPoints + 1; i++ )
+      for( U32 i = 1; i < numPoints + 1; i++ )
       {
          idx[idxIdx++] = 0; // Triangles on cone start at top point
          idx[idxIdx++] = i;
@@ -614,7 +620,7 @@ GFXVertexBufferHandle<AdvancedLightManager::LightVertex> AdvancedLightManager::g
       }
 
       // Build the bottom of the cone (reverse winding order)
-      for( int i = 1; i < numPoints - 1; i++ )
+      for( U32 i = 1; i < numPoints - 1; i++ )
       {
          idx[idxIdx++] = 1;
          idx[idxIdx++] = i + 2;
@@ -640,7 +646,7 @@ LightShadowMap* AdvancedLightManager::findShadowMapForObject( SimObject *object 
    return sceneLight->getLight()->getExtended<ShadowMapParams>()->getShadowMap();
 }
 
-ConsoleFunction( setShadowVizLight, const char*, 2, 2, "" )
+DefineConsoleFunction( setShadowVizLight, const char*, (const char* name), (""), "")
 {
    static const String DebugTargetName( "AL_ShadowVizTexture" );
 
@@ -653,7 +659,7 @@ ConsoleFunction( setShadowVizLight, const char*, 2, 2, "" )
       return 0;
 
    SimObject *object;
-   Sim::findObject( argv[1], object );
+   Sim::findObject( name, object );
    LightShadowMap *lightShadowMap = lm->findShadowMapForObject( object );
    if ( !lightShadowMap || !lightShadowMap->getTexture() )
       return 0;
@@ -664,8 +670,9 @@ ConsoleFunction( setShadowVizLight, const char*, 2, 2, "" )
    const Point3I &size = texObject->getSize();
    F32 aspect = (F32)size.x / (F32)size.y;
 
-   char *result = Con::getReturnBuffer( 64 );
-   dSprintf( result, 64, "%d %d %g", size.x, size.y, aspect ); 
+   static const U32 bufSize = 64;
+   char *result = Con::getReturnBuffer( bufSize );
+   dSprintf( result, bufSize, "%d %d %g", size.x, size.y, aspect ); 
    return result;
 }
 

@@ -27,6 +27,7 @@
 #include "math/mathIO.h"
 #include "core/stream/bitStream.h"
 #include "console/consoleTypes.h"
+#include "console/engineAPI.h"
 #include "scene/sceneManager.h"
 #include "math/mathUtils.h"
 #include "lighting/lightInfo.h"
@@ -470,7 +471,7 @@ void Sun::_renderCorona( ObjectRenderInst *ri, SceneRenderState *state, BaseMatI
    const MatrixF &camView = state->getCameraTransform();
 
    // Finalize points
-   for(int i = 0; i < 4; i++)
+   for(S32 i = 0; i < 4; i++)
    {
       // align with camera
       camView.mulV(points[i]);
@@ -546,18 +547,13 @@ void Sun::_onUnselected()
    Parent::_onUnselected();
 }
 
-ConsoleMethod(Sun, apply, void, 2, 2, "")
+DefineConsoleMethod(Sun, apply, void, (), , "")
 {
    object->inspectPostApply();
 }
 
-ConsoleMethod(Sun, animate, void, 7, 7, "animate( F32 duration, F32 startAzimuth, F32 endAzimuth, F32 startElevation, F32 endElevation )")
+DefineConsoleMethod(Sun, animate, void, ( F32 duration, F32 startAzimuth, F32 endAzimuth, F32 startElevation, F32 endElevation ), , "animate( F32 duration, F32 startAzimuth, F32 endAzimuth, F32 startElevation, F32 endElevation )")
 {
-   F32 duration = dAtof(argv[2]);
-   F32 startAzimuth = dAtof(argv[3]);
-   F32 endAzimuth   = dAtof(argv[4]);
-   F32 startElevation = dAtof(argv[5]);
-   F32 endElevation   = dAtof(argv[6]);
 
    object->animate(duration, startAzimuth, endAzimuth, startElevation, endElevation);
 }

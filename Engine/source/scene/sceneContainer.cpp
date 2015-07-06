@@ -1197,7 +1197,7 @@ void SceneContainer::cleanupSearchVectors()
 //-----------------------------------------------------------------------------
 
 static Point3F sgSortReferencePoint;
-static int QSORT_CALLBACK cmpSearchPointers(const void* inP1, const void* inP2)
+static S32 QSORT_CALLBACK cmpSearchPointers(const void* inP1, const void* inP2)
 {
    SimObjectPtr<SceneObject>** p1 = (SimObjectPtr<SceneObject>**)inP1;
    SimObjectPtr<SceneObject>** p2 = (SimObjectPtr<SceneObject>**)inP2;
@@ -1374,7 +1374,7 @@ F32 SceneContainer::containerSearchCurrRadiusDist()
 
 void SceneContainer::getBinRange( const F32 min, const F32 max, U32& minBin, U32& maxBin )
 {
-   AssertFatal(max >= min, "Error, bad range! in getBinRange");
+   AssertFatal(max >= min, avar("Error, bad range in getBinRange. min: %f, max: %f", min, max));
 
    if ((max - min) >= (SceneContainer::csmTotalBinSize - SceneContainer::csmBinSize))
    {
@@ -1631,10 +1631,11 @@ DefineEngineFunction( containerRayCast, const char*,
       pExempt->enableCollision();
 
    // add the hit position and normal?
-   char *returnBuffer = Con::getReturnBuffer(256);
+   static const U32 bufSize = 256;
+   char *returnBuffer = Con::getReturnBuffer(bufSize);
    if(ret)
    {
-      dSprintf(returnBuffer, 256, "%d %g %g %g %g %g %g %g",
+      dSprintf(returnBuffer, bufSize, "%d %g %g %g %g %g %g %g",
                ret, rinfo.point.x, rinfo.point.y, rinfo.point.z,
                rinfo.normal.x, rinfo.normal.y, rinfo.normal.z, rinfo.distance);
    }

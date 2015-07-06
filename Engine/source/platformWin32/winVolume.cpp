@@ -333,7 +333,7 @@ Path Win32File::getName() const
    return mPath;
 }
 
-FileNode::Status Win32File::getStatus() const
+FileNode::NodeStatus Win32File::getStatus() const
 {
    return mStatus;
 }
@@ -620,7 +620,7 @@ bool Win32Directory::getAttributes(Attributes* attr)
    return true;
 }
 
-FileNode::Status Win32Directory::getStatus() const
+FileNode::NodeStatus Win32Directory::getStatus() const
 {
    return mStatus;
 }
@@ -720,13 +720,13 @@ String   Platform::FS::getAssetDir()
    {
       TCHAR buf[ 2048 ];
       ::GetModuleFileNameW( NULL, buf, sizeof( buf ) );
-      convertUTF16toUTF8( buf, cen_buf, sizeof( cen_buf ) );
+      convertUTF16toUTF8( buf, cen_buf );
    }
    else
    {
       TCHAR buf[ 2048 ];
       GetCurrentDirectoryW( sizeof( buf ) / sizeof( buf[ 0 ] ), buf );
-      convertUTF16toUTF8( buf, cen_buf, sizeof( cen_buf ) );
+      convertUTF16toUTF8( buf, cen_buf );
       return Path::CleanSeparators(cen_buf);
    }
 #else

@@ -62,7 +62,7 @@ GFXDeclareVertexFormat( ScatterSkyVertex )
 {
    Point3F point;
    VectorF normal;
-   ColorF color;
+   GFXVertexColor color;
 };
 
 class ScatterSky : public SceneObject, public ISceneLight
@@ -179,6 +179,7 @@ protected:
 
    F32 mExposure;
    F32 mNightInterpolant;
+   F32 mZOffset;
 
    VectorF mLightDir;
    VectorF mSunDir;

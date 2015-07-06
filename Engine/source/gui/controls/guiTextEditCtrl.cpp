@@ -279,7 +279,7 @@ void GuiTextEditCtrl::setText( const UTF16* txt)
 {
    if(txt && txt[0] != 0)
    {
-      UTF8* txt8 = convertUTF16toUTF8( txt );
+      UTF8* txt8 = createUTF8string( txt );
       Parent::setText( txt8 );
       delete[] txt8;
       mTextBuffer.set( txt );
@@ -1688,7 +1688,7 @@ DefineEngineMethod( GuiTextEditCtrl, getCursorPos, S32, (),,
    return( object->getCursorPos() );
 }
 
-DefineEngineMethod( GuiTextEditCtrl, setCursorPos, void, (int position),,
+DefineEngineMethod( GuiTextEditCtrl, setCursorPos, void, (S32 position),,
    "@brief Sets the text cursor at the defined position within the control.\n\n"
    "@param position Text position to set the text cursor.\n"
    "@tsexample\n"

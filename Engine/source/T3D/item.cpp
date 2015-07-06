@@ -292,7 +292,7 @@ IMPLEMENT_CALLBACK( Item, onStickyCollision, void, ( const char* objID ),( objID
    "@see Item, ItemData\n"
 );
 
-IMPLEMENT_CALLBACK( Item, onEnterLiquid, void, ( const char* objID, const char* waterCoverage, const char* liquidType ),( objID, waterCoverage, liquidType ),
+IMPLEMENT_CALLBACK( Item, onEnterLiquid, void, ( const char* objID, F32 waterCoverage, const char* liquidType ),( objID, waterCoverage, liquidType ),
    "Informs an Item object that it has entered liquid, along with information about the liquid type.\n"
    "@param objID Object ID for this Item object.\n"
    "@param waterCoverage How much coverage of water this Item object has.\n"
@@ -893,7 +893,7 @@ void Item::updatePos(const U32 /*mask*/, const F32 dt)
             // Pick the most resistant surface
             F32 bd = 0;
             const Collision* collision = 0;
-            for (int c = 0; c < collisionList.getCount(); c++) {
+            for (S32 c = 0; c < collisionList.getCount(); c++) {
                const Collision &cp = collisionList[c];
                F32 dot = -mDot(mVelocity,cp.normal);
                if (dot > bd) {
@@ -1005,7 +1005,7 @@ void Item::updatePos(const U32 /*mask*/, const F32 dt)
       {
          if(!mInLiquid && mWaterCoverage != 0.0f)
          {
-			onEnterLiquid_callback( getIdString(), Con::getFloatArg(mWaterCoverage), mLiquidType.c_str() );
+			onEnterLiquid_callback( getIdString(), mWaterCoverage, mLiquidType.c_str() );
             mInLiquid = true;
          }
          else if(mInLiquid && mWaterCoverage == 0.0f)
@@ -1204,7 +1204,7 @@ DefineEngineMethod( Item, isRotating, bool, (),,
    return object->isRotating();
 }
 
-DefineEngineMethod( Item, setCollisionTimeout, bool, (int ignoreColObj),(NULL), 
+DefineEngineMethod( Item, setCollisionTimeout, bool, (S32 ignoreColObj),(NULL), 
    "@brief Temporarily disable collisions against a specific ShapeBase object.\n\n"
 
    "This is useful to prevent a player from immediately picking up an Item they have "
@@ -1241,9 +1241,10 @@ DefineEngineMethod( Item, getLastStickyPos, const char*, (),,
    "@note Server side only.\n"
    )
 {
-   char* ret = Con::getReturnBuffer(256);
+   static const U32 bufSize = 256;
+   char* ret = Con::getReturnBuffer(bufSize);
    if (object->isServerObject())
-      dSprintf(ret, 255, "%g %g %g",
+      dSprintf(ret, bufSize, "%g %g %g",
                object->mStickyCollisionPos.x,
                object->mStickyCollisionPos.y,
                object->mStickyCollisionPos.z);
@@ -1263,9 +1264,10 @@ DefineEngineMethod( Item, getLastStickyNormal, const char *, (),,
    "@note Server side only.\n"
    )
 {
-   char* ret = Con::getReturnBuffer(256);
+   static const U32 bufSize = 256;
+   char* ret = Con::getReturnBuffer(bufSize);
    if (object->isServerObject())
-      dSprintf(ret, 255, "%g %g %g",
+      dSprintf(ret, bufSize, "%g %g %g",
                object->mStickyCollisionNormal.x,
                object->mStickyCollisionNormal.y,
                object->mStickyCollisionNormal.z);

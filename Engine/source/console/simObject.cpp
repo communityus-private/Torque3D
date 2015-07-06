@@ -123,7 +123,7 @@ SimObject::~SimObject()
 
 //-----------------------------------------------------------------------------
 
-bool SimObject::processArguments(S32 argc, const char**argv)
+bool SimObject::processArguments(S32 argc, ConsoleValueRef *argv)
 {
    return argc == 0;
 }
@@ -1407,10 +1407,11 @@ void SimObject::linkNamespaces()
    // while still having the class namespace fields matching the current
    // setup.
 
-   AssertWarn( mNameSpace == NULL, "SimObject::linkNamespaces -- Namespace linkage already in place" );
-   if( mNameSpace )
+   if (mNameSpace)
+   {
+      Con::warnf("SimObject::linkNamespaces -- Namespace linkage already in place %s", mNameSpace->getName());
       return;
-
+   }
    // Get the namespace for the C++ class.
 
    Namespace* cppNamespace = getClassRep()->getNameSpace();
@@ -1833,7 +1834,7 @@ void SimObject::inspectPostApply()
 
 //-----------------------------------------------------------------------------
 
-String SimObject::_getLogMessage(const char* fmt, void* args) const
+String SimObject::_getLogMessage(const char* fmt, va_list args) const
 {
    String objClass = "UnknownClass";
    if(getClassRep())
@@ -2663,7 +2664,7 @@ DefineConsoleMethod( SimObject, getDynamicFieldCount, S32, (),,
 
 //-----------------------------------------------------------------------------
 
-DefineConsoleMethod( SimObject, getDynamicField, const char*, ( int index ),,
+DefineConsoleMethod( SimObject, getDynamicField, const char*, ( S32 index ),,
    "Get a value of a dynamic field by index.\n"
    "@param index The index of the dynamic field.\n"
    "@return The value of the dynamic field at the given index or \"\"." )
@@ -2680,11 +2681,12 @@ DefineConsoleMethod( SimObject, getDynamicField, const char*, ( int index ),,
       ++itr;
    }
 
-   char* buffer = Con::getReturnBuffer(256);
+   static const U32 bufSize = 256;
+   char* buffer = Con::getReturnBuffer(bufSize);
    if (*itr)
    {
       SimFieldDictionary::Entry* entry = *itr;
-      dSprintf(buffer, 256, "%s\t%s", entry->slotName, entry->value);
+      dSprintf(buffer, bufSize, "%s\t%s", entry->slotName, entry->value);
       return buffer;
    }
 
@@ -2702,7 +2704,7 @@ DefineConsoleMethod( SimObject, getFieldCount, S32, (),,
    const AbstractClassRep::Field* f;
    U32 numDummyEntries = 0;
 
-   for(int i = 0; i < list.size(); i++)
+   for(S32 i = 0; i < list.size(); i++)
    {
       f = &list[i];
 
@@ -2716,7 +2718,7 @@ DefineConsoleMethod( SimObject, getFieldCount, S32, (),,
 
 //-----------------------------------------------------------------------------
 
-DefineConsoleMethod( SimObject, getField, const char*, ( int index ),,
+DefineConsoleMethod( SimObject, getField, const char*, ( S32 index ),,
    "Retrieve the value of a static field by index.\n"
    "@param index The index of the static field.\n"
    "@return The value of the static field with the given index or \"\"." )

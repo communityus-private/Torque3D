@@ -32,6 +32,7 @@
 #include "shaderGen/GLSL/paraboloidGLSL.h"
 #include "materials/materialFeatureTypes.h"
 #include "core/module.h"
+#include "shaderGen/GLSL/accuFeatureGLSL.h"
 
 
 static ShaderGen::ShaderGenInitDelegate sInitDelegate;
@@ -62,6 +63,7 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_CubeMap, new ReflectCubeFeatGLSL );
    FEATUREMGR->registerFeature( MFT_PixSpecular, new PixelSpecularGLSL );
    FEATUREMGR->registerFeature( MFT_SpecularMap, new SpecularMapGLSL );
+   FEATUREMGR->registerFeature( MFT_AccuMap, new AccuTexFeatGLSL );
    FEATUREMGR->registerFeature( MFT_GlossMap, new NamedFeatureGLSL( "Gloss Map" ) );
    FEATUREMGR->registerFeature( MFT_IsTranslucent, new NamedFeatureGLSL( "Translucent" ) );
    FEATUREMGR->registerFeature( MFT_Visibility, new VisibilityFeatGLSL );
@@ -76,6 +78,8 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
 	
    FEATUREMGR->registerFeature( MFT_ParaboloidVertTransform, new ParaboloidVertTransformGLSL );
    FEATUREMGR->registerFeature( MFT_IsSinglePassParaboloid, new NamedFeatureGLSL( "Single Pass Paraboloid" ) );
+   FEATUREMGR->registerFeature( MFT_UseInstancing, new NamedFeatureGLSL( "Hardware Instancing" ) );
+
 	FEATUREMGR->registerFeature( MFT_RenderTarget1_Zero, new RenderTargetZeroGLSL
 										 ( ShaderFeature::RenderTarget1 ) );
 	
@@ -88,6 +92,10 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_ForwardShading, new NamedFeatureGLSL( "Forward Shaded Material" ) );
 
    FEATUREMGR->registerFeature( MFT_ImposterVert, new ImposterVertFeatureGLSL );
+
+   FEATUREMGR->registerFeature( MFT_LightbufferMRT, new NamedFeatureGLSL( "Lightbuffer MRT" ) );
+   //FEATUREMGR->registerFeature( MFT_IsTranslucentZWrite, new NamedFeatureGLSL( "Translucent ZWrite" ) );
+   //FEATUREMGR->registerFeature( MFT_InterlacedPrePass, new NamedFeatureGLSL( "Interlaced Pre Pass" ) );
 
 }
 
