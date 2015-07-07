@@ -41,7 +41,7 @@
       tooltipprofile = "ToolsGuiToolTipProfile";
       hovertime = "1000";
       canSaveDynamicFields = "0";
-      closeCommand = "$GameCanvas.popDialog(TimeAdjustGui);";
+      closeCommand = "Canvas.popDialog(TimeAdjustGui);";
 
       new GuiSliderCtrl(TimeAdjustSliderCtrl) {
          range = "0 1";
@@ -208,7 +208,7 @@ function TimeAdjustSliderCtrl::onAction(%this)
 function toggleTimeAdjustGui()
 {
    if ( TimeAdjustGui.isAwake() )
-      $GameCanvas.popDialog( TimeAdjustGui );
+      Canvas.popDialog( TimeAdjustGui );
    else
-      $GameCanvas.pushDialog( TimeAdjustGui );
+      Canvas.pushDialog( TimeAdjustGui );
 }

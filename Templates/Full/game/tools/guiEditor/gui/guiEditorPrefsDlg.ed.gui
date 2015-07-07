@@ -34,7 +34,7 @@
       canMinimize = "0";
       canMaximize = "0";
       minSize = "50 50";
-      closeCommand = "$GameCanvas.popDialog(\"GuiEditorPrefsDlg\");";
+      closeCommand = "Canvas.popDialog(\"GuiEditorPrefsDlg\");";
       EdgeSnap = "0";
       text = "Gui Editor Grid Preferences";
 

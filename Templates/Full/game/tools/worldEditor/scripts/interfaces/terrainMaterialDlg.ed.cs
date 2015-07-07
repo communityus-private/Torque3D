@@ -25,7 +25,7 @@
 
 function TerrainMaterialDlg::show( %this, %matIndex, %terrMat, %onApplyCallback )
 {
-   $GameCanvas.pushDialog( %this );
+   Canvas.pushDialog( %this );
    
    %this.matIndex = %matIndex; 
    %this.onApplyCallback = %onApplyCallback;
@@ -56,7 +56,7 @@ function TerrainMaterialDlg::show( %this, %matIndex, %terrMat, %onApplyCallback 
 
 function TerrainMaterialDlg::showByObjectId( %this, %matObjectId, %onApplyCallback )
 {
-   $GameCanvas.pushDialog( %this );
+   Canvas.pushDialog( %this );
      
    %this.matIndex = -1;
    %this.onApplyCallback = %onApplyCallback;
@@ -146,8 +146,8 @@ function TerrainMaterialDlg::dialogApply( %this )
    // Delete the snapshot.
    TerrainMaterialDlgSnapshot.delete();
 
-   // Remove ourselves from the $GameCanvas.
-   $GameCanvas.popDialog( TerrainMaterialDlg ); 
+   // Remove ourselves from the canvas.
+   Canvas.popDialog( TerrainMaterialDlg ); 
                             
    call( %this.onApplyCallback, %this.activeMat, %this.matIndex );
 }
@@ -178,7 +178,7 @@ function TerrainMaterialDlg::dialogCancel( %this )
       TerrainMaterialSet.add( %mat );
    }
    
-   $GameCanvas.popDialog( TerrainMaterialDlg );  
+   Canvas.popDialog( TerrainMaterialDlg );  
 }
 
 //-----------------------------------------------------------------------------

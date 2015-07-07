@@ -173,7 +173,7 @@
          MinExtent = "8 2";
          canSave = "1";
          Visible = "1";
-         Command = "$GameCanvas.pushDialog(MeshRoadDefaultWidthSliderCtrlContainer);";
+         Command = "Canvas.pushDialog(MeshRoadDefaultWidthSliderCtrlContainer);";
          tooltipprofile = "ToolsGuiToolTipProfile";
          ToolTip = "Changes Default Road Width";
          hovertime = "750";
@@ -251,7 +251,7 @@
          MinExtent = "8 2";
          canSave = "1";
          Visible = "1";
-         Command = "$GameCanvas.pushDialog(MeshRoadDefaultDepthSliderCtrlContainer);";
+         Command = "Canvas.pushDialog(MeshRoadDefaultDepthSliderCtrlContainer);";
          tooltipprofile = "ToolsGuiToolTipProfile";
          ToolTip = "Changes Default Road Depth";
          hovertime = "750";

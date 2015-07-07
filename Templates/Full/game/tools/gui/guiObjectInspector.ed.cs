@@ -47,7 +47,7 @@ function inspectObject( %object )
    
    %guiContent.init( %object );
       
-   $GameCanvas.getContent().add( %guiContent );
+   Canvas.getContent().add( %guiContent );
 }
 
 //=============================================================================================

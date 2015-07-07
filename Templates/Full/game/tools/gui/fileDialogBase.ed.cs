@@ -251,7 +251,7 @@ function FileDialogOkButton::onClick( %this )
    //
    %fullPath = %path @ "/" @ %fileName;
    
-   $GameCanvas.popDialog( %this.parent );
+   Canvas.popDialog( %this.parent );
 
    // Callback      
    eval( %this.parent.SuccessCallback @ "(\"" @ %fullPath @"\");" );
@@ -264,7 +264,7 @@ function FileDialogOkButton::onClick( %this )
 
 function FileDialogCancelButton::onClick( %this )
 {
-   $GameCanvas.popDialog( %this.parent );
+   Canvas.popDialog( %this.parent );
    //error("Cancel");
 }
 

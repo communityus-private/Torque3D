@@ -297,7 +297,7 @@ function GuiEditorToolbox::startGuiControlDrag( %this, %class )
    %yOffset = getWord( %payload.extent, 1 ) / 2;  
    
    // position where the drag will start, to prevent visible jumping.
-   %cursorpos = $GameCanvas.getCursorPos();
+   %cursorpos = Canvas.getCursorPos();
    %xPos = getWord( %cursorpos, 0 ) - %xOffset;
    %yPos = getWord( %cursorpos, 1 ) - %yOffset;
    
@@ -320,7 +320,7 @@ function GuiEditorToolbox::startGuiControlDrag( %this, %class )
    };
    
    %dragCtrl.add( %payload );
-   $GameCanvas.getContent().add( %dragCtrl );
+   Canvas.getContent().add( %dragCtrl );
    
    // Start drag.
 

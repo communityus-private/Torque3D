@@ -174,7 +174,7 @@
             MinExtent = "8 2";
             canSave = "1";
             Visible = "1";
-            Command = "$GameCanvas.pushDialog(RiverDefaultWidthSliderCtrlContainer);";
+            Command = "Canvas.pushDialog(RiverDefaultWidthSliderCtrlContainer);";
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Changes Default River Width";
             hovertime = "750";
@@ -252,7 +252,7 @@
             MinExtent = "8 2";
             canSave = "1";
             Visible = "1";
-            Command = "$GameCanvas.pushDialog(RiverDefaultDepthSliderCtrlContainer);";
+            Command = "Canvas.pushDialog(RiverDefaultDepthSliderCtrlContainer);";
             tooltipprofile = "ToolsGuiToolTipProfile";
             ToolTip = "Changes Default River Depth";
             hovertime = "750";
