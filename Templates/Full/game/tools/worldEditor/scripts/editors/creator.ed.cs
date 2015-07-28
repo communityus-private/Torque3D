@@ -179,12 +179,6 @@ function EWCreatorWindow::createStatic( %this, %file )
    if ( !$missionRunning )
       return;
 
-   if(isFunction("getObjectLimit") && MissionGroup.getFullCount() >= getObjectLimit())
-   {
-      MessageBoxOKBuy( "Object Limit Reached", "You have exceeded the object limit of " @ getObjectLimit() @ " for this demo. You can remove objects if you would like to add more.", "", "Canvas.showPurchaseScreen(\"objectlimit\");" );
-      return;
-   }
-
    if( !isObject(%this.objectGroup) )
       %this.setNewObjectGroup( MissionGroup );
 
@@ -202,12 +196,6 @@ function EWCreatorWindow::createPrefab( %this, %file )
 {
    if ( !$missionRunning )
       return;
-
-   if(isFunction("getObjectLimit") && MissionGroup.getFullCount() >= getObjectLimit())
-   {
-      MessageBoxOKBuy( "Object Limit Reached", "You have exceeded the object limit of " @ getObjectLimit() @ " for this demo. You can remove objects if you would like to add more.", "", "Canvas.showPurchaseScreen(\"objectlimit\");" );
-      return;
-   }
 
    if( !isObject(%this.objectGroup) )
       %this.setNewObjectGroup( MissionGroup );
@@ -227,12 +215,6 @@ function EWCreatorWindow::createObject( %this, %cmd )
    if ( !$missionRunning )
       return;
 
-   if(isFunction("getObjectLimit") && MissionGroup.getFullCount() >= getObjectLimit())
-   {
-      MessageBoxOKBuy( "Object Limit Reached", "You have exceeded the object limit of " @ getObjectLimit() @ " for this demo. You can remove objects if you would like to add more.", "", "Canvas.showPurchaseScreen(\"objectlimit\");" );
-      return;
-   }
-      
    if( !isObject(%this.objectGroup) )
       %this.setNewObjectGroup( MissionGroup );
 
