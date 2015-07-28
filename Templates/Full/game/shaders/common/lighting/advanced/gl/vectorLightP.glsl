@@ -77,7 +77,7 @@ uniform vec4 dynamicOffsetX;
 uniform vec4 dynamicOffsetY;
 uniform vec4 dynamicFarPlaneScalePSSM;
 
-float AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
+vec4 AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
                                 vec2 _texCoord,
                                 mat4 _worldToLightProj,
                                 vec4 _worldPos,
@@ -132,6 +132,11 @@ float AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
       else
          finalMask = vec4(0, 0, 0, 1);
          
+      vec3 debugColor = vec3(0);
+   
+      #ifdef NO_SHADOW
+         debugColor = vec3(1.0);
+      #endif
 
       #ifdef PSSM_DEBUG_RENDER
          if ( finalMask.x > 0 )
@@ -175,13 +180,14 @@ float AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
       float farPlaneScale = dot( _farPlaneScalePSSM, finalMask );
       distToLight *= farPlaneScale;
       
-      return softShadow_filter(  _sourceshadowMap,
+      return vec4(debugColor,
+	                             softShadow_filter(  _sourceshadowMap,
                                  _texCoord,
                                  shadowCoord,
                                  farPlaneScale * _shadowSoftness,
                                  distToLight,
                                  _dotNL,
-                                 dot( finalMask, _overDarkPSSM ) );
+                                 dot( finalMask, _overDarkPSSM ) ) );
 }
 
 out vec4 OUT_col;
@@ -222,7 +228,7 @@ void main()
 
    #else
 
-      float static_shadowed = AL_VectorLightShadowCast( shadowMap,
+      vec4 static_shadowed_colors = AL_VectorLightShadowCast( shadowMap,
                                                         uv0.xy,
                                                         worldToLightProj,
                                                         worldPos,
@@ -236,7 +242,7 @@ void main()
                                                         overDarkPSSM);
 
                                              
-      float dynamic_shadowed = AL_VectorLightShadowCast( dynamicShadowMap,
+      vec4 dynamic_shadowed_colors = AL_VectorLightShadowCast( dynamicShadowMap,
                                                         uv0.xy,
                                                         dynamicWorldToLightProj,
                                                         worldPos,
@@ -249,6 +255,13 @@ void main()
                                                         dotNL,
                                                         overDarkPSSM);  
       
+      float static_shadowed = static_shadowed_colors.a;
+      float dynamic_shadowed = dynamic_shadowed_colors.a;
+	  
+      #ifdef PSSM_DEBUG_RENDER
+	     debugColor = static_shadowed_colors.rgb*0.5+dynamic_shadowed_colors.rgb*0.5;
+      #endif
+	   
       // Fade out the shadow at the end of the range.
       vec4 zDist = vec4(zNearFarInvNearFar.x + zNearFarInvNearFar.y * depth);
       float fadeOutAmt = ( zDist.x - fadeStartLength.x ) * fadeStartLength.y;
@@ -284,6 +297,8 @@ void main()
    vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
    vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
+   addToResult.rgb *= matInfo.g;
+
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
       float ao = 1.0 - texture( ssaoMask, viewportCoordToRenderTarget( uv0.xy, rtParams3 ) ).r;
@@ -294,5 +309,5 @@ void main()
       lightColorOut = debugColor;
    #endif
 
-   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, matInfo.g*Sat_NL_Att);   
+   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att); 
 }
