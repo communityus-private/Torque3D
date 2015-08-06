@@ -297,7 +297,6 @@ float4 main( FarFrustumQuadConnectP IN,
    
    float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
 
-   addToResult.rgb *= matInfo.g;
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
       float ao = 1.0 - tex2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams3 ) ).r;
@@ -308,5 +307,5 @@ float4 main( FarFrustumQuadConnectP IN,
       lightColorOut = debugColor;
    #endif
 
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
+   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, matInfo.g*Sat_NL_Att);
 }
