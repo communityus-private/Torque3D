@@ -11,7 +11,6 @@
 #include "gui/core/guiCanvas.h"
 //#include "core/tVector.h"
 #include "scene/sceneObject.h"
-#include "gfx\D3D9\gfxD3D9Device.h"
 
 #include "T3D/tsStatic.h"
 
@@ -31,7 +30,7 @@ private:
    GuiControl* mGuiControl;
 
    bool mDirty;
-   
+
    bool mShowTexCursor;
    StringTableEntry mCursorBitmap;
    GFXTexHandle mCursorTextureHandle;
@@ -60,7 +59,7 @@ public:
    virtual void inspectPostApply();
 
    virtual void renderFrame( bool preRenderOnly, bool bufferSwap = true );
-   
+
    static bool castRay(TSStatic* object, const Point3F& start, const Point3F& end, RayInfo* rayInfo);
    static F32 getRayLength() { return sRayLength; }
    static bool getInteract(){ return sInteract; };
@@ -76,14 +75,14 @@ public:
 };
 
 
-inline GFXTexHandle GuiTextureCanvas::getTextureHandle() const 
+inline GFXTexHandle GuiTextureCanvas::getTextureHandle() const
 {
    return mTextureHandle;
 }
 
 inline void GuiTextureCanvas::setDirty()
-{ 
-	mDirty = true; 
+{
+	mDirty = true;
 }
 
 
