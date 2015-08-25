@@ -157,6 +157,10 @@ void SpecularMapGLSL::processPix( Vector<ShaderComponent*> &componentList, const
       meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
       meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
    }
+
+   if (fd.features[MFT_InvertSmoothness])
+      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
+
    meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
    output = meta;
 }

@@ -213,6 +213,7 @@ public:
    FileName mNormalMapFilename[MAX_STAGES];
 
    bool     mFlipRB[MAX_STAGES];
+   bool     mInvertSmoothness[MAX_STAGES];
    FileName mSpecularMapFilename[MAX_STAGES];
    FileName mRoughMapFilename[MAX_STAGES];
    F32      msmoothnessChan[MAX_STAGES];

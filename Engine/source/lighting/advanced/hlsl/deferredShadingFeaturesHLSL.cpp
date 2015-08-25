@@ -81,6 +81,9 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
       meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
       meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
    }
+   if (fd.features[MFT_InvertSmoothness])
+      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
+
    meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
 
    meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
@@ -173,6 +176,8 @@ void DeferredSpecVarsHLSL::processPix( Vector<ShaderComponent*> &componentList, 
    //matinfo.g slot reserved for AO later
    meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
    meta->addStatement(new GenOp("   @.b = @;\r\n", material, smoothness));
+   if (fd.features[MFT_InvertSmoothness])
+      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
    meta->addStatement(new GenOp("   @.a = @;\r\n", material, metalness));
    output = meta;
 }
