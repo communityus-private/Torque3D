@@ -402,15 +402,15 @@ void ParallaxFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    Var *normalMap = getNormalMapTex();
 
    // Call the library function to do the rest.
-   if (fd.features.hasFeature(MFT_IsDXTnm, getProcessIndex()))
+   if(fd.features.hasFeature( MFT_IsDXTnm, getProcessIndex() ))
    {
-      meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @ );\r\n",
-         texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
+      meta->addStatement( new GenOp( "   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @ );\r\n", 
+         texCoord, normalMap, texCoord, negViewTS, parallaxInfo ) );
    }
    else
    {
-      meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @.xy, @, @ );\r\n",
-         texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
+      meta->addStatement( new GenOp( "   @.xy += parallaxOffset( @, @.xy, @, @ );\r\n", 
+         texCoord, normalMap, texCoord, negViewTS, parallaxInfo ) );
    }
 
    // TODO: Fix second UV maybe?

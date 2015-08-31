@@ -584,13 +584,29 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
       if (fd.features.hasFeature(MFT_IsDXTnm, detailIndex))
       {
          meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n",
-            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
+         inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
       }
       else
       {
          meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n",
-            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
+         inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
       }
+   }
+   
+   // Check to see if we have a gbuffer normal.
+   Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
+   
+   // If we have a gbuffer normal and we don't have a
+   // normal map feature then we need to lerp in a 
+   // default normal else the normals below this layer
+   // will show thru.
+   if (gbNormal &&
+      !fd.features.hasFeature(MFT_TerrainNormalMap, detailIndex))
+   {
+      Var *viewToTangent = getInViewToTangent(componentList);
+
+      meta->addStatement(new GenOp("   @ = lerp( @, @[2], min( @, @.w ) );\r\n",
+         gbNormal, gbNormal, viewToTangent, detailBlend, inDet));
    }
 
    // If we're using SM 3.0 then take advantage of 
