@@ -357,7 +357,6 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       {
          features.addFeature( MFT_EyeSpaceDepthOut );
          features.addFeature( MFT_PrePassConditioner );
-         features.addFeature( MFT_DeferredTerrainBaseMap );
          features.addFeature(MFT_isDeferred);
 
          if ( advancedLightmapSupport )
@@ -365,12 +364,12 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       }
       else
       {
-         features.addFeature( MFT_TerrainBaseMap );
          features.addFeature( MFT_RTLighting );
          // The HDR feature is always added... it will compile out
          // if HDR is not enabled in the engine.
          features.addFeature( MFT_HDROut );
       }
+      features.addFeature( MFT_TerrainBaseMap );
       features.addFeature(MFT_DeferredTerrainBlankInfoMap);
 
       // Enable lightmaps and fogging if we're in BL.

@@ -48,8 +48,7 @@ namespace
       FEATUREMGR->registerFeature( MFT_TerrainMacroMap, new TerrainMacroMapFeatHLSL );
       FEATUREMGR->registerFeature( MFT_TerrainLightMap, new TerrainLightMapFeatHLSL );
       FEATUREMGR->registerFeature( MFT_TerrainSideProject, new NamedFeatureHLSL( "Terrain Side Projection" ) );
-      FEATUREMGR->registerFeature( MFT_TerrainAdditive, new TerrainAdditiveFeatHLSL );     
-      FEATUREMGR->registerFeature( MFT_DeferredTerrainBaseMap, new TerrainBaseMapFeatHLSL );
+      FEATUREMGR->registerFeature( MFT_TerrainAdditive, new TerrainAdditiveFeatHLSL );  
       FEATUREMGR->registerFeature( MFT_DeferredTerrainMacroMap, new TerrainMacroMapFeatHLSL );
       FEATUREMGR->registerFeature( MFT_DeferredTerrainDetailMap, new TerrainDetailMapFeatHLSL );
       FEATUREMGR->registerFeature( MFT_DeferredTerrainBlankInfoMap, new TerrainBlankInfoMapFeatHLSL );
@@ -291,7 +290,7 @@ ShaderFeature::Resources TerrainBaseMapFeatHLSL::getResources( const MaterialFea
 
 U32 TerrainBaseMapFeatHLSL::getOutputTargets( const MaterialFeatureData &fd ) const
 {
-   return fd.features[MFT_DeferredTerrainBaseMap] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
 }
 
 TerrainDetailMapFeatHLSL::TerrainDetailMapFeatHLSL()
@@ -777,6 +776,7 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
    
    // Check to see if we have a gbuffer normal.
    Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
+   
    // If we have a gbuffer normal and we don't have a
    // normal map feature then we need to lerp in a 
    // default normal else the normals below this layer
@@ -785,6 +785,7 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
       !fd.features.hasFeature( MFT_TerrainNormalMap, detailIndex ) )
    {
       Var *viewToTangent = getInViewToTangent( componentList );
+      
       meta->addStatement( new GenOp( "   @ = lerp( @, @[2], min( @, @.w ) );\r\n", 
          gbNormal, gbNormal, viewToTangent, detailBlend, inDet ) );
    }
@@ -1053,7 +1054,7 @@ void TerrainAdditiveFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
 
 U32 TerrainBlankInfoMapFeatHLSL::getOutputTargets(const MaterialFeatureData &fd) const
 {
-   return fd.features[MFT_DeferredTerrainBaseMap] ? ShaderFeature::RenderTarget2 : ShaderFeature::RenderTarget1;
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget2 : ShaderFeature::RenderTarget1;
 }
 
 void TerrainBlankInfoMapFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
