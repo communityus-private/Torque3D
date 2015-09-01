@@ -357,6 +357,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       {
          features.addFeature( MFT_EyeSpaceDepthOut );
          features.addFeature( MFT_PrePassConditioner );
+         features.addFeature( MFT_DeferredTerrainBaseMap );
          features.addFeature(MFT_isDeferred);
 
          if ( advancedLightmapSupport )
@@ -410,9 +411,15 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
 		 // check for macro detail texture
          if (  !(mat->getMacroSize() <= 0 || mat->getMacroDistance() <= 0 || mat->getMacroMap().isEmpty() ) )
          {
-            features.addFeature( MFT_TerrainMacroMap, featureIndex );
+            if(prePassMat)
+               features.addFeature( MFT_DeferredTerrainMacroMap, featureIndex );
+            else
+	         features.addFeature( MFT_TerrainMacroMap, featureIndex );
          }
 
+         if(prePassMat)
+             features.addFeature( MFT_DeferredTerrainDetailMap, featureIndex );
+         else
          features.addFeature( MFT_TerrainDetailMap, featureIndex );
 
          pass->materials.push_back( (*materials)[i] );
