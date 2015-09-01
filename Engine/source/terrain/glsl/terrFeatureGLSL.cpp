@@ -49,8 +49,6 @@ namespace
       FEATUREMGR->registerFeature( MFT_TerrainLightMap, new TerrainLightMapFeatGLSL );
       FEATUREMGR->registerFeature( MFT_TerrainSideProject, new NamedFeatureGLSL( "Terrain Side Projection" ) );
       FEATUREMGR->registerFeature( MFT_TerrainAdditive, new TerrainAdditiveFeatGLSL );
-      FEATUREMGR->registerFeature( MFT_DeferredTerrainMacroMap, new TerrainMacroMapFeatGLSL );
-      FEATUREMGR->registerFeature( MFT_DeferredTerrainDetailMap, new TerrainDetailMapFeatGLSL ); 
       FEATUREMGR->registerFeature( MFT_DeferredTerrainBlankInfoMap, new TerrainBlankInfoMapFeatGLSL );
    }
 
@@ -491,7 +489,7 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    Var *baseColor = (Var*)LangElement::find("baseColor");
    ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
-   if(fd.features.hasFeature( MFT_DeferredTerrainDetailMap ))
+   if (fd.features.hasFeature(MFT_isDeferred))
       target= ShaderFeature::RenderTarget1;
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
@@ -680,7 +678,7 @@ ShaderFeature::Resources TerrainDetailMapFeatGLSL::getResources( const MaterialF
 
 U32 TerrainDetailMapFeatGLSL::getOutputTargets( const MaterialFeatureData &fd ) const
 {
-   return fd.features[MFT_DeferredTerrainDetailMap] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
 }
 
 
@@ -887,7 +885,7 @@ void TerrainMacroMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentL
 
    ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
-   if(fd.features.hasFeature(MFT_DeferredTerrainMacroMap))
+   if (fd.features.hasFeature(MFT_isDeferred))
       target= ShaderFeature::RenderTarget1;
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
@@ -926,7 +924,7 @@ ShaderFeature::Resources TerrainMacroMapFeatGLSL::getResources( const MaterialFe
 
 U32 TerrainMacroMapFeatGLSL::getOutputTargets( const MaterialFeatureData &fd ) const
 {
-   return fd.features[MFT_DeferredTerrainMacroMap] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
+   return fd.features[MFT_isDeferred] ? ShaderFeature::RenderTarget1 : ShaderFeature::DefaultTarget;
 }
 
 void TerrainNormalMapFeatGLSL::processVert(  Vector<ShaderComponent*> &componentList, 
@@ -1088,7 +1086,7 @@ void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    Var *color = NULL;
-   if (fd.features[MFT_DeferredTerrainDetailMap])
+   if (fd.features[MFT_isDeferred])
        color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) );
    else
        color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::DefaultTarget) );
