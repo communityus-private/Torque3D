@@ -1085,11 +1085,7 @@ ShaderFeature::Resources TerrainLightMapFeatGLSL::getResources( const MaterialFe
 void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentList, 
                                           const MaterialFeatureData &fd )
 {
-   Var *color = NULL;
-   if (fd.features[MFT_isDeferred])
-       color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) );
-   else
-       color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::DefaultTarget) );
+   Var *color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::DefaultTarget) );
 
    Var *blendTotal = (Var*)LangElement::find( "blendTotal" );
    if ( !color || !blendTotal )

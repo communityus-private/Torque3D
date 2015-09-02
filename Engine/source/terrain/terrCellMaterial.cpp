@@ -352,6 +352,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    {
       FeatureSet features;
       features.addFeature( MFT_VertTransform );
+      features.addFeature( MFT_TerrainBaseMap );
 
       if ( prePassMat )
       {
@@ -369,7 +370,6 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
          // if HDR is not enabled in the engine.
          features.addFeature( MFT_HDROut );
       }
-      features.addFeature( MFT_TerrainBaseMap );
       features.addFeature(MFT_DeferredTerrainBlankInfoMap);
 
       // Enable lightmaps and fogging if we're in BL.
@@ -383,7 +383,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
 
       // The additional passes need to be lerp blended into the
       // target to maintain the results of the previous passes.
-      if ( !firstPass )
+      if (!firstPass && prePassMat)
          features.addFeature( MFT_TerrainAdditive );
 
       normalMaps.clear();
@@ -557,9 +557,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
 
    desc.samplersDefined = true;
    if ( pass->baseTexMapConst->isValid() )
-   {
       desc.samplers[pass->baseTexMapConst->getSamplerRegister()] = GFXSamplerStateDesc::getWrapLinear();
-   }
 
    if ( pass->layerTexConst->isValid() )
       desc.samplers[pass->layerTexConst->getSamplerRegister()] = GFXSamplerStateDesc::getClampPoint();
