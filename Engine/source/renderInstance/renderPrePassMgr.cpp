@@ -772,11 +772,12 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
    if (!mMaterial->mEmissive[stageNum] && test && (test->getTypeMask() & (DynamicShapeObjectType | StaticObjectType | StaticShapeObjectType)))
       envmapped = true;
    // cubemaps only available on stage 0 for now - bramage   
-   if ( stageNum < 1 && 
+   if ( stageNum < 1 &&
          (  (  mMaterial->mCubemapData && mMaterial->mCubemapData->mCubemap ) ||
-               mMaterial->mDynamicCubemap ) ||
-               mMaterial->mDynamicCubemap || envmapped)
+               mMaterial->mDynamicCubemap || envmapped) )
    {
+      if (!mMaterial->mDynamicCubemap)
+         fd.features.addFeature(MFT_StaticCubemap);
       newFeatures.addFeature( MFT_CubeMap );
       newFeatures.removeFeature(MFT_UseInstancing);
    }

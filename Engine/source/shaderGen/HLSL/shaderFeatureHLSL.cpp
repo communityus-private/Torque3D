@@ -1907,9 +1907,10 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       else
          blendOp = Material::Mul;
    }
+   
+   Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget3));
    if (fd.features[MFT_isDeferred])
    {
-       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget3));
        //metalness: black(0) = color, white(1) = reflection
        if (fd.features[MFT_ToneMap])
           meta->addStatement(new GenOp("   @ *= pow(@,2.2);\r\n", targ, texCube));
@@ -1919,7 +1920,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    else
    {
       meta->addStatement(new GenOp("   //forward lit cubemapping\r\n"));
-      Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
+      targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
       
       Var *metalness = (Var*)LangElement::find("metalness");
       if (metalness)
@@ -1931,6 +1932,8 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       else
          meta->addStatement(new GenOp("   @.rgb *= @.rgb;\r\n", targ, texCube));
    }
+   if (fd.features[MFT_StaticCubemap]) //dynamic reflections are linearized coming and going. so do statics twice
+      meta->addStatement(new GenOp("   @ = pow(@,2.2);\r\n", targ, targ));
    output = meta;
 }
 
