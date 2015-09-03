@@ -1875,9 +1875,9 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
    Var *smoothness = (Var*)LangElement::find("smoothness");
    if (smoothness) //try to grab smoothness directly
-      texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*9.0 + 3.0, 8.0)))", cubeMap, reflectVec, smoothness);
+      texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, smoothness);
    else if (glossColor) //failing that, try and find color data
-         texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*9.0 + 3.0, 8.0)))", cubeMap, reflectVec, glossColor);
+         texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, glossColor);
    else //failing *that*, just draw the cubemap
          texCube = new GenOp("texCUBE( @, @)", cubeMap, reflectVec);
    LangElement *lerpVal = NULL;
