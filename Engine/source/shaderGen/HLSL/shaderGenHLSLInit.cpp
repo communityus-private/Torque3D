@@ -65,11 +65,12 @@ void _initShaderGenHLSL( ShaderGen *shaderGen )
 	FEATUREMGR->registerFeature( MFT_StaticCubemap, new NamedFeatureHLSL( "Static Cubemap" ) );
    FEATUREMGR->registerFeature( MFT_CubeMap, new ReflectCubeFeatHLSL );
    FEATUREMGR->registerFeature( MFT_PixSpecular, new PixelSpecularHLSL );
+   FEATUREMGR->registerFeature( MFT_FlipRB, new NamedFeatureHLSL( "Substance Workaround" ) );
+   FEATUREMGR->registerFeature( MFT_InvertSmoothness, new NamedFeatureHLSL( "Roughest = 1.0" ) );
    FEATUREMGR->registerFeature( MFT_IsTranslucent, new NamedFeatureHLSL( "Translucent" ) );
    FEATUREMGR->registerFeature( MFT_IsTranslucentZWrite, new NamedFeatureHLSL( "Translucent ZWrite" ) );
    FEATUREMGR->registerFeature( MFT_Visibility, new VisibilityFeatHLSL );
    FEATUREMGR->registerFeature( MFT_Fog, new FogFeatHLSL );
-   FEATUREMGR->registerFeature( MFT_InvertSmoothness, new NamedFeatureHLSL( "Roughest = 1.0" ) );
    FEATUREMGR->registerFeature( MFT_SpecularMap, new SpecularMapHLSL );
    FEATUREMGR->registerFeature( MFT_AccuMap, new AccuTexFeatHLSL );
    FEATUREMGR->registerFeature( MFT_GlossMap, new NamedFeatureHLSL( "Gloss Map" ) );
