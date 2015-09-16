@@ -67,7 +67,6 @@ enum GFXPrimitiveType
    GFXLineStrip,
    GFXTriangleList,
    GFXTriangleStrip,
-   GFXTriangleFan,
    GFXPT_COUNT
 };
 
