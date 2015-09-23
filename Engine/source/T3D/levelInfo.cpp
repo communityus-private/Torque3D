@@ -160,8 +160,8 @@ void LevelInfo::initPersistFields()
       addField( "ambientLightBlendCurve", TypeEaseF, Offset( mAmbientLightBlendCurve, LevelInfo ),
          "Interpolation curve to use for blending from one ambient light color to a different one." );
 
-      addField( "advancedLightmapSupport", TypeBool, Offset( mAdvancedLightmapSupport, LevelInfo ),
-         "Enable expanded support for mixing static and dynamic lighting (more costly)");
+      //addField( "advancedLightmapSupport", TypeBool, Offset( mAdvancedLightmapSupport, LevelInfo ),
+         //"Enable expanded support for mixing static and dynamic lighting (more costly)");
 
       addField("LevelEnvMap", TypeCubemapName, Offset(mLevelEnvMapName, LevelInfo),
          "Environment map applied to objects for a given area.");
