@@ -45,11 +45,6 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
 
-/* 
-	Anis -> note:
-	NVIDIA PerfHUD support has been removed because deprecated in favor of nvidia nsight which it doesn't require a special flag device for usage.
-*/
-
 GFXAdapter::CreateDeviceInstanceDelegate GFXD3D11Device::mCreateDeviceInstance(GFXD3D11Device::createInstance);
 
 GFXDevice *GFXD3D11Device::createInstance(U32 adapterIndex)

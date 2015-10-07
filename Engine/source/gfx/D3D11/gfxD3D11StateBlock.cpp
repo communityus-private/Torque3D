@@ -274,7 +274,7 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
 		mSamplerDesc[i].BorderColor[3] = 0.0f;
 		mSamplerDesc[i].ComparisonFunc = D3D11_COMPARISON_NEVER;
 
-      //TODO domain/hull/geom set samplers
+      //TODO samplers for vertex shader
 		//D3D11DEVICECONTEXT->VSSetSamplers(i, 1, &mSamplerStates[i]);
 		D3D11DEVICECONTEXT->PSSetSamplers(i, 1, &mSamplerStates[i]);
 	}
