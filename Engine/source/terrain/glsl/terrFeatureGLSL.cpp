@@ -869,18 +869,15 @@ void TerrainMacroMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentL
 
    meta->addStatement( new GenOp( "      @ *= @.y * @.w;\r\n",
                                     detailColor, detailInfo, inDet ) );
-
    ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
    if(fd.features.hasFeature(MFT_DeferredTerrainMacroMap))
       target= ShaderFeature::RenderTarget1;
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
-   Var *baseColor = (Var*)LangElement::find( "baseColor" );
 
    meta->addStatement( new GenOp( "      @ = lerp( @, @ + @, @ );\r\n",
                                     outColor, outColor, outColor, detailColor, detailBlend ) );
-   //outColor, outColor, baseColor, detailColor, detailBlend ) );
 
    meta->addStatement( new GenOp( "   }\r\n" ) );
 

@@ -485,8 +485,8 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
       // Call the library function to do the rest.
       if(fd.features.hasFeature( MFT_IsDXTnm, detailIndex ) )
       {
-         meta->addStatement( new GenOp( "   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n", 
-         inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
+         meta->addStatement( new GenOp( "   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n",
+            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
       }
       else
       {
@@ -558,8 +558,8 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
 
-   meta->addStatement( new GenOp( "      @ = lerp( @, @ + @, @ );\r\n",
-                                    outColor, outColor, baseColor, detailColor, detailBlend ) );
+   meta->addStatement( new GenOp( "      @ += @ * @;\r\n",
+                                    outColor, detailColor, detailBlend));
 
    meta->addStatement( new GenOp( "   }\r\n" ) );
 
@@ -814,9 +814,8 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
 
    Var *outColor = (Var*)LangElement::find( getOutputTargetVarName(target) );
 
-   meta->addStatement( new GenOp( "      @ = lerp( @, @ + @, @ );\r\n",
-                                    outColor, outColor, outColor, detailColor, detailBlend ) );
-   //outColor, outColor, baseColor, detailColor, detailBlend ) );
+   meta->addStatement(new GenOp("      @ += @ * @;\r\n",
+                                    outColor, detailColor, detailBlend));
 
    meta->addStatement( new GenOp( "   }\r\n" ) );
 

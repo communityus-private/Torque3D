@@ -150,7 +150,7 @@ vec2 parallaxOffset( sampler2D texMap, vec2 texCoord, vec3 negViewTS, float dept
    return offset;
 }
 
-/// Same as above but for dxt5nm where the deoth is stored in the red channel instead of the alpha
+/// Same as parallaxOffset but for dxtnm where depth is stored in the red channel instead of the alpha
 vec2 parallaxOffsetDxtnm(sampler2D texMap, vec2 texCoord, vec3 negViewTS, float depthScale)
 {
    float depth = texture(texMap, texCoord).r;
