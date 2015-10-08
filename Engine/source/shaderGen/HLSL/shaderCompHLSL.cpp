@@ -338,7 +338,7 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
             }
             else if (var->texture2D)
             {
-               dSprintf((char*)varNum, sizeof(varNum), "register(T%d)", var->constNum);
+               dSprintf((char*)varNum, sizeof(varNum), ": register(T%d)", var->constNum);
             }
             else
             {
