@@ -37,7 +37,7 @@ namespace
 {
    void register_hlsl_shader_features_for_terrain(GFXAdapterType type)
    {
-      if(type != Direct3D9 && type != Direct3D9_360)
+      if(type != Direct3D9 && type != Direct3D9_360 && type != Direct3D11)
          return;
 
       FEATUREMGR->registerFeature( MFT_TerrainBaseMap, new TerrainBaseMapFeatHLSL );
