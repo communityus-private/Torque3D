@@ -785,13 +785,13 @@ Var *LinearEyeDepthConditioner::_unconditionInput( Var *conditionedInput, MultiL
 
 Var* LinearEyeDepthConditioner::printMethodHeader( MethodType methodType, const String &methodName, Stream &stream, MultiLine *meta )
 {
-   const bool isCondition = ( methodType == ConditionerFeature::ConditionMethod );
+   const bool isCondition = (methodType == ConditionerFeature::ConditionMethod);
 
    Var *retVal = NULL;
 
    // The uncondition method inputs are changed
-   if( isCondition )
-      retVal = Parent::printMethodHeader( methodType, methodName, stream, meta );
+   if (isCondition)
+      retVal = Parent::printMethodHeader(methodType, methodName, stream, meta);
    else
    {
       Var *methodVar = new Var;
@@ -805,7 +805,21 @@ Var* LinearEyeDepthConditioner::printMethodHeader( MethodType methodType, const 
       Var *prepassSampler = new Var;
       prepassSampler->setName("prepassSamplerVar");
       prepassSampler->setType("sampler2D");
-      DecOp *prepassSamplerDecl = new DecOp(prepassSampler);
+      DecOp *prepassSamplerDecl = NULL;
+
+      Var *prepassTex = NULL;
+      DecOp *prepassTexDecl = NULL;
+      if (GFX->getAdapterType() == Direct3D11)
+      {
+         prepassSampler->setType("SamplerState");
+
+         prepassTex = new Var;
+         prepassTex->setName("prepassTexVar");
+         prepassTex->setType("Texture2D");
+         prepassTexDecl = new DecOp(prepassTex);
+      }
+
+      prepassSamplerDecl = new DecOp(prepassSampler);
 
       Var *screenUV = new Var;
       screenUV->setName("screenUVVar");
@@ -823,25 +837,33 @@ Var* LinearEyeDepthConditioner::printMethodHeader( MethodType methodType, const 
          bufferSample->setType("float4");
       DecOp *bufferSampleDecl = new DecOp(bufferSample);
 
-      meta->addStatement( new GenOp( "@(@, @)\r\n", methodDecl, prepassSamplerDecl, screenUVDecl ) );
+      if (prepassTex)
+         meta->addStatement(new GenOp("@(@, @, @)\r\n", methodDecl, prepassSamplerDecl, prepassTexDecl, screenUVDecl));
+      else
+         meta->addStatement(new GenOp("@(@, @)\r\n", methodDecl, prepassSamplerDecl, screenUVDecl));
 
-      meta->addStatement( new GenOp( "{\r\n" ) );
+      meta->addStatement(new GenOp("{\r\n"));
 
-      meta->addStatement( new GenOp( "   // Sampler g-buffer\r\n" ) );
+      meta->addStatement(new GenOp("   // Sampler g-buffer\r\n"));
 
       // The linear depth target has no mipmaps, so use tex2dlod when
       // possible so that the shader compiler can optimize.
-      meta->addStatement( new GenOp( "   #if TORQUE_SM >= 30\r\n" ) );
+      meta->addStatement(new GenOp("   #if TORQUE_SM >= 30\r\n"));
       if (GFX->getAdapterType() == OpenGL)
-         meta->addStatement( new GenOp( "    @ = textureLod(@, @, 0); \r\n", bufferSampleDecl, prepassSampler, screenUV) );
+         meta->addStatement(new GenOp("    @ = texture2DLod(@, @, 0); \r\n", bufferSampleDecl, prepassSampler, screenUV));
       else
-         meta->addStatement( new GenOp( "      @ = tex2Dlod(@, float4(@,0,0));\r\n", bufferSampleDecl, prepassSampler, screenUV ) );
-      meta->addStatement( new GenOp( "   #else\r\n" ) );
+      {
+         if (prepassTex)
+            meta->addStatement(new GenOp("      @ = @.SampleLevel(@, @, 0);\r\n", bufferSampleDecl, prepassTex, prepassSampler, screenUV));
+         else
+            meta->addStatement(new GenOp("      @ = tex2Dlod(@, float4(@,0,0));\r\n", bufferSampleDecl, prepassSampler, screenUV));
+      }
+      meta->addStatement(new GenOp("   #else\r\n"));
       if (GFX->getAdapterType() == OpenGL)
-         meta->addStatement( new GenOp( "    @ = texture(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV) );
+         meta->addStatement(new GenOp("    @ = texture2D(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV));
       else
-         meta->addStatement( new GenOp( "      @ = tex2D(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV ) );
-      meta->addStatement( new GenOp( "   #endif\r\n\r\n" ) );
+         meta->addStatement(new GenOp("      @ = tex2D(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV));
+      meta->addStatement(new GenOp("   #endif\r\n\r\n"));
 
       // We don't use this way of passing var's around, so this should cause a crash
       // if something uses this improperly

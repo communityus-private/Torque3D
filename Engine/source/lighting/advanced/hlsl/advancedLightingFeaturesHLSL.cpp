@@ -79,95 +79,119 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
                                              const MaterialFeatureData &fd )
 {
    // Skip deferred features, and use forward shading instead
-   if ( fd.features[MFT_ForwardShading] )
+   if (fd.features[MFT_ForwardShading])
    {
-      Parent::processPix( componentList, fd );
+      Parent::processPix(componentList, fd);
       return;
    }
 
    MultiLine *meta = new MultiLine;
 
-   ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
-   Var *ssPos = connectComp->getElement( RT_TEXCOORD );
-   ssPos->setName( "screenspacePos" );
-   ssPos->setStructName( "IN" );
-   ssPos->setType( "float4" );
+   ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
+   Var *ssPos = connectComp->getElement(RT_TEXCOORD);
+   ssPos->setName("screenspacePos");
+   ssPos->setStructName("IN");
+   ssPos->setType("float4");
 
    Var *uvScene = new Var;
-   uvScene->setType( "float2" );
-   uvScene->setName( "uvScene" );
-   LangElement *uvSceneDecl = new DecOp( uvScene );
+   uvScene->setType("float2");
+   uvScene->setName("uvScene");
+   LangElement *uvSceneDecl = new DecOp(uvScene);
 
-   String rtParamName = String::ToString( "rtParams%s", "lightInfoBuffer" );
-   Var *rtParams = (Var*) LangElement::find( rtParamName );
-   if( !rtParams )
+   String rtParamName = String::ToString("rtParams%d", mLastTexIndex);
+   Var *rtParams = (Var*)LangElement::find(rtParamName);
+   if (!rtParams)
    {
       rtParams = new Var;
-      rtParams->setType( "float4" );
-      rtParams->setName( rtParamName );
+      rtParams->setType("float4");
+      rtParams->setName(rtParamName);
       rtParams->uniform = true;
       rtParams->constSortPos = cspPass;
    }
 
-   meta->addStatement( new GenOp( "   @ = @.xy / @.w;\r\n", uvSceneDecl, ssPos, ssPos ) ); // get the screen coord... its -1 to +1
-   meta->addStatement( new GenOp( "   @ = ( @ + 1.0 ) / 2.0;\r\n", uvScene, uvScene ) ); // get the screen coord to 0 to 1
-   meta->addStatement( new GenOp( "   @.y = 1.0 - @.y;\r\n", uvScene, uvScene ) ); // flip the y axis 
-   meta->addStatement( new GenOp( "   @ = ( @ * @.zw ) + @.xy;\r\n", uvScene, uvScene, rtParams, rtParams) ); // scale it down and offset it to the rt size
+   meta->addStatement(new GenOp("   @ = @.xy / @.w;\r\n", uvSceneDecl, ssPos, ssPos)); // get the screen coord... its -1 to +1
+   meta->addStatement(new GenOp("   @ = ( @ + 1.0 ) / 2.0;\r\n", uvScene, uvScene)); // get the screen coord to 0 to 1
+   meta->addStatement(new GenOp("   @.y = 1.0 - @.y;\r\n", uvScene, uvScene)); // flip the y axis 
+   meta->addStatement(new GenOp("   @ = ( @ * @.zw ) + @.xy;\r\n", uvScene, uvScene, rtParams, rtParams)); // scale it down and offset it to the rt size
 
    Var *lightInfoSamp = new Var;
-   lightInfoSamp->setType( "float4" );
-   lightInfoSamp->setName( "lightInfoSample" );
+   lightInfoSamp->setType("float4");
+   lightInfoSamp->setName("lightInfoSample");
 
    // create texture var
    Var *lightInfoBuffer = new Var;
-   lightInfoBuffer->setType( "sampler2D" );
-   lightInfoBuffer->setName( "lightInfoBuffer" );
+   lightInfoBuffer->setType("sampler2D");
+   lightInfoBuffer->setName("lightInfoBuffer");
    lightInfoBuffer->uniform = true;
    lightInfoBuffer->sampler = true;
    lightInfoBuffer->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
+   Var* lightBufferTex = NULL;
+   if (mIsDirect3D11)
+   {
+      lightInfoBuffer->setType("SamplerState");
+      lightBufferTex = new Var;
+      lightBufferTex->setName("lightInfoBufferTex");
+      lightBufferTex->setType("Texture2D");
+      lightBufferTex->uniform = true;
+      lightBufferTex->texture2D = true;
+      lightBufferTex->constNum = lightInfoBuffer->constNum;
+   }
+
+
+
    // Declare the RTLighting variables in this feature, they will either be assigned
    // in this feature, or in the tonemap/lightmap feature
-   Var *d_lightcolor = new Var( "d_lightcolor", "float3" );
-   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( d_lightcolor ) ) );
+   Var *d_lightcolor = new Var("d_lightcolor", "float3");
+   meta->addStatement(new GenOp("   @;\r\n", new DecOp(d_lightcolor)));
 
-   Var *d_NL_Att = new Var( "d_NL_Att", "float" );
-   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( d_NL_Att ) ) );
+   Var *d_NL_Att = new Var("d_NL_Att", "float");
+   meta->addStatement(new GenOp("   @;\r\n", new DecOp(d_NL_Att)));
 
-   Var *d_specular = new Var( "d_specular", "float" );
-   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( d_specular ) ) );
-   
+   Var *d_specular = new Var("d_specular", "float");
+   meta->addStatement(new GenOp("   @;\r\n", new DecOp(d_specular)));
+
 
    // Perform the uncondition here.
-   String unconditionLightInfo = String::ToLower( AdvancedLightBinManager::smBufferName ) + "Uncondition";
-   meta->addStatement( new GenOp( avar( "   %s(tex2D(@, @), @, @, @);\r\n", 
-      unconditionLightInfo.c_str() ), lightInfoBuffer, uvScene, d_lightcolor, d_NL_Att, d_specular ) );
+   String unconditionLightInfo = String::ToLower(AdvancedLightBinManager::smBufferName) + "Uncondition";
+
+   if (lightBufferTex)
+      meta->addStatement(new GenOp(avar("   %s(@.Sample(@, @), @, @, @);\r\n",
+      unconditionLightInfo.c_str()), lightBufferTex, lightInfoBuffer, uvScene, d_lightcolor, d_NL_Att, d_specular));
+   else
+      meta->addStatement(new GenOp(avar("   %s(tex2D(@, @), @, @, @);\r\n",
+      unconditionLightInfo.c_str()), lightInfoBuffer, uvScene, d_lightcolor, d_NL_Att, d_specular));
 
    // If this has an interlaced pre-pass, do averaging here
-   if( fd.features[MFT_InterlacedPrePass] )
+   if (fd.features[MFT_InterlacedPrePass])
    {
-      Var *oneOverTargetSize = (Var*) LangElement::find( "oneOverTargetSize" );
-      if( !oneOverTargetSize )
+      Var *oneOverTargetSize = (Var*)LangElement::find("oneOverTargetSize");
+      if (!oneOverTargetSize)
       {
          oneOverTargetSize = new Var;
-         oneOverTargetSize->setType( "float2" );
-         oneOverTargetSize->setName( "oneOverTargetSize" );
+         oneOverTargetSize->setType("float2");
+         oneOverTargetSize->setName("oneOverTargetSize");
          oneOverTargetSize->uniform = true;
          oneOverTargetSize->constSortPos = cspPass;
       }
 
-      meta->addStatement( new GenOp( "   float id_NL_Att, id_specular;\r\n   float3 id_lightcolor;\r\n" ) );
-      meta->addStatement( new GenOp( avar( "   %s(tex2D(@, @ + float2(0.0, @.y)), id_lightcolor, id_NL_Att, id_specular);\r\n", 
-         unconditionLightInfo.c_str() ), lightInfoBuffer, uvScene, oneOverTargetSize ) );
+      meta->addStatement(new GenOp("   float id_NL_Att, id_specular;\r\n   float3 id_lightcolor;\r\n"));
 
-      meta->addStatement( new GenOp("   @ = lerp(@, id_lightcolor, 0.5);\r\n", d_lightcolor, d_lightcolor ) );
-      meta->addStatement( new GenOp("   @ = lerp(@, id_NL_Att, 0.5);\r\n", d_NL_Att, d_NL_Att ) );
-      meta->addStatement( new GenOp("   @ = lerp(@, id_specular, 0.5);\r\n", d_specular, d_specular ) );
+      if (lightBufferTex)
+         meta->addStatement(new GenOp(avar("   %s(@.Sample(@, @ + float2(0.0, @.y)), id_lightcolor, id_NL_Att, id_specular);\r\n",
+         unconditionLightInfo.c_str()), lightBufferTex, lightInfoBuffer, uvScene, oneOverTargetSize));
+      else
+         meta->addStatement(new GenOp(avar("   %s(tex2D(@, @ + float2(0.0, @.y)), id_lightcolor, id_NL_Att, id_specular);\r\n",
+         unconditionLightInfo.c_str()), lightInfoBuffer, uvScene, oneOverTargetSize));
+
+      meta->addStatement(new GenOp("   @ = lerp(@, id_lightcolor, 0.5);\r\n", d_lightcolor, d_lightcolor));
+      meta->addStatement(new GenOp("   @ = lerp(@, id_NL_Att, 0.5);\r\n", d_NL_Att, d_NL_Att));
+      meta->addStatement(new GenOp("   @ = lerp(@, id_specular, 0.5);\r\n", d_specular, d_specular));
    }
 
    // This is kind of weak sauce
-   if( !fd.features[MFT_VertLit] && !fd.features[MFT_ToneMap] && !fd.features[MFT_LightMap] && !fd.features[MFT_SubSurface] )
-      meta->addStatement( new GenOp( "   @;\r\n", assignColor( new GenOp( "float4(@, 1.0)", d_lightcolor ), Material::Mul ) ) );
+   if (!fd.features[MFT_VertLit] && !fd.features[MFT_ToneMap] && !fd.features[MFT_LightMap] && !fd.features[MFT_SubSurface])
+      meta->addStatement(new GenOp("   @;\r\n", assignColor(new GenOp("float4(@, 1.0)", d_lightcolor), Material::Mul)));
 
    output = meta;
 }
@@ -264,51 +288,75 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
    // NULL output in case nothing gets handled
    output = NULL;
 
-   if( fd.features[MFT_PrePassConditioner] )
+   if (fd.features[MFT_PrePassConditioner])
    {
       MultiLine *meta = new MultiLine;
 
-      Var *viewToTangent = getInViewToTangent( componentList );
+      Var *viewToTangent = getInViewToTangent(componentList);
 
       // create texture var
       Var *bumpMap = getNormalMapTex();
-      Var *texCoord = getInTexCoord( "texCoord", "float2", true, componentList );
-      LangElement *texOp = new GenOp( "tex2D(@, @)", bumpMap, texCoord );
+      Var *bumpMapTex = (Var*)LangElement::find("bumpMapTex");
+      Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+
+      LangElement *texOp = NULL;
+
+      if (bumpMapTex)
+         texOp = new GenOp("@.Sample(@, @)", bumpMapTex, bumpMap, texCoord);
+      else
+         texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
 
       // create bump normal
       Var *bumpNorm = new Var;
-      bumpNorm->setName( "bumpNormal" );
-      bumpNorm->setType( "float4" );
+      bumpNorm->setName("bumpNormal");
+      bumpNorm->setType("float4");
 
-      LangElement *bumpNormDecl = new DecOp( bumpNorm );
-      meta->addStatement( expandNormalMap( texOp, bumpNormDecl, bumpNorm, fd ) );
+      LangElement *bumpNormDecl = new DecOp(bumpNorm);
+      meta->addStatement(expandNormalMap(texOp, bumpNormDecl, bumpNorm, fd));
 
       // If we have a detail normal map we add the xy coords of
       // it to the base normal map.  This gives us the effect we
       // want with few instructions and minial artifacts.
-      if ( fd.features.hasFeature( MFT_DetailNormalMap ) )
+      if (fd.features.hasFeature(MFT_DetailNormalMap))
       {
          bumpMap = new Var;
-         bumpMap->setType( "sampler2D" );
-         bumpMap->setName( "detailBumpMap" );
+         bumpMap->setType("sampler2D");
+         bumpMap->setName("detailBumpMap");
          bumpMap->uniform = true;
          bumpMap->sampler = true;
          bumpMap->constNum = Var::getTexUnitNum();
 
-         texCoord = getInTexCoord( "detCoord", "float2", true, componentList );
-         texOp = new GenOp( "tex2D(@, @)", bumpMap, texCoord );
+         Var* detailNormalTex = NULL;
+         if (mIsDirect3D11)
+         {
+            bumpMap->setType("SamplerState");
+            detailNormalTex = new Var;
+            detailNormalTex->setName("detailBumpMapTex");
+            detailNormalTex->setType("Texture2D");
+            detailNormalTex->uniform = true;
+            detailNormalTex->texture2D = true;
+            detailNormalTex->constNum = bumpMap->constNum;
+         }
+
+
+         texCoord = getInTexCoord("detCoord", "float2", true, componentList);
+
+         if (detailNormalTex)
+            texOp = new GenOp("@.Sample(@, @)", detailNormalTex, bumpMap, texCoord);
+         else
+            texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
 
          Var *detailBump = new Var;
-         detailBump->setName( "detailBump" );
-         detailBump->setType( "float4" );
-         meta->addStatement( expandNormalMap( texOp, new DecOp( detailBump ), detailBump, fd ) );
+         detailBump->setName("detailBump");
+         detailBump->setType("float4");
+         meta->addStatement(expandNormalMap(texOp, new DecOp(detailBump), detailBump, fd));
 
          Var *detailBumpScale = new Var;
-         detailBumpScale->setType( "float" );
-         detailBumpScale->setName( "detailBumpStrength" );
+         detailBumpScale->setType("float");
+         detailBumpScale->setName("detailBumpStrength");
          detailBumpScale->uniform = true;
          detailBumpScale->constSortPos = cspPass;
-         meta->addStatement( new GenOp( "   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale ) );
+         meta->addStatement(new GenOp("   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale));
       }
 
       // This var is read from GBufferConditionerHLSL and 
@@ -319,90 +367,45 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       // which helps alot on older Geforce cards.
       //
       Var *gbNormal = new Var;
-      gbNormal->setName( "gbNormal" );
-      gbNormal->setType( "half3" );
-      LangElement *gbNormalDecl = new DecOp( gbNormal );
+      gbNormal->setName("gbNormal");
+      gbNormal->setType("half3");
+      LangElement *gbNormalDecl = new DecOp(gbNormal);
 
       // Normalize is done later... 
       // Note: The reverse mul order is intentional. Affine matrix.
-      meta->addStatement( new GenOp( "   @ = (half3)mul( @.xyz, @ );\r\n", gbNormalDecl, bumpNorm, viewToTangent ) );
+      meta->addStatement(new GenOp("   @ = (half3)mul( @.xyz, @ );\r\n", gbNormalDecl, bumpNorm, viewToTangent));
 
       output = meta;
       return;
    }
-   else if (fd.features[MFT_AccuMap]) 
+   else if (fd.materialFeatures[MFT_NormalsOut] ||
+      fd.features[MFT_ForwardShading] ||
+      !fd.features[MFT_RTLighting])
    {
-      Var *bumpSample = (Var *)LangElement::find( "bumpSample" );
-      if( bumpSample == NULL )
-      {
-         MultiLine *meta = new MultiLine;
-
-         Var *texCoord = getInTexCoord( "texCoord", "float2", true, componentList );
-
-         Var *bumpMap = getNormalMapTex();
-
-         bumpSample = new Var;
-         bumpSample->setType( "float4" );
-         bumpSample->setName( "bumpSample" );
-         LangElement *bumpSampleDecl = new DecOp( bumpSample );
-
-         meta->addStatement( new GenOp( "   @ = tex2D(@, @);\r\n", bumpSampleDecl, bumpMap, texCoord ) );
-
-         if ( fd.features.hasFeature( MFT_DetailNormalMap ) )
-         {
-            Var *bumpMap = (Var*)LangElement::find( "detailBumpMap" );
-            if ( !bumpMap ) {
-               bumpMap = new Var;
-               bumpMap->setType( "sampler2D" );
-               bumpMap->setName( "detailBumpMap" );
-               bumpMap->uniform = true;
-               bumpMap->sampler = true;
-               bumpMap->constNum = Var::getTexUnitNum();
-            }
-
-            texCoord = getInTexCoord( "detCoord", "float2", true, componentList );
-            LangElement *texOp = new GenOp( "tex2D(@, @)", bumpMap, texCoord );
-
-            Var *detailBump = new Var;
-            detailBump->setName( "detailBump" );
-            detailBump->setType( "float4" );
-            meta->addStatement( expandNormalMap( texOp, new DecOp( detailBump ), detailBump, fd ) );
-
-            Var *detailBumpScale = new Var;
-            detailBumpScale->setType( "float" );
-            detailBumpScale->setName( "detailBumpStrength" );
-            detailBumpScale->uniform = true;
-            detailBumpScale->constSortPos = cspPass;
-            meta->addStatement( new GenOp( "   @.xy += @.xy * @;\r\n", bumpSample, detailBump, detailBumpScale ) );
-         }
-
-         output = meta;
-
-         return;
-      }
-   } 
-   else if (   fd.materialFeatures[MFT_NormalsOut] || 
-               fd.features[MFT_ForwardShading] || 
-               !fd.features[MFT_RTLighting] )
-   {
-      Parent::processPix( componentList, fd );
+      Parent::processPix(componentList, fd);
       return;
    }
-   else if ( fd.features[MFT_PixSpecular] && !fd.features[MFT_SpecularMap] )
+   else if (fd.features[MFT_PixSpecular] && !fd.features[MFT_SpecularMap])
    {
-      Var *bumpSample = (Var *)LangElement::find( "bumpSample" );
-      if( bumpSample == NULL )
+      Var *bumpSample = (Var *)LangElement::find("bumpSample");
+      if (bumpSample == NULL)
       {
-         Var *texCoord = getInTexCoord( "texCoord", "float2", true, componentList );
+         Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
 
          Var *bumpMap = getNormalMapTex();
+         Var *bumpMapTex = (Var *)LangElement::find("bumpMapTex");
 
          bumpSample = new Var;
-         bumpSample->setType( "float4" );
-         bumpSample->setName( "bumpSample" );
-         LangElement *bumpSampleDecl = new DecOp( bumpSample );
+         bumpSample->setType("float4");
+         bumpSample->setName("bumpSample");
 
-         output = new GenOp( "   @ = tex2D(@, @);\r\n", bumpSampleDecl, bumpMap, texCoord );
+         LangElement *bumpSampleDecl = new DecOp(bumpSample);
+
+         if (bumpMapTex)
+            output = new GenOp("   @ = @.Sample(@, @);\r\n", bumpSampleDecl, bumpMapTex, bumpMap, texCoord);
+         else
+            output = new GenOp("   @ = tex2D(@, @);\r\n", bumpSampleDecl, bumpMap, texCoord);
+
          return;
       }
    }
@@ -649,43 +652,59 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
                                        const MaterialFeatureData &fd )
 {
    // If there is no deferred information, bail on this feature
-   if( fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting] )
+   if (fd.features[MFT_ForwardShading] || !fd.features[MFT_RTLighting])
    {
       output = NULL;
       return;
    }
 
    Var *minnaertConstant = new Var;
-   minnaertConstant->setType( "float" );
-   minnaertConstant->setName( "minnaertConstant" );
+   minnaertConstant->setType("float");
+   minnaertConstant->setName("minnaertConstant");
    minnaertConstant->uniform = true;
    minnaertConstant->constSortPos = cspPotentialPrimitive;
 
    // create texture var
    Var *prepassBuffer = new Var;
-   prepassBuffer->setType( "sampler2D" );
-   prepassBuffer->setName( "prepassBuffer" );
+   prepassBuffer->setType("sampler2D");
+   prepassBuffer->setName("prepassBuffer");
    prepassBuffer->uniform = true;
    prepassBuffer->sampler = true;
    prepassBuffer->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
+   Var* prePassTex = NULL;
+   if (mIsDirect3D11)
+   {
+      prepassBuffer->setType("SamplerState");
+      prePassTex = new Var;
+      prePassTex->setName("prePassTex");
+      prePassTex->setType("Texture2D");
+      prePassTex->uniform = true;
+      prePassTex->texture2D = true;
+      prePassTex->constNum = prepassBuffer->constNum;
+   }
+
    // Texture coord
-   Var *uvScene = (Var*) LangElement::find( "uvScene" );
+   Var *uvScene = (Var*)LangElement::find("uvScene");
    AssertFatal(uvScene != NULL, "Unable to find UVScene, no RTLighting feature?");
 
    MultiLine *meta = new MultiLine;
 
    // Get the world space view vector.
-   Var *wsViewVec = getWsView( getInWsPosition( componentList ), meta );
+   Var *wsViewVec = getWsView(getInWsPosition(componentList), meta);
 
    String unconditionPrePassMethod = String::ToLower(RenderPrePassMgr::BufferName) + "Uncondition";
 
-   Var *d_NL_Att = (Var*)LangElement::find( "d_NL_Att" );
+   Var *d_NL_Att = (Var*)LangElement::find("d_NL_Att");
 
-   meta->addStatement( new GenOp( avar( "   float4 normalDepth = %s(@, @);\r\n", unconditionPrePassMethod.c_str() ), prepassBuffer, uvScene ) );
-   meta->addStatement( new GenOp( "   float vDotN = dot(normalDepth.xyz, @);\r\n", wsViewVec ) );
-   meta->addStatement( new GenOp( "   float Minnaert = pow( @, @) * pow(vDotN, 1.0 - @);\r\n", d_NL_Att, minnaertConstant, minnaertConstant ) );
-   meta->addStatement( new GenOp( "   @;\r\n", assignColor( new GenOp( "float4(Minnaert, Minnaert, Minnaert, 1.0)" ), Material::Mul ) ) );
+   if (prePassTex)
+      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, ,@, @);\r\n", unconditionPrePassMethod.c_str()), prepassBuffer, prePassTex, uvScene));
+   else
+      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, @);\r\n", unconditionPrePassMethod.c_str()), prepassBuffer, uvScene));
+
+   meta->addStatement(new GenOp("   float vDotN = dot(normalDepth.xyz, @);\r\n", wsViewVec));
+   meta->addStatement(new GenOp("   float Minnaert = pow( abs(@), @) * pow(abs(vDotN), 1.0 - @);\r\n", d_NL_Att, minnaertConstant, minnaertConstant));
+   meta->addStatement(new GenOp("   @;\r\n", assignColor(new GenOp("float4(Minnaert, Minnaert, Minnaert, 1.0)"), Material::Mul)));
 
    output = meta;
 }

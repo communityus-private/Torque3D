@@ -42,7 +42,8 @@ void ScreenSpace::RenderTargetParameters(const Point3I &targetSize, const RectI 
    Point2F targetScale( (F32)targetViewport.extent.x / (F32)targetSize.x,
                         (F32)targetViewport.extent.y / (F32)targetSize.y );
 
-   const bool hasTexelPixelOffset = GFX->getAdapterType() == Direct3D9;
+   // TODO does d3d11 need this?
+   bool hasTexelPixelOffset = GFX->getAdapterType() == Direct3D11 || GFX->getAdapterType() == Direct3D9 ? 0 : 1;
 
    // Get the target half pixel size.
    const Point2F halfPixel( hasTexelPixelOffset ? (0.5f / targetSize.x) : 0.0f,

@@ -98,6 +98,14 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          return newVar;
       }
 
+   case RT_SVPosition:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back(newVar);
+         newVar->setConnectName("SV_Position");
+         return newVar;
+      }
+
    case RT_TEXCOORD:
       {
          Var *newVar = new Var;

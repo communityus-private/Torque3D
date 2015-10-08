@@ -119,14 +119,17 @@ Var* TerrainFeatHLSL::_getInMacroCoord( Vector<ShaderComponent*> &componentList 
 
 Var* TerrainFeatHLSL::_getNormalMapTex()
 {
-   String name( String::ToString( "normalMap%d", getProcessIndex() ) );
-   Var *normalMap =  (Var*)LangElement::find( name );
+   String name(String::ToString("normalMap%d", getProcessIndex()));
+   Var *normalMap = (Var*)LangElement::find(name);
 
-   if ( !normalMap )
+   if (!normalMap)
    {
       normalMap = new Var;
-      normalMap->setType( "sampler2D" );
-      normalMap->setName( name );
+      if (mIsDirect3D11)
+         normalMap->setType("SamplerState");
+      else
+         normalMap->setType("sampler2D");
+      normalMap->setName(name);
       normalMap->uniform = true;
       normalMap->sampler = true;
       normalMap->constNum = Var::getTexUnitNum();
@@ -242,27 +245,47 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    // grab connector texcoord register
-   Var *texCoord = getInTexCoord( "texCoord", "float3", true, componentList );
+   Var *texCoord = getInTexCoord("texCoord", "float3", true, componentList);
 
    // We do nothing more if this is a prepass.
-   if ( fd.features.hasFeature( MFT_PrePassConditioner ) )
+   if (fd.features.hasFeature(MFT_PrePassConditioner))
       return;
 
    // create texture var
    Var *diffuseMap = new Var;
-   diffuseMap->setType( "sampler2D" );
-   diffuseMap->setName( "baseTexMap" );
+   if (GFX->getAdapterType() == Direct3D11)
+      diffuseMap->setType("SamplerState");
+   else
+      diffuseMap->setType("sampler2D");
+
+   diffuseMap->setName("baseTexMap");
    diffuseMap->uniform = true;
    diffuseMap->sampler = true;
    diffuseMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
+
    MultiLine *meta = new MultiLine;
 
    Var *baseColor = new Var;
-   baseColor->setType( "float4" );
-   baseColor->setName( "baseColor" );
-   meta->addStatement( new GenOp( "   @ = tex2D( @, @.xy );\r\n", new DecOp( baseColor ), diffuseMap, texCoord ) );
-   meta->addStatement( new GenOp( "   @;\r\n", assignColor( baseColor, Material::Mul ) ) );
+   baseColor->setType("float4");
+   baseColor->setName("baseColor");
+
+   if (mIsDirect3D11)
+   {
+      Var *diffuseTex = new Var;
+      diffuseTex->setType("Texture2D");
+      diffuseTex->setName("baseTexture");
+      diffuseTex->uniform = true;
+      diffuseTex->texture2D = true;
+      diffuseTex->constNum = diffuseMap->constNum;
+      meta->addStatement(new GenOp("   @ = @.Sample( @, @.xy );\r\n", new DecOp(baseColor), diffuseTex, diffuseMap, texCoord));
+   }
+   else
+   {
+      meta->addStatement(new GenOp("   @ = tex2D( @, @.xy );\r\n", new DecOp(baseColor), diffuseMap, texCoord));
+   }
+
+   meta->addStatement(new GenOp("   @;\r\n", assignColor(baseColor, Material::Mul)));
 
    output = meta;
 }
@@ -340,6 +363,7 @@ void TerrainDetailMapFeatHLSL::processVert(  Vector<ShaderComponent*> &component
                                        new DecOp( dist ), inPos, eyePos ) );
    }
 
+
    // grab connector texcoord register
    ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
    Var *outTex = connectComp->getElement( RT_TEXCOORD );
@@ -411,15 +435,34 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
       // Get the layer texture var
       Var *layerTex = new Var;
-      layerTex->setType( "sampler2D" );
+      if (mIsDirect3D11)
+         layerTex->setType("SamplerState");
+      else
+         layerTex->setType("sampler2D");
+
       layerTex->setName( "layerTex" );
       layerTex->uniform = true;
       layerTex->sampler = true;
       layerTex->constNum = Var::getTexUnitNum();
 
-      // Read the layer texture to get the samples.
-      meta->addStatement( new GenOp( "   @ = round( tex2D( @, @.xy ) * 255.0f );\r\n", 
-                                       new DecOp( layerSample ), layerTex, inTex ) );
+      if (mIsDirect3D11)
+      {
+         Var* layerTexObj = new Var;
+         layerTexObj->setName("layerTexObj");
+         layerTexObj->setType("Texture2D");
+         layerTexObj->uniform = true;
+         layerTexObj->texture2D = true;
+         layerTexObj->constNum = layerTex->constNum;
+         // Read the layer texture to get the samples.
+         meta->addStatement(new GenOp("   @ = round( @.Sample( @, @.xy ) * 255.0f );\r\n",
+            new DecOp(layerSample), layerTexObj, layerTex, inTex));
+      }
+      else
+      {
+         // Read the layer texture to get the samples.
+         meta->addStatement(new GenOp("   @ = round( tex2D( @, @.xy ) * 255.0f );\r\n",
+            new DecOp(layerSample), layerTex, inTex));
+      }
    }
 
    Var *layerSize = (Var*)LangElement::find( "layerSize" );
@@ -467,16 +510,47 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
       // Get the rest of our inputs.
       Var *normalMap = _getNormalMapTex();
 
-      // Call the library function to do the rest.
-      if(fd.features.hasFeature( MFT_IsDXTnm, detailIndex ) )
+      if (mIsDirect3D11)
       {
-         meta->addStatement( new GenOp( "   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n", 
-            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
+         String name(String::ToString("normalMapTex%d", getProcessIndex()));
+         Var *normalMapTex = (Var*)LangElement::find(name);
+
+         if (!normalMapTex)
+         {
+            normalMapTex = new Var;
+            normalMapTex->setName(String::ToString("normalMapTex%d", getProcessIndex()));
+            normalMapTex->setType("Texture2D");
+            normalMapTex->uniform = true;
+            normalMapTex->texture2D = true;
+            normalMapTex->constNum = normalMap->constNum;
+         }
+
+         // Call the library function to do the rest.
+         if (fd.features.hasFeature(MFT_IsDXTnm, detailIndex))
+         {
+            meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @, @.xy, @, @.z * @ );\r\n",
+               inDet, normalMap, normalMapTex, inDet, negViewTS, detailInfo, detailBlend));
+         }
+         else
+         {
+            meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @, @.xy, @, @.z * @ );\r\n",
+               inDet, normalMap, normalMapTex, inDet, negViewTS, detailInfo, detailBlend));
+         }
+         
       }
       else
       {
-         meta->addStatement( new GenOp( "   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n", 
-            inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend ) );
+         // Call the library function to do the rest.
+         if (fd.features.hasFeature(MFT_IsDXTnm, detailIndex))
+         {
+            meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n",
+               inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
+         }
+         else
+         {
+            meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @.xy, @, @.z * @ );\r\n",
+               inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
+         }
       }
    }
 
@@ -514,7 +588,11 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
    // Get the detail texture.
    Var *detailMap = new Var;
-   detailMap->setType( "sampler2D" );
+   if (mIsDirect3D11)
+      detailMap->setType("SamplerState");
+   else
+      detailMap->setType("sampler2D");
+
    detailMap->setName( String::ToString( "detailMap%d", detailIndex ) );
    detailMap->uniform = true;
    detailMap->sampler = true;
@@ -536,15 +614,40 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
    // We take two color samples and lerp between them for
    // side projection layers... else a single sample.
    //
-   if ( fd.features.hasFeature( MFT_TerrainSideProject, detailIndex ) )
+   if (mIsDirect3D11)
    {
-      meta->addStatement( new GenOp( "      @ = ( lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z ) * 2.0 ) - 1.0;\r\n", 
-                                                detailColor, detailMap, inDet, detailMap, inDet, inTex ) );
+      Var* detailTex = new Var;
+      detailTex->setName(String::ToString("detailTex%d", detailIndex));
+      detailTex->setType("Texture2D");
+      detailTex->uniform = true;
+      detailTex->texture2D = true;
+      detailTex->constNum = detailMap->constNum;
+
+      if (fd.features.hasFeature(MFT_TerrainSideProject, detailIndex))
+      {
+
+         meta->addStatement(new GenOp("      @ = ( lerp( @.Sample( @, @.yz ), @.Sample( @, @.xz ), @.z ) * 2.0 ) - 1.0;\r\n",
+            detailColor, detailTex, detailMap, inDet, detailTex, detailMap, inDet, inTex));
+      }
+      else
+      {
+         meta->addStatement(new GenOp("      @ = ( @.Sample( @, @.xy ) * 2.0 ) - 1.0;\r\n",
+            detailColor, detailTex, detailMap, inDet));
+      }
    }
    else
    {
-      meta->addStatement( new GenOp( "      @ = ( tex2D( @, @.xy ) * 2.0 ) - 1.0;\r\n", 
-                                       detailColor, detailMap, inDet ) );
+      if (fd.features.hasFeature(MFT_TerrainSideProject, detailIndex))
+      {
+
+         meta->addStatement(new GenOp("      @ = ( lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z ) * 2.0 ) - 1.0;\r\n",
+            detailColor, detailMap, inDet, detailMap, inDet, inTex));
+      }
+      else
+      {
+         meta->addStatement(new GenOp("      @ = ( tex2D( @, @.xy ) * 2.0 ) - 1.0;\r\n",
+            detailColor, detailMap, inDet));
+      }
    }
 
    meta->addStatement( new GenOp( "      @ *= @.y * @.w;\r\n",
@@ -667,136 +770,169 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
                                              const MaterialFeatureData &fd )
 {
    const U32 detailIndex = getProcessIndex();
-   Var *inTex = getVertTexCoord( "texCoord" );
-   
+   Var *inTex = getVertTexCoord("texCoord");
+
    MultiLine *meta = new MultiLine;
 
    // We need the negative tangent space view vector
    // as in parallax mapping we step towards the camera.
-   Var *negViewTS = (Var*)LangElement::find( "negViewTS" );
-   if (  !negViewTS &&
-         fd.features.hasFeature( MFT_TerrainParallaxMap ) )
+   Var *negViewTS = (Var*)LangElement::find("negViewTS");
+   if (!negViewTS &&
+      fd.features.hasFeature(MFT_TerrainParallaxMap))
    {
-      Var *inNegViewTS = (Var*)LangElement::find( "outNegViewTS" );
-      if ( !inNegViewTS )
+      Var *inNegViewTS = (Var*)LangElement::find("outNegViewTS");
+      if (!inNegViewTS)
       {
-         ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
-         inNegViewTS = connectComp->getElement( RT_TEXCOORD );
-         inNegViewTS->setName( "outNegViewTS" );
-         inNegViewTS->setStructName( "IN" );
-         inNegViewTS->setType( "float3" );
+         ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
+         inNegViewTS = connectComp->getElement(RT_TEXCOORD);
+         inNegViewTS->setName("outNegViewTS");
+         inNegViewTS->setStructName("IN");
+         inNegViewTS->setType("float3");
       }
 
-      negViewTS = new Var( "negViewTS", "float3" );
-      meta->addStatement( new GenOp( "   @ = normalize( @ );\r\n", new DecOp( negViewTS ), inNegViewTS ) );
+      negViewTS = new Var("negViewTS", "float3");
+      meta->addStatement(new GenOp("   @ = normalize( @ );\r\n", new DecOp(negViewTS), inNegViewTS));
    }
 
    // Get the layer samples.
-   Var *layerSample = (Var*)LangElement::find( "layerSample" );
-   if ( !layerSample )
+   Var *layerSample = (Var*)LangElement::find("layerSample");
+   if (!layerSample)
    {
       layerSample = new Var;
-      layerSample->setType( "float4" );
-      layerSample->setName( "layerSample" );
+      layerSample->setType("float4");
+      layerSample->setName("layerSample");
 
       // Get the layer texture var
       Var *layerTex = new Var;
-      layerTex->setType( "sampler2D" );
-      layerTex->setName( "macrolayerTex" );
+      if (mIsDirect3D11)
+         layerTex->setType("SamplerState");
+      else
+         layerTex->setType("sampler2D");
+
+      layerTex->setName("macrolayerTex");
       layerTex->uniform = true;
       layerTex->sampler = true;
       layerTex->constNum = Var::getTexUnitNum();
 
       // Read the layer texture to get the samples.
-      meta->addStatement( new GenOp( "   @ = round( tex2D( @, @.xy ) * 255.0f );\r\n", 
-                                       new DecOp( layerSample ), layerTex, inTex ) );
+      if (mIsDirect3D11)
+      {
+         Var *layerTexObj = new Var;
+         layerTexObj->setType("Texture2D");
+         layerTexObj->setName("macroLayerTexObj");
+         layerTexObj->uniform = true;
+         layerTexObj->texture2D = true;
+         layerTexObj->constNum = layerTex->constNum;
+         meta->addStatement(new GenOp("   @ = round( @.Sample( @, @.xy ) * 255.0f );\r\n",
+            new DecOp(layerSample), layerTexObj, layerTex, inTex));
+      }
+      else
+         meta->addStatement(new GenOp("   @ = round( tex2D( @, @.xy ) * 255.0f );\r\n",
+         new DecOp(layerSample), layerTex, inTex));
    }
 
-   Var *layerSize = (Var*)LangElement::find( "layerSize" );
-   if ( !layerSize )
+   Var *layerSize = (Var*)LangElement::find("layerSize");
+   if (!layerSize)
    {
       layerSize = new Var;
-      layerSize->setType( "float" );
-      layerSize->setName( "layerSize" );
+      layerSize->setType("float");
+      layerSize->setName("layerSize");
       layerSize->uniform = true;
       layerSize->constSortPos = cspPass;
    }
 
    // Grab the incoming detail coord.
-   Var *inDet = _getInMacroCoord( componentList );
+   Var *inDet = _getInMacroCoord(componentList);
 
    // Get the detail id.
    Var *detailInfo = _getMacroIdStrengthParallax();
 
    // Create the detail blend var.
    Var *detailBlend = new Var;
-   detailBlend->setType( "float" );
-   detailBlend->setName( String::ToString( "macroBlend%d", detailIndex ) );
+   detailBlend->setType("float");
+   detailBlend->setName(String::ToString("macroBlend%d", detailIndex));
 
    // Calculate the blend for this detail texture.
-   meta->addStatement( new GenOp( "   @ = calcBlend( @.x, @.xy, @, @ );\r\n", 
-                                    new DecOp( detailBlend ), detailInfo, inTex, layerSize, layerSample ) );
+   meta->addStatement(new GenOp("   @ = calcBlend( @.x, @.xy, @, @ );\r\n",
+      new DecOp(detailBlend), detailInfo, inTex, layerSize, layerSample));
 
    // Get a var and accumulate the blend amount.
-   Var *blendTotal = (Var*)LangElement::find( "blendTotal" );
-   if ( !blendTotal )
+   Var *blendTotal = (Var*)LangElement::find("blendTotal");
+   if (!blendTotal)
    {
       blendTotal = new Var;
       //blendTotal->setName( "blendTotal" );
-      blendTotal->setName( "blendTotal" );
-      blendTotal->setType( "float" );
-      meta->addStatement( new GenOp( "   @ = 0;\r\n", new DecOp( blendTotal ) ) );
+      blendTotal->setName("blendTotal");
+      blendTotal->setType("float");
+      meta->addStatement(new GenOp("   @ = 0;\r\n", new DecOp(blendTotal)));
    }
 
    // Add to the blend total.
-   meta->addStatement( new GenOp( "   @ += @;\r\n", blendTotal, detailBlend ) );
+   meta->addStatement(new GenOp("   @ = max( @, @ );\r\n", blendTotal, blendTotal, detailBlend));
 
    // If this is a prepass then we skip color.
-   if ( fd.features.hasFeature( MFT_PrePassConditioner ) )
+   if (fd.features.hasFeature(MFT_PrePassConditioner))
    {
       // Check to see if we have a gbuffer normal.
-      Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
+      Var *gbNormal = (Var*)LangElement::find("gbNormal");
 
       // If we have a gbuffer normal and we don't have a
       // normal map feature then we need to lerp in a 
       // default normal else the normals below this layer
       // will show thru.
-      if (  gbNormal && 
-            !fd.features.hasFeature( MFT_TerrainNormalMap, detailIndex ) )
+      if (gbNormal &&
+         !fd.features.hasFeature(MFT_TerrainNormalMap, detailIndex))
       {
-         Var *viewToTangent = getInViewToTangent( componentList );
+         Var *viewToTangent = getInViewToTangent(componentList);
 
-         meta->addStatement( new GenOp( "   @ = lerp( @, @[2], min( @, @.w ) );\r\n", 
-            gbNormal, gbNormal, viewToTangent, detailBlend, inDet ) );
+         meta->addStatement(new GenOp("   @ = lerp( @, @[2], min( @, @.w ) );\r\n",
+            gbNormal, gbNormal, viewToTangent, detailBlend, inDet));
       }
 
       output = meta;
       return;
    }
 
-   Var *detailColor = (Var*)LangElement::find( "macroColor" ); 
-   if ( !detailColor )
+   Var *detailColor = (Var*)LangElement::find("macroColor");
+   if (!detailColor)
    {
       detailColor = new Var;
-      detailColor->setType( "float4" );
-      detailColor->setName( "macroColor" );
-      meta->addStatement( new GenOp( "   @;\r\n", new DecOp( detailColor ) ) );
+      detailColor->setType("float4");
+      detailColor->setName("macroColor");
+      meta->addStatement(new GenOp("   @;\r\n", new DecOp(detailColor)));
    }
 
    // Get the detail texture.
    Var *detailMap = new Var;
-   detailMap->setType( "sampler2D" );
-   detailMap->setName( String::ToString( "macroMap%d", detailIndex ) );
+   if (mIsDirect3D11)
+      detailMap->setType("SamplerState");
+   else
+      detailMap->setType("sampler2D");
+
+   detailMap->setName(String::ToString("macroMap%d", detailIndex));
    detailMap->uniform = true;
    detailMap->sampler = true;
    detailMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
+
+   //Create texture object for directx 11
+   Var *detailTex = NULL;
+   if (mIsDirect3D11)
+   {
+      detailTex = new Var;
+      detailTex->setName(String::ToString("macroMapTex%d", detailIndex));
+      detailTex->setType("Texture2D");
+      detailTex->uniform = true;
+      detailTex->texture2D = true;
+      detailTex->constNum = detailMap->constNum;
+
+   }
    // If we're using SM 3.0 then take advantage of 
    // dynamic branching to skip layers per-pixel.
-   if ( GFX->getPixelShaderVersion() >= 3.0f )
-      meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
+   if (GFX->getPixelShaderVersion() >= 3.0f)
+      meta->addStatement(new GenOp("   if ( @ > 0.0f )\r\n", detailBlend));
 
-   meta->addStatement( new GenOp( "   {\r\n" ) );
+   meta->addStatement(new GenOp("   {\r\n"));
 
    // Note that we're doing the standard greyscale detail 
    // map technique here which can darken and lighten the 
@@ -805,15 +941,25 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
    // We take two color samples and lerp between them for
    // side projection layers... else a single sample.
    //
-   if ( fd.features.hasFeature( MFT_TerrainSideProject, detailIndex ) )
+   if (fd.features.hasFeature(MFT_TerrainSideProject, detailIndex))
    {
-      meta->addStatement( new GenOp( "      @ = ( lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z ) * 2.0 ) - 1.0;\r\n", 
-                                                detailColor, detailMap, inDet, detailMap, inDet, inTex ) );
+      if (mIsDirect3D11)
+      {
+         meta->addStatement(new GenOp("      @ = ( lerp( @.Sample( @, @.yz ), @.Sample( @, @.xz ), @.z ) * 2.0 ) - 1.0;\r\n",
+            detailColor, detailTex, detailMap, inDet, detailTex, detailMap, inDet, inTex));
+      }
+      else
+         meta->addStatement(new GenOp("      @ = ( lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z ) * 2.0 ) - 1.0;\r\n",
+         detailColor, detailMap, inDet, detailMap, inDet, inTex));
    }
    else
    {
-      meta->addStatement( new GenOp( "      @ = ( tex2D( @, @.xy ) * 2.0 ) - 1.0;\r\n", 
-                                       detailColor, detailMap, inDet ) );
+      if (mIsDirect3D11)
+         meta->addStatement(new GenOp("      @ = ( @.Sample( @, @.xy ) * 2.0 ) - 1.0;\r\n",
+            detailColor, detailTex, detailMap, inDet));
+      else
+         meta->addStatement(new GenOp("      @ = ( tex2D( @, @.xy ) * 2.0 ) - 1.0;\r\n",
+            detailColor, detailMap, inDet));
    }
 
    meta->addStatement( new GenOp( "      @ *= @.y * @.w;\r\n",
@@ -875,77 +1021,105 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
                                              const MaterialFeatureData &fd )
 {
    // We only need to process normals during the prepass.
-   if ( !fd.features.hasFeature( MFT_PrePassConditioner ) )
+   if (!fd.features.hasFeature(MFT_PrePassConditioner))
       return;
 
    MultiLine *meta = new MultiLine;
 
-   Var *viewToTangent = getInViewToTangent( componentList );
+   Var *viewToTangent = getInViewToTangent(componentList);
 
    // This var is read from GBufferConditionerHLSL and 
    // used in the prepass output.
-   Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
-   if ( !gbNormal )
+   Var *gbNormal = (Var*)LangElement::find("gbNormal");
+   if (!gbNormal)
    {
       gbNormal = new Var;
-      gbNormal->setName( "gbNormal" );
-      gbNormal->setType( "float3" );
-      meta->addStatement( new GenOp( "   @ = @[2];\r\n", new DecOp( gbNormal ), viewToTangent ) );
+      gbNormal->setName("gbNormal");
+      gbNormal->setType("float3");
+      meta->addStatement(new GenOp("   @ = @[2];\r\n", new DecOp(gbNormal), viewToTangent));
    }
 
    const U32 normalIndex = getProcessIndex();
 
-   Var *detailBlend = (Var*)LangElement::find( String::ToString( "detailBlend%d", normalIndex ) );
-   AssertFatal( detailBlend, "The detail blend is missing!" );
+   Var *detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", normalIndex));
+   AssertFatal(detailBlend, "The detail blend is missing!");
 
    // If we're using SM 3.0 then take advantage of 
    // dynamic branching to skip layers per-pixel.
-   if ( GFX->getPixelShaderVersion() >= 3.0f )
-      meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
+   if (GFX->getPixelShaderVersion() >= 3.0f)
+      meta->addStatement(new GenOp("   if ( @ > 0.0f )\r\n", detailBlend));
 
-   meta->addStatement( new GenOp( "   {\r\n" ) );
+   meta->addStatement(new GenOp("   {\r\n"));
 
    // Get the normal map texture.
    Var *normalMap = _getNormalMapTex();
 
+
+
    /// Get the texture coord.
-   Var *inDet = _getInDetailCoord( componentList );
-   Var *inTex = getVertTexCoord( "texCoord" );
+   Var *inDet = _getInDetailCoord(componentList);
+   Var *inTex = getVertTexCoord("texCoord");
 
    // Sample the normal map.
    //
    // We take two normal samples and lerp between them for
    // side projection layers... else a single sample.
    LangElement *texOp;
-   if ( fd.features.hasFeature( MFT_TerrainSideProject, normalIndex ) )
+   if (mIsDirect3D11)
    {
-      texOp = new GenOp( "lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z )", 
-         normalMap, inDet, normalMap, inDet, inTex );
-   }
-   else
-      texOp = new GenOp( "tex2D(@, @.xy)", normalMap, inDet );
 
+      String name(String::ToString("normalMapTex%d", getProcessIndex()));
+      Var *normalMapTex = (Var*)LangElement::find(name);
+      if (!normalMapTex)
+      {
+         normalMapTex = new Var;
+         normalMapTex->setName(String::ToString("normalMapTex%d", getProcessIndex()));
+         normalMapTex->setType("Texture2D");
+         normalMapTex->uniform = true;
+         normalMapTex->texture2D = true;
+         normalMapTex->constNum = normalMap->constNum;
+      }
+      if (fd.features.hasFeature(MFT_TerrainSideProject, normalIndex))
+      {
+         texOp = new GenOp("lerp( @.Sample( @, @.yz ), @.Sample( @, @.xz ), @.z )",
+            normalMapTex, normalMap, inDet, normalMapTex, normalMap, inDet, inTex);
+      }
+      else
+         texOp = new GenOp("@.Sample(@, @.xy)", normalMapTex, normalMap, inDet);
+
+   }
+
+   else
+   {
+      if (fd.features.hasFeature(MFT_TerrainSideProject, normalIndex))
+      {
+         texOp = new GenOp("lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z )",
+            normalMap, inDet, normalMap, inDet, inTex);
+      }
+      else
+         texOp = new GenOp("tex2D(@, @.xy)", normalMap, inDet);
+   }
    // create bump normal
    Var *bumpNorm = new Var;
-   bumpNorm->setName( "bumpNormal" );
-   bumpNorm->setType( "float4" );
+   bumpNorm->setName("bumpNormal");
+   bumpNorm->setType("float4");
 
-   LangElement *bumpNormDecl = new DecOp( bumpNorm );
-   meta->addStatement( expandNormalMap( texOp, bumpNormDecl, bumpNorm, fd ) );
+   LangElement *bumpNormDecl = new DecOp(bumpNorm);
+   meta->addStatement(expandNormalMap(texOp, bumpNormDecl, bumpNorm, fd));
 
    // Normalize is done later... 
    // Note: The reverse mul order is intentional. Affine matrix.
-   meta->addStatement( new GenOp( "      @ = lerp( @, mul( @.xyz, @ ), min( @, @.w ) );\r\n", 
-      gbNormal, gbNormal, bumpNorm, viewToTangent, detailBlend, inDet ) );
+   meta->addStatement(new GenOp("      @ = lerp( @, mul( @.xyz, @ ), min( @, @.w ) );\r\n",
+      gbNormal, gbNormal, bumpNorm, viewToTangent, detailBlend, inDet));
 
    // End the conditional block.
-   meta->addStatement( new GenOp( "   }\r\n" ) );
+   meta->addStatement(new GenOp("   }\r\n"));
 
    // If this is the last normal map then we 
    // can test to see the total blend value
    // to see if we should clip the result.
    //if ( fd.features.getNextFeatureIndex( MFT_TerrainNormalMap, normalIndex ) == -1 )
-      //meta->addStatement( new GenOp( "   clip( @ - 0.0001f );\r\n", blendTotal ) );
+   //meta->addStatement( new GenOp( "   clip( @ - 0.0001f );\r\n", blendTotal ) );
 
    output = meta;
 }
@@ -974,14 +1148,18 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    // grab connector texcoord register
-   Var *inTex = (Var*)LangElement::find( "texCoord" );
-   if ( !inTex )
+   Var *inTex = (Var*)LangElement::find("texCoord");
+   if (!inTex)
       return;
 
    // Get the lightmap texture.
    Var *lightMap = new Var;
-   lightMap->setType( "sampler2D" );
-   lightMap->setName( "lightMapTex" );
+   if (GFX->getAdapterType() == Direct3D11)
+      lightMap->setType("SamplerState");
+   else
+      lightMap->setType("sampler2D");
+
+   lightMap->setName("lightMapTex");
    lightMap->uniform = true;
    lightMap->sampler = true;
    lightMap->constNum = Var::getTexUnitNum();
@@ -994,14 +1172,25 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
    // The first light is always the sunlight so we apply
    // the shadow mask to only the first channel.
    //
-   Var *lightMask = (Var*)LangElement::find( "lightMask" );
-   if ( !lightMask )
+   Var *lightMask = (Var*)LangElement::find("lightMask");
+   if (!lightMask)
    {
-      lightMask = new Var( "lightMask", "float4" );
-      meta->addStatement( new GenOp( "   @ = 1;\r\n", new DecOp( lightMask ) ) );
+      lightMask = new Var("lightMask", "float4");
+      meta->addStatement(new GenOp("   @ = 1;\r\n", new DecOp(lightMask)));
    }
 
-   meta->addStatement( new GenOp( "   @[0] = tex2D( @, @.xy ).r;\r\n", lightMask, lightMap, inTex ) );
+   if (mIsDirect3D11)
+   {
+      Var* lightMapTex = new Var;
+      lightMapTex->setName("lightMapTex");
+      lightMapTex->setType("Texture2D");
+      lightMapTex->uniform = true;
+      lightMapTex->texture2D = true;
+      lightMapTex->constNum = lightMap->constNum;
+      meta->addStatement(new GenOp("   @[0] = @.Sample( @, @.xy ).r;\r\n", lightMask, lightMapTex, lightMap, inTex));
+   }
+   else
+      meta->addStatement(new GenOp("   @[0] = tex2D( @, @.xy ).r;\r\n", lightMask, lightMap, inTex));
    output = meta;
 }
 
