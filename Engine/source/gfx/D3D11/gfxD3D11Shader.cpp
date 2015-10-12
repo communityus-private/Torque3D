@@ -790,6 +790,7 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
 
 #ifdef TORQUE_DEBUG
 	U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+   Con::printf( "Compiling Shader: '%s", filePath.getFullPath().c_str() );
 #else
    U32 flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3; //TODO double check load times with D3DCOMPILE_OPTIMIZATION_LEVEL3
    //flags for NSight, uncomment to use. NSight should be used in release mode only
