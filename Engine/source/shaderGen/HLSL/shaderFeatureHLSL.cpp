@@ -1766,6 +1766,18 @@ void VertPositionHLSL::processVert( Vector<ShaderComponent*> &componentList,
    output = meta;
 }
 
+void VertPositionHLSL::processPix(Vector<ShaderComponent*> &componentList,
+                                    const MaterialFeatureData &fd)
+{
+   if (mIsDirect3D11)
+   {
+      // grab connector position
+      ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
+      Var *outPosition = connectComp->getElement(RT_SVPosition);
+      outPosition->setName("vpos");
+      outPosition->setStructName("IN");
+   }
+}
 
 //****************************************************************************
 // Reflect Cubemap
