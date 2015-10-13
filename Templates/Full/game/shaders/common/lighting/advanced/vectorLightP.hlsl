@@ -20,27 +20,23 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
-
 #include "farFrustumQuad.hlsl"
 #include "../../torque.hlsl"
 #include "../../lighting.hlsl"
 #include "lightingUtils.hlsl"
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
 
-
-uniform sampler2D ShadowMap : register(S1);
+TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
+TORQUE_UNIFORM_SAMPLER2D(ShadowMap, 1);
 
 #ifdef USE_SSAO_MASK
-uniform sampler2D ssaoMask : register(S2);
+TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 2);
 uniform float4 rtParams2;
 #endif
 
-
-float4 main( FarFrustumQuadConnectP IN,
-
-             uniform sampler2D prePassBuffer : register(S0),
+float4 main( FarFrustumQuadConnectP IN,             
              
              uniform float3 lightDirection,
              uniform float4 lightColor,
@@ -64,10 +60,10 @@ float4 main( FarFrustumQuadConnectP IN,
              uniform float2 fadeStartLength,
              uniform float4 farPlaneScalePSSM,
              uniform float4 overDarkPSSM,
-             uniform float shadowSoftness ) : COLOR0
+             uniform float shadowSoftness ) : TORQUE_TARGET0
 {
    // Sample/unpack the normal/z data
-   float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
+   float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
    float depth = prepassSample.a;
 
@@ -175,7 +171,7 @@ float4 main( FarFrustumQuadConnectP IN,
       float farPlaneScale = dot( farPlaneScalePSSM, finalMask );
       distToLight *= farPlaneScale;
       
-      float shadowed = softShadow_filter(   ShadowMap,
+      float shadowed = softShadow_filter(    TORQUE_SAMPLER2D_MAKEARG(ShadowMap),
                                              IN.uv0.xy,
                                              shadowCoord,
                                              farPlaneScale * shadowSoftness,
@@ -221,7 +217,7 @@ float4 main( FarFrustumQuadConnectP IN,
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
-      float ao = 1.0 - tex2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams2 ) ).r;
+      float ao = 1.0 - TORQUE_TEX2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams2 ) ).r;
       addToResult *= ao;
    #endif
 

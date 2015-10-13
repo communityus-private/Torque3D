@@ -20,11 +20,12 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "hlslStructs.h"
+#include "hlslStructs.hlsl"
+#include "shaderModel.hlsl"
 
 struct MaterialDecoratorConnectV
 {
-   float4 hpos : POSITION;
+   float4 hpos : TORQUE_POSITION;
    float2 uv0 : TEXCOORD0;
 };
 
@@ -36,7 +37,7 @@ MaterialDecoratorConnectV main( VertexIn_PCT IN,
 {
    MaterialDecoratorConnectV OUT;
 
-   OUT.hpos = mul(modelview, IN.pos);
+   OUT.hpos = mul(modelview, float4(IN.pos,1.0));
    OUT.uv0 = IN.uv0;
 
    return OUT;

@@ -22,7 +22,7 @@
 
 #define IN_HLSL
 #include "shdrConsts.h"
-#include "hlslStructs.h"
+#include "hlslStructs.hlsl"
 
 //-----------------------------------------------------------------------------
 // Constants
@@ -56,7 +56,7 @@ Conn main( VertexIn_PNTTTB In,
 {
    Conn Out;
 
-   Out.HPOS = mul(modelview, In.pos);
+   Out.HPOS = mul(modelview, float4(In.pos,1.0));
    Out.TEX0 = In.uv0;
 
    

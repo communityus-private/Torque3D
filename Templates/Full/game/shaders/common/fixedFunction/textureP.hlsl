@@ -20,24 +20,17 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "../../hlslStructs.hlsl"
-#include "farFrustumQuad.hlsl"
+#include "../shaderModel.hlsl"
 
+TORQUE_UNIFORM_SAMPLER2D(diffuseMap, 0);
 
-FarFrustumQuadConnectV main( VertexIn_PNTT IN,
-                             uniform float4 rtParams0 )
+struct Conn
 {
-   FarFrustumQuadConnectV OUT;
+   float4 hpos             : TORQUE_POSITION;
+   float2 texCoord         : TEXCOORD0;
+};
 
-   OUT.hpos = float4( IN.uv0, 0, 1 );
-
-   // Get a RT-corrected UV from the SS coord
-   OUT.uv0 = getUVFromSSPos( OUT.hpos.xyz, rtParams0 );
-   
-   // Interpolators will generate eye rays the 
-   // from far-frustum corners.
-   OUT.wsEyeRay = IN.tangent;
-   OUT.vsEyeRay = IN.normal;
-
-   return OUT;
+float4 main(Conn IN) : TORQUE_TARGET0
+{
+   return TORQUE_TEX2D(diffuseMap, IN.texCoord);
 }
