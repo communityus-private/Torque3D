@@ -1165,19 +1165,20 @@ GFXShader* GFXD3D11Device::createShader()
 //              and to make sure redundant shader states are not being
 //              sent to the card.
 //-----------------------------------------------------------------------------
-void GFXD3D11Device::setShader(GFXShader *shader)
+void GFXD3D11Device::setShader(GFXShader *shader, bool force)
 {
    if(shader)
    {
 	   GFXD3D11Shader *d3dShader = static_cast<GFXD3D11Shader*>(shader);
 
-	   if( d3dShader->mPixShader != mLastPixShader )
+      if (d3dShader->mPixShader != mLastPixShader || force)
 	   {
 		  mD3DDeviceContext->PSSetShader( d3dShader->mPixShader, NULL, 0);
+        Con::printf("Set pix shader: %s", d3dShader->mPixelFile.getFullFileName().c_str());
 		  mLastPixShader = d3dShader->mPixShader;
 	   }
 
-	   if( d3dShader->mVertShader != mLastVertShader )
+      if (d3dShader->mVertShader != mLastVertShader || force)
 	   {
 		  mD3DDeviceContext->VSSetShader( d3dShader->mVertShader, NULL, 0);
 		  mLastVertShader = d3dShader->mVertShader;

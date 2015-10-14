@@ -213,7 +213,7 @@ public:
    virtual F32  getPixelShaderVersion() const { return mPixVersion; }
    virtual void setPixelShaderVersion( F32 version ){ mPixVersion = version;} 
 
-   virtual void setShader( GFXShader *shader );
+   virtual void setShader(GFXShader *shader, bool force = false);
    virtual U32  getNumSamplers() const { return 16; }
    virtual U32  getNumRenderTargets() const { return 8; }
    // }
