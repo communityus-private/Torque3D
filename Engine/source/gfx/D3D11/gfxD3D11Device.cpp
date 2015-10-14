@@ -1174,7 +1174,6 @@ void GFXD3D11Device::setShader(GFXShader *shader, bool force)
       if (d3dShader->mPixShader != mLastPixShader || force)
 	   {
 		  mD3DDeviceContext->PSSetShader( d3dShader->mPixShader, NULL, 0);
-        Con::printf("Set pix shader: %s", d3dShader->mPixelFile.getFullFileName().c_str());
 		  mLastPixShader = d3dShader->mPixShader;
 	   }
 
