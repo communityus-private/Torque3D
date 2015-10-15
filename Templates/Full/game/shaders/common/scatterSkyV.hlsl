@@ -39,11 +39,7 @@ float vernierScale(float fCos)
 struct Vert
 {
    // .xyz  = point
-   float3 position : POSITION;
-   
-   float3 normal   : NORMAL;
-   
-   float4 color : TEXCOORD0;  
+   float3 position : POSITION; 
 };
 
 // This is the shader output data.
