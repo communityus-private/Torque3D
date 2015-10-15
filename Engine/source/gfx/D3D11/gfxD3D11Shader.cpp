@@ -885,15 +885,14 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
 
    if(code != NULL)
    {
-#ifndef TORQUE_SHIPPING
-
-         ID3DBlob* disassem = NULL;
-         D3DDisassemble(code->GetBufferPointer(), code->GetBufferSize(), 0, NULL, &disassem);
-         mDissasembly = (const char*)disassem->GetBufferPointer();         
-         
+#ifndef TORQUE_SHIPPING         
 
          if(gDisassembleAllShaders)
          {
+            ID3DBlob* disassem = NULL;
+            D3DDisassemble(code->GetBufferPointer(), code->GetBufferSize(), 0, NULL, &disassem);
+            mDissasembly = (const char*)disassem->GetBufferPointer();
+
             String filename = filePath.getFullPath();
             filename.replace( ".hlsl", "_dis.txt" );
 
@@ -904,8 +903,9 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
                fstream->close();
                delete fstream;   
             }
-         }
-         SAFE_RELEASE(disassem);
+
+            SAFE_RELEASE(disassem);
+         }         
 
 #endif
 
