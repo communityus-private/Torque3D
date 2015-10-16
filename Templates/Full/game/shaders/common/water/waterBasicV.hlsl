@@ -20,6 +20,7 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "../shaderModel.hlsl"
 //-----------------------------------------------------------------------------
 // Structures                                                                  
 //-----------------------------------------------------------------------------
@@ -33,7 +34,7 @@ struct VertData
 
 struct ConnectData
 {
-   float4 hpos             : POSITION;   
+   float4 hpos             : TORQUE_POSITION;   
    
    // TexCoord 0 and 1 (xy,zw) for ripple texture lookup
    float4 rippleTexCoord01 : TEXCOORD0;   
