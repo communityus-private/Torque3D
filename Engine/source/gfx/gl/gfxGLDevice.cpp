@@ -489,9 +489,6 @@ inline GLsizei GFXGLDevice::primCountToIndexCount(GFXPrimitiveType primType, U32
       case GFXTriangleStrip :
          return 2 + primitiveCount;
          break;
-      case GFXTriangleFan :
-         return 2 + primitiveCount;
-         break;
       default:
          AssertFatal(false, "GFXGLDevice::primCountToIndexCount - unrecognized prim type");
          break;

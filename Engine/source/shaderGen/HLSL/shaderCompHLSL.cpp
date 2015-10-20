@@ -98,6 +98,14 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          return newVar;
       }
 
+   case RT_SVPosition:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back(newVar);
+         newVar->setConnectName("SV_Position");
+         return newVar;
+      }
+
    case RT_TEXCOORD:
       {
          Var *newVar = new Var;
@@ -246,7 +254,7 @@ void ParamsDefHLSL::assignConstantNumbers()
          Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
          if( var )
          {            
-            bool shaderConst = var->uniform && !var->sampler;
+            bool shaderConst = var->uniform && !var->sampler && !var->texture2D;
             AssertFatal((!shaderConst) || var->constSortPos != cspUninit, "Const sort position has not been set, variable will not receive a constant number!!");
             if( shaderConst && var->constSortPos == bin)
             {
@@ -327,6 +335,10 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
             if( var->sampler )
             {
                dSprintf( (char*)varNum, sizeof(varNum), ": register(S%d)", var->constNum );
+            }
+            else if (var->texture2D)
+            {
+               dSprintf((char*)varNum, sizeof(varNum), ": register(T%d)", var->constNum);
             }
             else
             {

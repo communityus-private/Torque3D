@@ -20,27 +20,30 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
-
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
 #include "../../lighting.hlsl"
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
 #include "../../torque.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
 
 struct ConvexConnectP
 {
+   float4 hpos : TORQUE_POSITION;
    float4 wsEyeDir : TEXCOORD0;
    float4 ssPos : TEXCOORD1;
    float4 vsEyeDir : TEXCOORD2;
    float4 color : COLOR0;
 };
 
+TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
+TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
+
 #ifdef USE_COOKIE_TEX
 
 /// The texture for cookie rendering.
-uniform sampler2D cookieMap : register(S3);
+TORQUE_UNIFORM_SAMPLER2D(cookieMap, 2);
 
 #endif
 
@@ -71,7 +74,7 @@ float4 main(   ConvexConnectP IN,
                uniform float4x4 dynamicViewToLightProj,
 
                uniform float4 lightParams,
-               uniform float shadowSoftness ) : COLOR0
+               uniform float shadowSoftness ) : TORQUE_TARGET0
 {   
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
@@ -86,7 +89,7 @@ float4 main(   ConvexConnectP IN,
    }
 
    // Sample/unpack the normal/z data
-   float4 prepassSample = prepassUncondition( prePassBuffer, uvScene );
+   float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
    float3 normal = prepassSample.rgb;
    float depth = prepassSample.a;
    
@@ -130,7 +133,7 @@ float4 main(   ConvexConnectP IN,
       // Get a linear depth from the light source.
       float distToLight = pxlPosLightProj.z / lightRange;
 
-      float static_shadowed = softShadow_filter( shadowMap,
+      float shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                           ssPos.xy,
                                           shadowCoord,
                                           shadowSoftness,
@@ -138,7 +141,7 @@ float4 main(   ConvexConnectP IN,
                                           nDotL,
                                           lightParams.y );
                                           
-      float dynamic_shadowed = softShadow_filter( dynamicShadowMap,
+      float dynamic_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
                                           ssPos.xy,
                                           dynshadowCoord,
                                           shadowSoftness,
@@ -152,7 +155,7 @@ float4 main(   ConvexConnectP IN,
    #ifdef USE_COOKIE_TEX
 
       // Lookup the cookie sample.
-      float4 cookie = tex2D( cookieMap, shadowCoord );
+      float4 cookie = TORQUE_TEX2D( cookieMap, shadowCoord );
 
       // Multiply the light with the cookie tex.
       lightcol *= cookie.rgb;

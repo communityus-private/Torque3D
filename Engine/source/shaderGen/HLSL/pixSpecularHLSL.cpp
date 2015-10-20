@@ -77,8 +77,12 @@ void PixelSpecularHLSL::processPix( Vector<ShaderComponent*> &componentList,
       {
          LangElement * lightMap = LangElement::find( "lightMap" );
          LangElement * lmCoord = LangElement::find( "texCoord2" );
+         LangElement * lightMapTex = LangElement::find("lightMapTex"); //used only DX11 shaders
 
-         lmColor = new GenOp( "tex2D(@, @)", lightMap, lmCoord );
+         if (lightMapTex)
+            lmColor = new GenOp("@.Sample(@, @)", lightMapTex, lightMap, lmCoord);
+         else
+            lmColor = new GenOp("tex2D(@, @)", lightMap, lmCoord);
       }
 
       final = new GenOp( "@ * float4(@.rgb,0)", specMul, lmColor );
@@ -129,20 +133,43 @@ void SpecularMapHLSL::processVert(Vector<ShaderComponent*> &componentList, const
 void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord( "texCoord", "float2", true, componentList );
+   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
 
    // create texture var
    Var *specularMap = new Var;
-   specularMap->setType( "sampler2D" );
-   specularMap->setName( "specularMap" );
+   specularMap->setName("specularMap");
    specularMap->uniform = true;
    specularMap->sampler = true;
    specularMap->constNum = Var::getTexUnitNum();
-   LangElement *texOp = new GenOp( "tex2D(@, @)", specularMap, texCoord );
 
-   Var *specularColor = new Var( "specularColor", "float4" );
 
-   output = new GenOp( "   @ = @;\r\n", new DecOp( specularColor ), texOp );
+   Var *specularMapTex = NULL;
+
+   if (mIsDirect3D11)
+   {
+      specularMap->setType("SamplerState");
+      specularMapTex = new Var;
+      specularMapTex->setName("specularMapTex");
+      specularMapTex->setType("Texture2D");
+      specularMapTex->uniform = true;
+      specularMapTex->texture2D = true;
+      specularMapTex->constNum = specularMap->constNum;
+   }
+   else
+   {
+      specularMap->setType("sampler2D");
+   }
+
+   LangElement *texOp = NULL;
+
+   if (specularMapTex)
+      texOp = new GenOp("@.Sample(@, @)", specularMapTex, specularMap, texCoord);
+   else
+      texOp = new GenOp("tex2D(@, @)", specularMap, texCoord);
+
+   Var *specularColor = new Var("specularColor", "float4");
+
+   output = new GenOp("   @ = @;\r\n", new DecOp(specularColor), texOp);
 }
 
 ShaderFeature::Resources SpecularMapHLSL::getResources( const MaterialFeatureData &fd )

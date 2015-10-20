@@ -26,15 +26,18 @@
 //-----------------------------------------------------------------------------
 // Constants
 //-----------------------------------------------------------------------------
+
+#include "shaderModel.hlsl"
+
 struct Vert
 {
-	float4 position	: POSITION;
+	float3 position	: POSITION;
 	float4 texCoord	: TEXCOORD0;
 };
 
 struct Conn
 {
-	float4 position : POSITION;
+	float4 position : TORQUE_POSITION;
 	float4 texCoord	: TEXCOORD0;
 	float4 color : COLOR0;
 };
@@ -51,7 +54,7 @@ Conn main(  Vert In,
 {
    Conn Out;
 
-   Out.position = mul(modelview, In.position);
+   Out.position = mul(modelview, float4(In.position,1.0));
    Out.texCoord = In.texCoord;
    Out.color = float4( ambient.r, ambient.g, ambient.b, 1 );
 

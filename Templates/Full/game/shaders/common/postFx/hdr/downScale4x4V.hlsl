@@ -29,7 +29,7 @@
  
 struct Conn
 {
-	float4 hpos : POSITION;
+	float4 hpos : TORQUE_POSITION;
    float4 texCoords[8] : TEXCOORD0;
 };
 
@@ -41,7 +41,7 @@ Conn main(  PFXVert In,
 {
 	Conn Out;
 
-	Out.hpos = In.pos;
+	Out.hpos = float4(In.pos,1.0);
    
    // Sample from the 16 surrounding points. Since the center point will be in
    // the exact center of 16 texels, a 0.5f offset is needed to specify a texel

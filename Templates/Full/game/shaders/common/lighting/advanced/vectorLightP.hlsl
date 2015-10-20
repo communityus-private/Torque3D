@@ -20,22 +20,21 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
-
 #include "farFrustumQuad.hlsl"
 #include "../../torque.hlsl"
 #include "../../lighting.hlsl"
 #include "lightingUtils.hlsl"
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
 
-
-uniform sampler2D shadowMap : register(S1);
-uniform sampler2D dynamicShadowMap : register(S2);
+TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
+TORQUE_UNIFORM_SAMPLER2D(ShadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 1);
 
 #ifdef USE_SSAO_MASK
-uniform sampler2D ssaoMask : register(S3);
-uniform float4 rtParams3;
+TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
+uniform float4 rtParams2;
 #endif
 
 float4 AL_VectorLightShadowCast( sampler2D sourceShadowMap,
@@ -52,8 +51,7 @@ float4 AL_VectorLightShadowCast( sampler2D sourceShadowMap,
                                 float2 atlasScale,
                                 float shadowSoftness, 
                                 float dotNL ,
-                                float4 overDarkPSSM
-)
+                                float4 overDarkPSSM)
 {
       // Compute shadow map coordinate
       float4 pxlPosLightProj = mul(worldToLightProj, worldPos);
@@ -229,7 +227,7 @@ float4 main( FarFrustumQuadConnectP IN,
 
    #else
       
-      float4 static_shadowed_colors = AL_VectorLightShadowCast( shadowMap,
+      float4 static_shadowed_colors = AL_VectorLightShadowCast( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                                         IN.uv0.xy,
                                                         worldToLightProj,
                                                         worldPos,
@@ -241,7 +239,7 @@ float4 main( FarFrustumQuadConnectP IN,
                                                         shadowSoftness, 
                                                         dotNL,
                                                         overDarkPSSM);
-      float4 dynamic_shadowed_colors = AL_VectorLightShadowCast( dynamicShadowMap,
+      float4 dynamic_shadowed_colors = AL_VectorLightShadowCast( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
                                                         IN.uv0.xy,
                                                         dynamicWorldToLightProj,
                                                         worldPos,
@@ -307,7 +305,7 @@ float4 main( FarFrustumQuadConnectP IN,
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
-      float ao = 1.0 - tex2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams3 ) ).r;
+      float ao = 1.0 - TORQUE_TEX2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams2 ) ).r;
       addToResult *= ao;
    #endif
 

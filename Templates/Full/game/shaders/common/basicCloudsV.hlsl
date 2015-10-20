@@ -20,9 +20,11 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "shaderModel.hlsl"
+
 struct CloudVert
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float3 normal     : NORMAL;
    float3 binormal   : BINORMAL;
    float3 tangent    : TANGENT;
@@ -31,7 +33,7 @@ struct CloudVert
 
 struct ConnectData
 {
-   float4 hpos : POSITION;
+   float4 hpos : TORQUE_POSITION;
    float2 texCoord : TEXCOORD0;
 };
 
@@ -45,7 +47,7 @@ ConnectData main( CloudVert IN )
 {   
    ConnectData OUT;
    
-   OUT.hpos = mul(modelview, IN.pos);
+   OUT.hpos = mul(modelview, float4(IN.pos,1.0));
    OUT.hpos.w = OUT.hpos.z;
    
    float2 uv = IN.uv0;

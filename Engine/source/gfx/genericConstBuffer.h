@@ -106,7 +106,7 @@ public:
    virtual ~GenericConstBufferLayout() {}
 
    /// Add a parameter to the buffer
-   void addParameter(const String& name, const GFXShaderConstType constType, const U32 offset, const U32 size, const U32 arraySize, const U32 alignValue);
+   virtual void addParameter(const String& name, const GFXShaderConstType constType, const U32 offset, const U32 size, const U32 arraySize, const U32 alignValue);
 
    /// Get the size of the buffer
    inline U32 getBufferSize() const { return mBufferSize; }
