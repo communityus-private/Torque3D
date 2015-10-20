@@ -62,3 +62,20 @@ singleton Material(PBRTest2Mat)
    materialTag0 = "Miscellaneous";
    specularMap[0] = "art/shapes/textures/T3D_Metal_6_any.png";
 };
+
+singleton Material(PBRTEST_PBRstone)
+{
+   mapTo = "PBRstone";
+   diffuseColor[0] = "0.64 0.64 0.64 1";
+   smoothness[0] = "1";
+   metalness[0] = "1";
+   translucentBlendOp = "None";
+   diffuseMap[0] = "art/shapes/textures/Stone_A.dds";
+   normalMap[0] = "art/shapes/textures/Stone_N.png";
+   roughMap[0] = "art/shapes/textures/Stone_S.dds";
+   metalMap[0] = "art/shapes/textures/Stone_S.dds";
+   roughness0 = "1";
+   materialTag0 = "Miscellaneous";
+   pixelSpecular0 = "0";
+   metalChan[0] = "3";
+};
