@@ -38,7 +38,7 @@ uniform sampler2D ssaoMask : register(S3);
 uniform float4 rtParams3;
 #endif
 
-float AL_VectorLightShadowCast( sampler2D sourceShadowMap,
+float4 AL_VectorLightShadowCast( sampler2D sourceShadowMap,
                                 float2 texCoord,
                                 float4x4 worldToLightProj,
                                 float4 worldPos,
@@ -95,6 +95,11 @@ float AL_VectorLightShadowCast( sampler2D sourceShadowMap,
       else
          finalMask = float4(0, 0, 0, 1);
          
+      float3 debugColor = float3(0,0,0);
+   
+      #ifdef NO_SHADOW
+         debugColor = float3(1.0,1.0,1.0);
+      #endif
 
       #ifdef PSSM_DEBUG_RENDER
          if ( finalMask.x > 0 )
@@ -138,13 +143,14 @@ float AL_VectorLightShadowCast( sampler2D sourceShadowMap,
       float farPlaneScale = dot( farPlaneScalePSSM, finalMask );
       distToLight *= farPlaneScale;
 
-      return softShadow_filter(  sourceShadowMap,
+      return float4(debugColor,
+                    softShadow_filter(  sourceShadowMap,
                                  texCoord,
                                  shadowCoord,
                                  farPlaneScale * shadowSoftness,
                                  distToLight,
                                  dotNL,
-                                 dot( finalMask, overDarkPSSM ) );
+                                 dot( finalMask, overDarkPSSM ) ) );
 };
 
 float4 main( FarFrustumQuadConnectP IN,
@@ -209,7 +215,7 @@ float4 main( FarFrustumQuadConnectP IN,
    float dotNL = dot(-lightDirection, normal);
 
    #ifdef PSSM_DEBUG_RENDER
-      float3 debugColor = 0;
+      float3 debugColor = float3(0,0,0);
    #endif
    
    #ifdef NO_SHADOW
@@ -218,12 +224,12 @@ float4 main( FarFrustumQuadConnectP IN,
       float shadowed = 1.0;
 
       #ifdef PSSM_DEBUG_RENDER
-         debugColor = 1.0;
+         debugColor = float3(1.0,1.0,1.0);
       #endif
 
    #else
       
-      float static_shadowed = AL_VectorLightShadowCast( shadowMap,
+      float4 static_shadowed_colors = AL_VectorLightShadowCast( shadowMap,
                                                         IN.uv0.xy,
                                                         worldToLightProj,
                                                         worldPos,
@@ -235,8 +241,7 @@ float4 main( FarFrustumQuadConnectP IN,
                                                         shadowSoftness, 
                                                         dotNL,
                                                         overDarkPSSM);
-
-      float dynamic_shadowed = AL_VectorLightShadowCast( dynamicShadowMap,
+      float4 dynamic_shadowed_colors = AL_VectorLightShadowCast( dynamicShadowMap,
                                                         IN.uv0.xy,
                                                         dynamicWorldToLightProj,
                                                         worldPos,
@@ -249,6 +254,12 @@ float4 main( FarFrustumQuadConnectP IN,
                                                         dotNL,
                                                         overDarkPSSM);
       
+      float static_shadowed = static_shadowed_colors.a;
+      float dynamic_shadowed = dynamic_shadowed_colors.a;
+	  
+      #ifdef PSSM_DEBUG_RENDER
+	     debugColor = static_shadowed_colors.rgb*0.5+dynamic_shadowed_colors.rgb*0.5;
+      #endif
   
       // Fade out the shadow at the end of the range.
       float4 zDist = (zNearFarInvNearFar.x + zNearFarInvNearFar.y * depth);
