@@ -326,7 +326,7 @@ void Material::initPersistFields()
       
       addField( "useAnisotropic", TypeBool, Offset(mUseAnisotropic, Material), MAX_STAGES,
          "Use anisotropic filtering for the textures of this stage." );
-      
+     
       addField("vertLit", TypeBool, Offset(mVertLit, Material), MAX_STAGES,
          "If true the vertex color is used for lighting." );
 
@@ -438,7 +438,6 @@ void Material::initPersistFields()
    addField( "castShadows", TypeBool, Offset(mCastShadows, Material),
       "If set to false the lighting system will not cast shadows from this material." );
 
-   // andrewmac: static shadows
    addField( "castDynamicShadows", TypeBool, Offset(mCastDynamicShadows, Material),
       "If set to false the lighting system will not cast dynamic shadows from this material." );
 

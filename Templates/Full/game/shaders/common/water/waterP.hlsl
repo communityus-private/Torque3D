@@ -311,7 +311,7 @@ float4 main( ConnectData IN ) : COLOR
    
    // Calculate the water "base" color based on depth.
    float4 waterBaseColor = baseColor * tex1D( depthGradMap, saturate( delta / depthGradMax ) );
-   waterBaseColor = float4(pow(abs(waterBaseColor.rgb), 2.2), waterBaseColor.a);
+   waterBaseColor = toLinear(waterBaseColor);
       
    // Modulate baseColor by the ambientColor.
    waterBaseColor *= float4( ambientColor.rgb, 1 );     

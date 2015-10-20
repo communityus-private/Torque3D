@@ -288,31 +288,25 @@ bool getFlag(float flags, int num)
 // #define TORQUE_STOCK_GAMMA
 #ifdef TORQUE_STOCK_GAMMA
 // Sample in linear space. Decodes gamma.
-float4 tex2DLinear(sampler2D tex, float2 texCoord)
+float4 toLinear(float4 tex)
 {
-   float4 sampl = tex2D(tex, texCoord);
-   return sampl;
+   return tex;
 }
-
-// Sample in linear space. Decodes gamma.
-float4 tex2DLodLinear(sampler2D tex, float4 texCoord)
+// Encodes gamma.
+float4 toLinear(float4 tex)
 {
-   float4 sampl = tex2Dlod(tex, texCoord);
-   return sampl;
+   return tex;
 }
 #else
 // Sample in linear space. Decodes gamma.
-float4 tex2DLinear(sampler2D tex, float2 texCoord)
+float4 toLinear(float4 tex)
 {
-   float4 sampl = tex2D(tex, texCoord);
-   return float4(pow(abs(sampl.rgb), 2.2), sampl.a);
+   return float4(pow(abs(tex.rgb), 2.2), tex.a);
 }
-
-// Sample in linear space. Decodes gamma.
-float4 tex2DLodLinear(sampler2D tex, float4 texCoord)
+// Encodes gamma.
+float4 toGamma(float4 tex)
 {
-   float4 sampl = tex2Dlod(tex, texCoord);
-   return float4(pow(abs(sampl.rgb), 2.2), sampl.a);
+   return float4(pow(abs(tex.rgb), 1.0/2.2), tex.a);
 }
 #endif //
 

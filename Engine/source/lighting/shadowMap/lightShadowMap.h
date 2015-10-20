@@ -400,8 +400,6 @@ public:
    bool lastSplitTerrainOnly;
 
    /// @}
-
-   // andrewmac: static shadow maps
    bool isDynamic;
 };
 

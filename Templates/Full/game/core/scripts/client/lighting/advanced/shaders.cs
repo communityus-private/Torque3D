@@ -71,7 +71,7 @@ new ShaderData( AL_VectorLightShader )
    samplerNames[4] = "$gTapRotationTex";
    samplerNames[5] = "$lightBuffer";
    samplerNames[6] = "$colorBuffer";
-   samplerNames[7] = "$matInfoBuffer";   
+   samplerNames[7] = "$matInfoBuffer";  
    pixVersion = 3.0;
 };
 

@@ -264,7 +264,8 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
    Var *baseColor = new Var;
    baseColor->setType( "float4" );
    baseColor->setName( "baseColor" );
-   meta->addStatement( new GenOp( "   @ = tex2DLinear( @, @.xy );\r\n", new DecOp( baseColor ), diffuseMap, texCoord ) );
+   meta->addStatement( new GenOp( "   @ = tex2D( @, @.xy );\r\n", new DecOp( baseColor ), diffuseMap, texCoord ) );
+   meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", baseColor, baseColor));
 
   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 

@@ -320,7 +320,6 @@ public:
    /// A generic setting which tells the system to skip 
    /// generation of shadows from this material.
    bool mCastShadows;
-   // andrewmac: static shadows
    bool mCastDynamicShadows;
 
    bool mAlphaTest;

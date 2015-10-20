@@ -631,10 +631,7 @@ void PlaneReflector::updateReflection( const ReflectParams &params )
       renderStateLeft.setSceneRenderStyle(SRS_SideBySide);
       renderStateLeft.setSceneRenderField(0);
       renderStateLeft.getMaterialDelegate().bind( REFLECTMGR, &ReflectionManager::getReflectionMaterial );
-
-      renderStateLeft.setDiffuseCameraTransform( params.query->cameraMatrix );
       renderStateLeft.setDiffuseCameraTransform( params.query->eyeTransforms[0] );
-      renderStateLeft.disableAdvancedLightingBins(true);
 
       gClientSceneGraph->renderSceneNoLights( &renderStateLeft, objTypeFlag );
 
