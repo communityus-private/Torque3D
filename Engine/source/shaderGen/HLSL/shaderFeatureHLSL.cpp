@@ -869,39 +869,30 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    diffuseMap->sampler = true;
    diffuseMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
    
+   // create sample color
+   Var *diffColor = new Var;
+   diffColor->setType("float4");
+   diffColor->setName("diffuseColor");
+   LangElement *colorDecl = new DecOp(diffColor);
+
+   MultiLine * meta = new MultiLine;
+   output = meta;
+
    if (  fd.features[MFT_CubeMap] )
    {
-      MultiLine * meta = new MultiLine;
-      
-      // create sample color
-      Var *diffColor = new Var;
-      diffColor->setType( "float4" );
-      diffColor->setName( "diffuseColor" );
-      LangElement *colorDecl = new DecOp( diffColor );
-   
-      if (  fd.features[MFT_Imposter] )
-      {
-          meta->addStatement(  new GenOp( "   @ = tex2D(@, @);\r\n", 
-                           colorDecl, 
-                           diffuseMap, 
-                           inTex ) );
-      }
-      else
-      {
-          meta->addStatement(  new GenOp( "   @ = tex2DLinear(@, @);\r\n", 
-                           colorDecl, 
-                           diffuseMap, 
-                           inTex ) );
-      }
-      meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffColor, Material::Mul, NULL, targ) ) );
-      output = meta;
+      meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n",
+         colorDecl,
+         diffuseMap,
+         inTex));
+      if (!fd.features[MFT_Imposter])
+         meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
+
+      meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ)));
    }
    else if(fd.features[MFT_DiffuseMapAtlas])
    {   
       // Handle atlased textures
       // http://www.infinity-universe.com/Infinity/index.php?option=com_content&task=view&id=65&Itemid=47
-      MultiLine * meta = new MultiLine;
-      output = meta;
 
       Var *atlasedTex = new Var;
       atlasedTex->setName("atlasedTexCoord");
@@ -957,11 +948,6 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       // For the rest of the feature...
       inTex = atlasedTex;
 
-      // create sample color var
-      Var *diffColor = new Var;
-      diffColor->setType("float4");
-      diffColor->setName("diffuseColor");
-
       // To dump out UV coords...
 //#define DEBUG_ATLASED_UV_COORDS
 #ifdef DEBUG_ATLASED_UV_COORDS
@@ -975,37 +961,27 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
       if(is_sm3)
       {
-          if (  fd.features[MFT_Imposter] )
-              meta->addStatement(new GenOp( "   @ = tex2DlodLinear(@, float4(@, 0.0, mipLod));\r\n", 
-              new DecOp(diffColor), diffuseMap, inTex));
-          else
-              meta->addStatement(new GenOp( "   @ = tex2Dlod(@, float4(@, 0.0, mipLod));\r\n", 
-              new DecOp(diffColor), diffuseMap, inTex));
+         meta->addStatement(new GenOp( "   @ = tex2Dlod(@, float4(@, 0.0, mipLod));\r\n", 
+            new DecOp(diffColor), diffuseMap, inTex));
+         if (!fd.features[MFT_Imposter])
+            meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
       }
       else
       {
-          if (  fd.features[MFT_Imposter] )
-              meta->addStatement(new GenOp( "   @ = tex2D(@, @);\r\n",
-                    new DecOp(diffColor), diffuseMap, inTex)); 
-          else
-              meta->addStatement(new GenOp( "   @ = tex2DLinear(@, @);\r\n",
-                    new DecOp(diffColor), diffuseMap, inTex)); 
+         meta->addStatement(new GenOp( "   @ = tex2DLinear(@, @);\r\n",
+            new DecOp(diffColor), diffuseMap, inTex));
+         if (!fd.features[MFT_Imposter])
+            meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
       }
 
       meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ) ) );
    }
    else
    {
-       if (  fd.features[MFT_Imposter] )
-       {
-           LangElement *statement = new GenOp( "tex2D(@, @)", diffuseMap, inTex );
-           output = new GenOp("   @;\r\n", assignColor(statement, Material::Mul, NULL, targ) );
-       }
-       else
-       {
-           LangElement *statement = new GenOp( "tex2DLinear(@, @)", diffuseMap, inTex );
-           output = new GenOp("   @;\r\n", assignColor(statement, Material::Mul, NULL, targ) );
-       }
+      meta->addStatement(new GenOp("@ = tex2D(@, @);\r\n", colorDecl, diffuseMap, inTex));
+      if (!fd.features[MFT_Imposter])
+         meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
+      meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ)));
    }   
 }
 

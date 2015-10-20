@@ -324,7 +324,7 @@ void main()
    
    // Calculate the water "base" color based on depth.
    vec4 waterBaseColor = baseColor * texture( depthGradMap, saturate( delta / depthGradMax ) );
-   waterBaseColor = vec4(pow(abs(waterBaseColor.rgb), vec3(2.2)), waterBaseColor.a);
+   waterBaseColor = toLinear(waterBaseColor);
       
    // Modulate baseColor by the ambientColor.
    waterBaseColor *= vec4( ambientColor.rgb, 1 );     
