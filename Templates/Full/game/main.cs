@@ -29,6 +29,32 @@ $defaultGame = "scripts";
 // Set profile directory
 $Pref::Video::ProfilePath = "core/profile";
 
+function getPrefpath()
+{
+	%temp = getUserHomeDirectory();  
+	echo(%temp);  
+	if(!isDirectory(%temp))  
+	{  
+		%temp = getUserDataDirectory();  
+		echo(%temp);
+		if(!isDirectory(%temp)) 
+		{
+			$prefpath = "scripts";  
+		}
+		else  
+		{
+			//put it in appdata/roaming
+			$prefpath = %temp @ "/" @ $appName @ "/scripts";  
+		}  
+	}  
+	else  
+	{  
+		//put it in user/documents  
+		$prefPath = %temp @ "/" @ $appName @ "/scripts";  
+	}
+	return $prefPath;
+}
+
 function createCanvas(%windowTitle)
 {
    if ($isDedicated)
