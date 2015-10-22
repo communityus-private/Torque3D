@@ -269,7 +269,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 
    HWND winHwnd = win->getHWND();
 
-   UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED;
+   UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifdef TORQUE_DEBUG
    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
