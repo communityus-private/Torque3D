@@ -210,6 +210,9 @@ public:
    /// state at the same time.
    inline const U8* getDirtyBuffer( U32 *start, U32 *size );
 
+   /// Gets the entire buffer ignoring dirty range
+   inline const U8* getEntireBuffer();
+
    /// Sets the entire buffer as dirty or clears the dirty state.
    inline void setDirty( bool dirty );
 
@@ -337,8 +340,8 @@ inline const U8* GenericConstBuffer::getDirtyBuffer( U32 *start, U32 *size )
    AssertFatal( mBuffer, "GenericConstBuffer::getDirtyBuffer() - Buffer is empty!" );
 
    // Use the area we calculated during internalSet.
-   *size = mDirtyEnd - mDirtyStart;
-   *start = mDirtyStart;
+   *size = mLayout->getBufferSize();// mDirtyEnd - mDirtyStart;
+   *start = 0;// mDirtyStart;
    const U8 *buffer = mBuffer + mDirtyStart;
 
    // Clear the dirty state while we're here.
@@ -346,6 +349,13 @@ inline const U8* GenericConstBuffer::getDirtyBuffer( U32 *start, U32 *size )
    mDirtyEnd = 0;
 
    return buffer;
+}
+
+inline const U8* GenericConstBuffer::getEntireBuffer()
+{
+   AssertFatal(mBuffer, "GenericConstBuffer::getDirtyBuffer() - Buffer is empty!");
+
+   return mBuffer;
 }
 
 inline bool GenericConstBuffer::isEqual( const GenericConstBuffer *buffer ) const
