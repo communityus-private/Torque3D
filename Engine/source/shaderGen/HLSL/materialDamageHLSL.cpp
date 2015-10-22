@@ -91,7 +91,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    }
    else
    {
-      statement = new GenOp("tex2DLinear(@, @)", albedoDamage, texCoord);
+      statement = new GenOp("toLinear(tex2D(@, @))", albedoDamage, texCoord);
    }
    meta->addStatement(new GenOp("   @ = lerp(@,@,@);\r\n", targ, targ, statement, damageResult));
    output = meta;

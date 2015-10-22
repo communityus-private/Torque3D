@@ -92,7 +92,7 @@ void AlbedoDamageFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
    }
    else
    {
-      statement = new GenOp("tex2DLinear(@, @)", albedoDamage, texCoord);
+      statement = new GenOp("toLinear(texture(@, @))", albedoDamage, texCoord);
    }
 
    meta->addStatement(new GenOp("   @ = mix(@,@,@);\r\n", targ, targ, statement, damageResult));

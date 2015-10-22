@@ -963,16 +963,14 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       {
          meta->addStatement(new GenOp( "   @ = tex2Dlod(@, float4(@, 0.0, mipLod));\r\n", 
             new DecOp(diffColor), diffuseMap, inTex));
-         if (!fd.features[MFT_Imposter])
-            meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
       }
       else
       {
-         meta->addStatement(new GenOp( "   @ = tex2DLinear(@, @);\r\n",
+         meta->addStatement(new GenOp( "   @ = tex2D(@, @);\r\n",
             new DecOp(diffColor), diffuseMap, inTex));
-         if (!fd.features[MFT_Imposter])
-            meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
       }
+      if (!fd.features[MFT_Imposter])
+            meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
 
       meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ) ) );
    }
