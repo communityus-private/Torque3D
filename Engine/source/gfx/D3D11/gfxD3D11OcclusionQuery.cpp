@@ -129,11 +129,11 @@ GFXD3D11OcclusionQuery::OcclusionQueryStatus GFXD3D11OcclusionQuery::getStatus(b
 
    if ( block )
    {      
-      while((hRes = D3D11DEVICECONTEXT->GetData(mQuery, &dwOccluded, sizeof(DWORD), 0)) == S_FALSE);
+      while ((hRes = D3D11DEVICECONTEXT->GetData(mQuery, &dwOccluded, sizeof(U64), 0)) == S_FALSE);
    }
    else
    {
-      hRes = D3D11DEVICECONTEXT->GetData(mQuery, &dwOccluded, sizeof(DWORD), 0);
+      hRes = D3D11DEVICECONTEXT->GetData(mQuery, &dwOccluded, sizeof(U64), 0);
    }
 
    if (hRes == S_OK)   
