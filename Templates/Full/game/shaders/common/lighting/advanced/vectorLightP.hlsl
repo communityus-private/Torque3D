@@ -73,7 +73,7 @@ uniform float4 dynamicOffsetX;
 uniform float4 dynamicOffsetY;
 uniform float4 dynamicFarPlaneScalePSSM;
              
-float4 AL_VectorLightShadowCast( sampler2D sourceShadowMap,
+float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                 float2 texCoord,
                                 float4x4 worldToLightProj,
                                 float4 worldPos,
@@ -178,7 +178,7 @@ float4 AL_VectorLightShadowCast( sampler2D sourceShadowMap,
       distToLight *= farPlaneScale;
 
       return float4(debugColor,
-                    softShadow_filter(  sourceShadowMap,
+                    softShadow_filter(  TORQUE_SAMPLER2D_MAKEARG(sourceShadowMap),
                                  texCoord,
                                  shadowCoord,
                                  farPlaneScale * shadowSoftness,
