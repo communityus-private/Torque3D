@@ -47,34 +47,29 @@ TORQUE_UNIFORM_SAMPLER2D(cookieMap, 2);
 
 #endif
 
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,3);
 
-float4 main(   ConvexConnectP IN,
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer,5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer,6),
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer,7),
 
-               uniform sampler2D prePassBuffer : register(S0),
-               uniform sampler2D shadowMap : register(S1),
-               uniform sampler2D dynamicShadowMap : register(S2),
+uniform float4 rtParams0;
 
-               uniform sampler2D lightBuffer : register(S5),
-               uniform sampler2D colorBuffer : register(S6),
-               uniform sampler2D matInfoBuffer : register(S7),
+uniform float3 lightPosition;
+uniform float4 lightColor;
+uniform float  lightBrightness;
+uniform float  lightRange;
+uniform float2 lightAttenuation;
+uniform float3 lightDirection;
+uniform float4 lightSpotParams;
+uniform float4 lightMapParams;
+uniform float4 vsFarPlane;
+uniform float4x4 viewToLightProj;
+uniform float4x4 dynamicViewToLightProj;
+uniform float4 lightParams;
+uniform float shadowSoftness;
 
-               uniform float4 rtParams0,
-
-               uniform float3 lightPosition,
-               uniform float4 lightColor,
-               uniform float  lightBrightness,
-               uniform float  lightRange,
-               uniform float2 lightAttenuation,
-               uniform float3 lightDirection,
-               uniform float4 lightSpotParams,
-               uniform float4 lightMapParams,
-
-               uniform float4 vsFarPlane,
-               uniform float4x4 viewToLightProj,
-               uniform float4x4 dynamicViewToLightProj,
-
-               uniform float4 lightParams,
-               uniform float shadowSoftness ) : TORQUE_TARGET0
+float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 {   
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;

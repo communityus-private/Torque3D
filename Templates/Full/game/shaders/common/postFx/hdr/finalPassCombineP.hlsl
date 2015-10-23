@@ -34,12 +34,10 @@ uniform float2 texSize2;
 uniform float g_fEnableToneMapping;
 uniform float g_fMiddleGray;
 uniform float g_fWhiteCutoff;
-
 uniform float g_fEnableBlueShift;
-uniform float3 g_fBlueShiftColor; 
 
+uniform float3 g_fBlueShiftColor;
 uniform float g_fBloomScale;
-
 uniform float g_fOneOverGamma;
 uniform float Brightness;
 uniform float Contrast;

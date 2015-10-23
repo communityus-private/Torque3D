@@ -33,6 +33,27 @@ extern bool gDisassembleAllShaders;
 
 gfxD3DIncludeRef GFXD3D11Shader::smD3DInclude = NULL;
 
+class gfxD3D11Include : public ID3DInclude, public StrongRefBase
+{
+private:
+
+   Vector<String> mLastPath;
+
+public:
+
+   void setPath(const String &path)
+   {
+      mLastPath.clear();
+      mLastPath.push_back(path);
+   }
+
+   gfxD3D11Include() {}
+   virtual ~gfxD3D11Include() {}
+
+   STDMETHOD(Open)(THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes);
+   STDMETHOD(Close)(THIS_ LPCVOID pData);
+};
+
 HRESULT gfxD3D11Include::Open(THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes)
 {
    using namespace Torque;
@@ -112,33 +133,61 @@ S32 GFXD3D11ShaderConstHandle::getSamplerRegister() const
    return mPixelHandle.offset;   
 }
 
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-void GFXD3D11ShaderBufferLayout::addParameter(const String& name, const GFXShaderConstType constType, const U32 offset, const U32 size, const U32 arraySize, const U32 alignValue)
+GFXD3D11ConstBufferLayout::GFXD3D11ConstBufferLayout()
 {
-   ParamDesc desc;
-   desc.name = name;
-   desc.constType = constType;
-   desc.offset = offset;
-   desc.size = size;
-   desc.arraySize = arraySize;
-   desc.alignValue = alignValue;
-   desc.index = mCurrentIndex++;
-   mParams.push_back(desc);
-   mBufferSize = getMax(desc.offset + desc.size, mBufferSize);
-   AssertFatal(mBufferSize, "Empty constant buffer!");
+   mSubBuffers.reserve(CBUFFER_MAX);
 }
 
-void GFXD3D11ShaderBufferLayout::setBufferSize(U32 size)
+bool GFXD3D11ConstBufferLayout::set(const ParamDesc& pd, const GFXShaderConstType constType, const U32 inSize, const void* data, U8* basePointer)
 {
-	mBufferSize = size;
-	AssertFatal(mBufferSize, "Empty constant buffer!");
+   PROFILE_SCOPE(GenericConstBufferLayout_set);
+   S32 size = inSize;
+   // Shader compilers like to optimize float4x4 uniforms into float3x3s.
+   // So long as the real paramater is a matrix of-some-type and the data
+   // passed in is a MatrixF ( which is will be ), we DO NOT have a
+   // mismatched const type.
+   AssertFatal(pd.constType == constType ||
+      (
+      (pd.constType == GFXSCT_Float2x2 ||
+      pd.constType == GFXSCT_Float3x3 ||
+      pd.constType == GFXSCT_Float4x4) &&
+      (constType == GFXSCT_Float2x2 ||
+      constType == GFXSCT_Float3x3 ||
+      constType == GFXSCT_Float4x4)
+      ), "Mismatched const type!");
+
+   // This "cute" bit of code allows us to support 2x3 and 3x3 matrices in shader constants but use our MatrixF class.  Yes, a hack. -BTR
+   switch (pd.constType)
+   {
+   case GFXSCT_Float2x2:
+   case GFXSCT_Float3x3:
+   case GFXSCT_Float4x4:
+      return setMatrix(pd, constType, size, data, basePointer);
+      break;
+      // TODO add other AlignedVector here
+   case GFXSCT_Float2:
+      if (size > sizeof(Point2F))
+         size = pd.size;
+   default:
+      break;
+   }
+
+   AssertFatal(pd.size >= size, "Not enough room in the buffer for this data!");
+
+   // Ok, we only set data if it's different than the data we already have, this maybe more expensive than just setting the data, but 
+   // we'll have to do some timings to see.  For example, the lighting shader constants rarely change, but we can't assume that at the
+   // renderInstMgr level, but we can check down here. -BTR
+   if (dMemcmp(basePointer + pd.offset, data, size) != 0)
+   {
+      dMemcpy(basePointer + pd.offset, data, size);
+      return true;
+   }
+   return false;
 }
 
-bool GFXD3D11ShaderBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderConstType constType, const U32 size, const void* data, U8* basePointer)
+bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderConstType constType, const U32 size, const void* data, U8* basePointer)
 {
-   PROFILE_SCOPE(GFXD3D11ShaderBufferLayout_setMatrix);
+   PROFILE_SCOPE(GFXD3D11ConstBufferLayout_setMatrix);
 
    if (pd.constType == GFXSCT_Float4x4)
    {
@@ -154,7 +203,7 @@ bool GFXD3D11ShaderBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderC
    }
    else
    {
-      PROFILE_SCOPE(GFXD3D11ShaderBufferLayout_setMatrix_not4x4);
+      PROFILE_SCOPE(GFXD3D11ConstBufferLayout_setMatrix_not4x4);
 
       // Figure out how big of a chunk we are copying.  We're going to copy 4 columns by N rows of data
       U32 csize;
@@ -195,8 +244,8 @@ bool GFXD3D11ShaderBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderC
 
 //------------------------------------------------------------------------------
 GFXD3D11ShaderConstBuffer::GFXD3D11ShaderConstBuffer( GFXD3D11Shader* shader, 
-                                                    GFXD3D11ShaderBufferLayout* vertexLayout, 
-                                                    GFXD3D11ShaderBufferLayout* pixelLayout ) 
+                                                      GFXD3D11ConstBufferLayout* vertexLayout,
+                                                      GFXD3D11ConstBufferLayout* pixelLayout)
 {
     AssertFatal( shader, "GFXD3D11ShaderConstBuffer() - Got a null shader!" );
 
@@ -204,8 +253,11 @@ GFXD3D11ShaderConstBuffer::GFXD3D11ShaderConstBuffer( GFXD3D11Shader* shader,
     // this virtual method during activation.
     mShader = shader;
 
-    mConstantBuffersV = NULL;
-    mConstantBuffersP = NULL;
+    for (U32 i = 0; i < CBUFFER_MAX; ++i)
+    {
+       mConstantBuffersV[i] = NULL;
+       mConstantBuffersP[i] = NULL;
+    }
 
     // TODO: Remove buffers and layouts that don't exist for performance?
     //Mandatory
@@ -215,52 +267,18 @@ GFXD3D11ShaderConstBuffer::GFXD3D11ShaderConstBuffer( GFXD3D11Shader* shader,
     mPixelConstBufferLayout = pixelLayout;
     mPixelConstBuffer = new GenericConstBuffer(pixelLayout);
 
-	HRESULT hr;
-
-	// Create a vertex float constant buffer
-	if(mVertexConstBufferLayout->getBufferSize() > 0)
-	{
-		D3D11_BUFFER_DESC cbDesc;
-		cbDesc.ByteWidth = mVertexConstBufferLayout->getBufferSize();
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbDesc.MiscFlags = 0;
-		cbDesc.StructureByteStride = 0;
-
-		hr = D3D11DEVICE->CreateBuffer(&cbDesc, NULL, &mConstantBuffersV);
-
-		if(FAILED(hr))
-		{
-			AssertFatal(false, "can't create constant mConstantBuffersV!");
-		}
-	}
-	if(mPixelConstBufferLayout->getBufferSize())
-	{
-		// Create a pixel float constant buffer
-		D3D11_BUFFER_DESC cbDesc;
-		cbDesc.ByteWidth = mPixelConstBufferLayout->getBufferSize();
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbDesc.MiscFlags = 0;
-		cbDesc.StructureByteStride = 0;
-
-		hr = D3D11DEVICE->CreateBuffer(&cbDesc, NULL, &mConstantBuffersP);
-
-		if(FAILED(hr))
-		{
-			AssertFatal(false, "can't create constant mConstantBuffersP!");
-		}
-	}
+    _createBuffers();
 	
 }
 
 GFXD3D11ShaderConstBuffer::~GFXD3D11ShaderConstBuffer()
 {   
    // release constant buffer
-   SAFE_RELEASE(mConstantBuffersP);
-   SAFE_RELEASE(mConstantBuffersV);
+   for (U32 i = 0; i < CBUFFER_MAX; ++i)
+   {
+      SAFE_RELEASE(mConstantBuffersP[i]);
+      SAFE_RELEASE(mConstantBuffersV[i]);
+   }
 
    SAFE_DELETE(mVertexConstBuffer);
    SAFE_DELETE(mPixelConstBuffer);
@@ -268,6 +286,57 @@ GFXD3D11ShaderConstBuffer::~GFXD3D11ShaderConstBuffer()
 
    if ( mShader )
       mShader->_unlinkBuffer( this );
+}
+
+void GFXD3D11ShaderConstBuffer::_createBuffers()
+{
+   HRESULT hr;
+   // Create a vertex constant buffer
+   if (mVertexConstBufferLayout->getBufferSize() > 0)
+   {
+      const Vector<ConstSubBufferDesc> &subBuffers = mVertexConstBufferLayout->getSubBufferDesc();
+      for (U32 i = 0; i < subBuffers.size(); ++i)
+      {
+         D3D11_BUFFER_DESC cbDesc;
+         cbDesc.ByteWidth = subBuffers[i].size;
+         cbDesc.Usage = D3D11_USAGE_DEFAULT;
+         cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.MiscFlags = 0;
+         cbDesc.StructureByteStride = 0;
+
+         hr = D3D11DEVICE->CreateBuffer(&cbDesc, NULL, &mConstantBuffersV[i]);
+
+         if (FAILED(hr))
+         {
+            AssertFatal(false, "can't create constant mConstantBuffersV!");
+         }
+      }
+   }
+
+   // Create a pixel constant buffer
+   if (mPixelConstBufferLayout->getBufferSize())
+   {
+      const Vector<ConstSubBufferDesc> &subBuffers = mPixelConstBufferLayout->getSubBufferDesc();
+      for (U32 i = 0; i < subBuffers.size(); ++i)
+      {
+         // Create a pixel float constant buffer
+         D3D11_BUFFER_DESC cbDesc;
+         cbDesc.ByteWidth = subBuffers[i].size;
+         cbDesc.Usage = D3D11_USAGE_DEFAULT;
+         cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.MiscFlags = 0;
+         cbDesc.StructureByteStride = 0;
+
+         hr = D3D11DEVICE->CreateBuffer(&cbDesc, NULL, &mConstantBuffersP[i]);
+
+         if (FAILED(hr))
+         {
+            AssertFatal(false, "can't create constant mConstantBuffersP!");
+         }
+      }
+   }
 }
 
 GFXShader* GFXD3D11ShaderConstBuffer::getShader()
@@ -526,9 +595,7 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       else
       {
          // This happens rarely... but it can happen.
-         //
          // We copy the entire dirty state to the card.
-
          PROFILE_SCOPE(GFXD3D11ShaderConstBuffer_activate_dirty_check_2);
 
          mVertexConstBuffer->setDirty( true );
@@ -536,41 +603,44 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       }      
    }
 
+   ID3D11DeviceContext* devCtx = D3D11DEVICECONTEXT;
+
    D3D11_MAPPED_SUBRESOURCE pConstData;
    ZeroMemory(&pConstData, sizeof(D3D11_MAPPED_SUBRESOURCE));
-
-   U32 start, bufferSize;      
+   
    const U8* buf;
    HRESULT hr;
-
+   U32 nbBuffers = 0;
    if(mVertexConstBuffer->isDirty())
    {
-	  D3D11DEVICECONTEXT->VSSetConstantBuffers(0, 1, &mConstantBuffersV);
-     buf = mVertexConstBuffer->getDirtyBuffer(&start, &bufferSize );
-	  hr = D3D11DEVICECONTEXT->Map(mConstantBuffersV, 0, D3D11_MAP_WRITE_DISCARD, NULL, &pConstData);
+      const Vector<ConstSubBufferDesc> &subBuffers = mVertexConstBufferLayout->getSubBufferDesc();
+      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      buf = mVertexConstBuffer->getEntireBuffer();
+      for (U32 i = 0; i < subBuffers.size(); ++i)
+      {
+         const ConstSubBufferDesc &desc = subBuffers[i];
+         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, 0, buf + desc.start, desc.size, 0);
+         nbBuffers++;
+      }
 
-	  if(FAILED(hr))
-	  {
-		  AssertFatal(false, "failed to lock mConstantBuffersV");
-	  }
-					
-	  memcpy(((U8*)pConstData.pData) +(start),(void*)buf, bufferSize);
-	  D3D11DEVICECONTEXT->Unmap(mConstantBuffersV, 0);	 
+      devCtx->VSSetConstantBuffers(0, nbBuffers, mConstantBuffersV);
    }
+
+   nbBuffers = 0;
 
    if(mPixelConstBuffer->isDirty())    
    {
-	  D3D11DEVICECONTEXT->PSSetConstantBuffers(0, 1, &mConstantBuffersP);
-     buf = mPixelConstBuffer->getDirtyBuffer(&start, &bufferSize);
-	  hr = D3D11DEVICECONTEXT->Map(mConstantBuffersP, 0, D3D11_MAP_WRITE_DISCARD, NULL, &pConstData);
+      const Vector<ConstSubBufferDesc> &subBuffers = mPixelConstBufferLayout->getSubBufferDesc();
+      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      buf = mPixelConstBuffer->getEntireBuffer();
+      for (U32 i = 0; i < subBuffers.size(); ++i)
+      {
+         const ConstSubBufferDesc &desc = subBuffers[i];
+         devCtx->UpdateSubresource(mConstantBuffersP[i], 0, 0, buf + desc.start, desc.size, 0);
+         nbBuffers++;
+      }
 
-	  if(FAILED(hr))
-	  {
-		  AssertFatal(false, "failed to lock mConstantBuffersP");
-	  }
-					
-	  memcpy(((U8*)pConstData.pData) +(start),(void*)buf, bufferSize);
-	  D3D11DEVICECONTEXT->Unmap(mConstantBuffersP, 0);	         
+      devCtx->PSSetConstantBuffers(0, nbBuffers, mConstantBuffersP);
    }
 
    #ifdef TORQUE_DEBUG
@@ -578,8 +648,7 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       if(mWasLost)
       {
          mVertexConstBuffer->assertUnassignedConstants( mShader->getVertexShaderFile().c_str() );
-         mPixelConstBuffer->assertUnassignedConstants( mShader->getPixelShaderFile().c_str() );
-        
+         mPixelConstBuffer->assertUnassignedConstants( mShader->getPixelShaderFile().c_str() );        
       }
    #endif
 
@@ -592,8 +661,11 @@ void GFXD3D11ShaderConstBuffer::onShaderReload( GFXD3D11Shader *shader )
    AssertFatal( shader == mShader, "GFXD3D11ShaderConstBuffer::onShaderReload is hosed!" );
 
    // release constant buffers
-   SAFE_RELEASE(mConstantBuffersP);
-   SAFE_RELEASE(mConstantBuffersV);
+   for (U32 i = 0; i < CBUFFER_MAX; ++i)
+   {
+      SAFE_RELEASE(mConstantBuffersP[i]);
+      SAFE_RELEASE(mConstantBuffersV[i]);
+   }
 
    SAFE_DELETE( mVertexConstBuffer );
    SAFE_DELETE( mPixelConstBuffer );
@@ -604,43 +676,7 @@ void GFXD3D11ShaderConstBuffer::onShaderReload( GFXD3D11Shader *shader )
    mVertexConstBuffer = new GenericConstBuffer( mVertexConstBufferLayout );      
    mPixelConstBuffer = new GenericConstBuffer( mPixelConstBufferLayout ); 
   
-	HRESULT hr;
-	if(mVertexConstBufferLayout->getBufferSize() >0)
-	{
-		// Create a vertex float constant buffer
-		D3D11_BUFFER_DESC cbDesc;
-		cbDesc.ByteWidth = mVertexConstBufferLayout->getBufferSize();
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbDesc.MiscFlags = 0;
-		cbDesc.StructureByteStride = 0;
-
-		hr = D3D11DEVICE->CreateBuffer(&cbDesc, NULL, &mConstantBuffersV);
-
-		if(FAILED(hr))
-		{
-			AssertFatal(false, "can't create constant mConstantBuffersV!");
-		}
-	}	
-
-	if(mPixelConstBufferLayout->getBufferSize() >0)
-	{	// Create a pixel float constant buffer
-		D3D11_BUFFER_DESC cbDesc;
-		cbDesc.ByteWidth = mPixelConstBufferLayout->getBufferSize();
-		cbDesc.Usage = D3D11_USAGE_DYNAMIC;
-		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-		cbDesc.MiscFlags = 0;
-		cbDesc.StructureByteStride = 0;
-		
-		hr = D3D11DEVICE->CreateBuffer(&cbDesc, NULL, &mConstantBuffersP);
-
-		if(FAILED(hr))
-		{
-			AssertFatal(false, "can't create constant mConstantBuffersP!");
-		}
-	}
+   _createBuffers();
 	
    // Set the lost state.
    mWasLost = true;
@@ -709,12 +745,12 @@ bool GFXD3D11Shader::_init()
    memset(&d3dMacros[macroCount - 1], 0, sizeof(D3D_SHADER_MACRO));
 
    if ( !mVertexConstBufferLayout )
-      mVertexConstBufferLayout = new GFXD3D11ShaderBufferLayout();
+      mVertexConstBufferLayout = new GFXD3D11ConstBufferLayout();
    else
       mVertexConstBufferLayout->clear();
 
    if ( !mPixelConstBufferLayout )
-      mPixelConstBufferLayout = new GFXD3D11ShaderBufferLayout();
+      mPixelConstBufferLayout = new GFXD3D11ConstBufferLayout();
    else
       mPixelConstBufferLayout->clear(); 
 
@@ -963,12 +999,16 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
    return result;
 }
 void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table, 
-                                         GenericConstBufferLayout *bufferLayout,
+                                         GenericConstBufferLayout *bufferLayoutIn,
                                          Vector<GFXShaderConstDesc> &samplerDescriptions )
 {
    PROFILE_SCOPE( GFXD3D11Shader_GetShaderConstants );
 
    AssertFatal(table, "NULL constant table not allowed, is this an assembly shader?");
+
+   GFXD3D11ConstBufferLayout *bufferLayout = (GFXD3D11ConstBufferLayout*)bufferLayoutIn;
+   Vector<ConstSubBufferDesc> &subBuffers = bufferLayout->getSubBufferDesc();
+   subBuffers.clear();
 
    D3D11_SHADER_DESC tableDesc;
    HRESULT hr = table->GetDesc(&tableDesc);
@@ -977,6 +1017,8 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
 	   AssertFatal(false, "Shader Reflection table unable to be created");
    }
    
+   //offset for sub constant buffers
+   U32 bufferOffset = 0;
    for (U32 i = 0; i < tableDesc.ConstantBuffers; i++)
    {
 	   ID3D11ShaderReflectionConstantBuffer* constantBuffer = table->GetConstantBufferByIndex(i);
@@ -984,161 +1026,79 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
 
       if (constantBuffer->GetDesc(&constantBufferDesc) == S_OK)
       {
-		  for(U32 j =0; j< constantBufferDesc.Variables; j++)
-		  {
-			GFXShaderConstDesc desc;
-			ID3D11ShaderReflectionVariable* variable = constantBuffer->GetVariableByIndex(j); 
-			D3D11_SHADER_VARIABLE_DESC variableDesc;
-			D3D11_SHADER_TYPE_DESC variableTypeDesc;
 
-			variable->GetDesc(&variableDesc);
+   #ifdef TORQUE_DEBUG
+         AssertFatal(constantBufferDesc.Type == D3D_CT_CBUFFER, "Only scalar cbuffers supported for now.");
 
-			ID3D11ShaderReflectionType* variableType =variable->GetType();
+         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 && dStrcmp(constantBufferDesc.Name, "$Params") != 0)
+            AssertFatal(false, "Only $Global and $Params cbuffer supported for now.");
 
-			variableType->GetDesc(&variableTypeDesc);
-			desc.name = String(variableDesc.Name);
-			// Prepend a "$" if it doesn't exist.  Just to make things consistent.
-			if (desc.name.find("$") != 0)
-			   desc.name = String::ToString("$%s", desc.name.c_str());
 
-         bool unusedVar = variableDesc.uFlags & D3D_SVF_USED ? false : true;
+         Con::printf("Constant Buffer Name: %s", constantBufferDesc.Name);
+   #endif 
+         
+         for(U32 j =0; j< constantBufferDesc.Variables; j++)
+		   {
+            GFXShaderConstDesc desc;
+			   ID3D11ShaderReflectionVariable* variable = constantBuffer->GetVariableByIndex(j); 
+			   D3D11_SHADER_VARIABLE_DESC variableDesc;
+			   D3D11_SHADER_TYPE_DESC variableTypeDesc;
 
-         if (variableTypeDesc.Elements == 0)
-            desc.arraySize = 1;
-         else
-            desc.arraySize = variableTypeDesc.Elements;
+			   variable->GetDesc(&variableDesc);
 
-#ifdef TORQUE_DEBUG
-         Con::printf("name %s:, offset: %d, size: %d, constantDesc.Elements: %d", desc.name.c_str(), variableDesc.StartOffset, variableDesc.Size, desc.arraySize);
-#endif
+			   ID3D11ShaderReflectionType* variableType =variable->GetType();
 
-			GenericConstBufferLayout* bufferLayoutSelect = NULL;
-			
-			switch (variableTypeDesc.Type)
-			{
-			   case D3D_SVT_INT :   
-			      {
-			         bufferLayoutSelect = bufferLayout;
-			         switch (variableTypeDesc.Class)
-			         {
-			            case D3D_SVC_SCALAR :
-			               desc.constType = GFXSCT_Int;
-			               break;
-			            case D3D_SVC_VECTOR  :
-			               {
-			                  switch (variableTypeDesc.Columns)
-			                  {
-			                  case 1 :
-			                     desc.constType = GFXSCT_Int;
-			                     break;
-			                  case 2 :
-			                     desc.constType = GFXSCT_Int2;
-			                     break;
-			                  case 3 :
-			                     desc.constType = GFXSCT_Int3;
-			                     break;
-			                  case 4 :
-			                     desc.constType = GFXSCT_Int4;
-			                     break;                           
-			                  default:
-			                     AssertFatal(false, "Unknown int vector type!");
-			                     break;
-			                  }
-			               }
-			               break;
-			         }
-			         break;
-			      }
-			   case D3D_SVT_FLOAT :
-			      {  
-			         bufferLayoutSelect = bufferLayout;
-			         switch (variableTypeDesc.Class)
-			         {
-			         case D3D_SVC_SCALAR:                     
-			            desc.constType = GFXSCT_Float;
-			            break;
-			         case D3D_SVC_VECTOR :               
-			            {                     
-			               switch (variableTypeDesc.Columns)
-			               {
-			                  case 1 :
-			                     desc.constType = GFXSCT_Float;
-			                     break;
-			                  case 2 :
-			                     desc.constType = GFXSCT_Float2;
-			                     break;
-			                  case 3 :
-			                     desc.constType = GFXSCT_Float3;
-			                     break;
-			                  case 4 :
-			                     desc.constType = GFXSCT_Float4;
-			                     break;                           
-			                  default:
-			                     AssertFatal(false, "Unknown float vector type!");
-			                     break;
-			               }
-			            }
-			            break;
-			         case D3D_SVC_MATRIX_ROWS :
-			         case D3D_SVC_MATRIX_COLUMNS :                     
-			            {
-			               switch (variableTypeDesc.Columns)                        
-			               {
-			                  case 3 :
-								  if(variableTypeDesc.Rows == 3)
-								  {
-									desc.constType = GFXSCT_Float3x3;
-								  }
-			                     break;
-			                  case 4 :
-								 if(variableTypeDesc.Rows == 4)
-								  {
-									desc.constType = GFXSCT_Float4x4;
-								 }
-			                     break;
-			               }
-			            }
-			            break;
-			         case D3D_SVC_OBJECT :
-			         case D3D_SVC_STRUCT :
-			            bufferLayoutSelect = NULL;
-			            break;
-			         }
-			      }
-			      break;
-			   
-			   default:               
-			      AssertFatal(false, "Unknown shader constant class enum");               
-			      break;
-			}         
-			
-			if (bufferLayoutSelect)
-			{			   
-            //The HLSL compiler for 4.0 and above doesn't strip out unused registered constants. We'll have to do it manually
-            // Skip the unused var
-            if (!unusedVar)
-            { 
+			   variableType->GetDesc(&variableTypeDesc);
+			   desc.name = String(variableDesc.Name);
+			   // Prepend a "$" if it doesn't exist.  Just to make things consistent.
+			   if (desc.name.find("$") != 0)
+			      desc.name = String::ToString("$%s", desc.name.c_str());
 
-               mShaderConsts.push_back(desc);
+            bool unusedVar = variableDesc.uFlags & D3D_SVF_USED ? false : true;
 
-               U32 alignBytes = getAlignmentValue(desc.constType);
-               // U32 paramSize = alignBytes * desc.arraySize;
+            if (variableTypeDesc.Elements == 0)
+               desc.arraySize = 1;
+            else
+               desc.arraySize = variableTypeDesc.Elements;
 
-               U32 paramSize = variableDesc.Size;
-			      bufferLayoutSelect->addParameter(   desc.name, 
-			                                 desc.constType, 
-			                                 variableDesc.StartOffset, 
-			                                 paramSize, 
-			                                 desc.arraySize, 
-			                                 alignBytes );
-            }
-			}
-		}
-		static_cast<GFXD3D11ShaderBufferLayout*>(bufferLayout)->setBufferSize(constantBufferDesc.Size); //manually set the buffer to fix the issue of calculating the alignment
+   #ifdef TORQUE_DEBUG
+            Con::printf("Variable Name %s:, offset: %d, size: %d, constantDesc.Elements: %d", desc.name.c_str(), variableDesc.StartOffset, variableDesc.Size, desc.arraySize);
+   #endif           
+            if (_convertShaderVariable(variableTypeDesc, desc))
+            {
+               //The HLSL compiler for 4.0 and above doesn't strip out unused registered constants. We'll have to do it manually
+               if (!unusedVar)
+               {
+                  mShaderConsts.push_back(desc);
+                  U32 alignBytes = getAlignmentValue(desc.constType);
+                  U32 paramSize = variableDesc.Size;
+                  bufferLayout->addParameter(   desc.name,
+                                                desc.constType,
+                                                variableDesc.StartOffset + bufferOffset,
+                                                paramSize,
+                                                desc.arraySize,
+                                                alignBytes);
+
+               } //unusedVar
+            } //_convertShaderVariable
+		   } //constantBufferDesc.Variables
+
+         // fill out our const sub buffer sizes etc
+         ConstSubBufferDesc subBufferDesc;
+         subBufferDesc.size = constantBufferDesc.Size;
+         subBufferDesc.start = bufferOffset;
+         subBuffers.push_back(subBufferDesc);
+         // increase our bufferOffset by the constant buffer size
+         bufferOffset += constantBufferDesc.Size;
+
       }
       else
          AssertFatal(false, "Unable to get shader constant description! (may need more elements of constantDesc");	
    }
+
+   // Set buffer size to the aligned size
+   bufferLayout->setSize(bufferOffset);
+
 
    //get the sampler descriptions from the resource binding description
    U32 resourceCount = tableDesc.BoundResources;
@@ -1162,6 +1122,101 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
 
       }
    }
+
+}
+
+bool GFXD3D11Shader::_convertShaderVariable(const D3D11_SHADER_TYPE_DESC &typeDesc, GFXShaderConstDesc &desc)
+{
+   switch (typeDesc.Type)
+   {
+   case D3D_SVT_INT:
+   {
+      switch (typeDesc.Class)
+      {
+      case D3D_SVC_SCALAR:
+         desc.constType = GFXSCT_Int;
+         break;
+      case D3D_SVC_VECTOR:
+      {
+         switch (typeDesc.Columns)
+         {
+         case 1:
+            desc.constType = GFXSCT_Int;
+            break;
+         case 2:
+            desc.constType = GFXSCT_Int2;
+            break;
+         case 3:
+            desc.constType = GFXSCT_Int3;
+            break;
+         case 4:
+            desc.constType = GFXSCT_Int4;
+            break;
+         }
+      }
+      break;
+      }
+      break;
+   }   
+   case D3D_SVT_FLOAT:
+   {
+      switch (typeDesc.Class)
+      {
+      case D3D_SVC_SCALAR:
+         desc.constType = GFXSCT_Float;
+         break;
+      case D3D_SVC_VECTOR:
+      {
+         switch (typeDesc.Columns)
+         {
+         case 1:
+            desc.constType = GFXSCT_Float;
+            break;
+         case 2:
+            desc.constType = GFXSCT_Float2;
+            break;
+         case 3:
+            desc.constType = GFXSCT_Float3;
+            break;
+         case 4:
+            desc.constType = GFXSCT_Float4;
+            break;
+         }
+      }
+      break;
+      case D3D_SVC_MATRIX_ROWS:
+      case D3D_SVC_MATRIX_COLUMNS:
+      {
+         switch (typeDesc.Columns)
+         {
+         case 3:
+            if (typeDesc.Rows == 3)
+            {
+               desc.constType = GFXSCT_Float3x3;
+            }
+            break;
+         case 4:
+            if (typeDesc.Rows == 4)
+            {
+               desc.constType = GFXSCT_Float4x4;
+            }
+            break;
+         }
+      }
+      break;
+      case D3D_SVC_OBJECT:
+      case D3D_SVC_STRUCT:
+         return false;
+      }
+   }
+   break;
+
+   default:
+      AssertFatal(false, "Unknown shader constant class enum");
+      break;
+   }
+
+   return true;
 }
 
 const U32 GFXD3D11Shader::smCompiledShaderTag = MakeFourCC('t','c','s','f');

@@ -27,6 +27,7 @@ TORQUE_UNIFORM_SAMPLER2D(colorSampler,0); // Original source image
 TORQUE_UNIFORM_SAMPLER2D(smallBlurSampler,1); // Output of SmallBlurPS()  
 TORQUE_UNIFORM_SAMPLER2D(largeBlurSampler,2); // Blurred output of DofDownsample() 
 TORQUE_UNIFORM_SAMPLER2D(depthSampler,3);
+
 uniform float2 oneOverTargetSize;  
 uniform float4 dofLerpScale;  
 uniform float4 dofLerpBias;  

@@ -30,11 +30,12 @@ struct ConvexConnectV
    float3 vsEyeDir : TEXCOORD1;
 };
 
-ConvexConnectV main( VertexIn_P IN,
-                     uniform float4x4 viewProj,
-                     uniform float4x4 view,
-                     uniform float3 particlePosWorld,
-                     uniform float  lightRange )
+uniform float4x4 viewProj;
+uniform float4x4 view;
+uniform float3 particlePosWorld;
+uniform float  lightRange;
+
+ConvexConnectV main( VertexIn_P IN  )
 {
    ConvexConnectV OUT;
    float4 pos = float4(IN.pos, 0.0);

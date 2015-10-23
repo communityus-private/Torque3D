@@ -33,11 +33,12 @@ struct Conn
    float4 texCoords[8] : TEXCOORD0;
 };
 
+uniform float2 targetSize;
+
 //-----------------------------------------------------------------------------
 // Main
 //-----------------------------------------------------------------------------
-Conn main(  PFXVert In,
-           uniform float2 targetSize  : register(C0) )
+Conn main(  PFXVert In )
 {
 	Conn Out;
 

@@ -42,13 +42,13 @@ TORQUE_UNIFORM_SAMPLER2D(backbuffer, 1);
 TORQUE_UNIFORM_SAMPLER1D(waterDepthGradMap, 2);
 
 uniform float3    eyePosWorld;
+uniform float     waterDepthGradMax;
 uniform float3    ambientColor;     
 uniform float4    waterColor;       
 uniform float4    waterFogData;    
 uniform float4    waterFogPlane;    
 uniform float2    nearFar;      
 uniform float4    rtParams0;
-uniform float     waterDepthGradMax;
 
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0

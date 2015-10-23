@@ -213,14 +213,37 @@ inline const ConstantDesc* ConstantTable::GetConstantByName(const String& name) 
   return NULL;
 }
 
-class GFXD3D11ShaderBufferLayout : public GenericConstBufferLayout
+/////////////////// Constant Buffers /////////////////////////////
+
+// Maximum number of CBuffers ($Globals & $Params)
+const U32 CBUFFER_MAX = 2;
+
+struct ConstSubBufferDesc
+{
+   U32 start;
+   U32 size;
+
+   ConstSubBufferDesc() : start(0), size(0){}
+};
+
+class GFXD3D11ConstBufferLayout : public GenericConstBufferLayout
 {
 public:
-	virtual void addParameter(const String& name, const GFXShaderConstType constType, const U32 offset, const U32 size, const U32 arraySize, const U32 alignValue);
-	void setBufferSize(U32 size);
+   GFXD3D11ConstBufferLayout();
+   /// Get our constant sub buffer data
+   Vector<ConstSubBufferDesc> &getSubBufferDesc(){ return mSubBuffers; }
+   
+   /// We need to manually set the size due to D3D11 alignment
+   void setSize(U32 size){ mBufferSize = size;}
+
+   /// Set a parameter, given a base pointer
+   virtual bool set(const ParamDesc& pd, const GFXShaderConstType constType, const U32 size, const void* data, U8* basePointer);
+
 protected:
    /// Set a matrix, given a base pointer
    virtual bool setMatrix(const ParamDesc& pd, const GFXShaderConstType constType, const U32 size, const void* data, U8* basePointer);
+
+   Vector<ConstSubBufferDesc> mSubBuffers;
 };
 
 class GFXD3D11ShaderConstHandle : public GFXShaderConstHandle
@@ -269,28 +292,88 @@ public:
    GFXD3D11ShaderConstHandle();
 };
 
-class gfxD3D11Include : public ID3DInclude, public StrongRefBase
+/// The D3D11 implementation of a shader constant buffer.
+class GFXD3D11ShaderConstBuffer : public GFXShaderConstBuffer
 {
-private:
-
-    Vector<String> mLastPath;
+   friend class GFXD3D11Shader;
 
 public:
 
-    void setPath( const String &path )
-    {
-       mLastPath.clear();
-       mLastPath.push_back( path );
-    }
+   GFXD3D11ShaderConstBuffer(GFXD3D11Shader* shader,
+      GFXD3D11ConstBufferLayout* vertexLayout,
+      GFXD3D11ConstBufferLayout* pixelLayout);
 
-    gfxD3D11Include() {}
-    virtual ~gfxD3D11Include() {}
+   virtual ~GFXD3D11ShaderConstBuffer();
 
-	STDMETHOD(Open)(THIS_ D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes);
-	STDMETHOD(Close)(THIS_ LPCVOID pData);
+   /// Called by GFXD3D11Device to activate this buffer.
+   /// @param mPrevShaderBuffer The previously active buffer
+   void activate(GFXD3D11ShaderConstBuffer *prevShaderBuffer);
+
+   /// Used internally by GXD3D11ShaderConstBuffer to determine if it's dirty.
+   bool isDirty();
+
+   /// Called from GFXD3D11Shader when constants have changed and need
+   /// to be the shader this buffer references is reloaded.
+   void onShaderReload(GFXD3D11Shader *shader);
+
+   // GFXShaderConstBuffer
+   virtual GFXShader* getShader();
+   virtual void set(GFXShaderConstHandle* handle, const F32 fv);
+   virtual void set(GFXShaderConstHandle* handle, const Point2F& fv);
+   virtual void set(GFXShaderConstHandle* handle, const Point3F& fv);
+   virtual void set(GFXShaderConstHandle* handle, const Point4F& fv);
+   virtual void set(GFXShaderConstHandle* handle, const PlaneF& fv);
+   virtual void set(GFXShaderConstHandle* handle, const ColorF& fv);
+   virtual void set(GFXShaderConstHandle* handle, const S32 f);
+   virtual void set(GFXShaderConstHandle* handle, const Point2I& fv);
+   virtual void set(GFXShaderConstHandle* handle, const Point3I& fv);
+   virtual void set(GFXShaderConstHandle* handle, const Point4I& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<F32>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point2F>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point3F>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point4F>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<S32>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point2I>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point3I>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point4I>& fv);
+   virtual void set(GFXShaderConstHandle* handle, const MatrixF& mat, const GFXShaderConstType matType = GFXSCT_Float4x4);
+   virtual void set(GFXShaderConstHandle* handle, const MatrixF* mat, const U32 arraySize, const GFXShaderConstType matrixType = GFXSCT_Float4x4);
+
+   // GFXResource
+   virtual const String describeSelf() const;
+   virtual void zombify();
+   virtual void resurrect();
+
+protected:
+
+   void _createBuffers();
+
+   template<class T>
+   inline void SET_CONSTANT(GFXShaderConstHandle* handle,
+      const T& fv,
+      GenericConstBuffer *vBuffer,
+      GenericConstBuffer *pBuffer);
+
+   // Constant buffers, VSSetConstantBuffers1 has issues on win 7. So unfortunately for now we have multiple constant buffers
+   ID3D11Buffer* mConstantBuffersV[CBUFFER_MAX];
+   ID3D11Buffer* mConstantBuffersP[CBUFFER_MAX];
+
+   /// We keep a weak reference to the shader 
+   /// because it will often be deleted.
+   WeakRefPtr<GFXD3D11Shader> mShader;
+
+   //vertex
+   GFXD3D11ConstBufferLayout* mVertexConstBufferLayout;
+   GenericConstBuffer* mVertexConstBuffer;
+   //pixel
+   GFXD3D11ConstBufferLayout* mPixelConstBufferLayout;
+   GenericConstBuffer* mPixelConstBuffer;
 };
 
+class gfxD3D11Include;
 typedef StrongRefPtr<gfxD3D11Include> gfxD3DIncludeRef;
+
+/////////////////// GFXShader implementation /////////////////////////////
 
 class GFXD3D11Shader : public GFXShader
 {
@@ -327,8 +410,8 @@ protected:
    ID3D11PixelShader *mPixShader;
 
 
-   GFXD3D11ShaderBufferLayout* mVertexConstBufferLayout;   
-   GFXD3D11ShaderBufferLayout* mPixelConstBufferLayout;
+   GFXD3D11ConstBufferLayout* mVertexConstBufferLayout;
+   GFXD3D11ConstBufferLayout* mPixelConstBufferLayout;
    
 
    static gfxD3DIncludeRef smD3DInclude;
@@ -355,6 +438,8 @@ protected:
    void _getShaderConstants( ID3D11ShaderReflection* table, 
 	                         GenericConstBufferLayout *bufferLayout,
                              Vector<GFXShaderConstDesc> &samplerDescriptions );
+
+   bool _convertShaderVariable(const D3D11_SHADER_TYPE_DESC &typeDesc, GFXShaderConstDesc &desc);
 
 
    bool _saveCompiledOutput( const Torque::Path &filePath, 
@@ -383,81 +468,5 @@ inline bool GFXD3D11Shader::getDisassembly(String &outStr) const
    outStr = mDissasembly;
    return (outStr.isNotEmpty());
 }
-
-/// The D3D11 implementation of a shader constant buffer.
-class GFXD3D11ShaderConstBuffer : public GFXShaderConstBuffer
-{
-   friend class GFXD3D11Shader;
-
-public:
-
-   GFXD3D11ShaderConstBuffer( GFXD3D11Shader* shader,
-                              GFXD3D11ShaderBufferLayout* vertexLayout, 
-                              GFXD3D11ShaderBufferLayout* pixelLayout );
-
-   virtual ~GFXD3D11ShaderConstBuffer();   
-
-   /// Called by GFXD3D11Device to activate this buffer.
-   /// @param mPrevShaderBuffer The previously active buffer
-   void activate( GFXD3D11ShaderConstBuffer *prevShaderBuffer );
-   
-   /// Used internally by GXD3D11ShaderConstBuffer to determine if it's dirty.
-   bool isDirty();
-
-   /// Called from GFXD3D11Shader when constants have changed and need
-   /// to be the shader this buffer references is reloaded.
-   void onShaderReload( GFXD3D11Shader *shader );
-
-   // GFXShaderConstBuffer
-   virtual GFXShader* getShader();
-   virtual void set(GFXShaderConstHandle* handle, const F32 fv);
-   virtual void set(GFXShaderConstHandle* handle, const Point2F& fv);
-   virtual void set(GFXShaderConstHandle* handle, const Point3F& fv);
-   virtual void set(GFXShaderConstHandle* handle, const Point4F& fv);
-   virtual void set(GFXShaderConstHandle* handle, const PlaneF& fv);
-   virtual void set(GFXShaderConstHandle* handle, const ColorF& fv);   
-   virtual void set(GFXShaderConstHandle* handle, const S32 f);
-   virtual void set(GFXShaderConstHandle* handle, const Point2I& fv);
-   virtual void set(GFXShaderConstHandle* handle, const Point3I& fv);
-   virtual void set(GFXShaderConstHandle* handle, const Point4I& fv);
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<F32>& fv);
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point2F>& fv);
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point3F>& fv);
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point4F>& fv);   
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<S32>& fv);
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point2I>& fv);
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point3I>& fv);
-   virtual void set(GFXShaderConstHandle* handle, const AlignedArray<Point4I>& fv);
-   virtual void set(GFXShaderConstHandle* handle, const MatrixF& mat, const GFXShaderConstType matType = GFXSCT_Float4x4);
-   virtual void set(GFXShaderConstHandle* handle, const MatrixF* mat, const U32 arraySize, const GFXShaderConstType matrixType = GFXSCT_Float4x4);
-   
-   // GFXResource
-   virtual const String describeSelf() const;
-   virtual void zombify();
-   virtual void resurrect();
-
-protected:
-
-   template<class T>
-   inline void SET_CONSTANT(  GFXShaderConstHandle* handle, 
-                              const T& fv, 
-                              GenericConstBuffer *vBuffer, 
-                              GenericConstBuffer *pBuffer );
-
-   // constant buffer
-   ID3D11Buffer* mConstantBuffersV;
-   ID3D11Buffer* mConstantBuffersP;
-
-   /// We keep a weak reference to the shader 
-   /// because it will often be deleted.
-   WeakRefPtr<GFXD3D11Shader> mShader;
-   
-   //vertex
-   GFXD3D11ShaderBufferLayout* mVertexConstBufferLayout;
-   GenericConstBuffer* mVertexConstBuffer;
-   //pixel
-   GFXD3D11ShaderBufferLayout* mPixelConstBufferLayout;
-   GenericConstBuffer* mPixelConstBuffer;  
-};
 
 #endif

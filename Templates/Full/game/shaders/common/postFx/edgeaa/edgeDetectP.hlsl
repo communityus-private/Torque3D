@@ -85,7 +85,9 @@ float GetEdgeWeight(float2 uv0, in float2 targetSize)
    return dot(normalResults, float4(1.0, 1.0, 1.0, 1.0)) * 0.25;
 }
 
-float4 main( PFXVertToPix IN, uniform float2 targetSize : register(C0) ) : TORQUE_TARGET0
+uniform float2 targetSize;
+
+float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
    return GetEdgeWeight(IN.uv0, targetSize);//rtWidthHeightInvWidthNegHeight.zw);
 }

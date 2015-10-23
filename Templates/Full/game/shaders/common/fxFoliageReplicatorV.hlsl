@@ -43,22 +43,22 @@ struct ConnectData
 	float2 alphaLookup	  : TEXCOORD1;   
 };
 
+uniform float4x4 projection     		: register(C0);
+uniform float4x4 world : register(C4);
+uniform float    GlobalSwayPhase : register(C8);
+uniform float 	 SwayMagnitudeSide : register(C9);
+uniform float 	 SwayMagnitudeFront : register(C10);
+uniform float    GlobalLightPhase : register(C11);
+uniform float    LuminanceMagnitude : register(C12);
+uniform float		 LuminanceMidpoint : register(C13);
+uniform float	DistanceRange : register(C14);
+uniform float3 CameraPos : register(C15);
+uniform float TrueBillboard : register(C16);
+
 //-----------------------------------------------------------------------------
 // Main                                                                        
 //-----------------------------------------------------------------------------
-ConnectData main( VertData IN,
-                  uniform float4x4 projection     		: register(C0),
-                  uniform float4x4 world	   					: register(C4),
-                  uniform float    GlobalSwayPhase 		: register(C8),
-                  uniform float 	 SwayMagnitudeSide 	: register(C9),
-                  uniform float 	 SwayMagnitudeFront	: register(C10),
-                  uniform float    GlobalLightPhase		: register(C11),
-                  uniform float    LuminanceMagnitude : register(C12),
-                  uniform float		 LuminanceMidpoint	: register(C13),
-                  uniform float	DistanceRange : register(C14),
-                  uniform float3 CameraPos : register(C15),
-                  uniform float TrueBillboard : register(C16)
-)
+ConnectData main( VertData IN )
 {
   ConnectData OUT;
 

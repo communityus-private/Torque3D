@@ -27,9 +27,9 @@
 // The render target size is one-quarter the scene rendering size.  
 TORQUE_UNIFORM_SAMPLER2D(colorSampler, 0);
 TORQUE_UNIFORM_SAMPLER2D(depthSampler, 1);
-uniform float2 dofEqWorld;  
-uniform float depthOffset;
+uniform float2 dofEqWorld;
 uniform float2 targetSize;
+uniform float depthOffset;
 uniform float maxWorldCoC;
 //uniform float2 dofEqWeapon;  
 //uniform float2 dofRowDelta;  // float2( 0, 0.25 / renderTargetHeight )  
