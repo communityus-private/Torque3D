@@ -57,17 +57,41 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
 
    // create texture var
    Var *specularMap = new Var;
-   specularMap->setType( "sampler2D" );
    specularMap->setName( "specularMap" );
    specularMap->uniform = true;
    specularMap->sampler = true;
    specularMap->constNum = Var::getTexUnitNum();
+
+   Var *specularMapTex = NULL;
+   if (mIsDirect3D11)
+   {
+      specularMap->setType("SamplerState");
+      specularMapTex = new Var;
+      specularMapTex->setName("specularMapTex");
+      specularMapTex->setType("Texture2D");
+      specularMapTex->uniform = true;
+      specularMapTex->texture2D = true;
+      specularMapTex->constNum = specularMap->constNum;
+   }
+   else
+   {
+      specularMap->setType("sampler2D");
+   }
+
    LangElement *texOp = new GenOp( "tex2D(@, @)", specularMap, texCoord );
 
    //matinfo.g slot reserved for AO later
    meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
-   meta->addStatement(new GenOp("   @.b = dot(tex2D(@, @).rgb, float3(0.3, 0.59, 0.11));\r\n", material, specularMap, texCoord));
-   meta->addStatement(new GenOp("   @.a = tex2D(@, @).a;\r\n", material, specularMap, texCoord));
+   if (mIsDirect3D11)
+   {
+      meta->addStatement(new GenOp("   @.b = dot(@.Sample(@, @).rgb, float3(0.3, 0.59, 0.11));\r\n", material, specularMapTex, specularMap, texCoord));
+      meta->addStatement(new GenOp("   @.a = @.Sample(@, @).a;\r\n", material, specularMapTex, specularMap, texCoord));
+   }
+   else
+   {
+      meta->addStatement(new GenOp("   @.b = dot(tex2D(@, @).rgb, float3(0.3, 0.59, 0.11));\r\n", material, specularMap, texCoord));
+      meta->addStatement(new GenOp("   @.a = tex2D(@, @).a;\r\n", material, specularMap, texCoord));
+   }
    output = meta;
 }
 
