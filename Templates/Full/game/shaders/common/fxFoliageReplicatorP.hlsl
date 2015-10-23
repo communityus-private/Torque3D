@@ -42,12 +42,13 @@ struct Fragout
 TORQUE_UNIFORM_SAMPLER2D(diffuseMap, 0);
 TORQUE_UNIFORM_SAMPLER2D(alphaMap, 1);
 
+uniform float4 groundAlpha;
+uniform float4 ambient;
+
 //-----------------------------------------------------------------------------
 // Main                                                                        
 //-----------------------------------------------------------------------------
-Fragout main( ConnectData IN,
-              uniform float4 groundAlpha,
-              uniform float4 ambient )
+Fragout main( ConnectData IN )
 {
    Fragout OUT;
 

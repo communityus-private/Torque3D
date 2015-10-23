@@ -51,15 +51,15 @@ TORQUE_UNIFORM_SAMPLER2D(diffMap,0);
 //TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 1); not used?
 TORQUE_UNIFORM_SAMPLER2D(bumpMap,2);
 
+uniform float4    specularColor   : register(PC_MAT_SPECCOLOR);
+uniform float4    ambient : register(PC_AMBIENT_COLOR);
+uniform float     specularPower : register(PC_MAT_SPECPOWER);
+uniform float accumTime : register(PC_ACCUM_TIME);
+
 //-----------------------------------------------------------------------------
 // Main
 //-----------------------------------------------------------------------------
-Fragout main(v2f IN,
-            uniform float4    specularColor   : register(PC_MAT_SPECTORQUE_TARGET0),
-            uniform float     specularPower   : register(PC_MAT_SPECPOWER),
-            uniform float4    ambient         : register(PC_AMBIENT_TORQUE_TARGET0),
-            uniform float accumTime   : register(PC_ACCUM_TIME)
-)
+Fragout main(v2f IN)
 {
 	Fragout OUT;
 

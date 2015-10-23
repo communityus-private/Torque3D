@@ -27,11 +27,11 @@ TORQUE_UNIFORM_SAMPLER2D(backBuffer, 1);
 
 
 uniform float3 camForward;
+uniform int numSamples;
 uniform float3 lightDirection;
+uniform float density;
 uniform float2 screenSunPos;
 uniform float2 oneOverTargetSize;
-uniform int numSamples;
-uniform float density;
 uniform float weight;
 uniform float decay;
 uniform float exposure;

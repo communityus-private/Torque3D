@@ -45,11 +45,11 @@ struct ConnectData
    float2 tex2            : TEXCOORD1;
 };
 
+uniform float4x4 modelview;
 //-----------------------------------------------------------------------------
 // Main                                                                        
 //-----------------------------------------------------------------------------
-ConnectData main( VertData IN,
-                  uniform float4x4 modelview )
+ConnectData main( VertData IN )
 {
    ConnectData OUT;
    OUT.hpos = mul(modelview, float4(IN.position,1.0));

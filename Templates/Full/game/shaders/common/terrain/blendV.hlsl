@@ -38,8 +38,9 @@ struct ConnectData
    float2 texCoord : TEXCOORD1;
 };
 
-ConnectData main( VertData IN,
-                  uniform float2 texScale : register(C0) )
+uniform float2 texScale;
+
+ConnectData main( VertData IN )
 {
    ConnectData OUT;
 

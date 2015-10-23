@@ -24,8 +24,8 @@
 #include "./../../torque.hlsl"
 
 
-uniform float2 texSize0;
 uniform float4 rtParams0;
+uniform float2 texSize0;
 uniform float2 oneOverTargetSize; 
 
 struct VertToPix

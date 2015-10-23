@@ -46,21 +46,21 @@ TORQUE_UNIFORM_SAMPLER2D(cookieMap, 2);
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 
+uniform float4 rtParams0;
+uniform float  lightBrightness;
+uniform float3 lightPosition;
+uniform float4 lightColor;
+uniform float  lightRange;
+uniform float3 lightDirection;
+uniform float4 lightSpotParams;
+uniform float4 lightMapParams;
+uniform float4 vsFarPlane;
+uniform float4x4 viewToLightProj;
+uniform float4 lightParams;
+uniform float2 lightAttenuation;
+uniform float shadowSoftness;
 
-float4 main(   ConvexConnectP IN,
-               uniform float4 rtParams0,
-               uniform float3 lightPosition,
-               uniform float4 lightColor,
-               uniform float  lightBrightness,
-               uniform float  lightRange,
-               uniform float2 lightAttenuation,
-               uniform float3 lightDirection,
-               uniform float4 lightSpotParams,
-               uniform float4 lightMapParams,
-               uniform float4 vsFarPlane,
-               uniform float4x4 viewToLightProj,
-               uniform float4 lightParams,
-               uniform float shadowSoftness ) : TORQUE_TARGET0
+float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 {   
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;

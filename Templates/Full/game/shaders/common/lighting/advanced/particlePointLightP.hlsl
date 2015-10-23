@@ -36,12 +36,13 @@ struct ConvexConnectP
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 
-float4 main(   ConvexConnectP IN,              
-               uniform float4 lightPosition,
-               uniform float4 lightColor,
-               uniform float  lightRange,               
-               uniform float4 vsFarPlane,
-               uniform float4 rtParams0 ) : TORQUE_TARGET0
+uniform float4 lightPosition;
+uniform float4 lightColor;
+uniform float  lightRange;
+uniform float4 vsFarPlane;
+uniform float4 rtParams0;
+
+float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 {
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;

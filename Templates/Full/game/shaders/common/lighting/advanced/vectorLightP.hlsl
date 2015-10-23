@@ -36,31 +36,27 @@ TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 2);
 uniform float4 rtParams2;
 #endif
 
-float4 main( FarFrustumQuadConnectP IN,             
-             
-             uniform float3 lightDirection,
-             uniform float4 lightColor,
-             uniform float  lightBrightness,
-             uniform float4 lightAmbient,
-             
-             uniform float3 eyePosWorld,
-             
-             uniform float4x4 worldToLightProj,
+uniform float  lightBrightness;
+uniform float3 lightDirection;
+uniform float4 lightColor;
+uniform float4 lightAmbient;
+uniform float shadowSoftness;
+uniform float3 eyePosWorld;
+uniform float4x4 worldToLightProj;
+uniform float4 scaleX;
+uniform float4 scaleY;
+uniform float4 offsetX;
+uniform float4 offsetY;
+uniform float4 atlasXOffset;
+uniform float4 atlasYOffset;
+uniform float4 zNearFarInvNearFar;
+uniform float4 lightMapParams;
+uniform float4 farPlaneScalePSSM;
+uniform float4 overDarkPSSM;
+uniform float2 fadeStartLength;
+uniform float2 atlasScale;
 
-             uniform float4 scaleX,
-             uniform float4 scaleY,
-             uniform float4 offsetX,
-             uniform float4 offsetY,
-             uniform float4 atlasXOffset,
-             uniform float4 atlasYOffset,
-             uniform float2 atlasScale,
-             uniform float4 zNearFarInvNearFar,
-             uniform float4 lightMapParams,
-
-             uniform float2 fadeStartLength,
-             uniform float4 farPlaneScalePSSM,
-             uniform float4 overDarkPSSM,
-             uniform float shadowSoftness ) : TORQUE_TARGET0
+float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
 {
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );

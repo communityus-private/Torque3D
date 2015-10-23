@@ -33,9 +33,10 @@ struct ConnectData
 TORQUE_UNIFORM_SAMPLER2D(layerTex, 0);
 TORQUE_UNIFORM_SAMPLER2D(textureMap, 1);
 
-float4 main(   ConnectData IN,
-               uniform float texId,
-               uniform float layerSize) : TORQUE_TARGET0
+uniform float texId;
+uniform float layerSize;
+
+float4 main( ConnectData IN ) : TORQUE_TARGET0
 {
    float4 layerSample = round( TORQUE_TEX2D( layerTex, IN.layerCoord ) * 255.0f );
 
