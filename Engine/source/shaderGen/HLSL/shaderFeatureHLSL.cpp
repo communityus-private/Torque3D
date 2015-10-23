@@ -1023,7 +1023,7 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    else
    {
       if (diffuseMapTex)
-         meta->addStatement(new GenOp("@ = @.Sample(@, @);\r\n", diffColor, diffuseMapTex, diffuseMap, inTex));
+         meta->addStatement(new GenOp("@ = @.Sample(@, @);\r\n", colorDecl, diffuseMapTex, diffuseMap, inTex));
       else
          meta->addStatement(new GenOp("@ = tex2D(@, @);\r\n", colorDecl, diffuseMap, inTex));
       if (!fd.features[MFT_Imposter])
