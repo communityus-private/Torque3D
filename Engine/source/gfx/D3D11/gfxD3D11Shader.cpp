@@ -138,6 +138,53 @@ GFXD3D11ConstBufferLayout::GFXD3D11ConstBufferLayout()
    mSubBuffers.reserve(CBUFFER_MAX);
 }
 
+bool GFXD3D11ConstBufferLayout::set(const ParamDesc& pd, const GFXShaderConstType constType, const U32 inSize, const void* data, U8* basePointer)
+{
+   PROFILE_SCOPE(GenericConstBufferLayout_set);
+   S32 size = inSize;
+   // Shader compilers like to optimize float4x4 uniforms into float3x3s.
+   // So long as the real paramater is a matrix of-some-type and the data
+   // passed in is a MatrixF ( which is will be ), we DO NOT have a
+   // mismatched const type.
+   AssertFatal(pd.constType == constType ||
+      (
+      (pd.constType == GFXSCT_Float2x2 ||
+      pd.constType == GFXSCT_Float3x3 ||
+      pd.constType == GFXSCT_Float4x4) &&
+      (constType == GFXSCT_Float2x2 ||
+      constType == GFXSCT_Float3x3 ||
+      constType == GFXSCT_Float4x4)
+      ), "Mismatched const type!");
+
+   // This "cute" bit of code allows us to support 2x3 and 3x3 matrices in shader constants but use our MatrixF class.  Yes, a hack. -BTR
+   switch (pd.constType)
+   {
+   case GFXSCT_Float2x2:
+   case GFXSCT_Float3x3:
+   case GFXSCT_Float4x4:
+      return setMatrix(pd, constType, size, data, basePointer);
+      break;
+      // TODO add other AlignedVector here
+   case GFXSCT_Float2:
+      if (size > sizeof(Point2F))
+         size = pd.size;
+   default:
+      break;
+   }
+
+   AssertFatal(pd.size >= size, "Not enough room in the buffer for this data!");
+
+   // Ok, we only set data if it's different than the data we already have, this maybe more expensive than just setting the data, but 
+   // we'll have to do some timings to see.  For example, the lighting shader constants rarely change, but we can't assume that at the
+   // renderInstMgr level, but we can check down here. -BTR
+   if (dMemcmp(basePointer + pd.offset, data, size) != 0)
+   {
+      dMemcpy(basePointer + pd.offset, data, size);
+      return true;
+   }
+   return false;
+}
+
 bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderConstType constType, const U32 size, const void* data, U8* basePointer)
 {
    PROFILE_SCOPE(GFXD3D11ConstBufferLayout_setMatrix);

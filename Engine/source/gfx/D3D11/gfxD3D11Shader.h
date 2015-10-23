@@ -236,6 +236,9 @@ public:
    /// We need to manually set the size due to D3D11 alignment
    void setSize(U32 size){ mBufferSize = size;}
 
+   /// Set a parameter, given a base pointer
+   virtual bool set(const ParamDesc& pd, const GFXShaderConstType constType, const U32 size, const void* data, U8* basePointer);
+
 protected:
    /// Set a matrix, given a base pointer
    virtual bool setMatrix(const ParamDesc& pd, const GFXShaderConstType constType, const U32 size, const void* data, U8* basePointer);
