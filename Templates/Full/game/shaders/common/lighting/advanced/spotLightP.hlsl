@@ -39,19 +39,18 @@ struct ConvexConnectP
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,2);
 
 #ifdef USE_COOKIE_TEX
 
 /// The texture for cookie rendering.
-TORQUE_UNIFORM_SAMPLER2D(cookieMap, 2);
+TORQUE_UNIFORM_SAMPLER2D(cookieMap, 4);
 
 #endif
 
-TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,3);
-
 TORQUE_UNIFORM_SAMPLER2D(lightBuffer,5);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer,6),
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer,7),
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer,6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer,7);
 
 uniform float4 rtParams0;
 

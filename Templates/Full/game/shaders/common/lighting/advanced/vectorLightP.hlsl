@@ -29,11 +29,11 @@
 #include "../../shaderModelAutoGen.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
-TORQUE_UNIFORM_SAMPLER2D(ShadowMap, 1);
-TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 
 #ifdef USE_SSAO_MASK
-TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
+TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 4);
 uniform float4 rtParams2;
 #endif
 
