@@ -190,7 +190,7 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
 float4 main( FarFrustumQuadConnectP IN) : COLOR0
 {
    // Emissive.
-   float4 matInfo = tex2D( matInfoBuffer, IN.uv0 );   
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, IN.uv0 );   
    bool emissive = getFlag( matInfo.r, 0 );
    if ( emissive )
    {
@@ -309,6 +309,6 @@ float4 main( FarFrustumQuadConnectP IN) : COLOR0
       lightColorOut = debugColor;
    #endif
 
-   float4 colorSample = tex2D( colorBuffer, IN.uv0 );
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
    return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }

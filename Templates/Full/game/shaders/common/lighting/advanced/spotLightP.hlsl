@@ -75,7 +75,7 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
    // Emissive.
-   float4 matInfo = tex2D( matInfoBuffer, uvScene );   
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );   
    bool emissive = getFlag( matInfo.r, 0 );
    if ( emissive )
    {
@@ -189,6 +189,6 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   float4 colorSample = tex2D( colorBuffer, uvScene );
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
    return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }
