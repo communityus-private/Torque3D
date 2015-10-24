@@ -187,7 +187,7 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                  dot( finalMask, overDarkPSSM ) ) );
 };
              
-float4 main( FarFrustumQuadConnectP IN) : COLOR0
+float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
 {
    // Emissive.
    float4 matInfo = TORQUE_TEX2D( matInfoBuffer, IN.uv0 );   
@@ -198,7 +198,7 @@ float4 main( FarFrustumQuadConnectP IN) : COLOR0
    }
    
    // Sample/unpack the normal/z data
-   float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
+   float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
    float depth = prepassSample.a;
 

@@ -25,14 +25,15 @@
 #include "shaders/common/torque.hlsl"
 
 
-float4 main( PFXVertToPix IN, 
-             uniform sampler2D colorBufferTex : register(S0),
-             uniform sampler2D lightPrePassTex : register(S1),
-             uniform sampler2D matInfoTex : register(S2)) : COLOR0
+TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
+TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,1);
+TORQUE_UNIFORM_SAMPLER2D(matInfoTex,2);
+
+float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
-   float4 lightBuffer = tex2D( lightPrePassTex, IN.uv0 );
-   float4 colorBuffer = tex2D( colorBufferTex, IN.uv0 );
-   float4 matInfo = tex2D( matInfoTex, IN.uv0 );
+   float4 lightBuffer = TORQUE_TEX2D( lightPrePassTex, IN.uv0 );
+   float4 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 );
+   float4 matInfo = TORQUE_TEX2D( matInfoTex, IN.uv0 );
    float specular = saturate(lightBuffer.a);
 
    // Diffuse Color Altered by Metalness
