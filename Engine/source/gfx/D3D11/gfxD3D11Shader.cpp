@@ -299,9 +299,9 @@ void GFXD3D11ShaderConstBuffer::_createBuffers()
       {
          D3D11_BUFFER_DESC cbDesc;
          cbDesc.ByteWidth = subBuffers[i].size;
-         cbDesc.Usage = D3D11_USAGE_DEFAULT;
+         cbDesc.Usage = D3D11_USAGE_DYNAMIC;
          cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
          cbDesc.MiscFlags = 0;
          cbDesc.StructureByteStride = 0;
 
@@ -323,9 +323,9 @@ void GFXD3D11ShaderConstBuffer::_createBuffers()
          // Create a pixel float constant buffer
          D3D11_BUFFER_DESC cbDesc;
          cbDesc.ByteWidth = subBuffers[i].size;
-         cbDesc.Usage = D3D11_USAGE_DEFAULT;
+         cbDesc.Usage = D3D11_USAGE_DYNAMIC;
          cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
          cbDesc.MiscFlags = 0;
          cbDesc.StructureByteStride = 0;
 
@@ -619,7 +619,15 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, 0, buf + desc.start, desc.size, 0);
+         hr = devCtx->Map(mConstantBuffersV[i], 0, D3D11_MAP_WRITE_DISCARD, NULL, &pConstData);
+
+         if (FAILED(hr))
+         {
+            AssertFatal(false, "failed to lock mConstantBuffersV");
+         }
+
+         memcpy(((U8*)pConstData.pData), buf + desc.start, desc.size);
+         devCtx->Unmap(mConstantBuffersV[i], 0);
          nbBuffers++;
       }
 
@@ -636,7 +644,15 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersP[i], 0, 0, buf + desc.start, desc.size, 0);
+         hr = devCtx->Map(mConstantBuffersP[i], 0, D3D11_MAP_WRITE_DISCARD, NULL, &pConstData);
+
+         if (FAILED(hr))
+         {
+            AssertFatal(false, "failed to lock mConstantBuffersP");
+         }
+
+         memcpy(((U8*)pConstData.pData), buf + desc.start, desc.size);
+         devCtx->Unmap(mConstantBuffersP[i], 0);
          nbBuffers++;
       }
 
