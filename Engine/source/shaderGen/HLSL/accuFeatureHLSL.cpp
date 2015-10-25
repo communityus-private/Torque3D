@@ -65,7 +65,11 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    // accu map
    Var *accuMap = new Var;
-   accuMap->setType( "sampler2D" );
+   if (mIsDirect3D11)
+      accuMap->setType("SamplerState");
+   else
+      accuMap->setType( "sampler2D" );
+
    accuMap->setName( "accuMap" );
    accuMap->uniform = true;
    accuMap->sampler = true;
@@ -140,7 +144,18 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    }
 
    // get the accu pixel color
-   meta->addStatement( new GenOp( "   @ = tex2D(@, @ * @);\r\n", colorAccuDecl, accuMap, inTex, accuScale ) );
+   if (mIsDirect3D11)
+   {
+      Var *accuMapTex = new Var;
+      accuMapTex->setType("Texture2D");
+      accuMapTex->setName("accuMapTex");
+      accuMapTex->uniform = true;
+      accuMapTex->texture2D = true;
+      accuMapTex->constNum = accuMap->constNum;
+      meta->addStatement(new GenOp("   @ = @.Sample(@, @ * @);\r\n", colorAccuDecl, accuMapTex, accuMap, inTex, accuScale));
+   }
+   else
+      meta->addStatement( new GenOp( "   @ = tex2D(@, @ * @);\r\n", colorAccuDecl, accuMap, inTex, accuScale ) );
 
    // scale up normals
    meta->addStatement( new GenOp( "   @.xyz = @.xyz * 2.0 - 0.5;\r\n", bumpNorm, bumpNorm ) );
@@ -149,7 +164,7 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    meta->addStatement( new GenOp( "   @.z *= @*2.0;\r\n", accuVec, accuDirection ) );
 
    // saturate based on strength
-   meta->addStatement( new GenOp( "   @ = saturate( dot( @, @.xyz * pow(@, 5) ) );\r\n", plcAccu, bumpNorm, accuVec, accuStrength ) );
+   meta->addStatement( new GenOp( "   @ = saturate( dot( @, float4(@.xyz,1.0) * pow(@, 5) ) );\r\n", plcAccu, bumpNorm, accuVec, accuStrength ) );
 
    // add coverage
    meta->addStatement( new GenOp( "   @.a += (2 * pow(@/2, 5)) - 0.5;\r\n", accuPlc, accuCoverage ) );
