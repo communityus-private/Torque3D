@@ -36,7 +36,7 @@ protected:
    bool				mLocked;
 
    U32 mLockedSubresource;
-   ID3D11Texture1D *mD3DTexture;
+   ID3D11Resource *mD3DTexture;
 
    // used for z buffers...
    ID3D11Texture2D *mD3DSurface;
@@ -50,7 +50,7 @@ public:
    GFXD3D11TextureObject( GFXDevice * d, GFXTextureProfile *profile);
    ~GFXD3D11TextureObject();
 
-   ID3D11Texture1D*     getTex(){ return mD3DTexture; }
+   ID3D11Resource*      getResource(){ return mD3DTexture; }
    ID3D11Texture2D*     get2DTex(){ return (ID3D11Texture2D*) mD3DTexture; }
    ID3D11Texture2D**    get2DTexPtr(){ return (ID3D11Texture2D**) &mD3DTexture; }
    ID3D11Texture3D*		get3DTex(){ return (ID3D11Texture3D*) mD3DTexture; }
