@@ -620,7 +620,7 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0s);
+         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
