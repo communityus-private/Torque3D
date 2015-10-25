@@ -636,6 +636,7 @@ GFXD3D11Device::~GFXD3D11Device()
    releaseDefaultPoolResources();
 
    mD3DDeviceContext->ClearState();
+   mD3DDeviceContext->Flush();
 
    // Free the vertex declarations.
    VertexDeclMap::Iterator iter = mVertexDecls.begin();
