@@ -301,7 +301,7 @@ void GFXD3D11ShaderConstBuffer::_createBuffers()
          cbDesc.ByteWidth = subBuffers[i].size;
          cbDesc.Usage = D3D11_USAGE_DEFAULT;
          cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.CPUAccessFlags = 0;
          cbDesc.MiscFlags = 0;
          cbDesc.StructureByteStride = 0;
 
@@ -325,7 +325,7 @@ void GFXD3D11ShaderConstBuffer::_createBuffers()
          cbDesc.ByteWidth = subBuffers[i].size;
          cbDesc.Usage = D3D11_USAGE_DEFAULT;
          cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.CPUAccessFlags = 0;
          cbDesc.MiscFlags = 0;
          cbDesc.StructureByteStride = 0;
 
