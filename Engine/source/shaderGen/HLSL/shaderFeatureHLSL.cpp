@@ -2024,10 +2024,21 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    LangElement *texCube = NULL;
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
    Var *smoothness = (Var*)LangElement::find("smoothness");
+
    if (smoothness) //try to grab smoothness directly
-      texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, smoothness);
-   else if (glossColor) //failing that, try and find color data
-         texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @.b)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, glossColor);
+   {
+      if (cubeMapTex)
+         texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @)*11.0 + 1.0, 8.0))", cubeMapTex, cubeMap, reflectVec, smoothness);
+      else
+         texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, smoothness);
+   }
+   else if (glossColor)//failing that, try and find color data
+   {
+      if (cubeMapTex)
+         texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMapTex, cubeMap, reflectVec, glossColor);
+      else
+         texCube = new GenOp("texCUBElod( @, float4(@), min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, glossColor);
+   }
    else //failing *that*, just draw the cubemap
    {
       if (cubeMapTex)
@@ -2035,6 +2046,7 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       else
          texCube = new GenOp("texCUBE( @, @ )", cubeMap, reflectVec);
    }
+
    LangElement *lerpVal = NULL;
    Material::BlendOp blendOp = Material::LerpAlpha;
 
@@ -2068,9 +2080,9 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    {
        //metalness: black(0) = color, white(1) = reflection
        if (fd.features[MFT_ToneMap])
-          meta->addStatement(new GenOp("   @ *= pow(@,2.2);\r\n", targ, texCube));
+          meta->addStatement(new GenOp("   @ *= toLinear(@);\r\n", targ, texCube));
        else
-          meta->addStatement(new GenOp("   @ = pow(@,2.2);\r\n", targ, texCube));
+          meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", targ, texCube));
    }
    else
    {
