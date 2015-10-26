@@ -57,13 +57,31 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
 
    // create texture var
    Var *specularMap = new Var;
-   specularMap->setType( "sampler2D" );
    specularMap->setName( "specularMap" );
    specularMap->uniform = true;
    specularMap->sampler = true;
    specularMap->constNum = Var::getTexUnitNum();
-   LangElement *texOp = new GenOp( "tex2D(@, @)", specularMap, texCoord );
 
+   Var *specularMapTex = NULL;
+   LangElement *texOp = NULL;
+   if (mIsDirect3D11)
+   {
+      specularMap->setType("SamplerState");
+      specularMapTex = new Var;
+      specularMapTex->setName("specularMapTex");
+      specularMapTex->setType("Texture2D");
+      specularMapTex->uniform = true;
+      specularMapTex->texture2D = true;
+      specularMapTex->constNum = specularMap->constNum;
+
+      texOp = new GenOp("   @.Sample(@, @)", specularMapTex, specularMap, texCoord);
+   }
+   else
+   {
+      specularMap->setType("sampler2D");
+      texOp = new GenOp("tex2D(@, @)", specularMap, texCoord);
+   }
+   
    Var *specularColor = (Var*)LangElement::find("specularColor");
    if (!specularColor) specularColor = new Var("specularColor", "float4");
    Var *metalness = (Var*)LangElement::find("metalness");

@@ -25,21 +25,22 @@
 #include "shaders/common/torque.hlsl"
 
 
-float4 main( PFXVertToPix IN, 
-             uniform sampler2D colorBufferTex : register(S0),
-             uniform sampler2D lightPrePassTex : register(S1),
-             uniform sampler2D matInfoTex : register(S2),
-             uniform sampler2D lightMapTex : register(S3)) : COLOR0
+TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
+TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,1);
+TORQUE_UNIFORM_SAMPLER2D(matInfoTex,2);
+TORQUE_UNIFORM_SAMPLER2D(lightMapTex,3);
+
+float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
-   float3 lightBuffer = tex2D( lightPrePassTex, IN.uv0 ).rgb;
-   float3 colorBuffer = tex2D( colorBufferTex, IN.uv0 ).rgb;
-   float3 lightMapBuffer = tex2D( lightMapTex, IN.uv0 ).rgb;
-   float metalness = tex2D( matInfoTex, IN.uv0 ).a;
+   float3 lightBuffer = TORQUE_TEX2D( lightPrePassTex, IN.uv0 ).rgb;
+   float3 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb;
+   float3 lightMapBuffer = TORQUE_TEX2D( lightMapTex, IN.uv0 ).rgb;
+   float metalness = TORQUE_TEX2D( matInfoTex, IN.uv0 ).a;
    
    float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
    float3 reflectColor = lerp( colorBuffer, lightMapBuffer, metalness);
    colorBuffer = diffuseColor + pow(reflectColor,2.2);
    colorBuffer *= lightBuffer;
    
-   return hdrEncode( float4(colorBuffer, 1.0) );   
+   return hdrEncode( float4(colorBuffer, 1.0) );
 }
