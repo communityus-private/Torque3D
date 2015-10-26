@@ -39,7 +39,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    
    float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
    float3 reflectColor = lerp( colorBuffer, lightMapBuffer, metalness);
-   colorBuffer = diffuseColor + pow(reflectColor,2.2);
+   colorBuffer = diffuseColor + toLinear(reflectColor);
    colorBuffer *= lightBuffer;
    
    return hdrEncode( float4(colorBuffer, 1.0) );

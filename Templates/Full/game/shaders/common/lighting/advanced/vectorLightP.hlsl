@@ -275,7 +275,7 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
    #endif // !NO_SHADOW
 
    // Specular term
-   float4 colorSample = tex2D( colorBuffer, IN.uv0 );
+   float4 colorSample = TORQUE_TEX2D(colorBuffer, IN.uv0);
    float specular = 0;
    float3 real_specular = AL_CalcSpecular(  colorSample.rgb,
                                       lightColor.rgb,
@@ -292,7 +292,7 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
-      float ao = 1.0 - TORQUE_TEX2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams2 ) ).r;
+      float ao = 1.0 - TORQUE_TEX2D(ssaoMask, viewportCoordToRenderTarget(IN.uv0.xy, rtParams2)).r;
       addToResult *= ao;
    #endif
 
