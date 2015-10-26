@@ -33,7 +33,7 @@ TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 
 #ifdef USE_SSAO_MASK
-TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 4);
+TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
 uniform float4 rtParams2;
 #endif
 
