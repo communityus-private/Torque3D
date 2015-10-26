@@ -25,7 +25,6 @@
 struct Appdata
 {
 	float3 position   : POSITION;
-	float4 color      : COLOR;
 	float2 texCoord   : TEXCOORD;
 };
 

@@ -301,7 +301,7 @@ void GFXD3D11ShaderConstBuffer::_createBuffers()
          cbDesc.ByteWidth = subBuffers[i].size;
          cbDesc.Usage = D3D11_USAGE_DEFAULT;
          cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.CPUAccessFlags = 0;
          cbDesc.MiscFlags = 0;
          cbDesc.StructureByteStride = 0;
 
@@ -325,7 +325,7 @@ void GFXD3D11ShaderConstBuffer::_createBuffers()
          cbDesc.ByteWidth = subBuffers[i].size;
          cbDesc.Usage = D3D11_USAGE_DEFAULT;
          cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-         cbDesc.CPUAccessFlags = NULL;
+         cbDesc.CPUAccessFlags = 0;
          cbDesc.MiscFlags = 0;
          cbDesc.StructureByteStride = 0;
 
@@ -615,11 +615,12 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mVertexConstBufferLayout->getSubBufferDesc();
       // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mVertexConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, 0, buf + desc.start, desc.size, 0);
+         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
@@ -632,11 +633,12 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mPixelConstBufferLayout->getSubBufferDesc();
       // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mPixelConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersP[i], 0, 0, buf + desc.start, desc.size, 0);
+         devCtx->UpdateSubresource(mConstantBuffersP[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
