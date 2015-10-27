@@ -28,6 +28,8 @@
 #include "gfx/gfxResource.h"
 #include "gfx/gfxTarget.h"
 
+const U32 CubeFaces = 6;
+
 class GFXD3D11Cubemap : public GFXCubemap
 {
 public:
@@ -45,16 +47,24 @@ public:
    virtual void zombify();
    virtual void resurrect();
 
+   // Get functions
+   ID3D11ShaderResourceView* getSRView();
+   ID3D11RenderTargetView* getRTView(U32 faceIdx);
+   ID3D11RenderTargetView** getRTViewArray();
+   ID3D11DepthStencilView* getDSView();
+   ID3D11Texture2D* get2DTex();
+
 private:
 
    friend class GFXD3D11TextureTarget;
    friend class GFXD3D11Device;
 
-   ID3D11Texture2D*				m_pTexture;
-   ID3D11ShaderResourceView*	m_pShaderResourceView;
-   ID3D11RenderTargetView*		m_pSurfaces[6];
-   ID3D11DepthStencilView*		m_pDepthStencilSurfaces;
+   ID3D11Texture2D* mTexture;
+   ID3D11ShaderResourceView* mSRView; // for shader resource input
+   ID3D11RenderTargetView* mRTView[CubeFaces]; // for render targets, 6 faces of the cubemap
+   ID3D11DepthStencilView* mDSView; //render target view for depth stencil
 
+   bool mAutoGenMips;
    bool mDynamic;
    U32  mTexSize;
    GFXFormat mFaceFormat;

@@ -25,14 +25,15 @@
 #include "gfx/gfxTextureManager.h"
 #include "gfx/D3D11/gfxD3D11EnumTranslate.h"
 
-GFXD3D11Cubemap::GFXD3D11Cubemap() : m_pTexture(NULL), m_pShaderResourceView(NULL), m_pDepthStencilSurfaces(NULL)
+GFXD3D11Cubemap::GFXD3D11Cubemap() : mTexture(NULL), mSRView(NULL), mDSView(NULL)
 {
 	mDynamic = false;
+   mAutoGenMips = false;
 	mFaceFormat = GFXFormatR8G8B8A8;
 
-	for(U32 i = 0; i < 6; i++)
+   for (U32 i = 0; i < CubeFaces; i++)
 	{
-		m_pSurfaces[i] = NULL;
+      mRTView[i] = NULL;
 	}
 }
 
@@ -46,14 +47,14 @@ void GFXD3D11Cubemap::releaseSurfaces()
 	if (mDynamic)
 		GFXTextureManager::removeEventDelegate(this, &GFXD3D11Cubemap::_onTextureEvent);
 
-	for (U32 i = 0; i < 6; i++)
+   for (U32 i = 0; i < CubeFaces; i++)
 	{
-		SAFE_RELEASE(m_pSurfaces[i]);
+      SAFE_RELEASE(mRTView[i]);
 	}
 
-	SAFE_RELEASE(m_pDepthStencilSurfaces);
-	SAFE_RELEASE(m_pShaderResourceView);
-	SAFE_RELEASE(m_pTexture);
+   SAFE_RELEASE(mDSView);
+   SAFE_RELEASE(mSRView);
+	SAFE_RELEASE(mTexture);
 }
 
 void GFXD3D11Cubemap::_onTextureEvent(GFXTexCallbackCode code)
@@ -66,21 +67,10 @@ void GFXD3D11Cubemap::_onTextureEvent(GFXTexCallbackCode code)
 
 bool GFXD3D11Cubemap::isCompressed(GFXFormat format)
 {
-   bool compressed = false;
-   switch (format)
-   {
-      case GFXFormatDXT1:
-      case GFXFormatDXT2:
-      case GFXFormatDXT3:
-      case GFXFormatDXT4:
-      case GFXFormatDXT5:
-         compressed = true;
-         break;
+   if (format >= GFXFormatDXT1 && format <= GFXFormatDXT5)
+      return true;
 
-      default:
-         break;
-   }
-   return compressed;
+   return false;
 }
 
 void GFXD3D11Cubemap::initStatic(GFXTexHandle *faces)
@@ -91,26 +81,25 @@ void GFXD3D11Cubemap::initStatic(GFXTexHandle *faces)
 	// NOTE - check tex sizes on all faces - they MUST be all same size
 	mTexSize = faces->getWidth();
 	mFaceFormat = faces->getFormat();
+   bool compressed = isCompressed(mFaceFormat);
 
    UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
    UINT miscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
-   if (!isCompressed(mFaceFormat))
+   if (!compressed)
    {
       bindFlags |= D3D11_BIND_RENDER_TARGET;
       miscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
    }
 
-   bool autoGenMips = false;
-
    U32 mipLevels = faces->getPointer()->getMipLevels();
    if (mipLevels > 1)
-      autoGenMips = true;
+      mAutoGenMips = true;
 
 	D3D11_TEXTURE2D_DESC desc;
 	ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
 	desc.Width = mTexSize;
 	desc.Height = mTexSize;
-   desc.MipLevels = autoGenMips ? 0 : mipLevels;
+   desc.MipLevels = mAutoGenMips ? 0 : mipLevels;
 	desc.ArraySize = 6;
 	desc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	desc.SampleDesc.Count = 1;
@@ -120,47 +109,46 @@ void GFXD3D11Cubemap::initStatic(GFXTexHandle *faces)
 	desc.MiscFlags = miscFlags;
 	desc.CPUAccessFlags = 0;
 
-	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &m_pTexture);
+	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &mTexture);
 
 	if (FAILED(hr))
 	{
 		AssertFatal(false, "GFXD3D11Cubemap:initStatic(GFXTexhandle *faces) - failed to create texcube texture");
 	}
 
-   for (U32 i = 0; i < 6; i++)
+   for (U32 i = 0; i < CubeFaces; i++)
    {
       GFXD3D11TextureObject *texObj = static_cast<GFXD3D11TextureObject*>((GFXTextureObject*)faces[i]);
       U32 subResource = D3D11CalcSubresource(0, i, mipLevels);
-      D3D11DEVICECONTEXT->CopySubresourceRegion(m_pTexture, subResource, 0, 0, 0, texObj->get2DTex(), 0, NULL);
+      D3D11DEVICECONTEXT->CopySubresourceRegion(mTexture, subResource, 0, 0, 0, texObj->get2DTex(), 0, NULL);
    }
    
 	D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
 	SMViewDesc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	SMViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-   SMViewDesc.TextureCube.MipLevels = autoGenMips ? -1 : mipLevels;
+   SMViewDesc.TextureCube.MipLevels = mAutoGenMips ? -1 : mipLevels;
 	SMViewDesc.TextureCube.MostDetailedMip = 0;
 
-	hr = D3D11DEVICE->CreateShaderResourceView(m_pTexture, &SMViewDesc, &m_pShaderResourceView);
+	hr = D3D11DEVICE->CreateShaderResourceView(mTexture, &SMViewDesc, &mSRView);
 	if (FAILED(hr))
 	{
 		AssertFatal(false, "GFXD3D11Cubemap::initStatic(GFXTexHandle *faces) - texcube shader resource view  creation failure");
 	} 
 
-   if (autoGenMips)
-	   D3D11DEVICECONTEXT->GenerateMips(m_pShaderResourceView);
-
+   if (mAutoGenMips && !compressed)
+      D3D11DEVICECONTEXT->GenerateMips(mSRView);
 }
 
 void GFXD3D11Cubemap::initStatic(DDSFile *dds)
 {
-    AssertFatal(dds, "GFXD3D11Cubemap::initStatic - Got null DDS file!");
-    AssertFatal(dds->isCubemap(), "GFXD3D11Cubemap::initStatic - Got non-cubemap DDS file!");
-    AssertFatal(dds->mSurfaces.size() == 6, "GFXD3D11Cubemap::initStatic - DDS has less than 6 surfaces!");  
+   AssertFatal(dds, "GFXD3D11Cubemap::initStatic - Got null DDS file!");
+   AssertFatal(dds->isCubemap(), "GFXD3D11Cubemap::initStatic - Got non-cubemap DDS file!");
+   AssertFatal(dds->mSurfaces.size() == 6, "GFXD3D11Cubemap::initStatic - DDS has less than 6 surfaces!");  
    
-    // NOTE - check tex sizes on all faces - they MUST be all same size
-    mTexSize = dds->getWidth();
-    mFaceFormat = dds->getFormat();
-    U32 levels = dds->getMipLevels();
+   // NOTE - check tex sizes on all faces - they MUST be all same size
+   mTexSize = dds->getWidth();
+   mFaceFormat = dds->getFormat();
+   U32 levels = dds->getMipLevels();
 
 	D3D11_TEXTURE2D_DESC desc;
 
@@ -169,7 +157,7 @@ void GFXD3D11Cubemap::initStatic(DDSFile *dds)
 	desc.MipLevels = levels;
 	desc.ArraySize = 6;
 	desc.Format = GFXD3D11TextureFormat[mFaceFormat];
-	desc.SampleDesc.Count = 0;
+	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_IMMUTABLE;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -178,7 +166,7 @@ void GFXD3D11Cubemap::initStatic(DDSFile *dds)
 
 	D3D11_SUBRESOURCE_DATA* pData = new D3D11_SUBRESOURCE_DATA[6 + levels];
 
-	for(U32 i=0; i<6; i++)
+   for (U32 i = 0; i<CubeFaces; i++)
 	{
 		if (!dds->mSurfaces[i])
 			continue;
@@ -191,7 +179,7 @@ void GFXD3D11Cubemap::initStatic(DDSFile *dds)
 		}
 	}
 
-	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, pData, &m_pTexture);
+	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, pData, &mTexture);
 
 	delete [] pData;
 
@@ -201,7 +189,7 @@ void GFXD3D11Cubemap::initStatic(DDSFile *dds)
 	SMViewDesc.TextureCube.MipLevels =  levels;
 	SMViewDesc.TextureCube.MostDetailedMip = 0;
 
-	hr = D3D11DEVICE->CreateShaderResourceView(m_pTexture, &SMViewDesc, &m_pShaderResourceView);
+	hr = D3D11DEVICE->CreateShaderResourceView(mTexture, &SMViewDesc, &mSRView);
 
 	if(FAILED(hr)) 
 	{
@@ -215,6 +203,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 		GFXTextureManager::addEventDelegate(this, &GFXD3D11Cubemap::_onTextureEvent);
 
 	mDynamic = true;
+   mAutoGenMips = true;
 	mTexSize = texSize;
 	mFaceFormat = faceFormat;
 
@@ -225,29 +214,29 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 	desc.MipLevels = 0;
 	desc.ArraySize = 6;
 	desc.Format = GFXD3D11TextureFormat[mFaceFormat];
-	desc.SampleDesc.Count = 0;
+	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
-	desc.Usage = D3D11_USAGE_DYNAMIC;
+	desc.Usage = D3D11_USAGE_DEFAULT;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
-	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
-	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &m_pTexture);
+	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &mTexture);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
 	SMViewDesc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	SMViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	SMViewDesc.TextureCube.MipLevels =  0;
+	SMViewDesc.TextureCube.MipLevels =  1;
 	SMViewDesc.TextureCube.MostDetailedMip = 0;
 
-	hr = D3D11DEVICE->CreateShaderResourceView(m_pTexture, &SMViewDesc, &m_pShaderResourceView);
+	hr = D3D11DEVICE->CreateShaderResourceView(mTexture, &SMViewDesc, &mSRView);
 
 	if(FAILED(hr)) 
 	{
 		AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateTexture2D call failure");
 	}
 
-	D3D11DEVICECONTEXT->GenerateMips(m_pShaderResourceView);
+   D3D11DEVICECONTEXT->GenerateMips(mSRView);
 
 	D3D11_RENDER_TARGET_VIEW_DESC viewDesc;
 	viewDesc.Format = desc.Format;
@@ -255,10 +244,10 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 	viewDesc.Texture2DArray.ArraySize = 1;
 	viewDesc.Texture2DArray.MipSlice = 0;
 
-	for (U32 i = 0; i < 6; i++)
+   for (U32 i = 0; i < CubeFaces; i++)
 	{
 		viewDesc.Texture2DArray.FirstArraySlice = i;
-		hr = D3D11DEVICE->CreateRenderTargetView(m_pTexture, &viewDesc, &m_pSurfaces[i]);
+      hr = D3D11DEVICE->CreateRenderTargetView(mTexture, &viewDesc, &mRTView[i]);
 
 		if(FAILED(hr)) 
 		{
@@ -266,39 +255,41 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 		}
 	}
 
-    D3D11_TEXTURE2D_DESC depthTexDesc;
-    depthTexDesc.Width = mTexSize;
-    depthTexDesc.Height = mTexSize;
-    depthTexDesc.MipLevels = 1;
-    depthTexDesc.ArraySize = 1;
-    depthTexDesc.SampleDesc.Count = 0;
-    depthTexDesc.SampleDesc.Quality = 0;
-    depthTexDesc.Format = DXGI_FORMAT_D32_FLOAT;
-    depthTexDesc.Usage = D3D11_USAGE_DYNAMIC;
-    depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    depthTexDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    depthTexDesc.MiscFlags = 0;
+   D3D11_TEXTURE2D_DESC depthTexDesc;
+   depthTexDesc.Width = mTexSize;
+   depthTexDesc.Height = mTexSize;
+   depthTexDesc.MipLevels = 1;
+   depthTexDesc.ArraySize = 1;
+   depthTexDesc.SampleDesc.Count = 1;
+   depthTexDesc.SampleDesc.Quality = 0;
+   depthTexDesc.Format = DXGI_FORMAT_D32_FLOAT;
+   depthTexDesc.Usage = D3D11_USAGE_DEFAULT;
+   depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+   depthTexDesc.CPUAccessFlags = 0;
+   depthTexDesc.MiscFlags = 0;
 
-    ID3D11Texture2D* depthTex = 0;
-    hr = D3D11DEVICE->CreateTexture2D(&depthTexDesc, 0, &depthTex);
+   ID3D11Texture2D* depthTex = 0;
+   hr = D3D11DEVICE->CreateTexture2D(&depthTexDesc, 0, &depthTex);
 
 	if(FAILED(hr)) 
 	{
 		AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateTexture2D for depth stencil call failure");
 	}
 
-    // Create the depth stencil view for the entire cube
-    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
-    dsvDesc.Format = GFXD3D11TextureFormat[mFaceFormat];
-    dsvDesc.Flags  = 0;
-    dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-    dsvDesc.Texture2D.MipSlice = 0;
-    hr = D3D11DEVICE->CreateDepthStencilView(depthTex, &dsvDesc, &m_pDepthStencilSurfaces);
+   // Create the depth stencil view for the entire cube
+   D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+   dsvDesc.Format = depthTexDesc.Format; //The format must match the depth texture we created above
+   dsvDesc.Flags  = 0;
+   dsvDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+   dsvDesc.Texture2D.MipSlice = 0;
+   hr = D3D11DEVICE->CreateDepthStencilView(depthTex, &dsvDesc, &mDSView);
 
 	if(FAILED(hr)) 
 	{
 		AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateDepthStencilView call failure");
 	}
+
+   SAFE_RELEASE(depthTex);
 }
 
 //-----------------------------------------------------------------------------
@@ -312,15 +303,15 @@ void GFXD3D11Cubemap::setToTexUnit(U32 tuNum)
 		ID3D11RenderTargetView*	pSurfaces;
 		ID3D11DepthStencilView*	pDepthStencilSurfaces;
 
-		D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &m_pShaderResourceView);
+		D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &mSRView);
 
 		D3D11DEVICECONTEXT->OMGetRenderTargets(1, &pSurfaces, &pDepthStencilSurfaces);
 
-		for(U32 i = 0; i < 6; i++)
+      for (U32 i = 0; i < CubeFaces; i++)
 		{
-			D3D11DEVICECONTEXT->OMSetRenderTargets(1, &m_pSurfaces[i], m_pDepthStencilSurfaces);
-			D3D11DEVICECONTEXT->ClearRenderTargetView(m_pSurfaces[i], ClearColor);
-			D3D11DEVICECONTEXT->ClearDepthStencilView(m_pDepthStencilSurfaces, D3D11_CLEAR_DEPTH, 1.0f, 0);
+         D3D11DEVICECONTEXT->OMSetRenderTargets(1, &mRTView[i], mDSView);
+         D3D11DEVICECONTEXT->ClearRenderTargetView(mRTView[i], ClearColor);
+         D3D11DEVICECONTEXT->ClearDepthStencilView(mDSView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 		}
 
 		D3D11DEVICECONTEXT->OMSetRenderTargets(1, &pSurfaces, pDepthStencilSurfaces);
@@ -328,7 +319,7 @@ void GFXD3D11Cubemap::setToTexUnit(U32 tuNum)
 
 	else
 	{
-		D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &m_pShaderResourceView);
+      D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &mSRView);
 	}
 }
 
@@ -344,4 +335,31 @@ void GFXD3D11Cubemap::resurrect()
    // Static cubemaps are handled by D3D
    if( mDynamic )
       initDynamic( mTexSize, mFaceFormat );
+}
+
+ID3D11ShaderResourceView* GFXD3D11Cubemap::getSRView()
+{
+   return mSRView;
+}
+
+ID3D11RenderTargetView* GFXD3D11Cubemap::getRTView(U32 faceIdx)
+{
+   AssertFatal(faceIdx < CubeFaces, "GFXD3D11Cubemap::getRTView - face index out of bounds");
+
+   return mRTView[faceIdx];
+}
+
+ID3D11RenderTargetView** GFXD3D11Cubemap::getRTViewArray()
+{
+   return mRTView;
+}
+
+ID3D11DepthStencilView* GFXD3D11Cubemap::getDSView()
+{
+   return mDSView;
+}
+
+ID3D11Texture2D* GFXD3D11Cubemap::get2DTex()
+{
+   return mTexture;
 }
