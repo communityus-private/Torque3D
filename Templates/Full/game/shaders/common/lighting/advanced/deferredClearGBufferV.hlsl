@@ -22,37 +22,25 @@
 
 #include "../../shaderModel.hlsl"
 
-struct Connect
+struct VertIn
 {
-   float4 pos : TORQUE_POSITION;
-};
-
-struct Fragout
-{
-   float4 col0 : TORQUE_TARGET0;
-   float4 col1 : TORQUE_TARGET1;
-   float4 col2 : TORQUE_TARGET2;
-   float4 col3 : TORQUE_TARGET3;
+   float3 pos        : POSITION;
+   float4 color      : COLOR;
 };
 
 //-----------------------------------------------------------------------------
 // Main                                                                        
 //-----------------------------------------------------------------------------
-Fragout main( Connect IN )
+
+struct Connect
 {
-   Fragout OUT;
-   
-   // Clear Prepass Buffer ( Normals/Depth );
-   OUT.col0 =  float4(1.0, 1.0, 1.0, 1.0);
+   float4 pos : TORQUE_POSITION;
+};
 
-   // Clear Color Buffer.
-   OUT.col1 = float4(0.0, 0.0, 0.0, 1.0);
-
-   // Clear Material Info Buffer.
-   OUT.col2 = float4(0.0, 0.0, 0.0, 1.0);
-   
-   // Clear Light Info Buffer.
-   OUT.col3 = float4(0.0, 0.0, 0.0, 1.0);
+Connect main(VertIn IN)
+{
+   Connect OUT;
+   OUT.pos = float4(IN.pos, 1.0);
 
    return OUT;
 }
