@@ -37,7 +37,7 @@ uniform float2 oneOverTargetSize;
 
 float4 main( VertToPix IN ) : TORQUE_TARGET0
 {	
-	float4 OUT = tex2D( diffuseMap, IN.uv ) * weight[0];
+	float4 OUT = TORQUE_TEX2D( diffuseMap, IN.uv ) * weight[0];
 			        
 	for ( int i=1; i < 3; i++ )
 	{
