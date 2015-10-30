@@ -1560,13 +1560,14 @@ void GFXD3D11Device::setVertexDecl( const GFXVertexDecl *decl )
 //-----------------------------------------------------------------------------
 void GFXD3D11Device::setTextureInternal( U32 textureUnit, const GFXTextureObject *texture)
 {
-   GFXD3D11TextureObject  *tex = (GFXD3D11TextureObject*)(texture);
    if( texture == NULL )
    {
 		ID3D11ShaderResourceView *pView = NULL;
 		mD3DDeviceContext->PSSetShaderResources(textureUnit, 1, &pView);
 		return;
    }
+
+   GFXD3D11TextureObject  *tex = (GFXD3D11TextureObject*)(texture);
    mD3DDeviceContext->PSSetShaderResources(textureUnit, 1, tex->getSRViewPtr());
 }
 
