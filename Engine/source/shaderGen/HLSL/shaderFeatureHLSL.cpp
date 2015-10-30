@@ -1886,8 +1886,11 @@ void ReflectCubeFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
     cubeNormal->setType( "float3" );
     LangElement *cubeNormDecl = new DecOp( cubeNormal );
 
-    meta->addStatement( new GenOp( "   @ = normalize( mul(@, float4(normalize(@),0.0)).xyz );\r\n", 
-                        cubeNormDecl, cubeTrans, inNormal ) );
+    meta->addStatement(new GenOp("   @ = ( mul( (@),  float4(@, 0) ) ).xyz;\r\n",
+       cubeNormDecl, cubeTrans, inNormal));
+
+    meta->addStatement(new GenOp("   @ = bool(length(@)) ? normalize(@) : @;\r\n",
+       cubeNormal, cubeNormal, cubeNormal, cubeNormal));
 
     // grab the eye position
     Var *eyePos = (Var*)LangElement::find( "eyePosWorld" );
