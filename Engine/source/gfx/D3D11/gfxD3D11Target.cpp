@@ -164,7 +164,9 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
          }
       }
    }
+
 }
+
 
 void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32 face, U32 mipLevel/*=0*/ )
 {
@@ -184,8 +186,6 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32
    // Cast the texture object to D3D...
    AssertFatal(!tex || static_cast<GFXD3D11Cubemap*>(tex), "GFXD3DTextureTarget::attachTexture - invalid cubemap object.");
 
-   //GFXD3D11Cubemap *cube = static_cast<GFXD3D11Cubemap*>(tex);
-
    if(slot == Color0)
    {
       mTargetSize = Point2I::Zero;
@@ -199,6 +199,12 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32
       return;
    }
 
+   GFXD3D11Cubemap *cube = static_cast<GFXD3D11Cubemap*>(tex);
+
+   mTargets[slot] = cube->get2DTex();
+   mTargets[slot]->AddRef();
+   mTargetViews[slot] = cube->getRTView(face);
+   mTargetViews[slot]->AddRef();
    
    // Update surface size
    if(slot == Color0)
@@ -215,6 +221,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32
          mTargetFormat = (GFXFormat)format;
       }
    }
+
 }
 
 void GFXD3D11TextureTarget::activate()
@@ -225,21 +232,19 @@ void GFXD3D11TextureTarget::activate()
   
    // Clear the state indicator.
    stateApplied();
-   GFXD3D11Device *dev = D3D11;
    
    // Now set all the new surfaces into the appropriate slots.
-   ID3D11RenderTargetView* rtViews [8]= {NULL, NULL, NULL, NULL, NULL, NULL,NULL,NULL};
-   
-   //clear ther rendertargets first
-   dev->getDeviceContext()->OMSetRenderTargets(8, rtViews, NULL);
+   ID3D11RenderTargetView* rtViews[8] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+   D3D11DEVICECONTEXT->OMSetRenderTargets(8, rtViews, NULL);
 
    ID3D11DepthStencilView* dsView = (ID3D11DepthStencilView*)(mTargetViews[GFXTextureTarget::DepthStencil]);
-   for (int i = 0; i < 4; i++)
+   for (U32 i = 0; i < 4; i++)
    {
       rtViews[i] = (ID3D11RenderTargetView*)mTargetViews[GFXTextureTarget::Color0 + i];
    }
 
-   dev->getDeviceContext()->OMSetRenderTargets(MaxRenderSlotId, rtViews, dsView);
+   D3D11DEVICECONTEXT->OMSetRenderTargets(MaxRenderSlotId, rtViews, dsView);
+
 }
 
 void GFXD3D11TextureTarget::deactivate()
@@ -259,7 +264,7 @@ void GFXD3D11TextureTarget::resolve()
       if (mResolveTargets[i])
       {
          D3D11_TEXTURE2D_DESC desc;
-		 mTargets[i]->GetDesc(&desc);
+		   mTargets[i]->GetDesc(&desc);
          D3D11DEVICECONTEXT->ResolveSubresource(mResolveTargets[i]->get2DTex(), 0, mTargets[i], 0, desc.Format);
       }
    }

@@ -206,6 +206,15 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
    mAutoGenMips = true;
 	mTexSize = texSize;
 	mFaceFormat = faceFormat;
+   bool compressed = isCompressed(mFaceFormat);
+
+   UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
+   UINT miscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+   if (!compressed)
+   {
+      bindFlags |= D3D11_BIND_RENDER_TARGET;
+      miscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
+   }
 
 	D3D11_TEXTURE2D_DESC desc;
 
@@ -217,28 +226,29 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_DEFAULT;
-	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+   desc.BindFlags = bindFlags;
 	desc.CPUAccessFlags = 0;
-	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS;
+   desc.MiscFlags = miscFlags;
 
 	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &mTexture);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
 	SMViewDesc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	SMViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	SMViewDesc.TextureCube.MipLevels =  1;
+	SMViewDesc.TextureCube.MipLevels =  -1;
 	SMViewDesc.TextureCube.MostDetailedMip = 0;
 
 	hr = D3D11DEVICE->CreateShaderResourceView(mTexture, &SMViewDesc, &mSRView);
+
+   if (!compressed)
+      D3D11DEVICECONTEXT->GenerateMips(mSRView);
 
 	if(FAILED(hr)) 
 	{
 		AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateTexture2D call failure");
 	}
 
-   D3D11DEVICECONTEXT->GenerateMips(mSRView);
-
-	D3D11_RENDER_TARGET_VIEW_DESC viewDesc;
+   D3D11_RENDER_TARGET_VIEW_DESC viewDesc;
 	viewDesc.Format = desc.Format;
 	viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
 	viewDesc.Texture2DArray.ArraySize = 1;
@@ -290,6 +300,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 	}
 
    SAFE_RELEASE(depthTex);
+
 }
 
 //-----------------------------------------------------------------------------
@@ -297,30 +308,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 //-----------------------------------------------------------------------------
 void GFXD3D11Cubemap::setToTexUnit(U32 tuNum)
 {
-	if(mDynamic)
-	{
-		float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-		ID3D11RenderTargetView*	pSurfaces;
-		ID3D11DepthStencilView*	pDepthStencilSurfaces;
-
-		D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &mSRView);
-
-		D3D11DEVICECONTEXT->OMGetRenderTargets(1, &pSurfaces, &pDepthStencilSurfaces);
-
-      for (U32 i = 0; i < CubeFaces; i++)
-		{
-         D3D11DEVICECONTEXT->OMSetRenderTargets(1, &mRTView[i], mDSView);
-         D3D11DEVICECONTEXT->ClearRenderTargetView(mRTView[i], ClearColor);
-         D3D11DEVICECONTEXT->ClearDepthStencilView(mDSView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-		}
-
-		D3D11DEVICECONTEXT->OMSetRenderTargets(1, &pSurfaces, pDepthStencilSurfaces);
-	}
-
-	else
-	{
-      D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &mSRView);
-	}
+   D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &mSRView);
 }
 
 void GFXD3D11Cubemap::zombify()
