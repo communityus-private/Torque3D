@@ -37,6 +37,7 @@ GFXD3D11TextureTarget::GFXD3D11TextureTarget()
       mTargets[i] = NULL;
       mResolveTargets[i] = NULL;
       mTargetViews[i] = NULL;
+      mTargetSRViews[i] = NULL;
    }
 }
 
@@ -48,7 +49,7 @@ GFXD3D11TextureTarget::~GFXD3D11TextureTarget()
       mResolveTargets[i] = NULL;
       SAFE_RELEASE(mTargetViews[i]);
       SAFE_RELEASE(mTargets[i]);
-      
+      SAFE_RELEASE(mTargetSRViews[i]);      
    }
 
    zombify();
@@ -72,6 +73,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
    // Release what we had, it's definitely going to change.
    SAFE_RELEASE(mTargetViews[slot]);
    SAFE_RELEASE(mTargets[slot]);
+   SAFE_RELEASE(mTargetSRViews[slot]);
    
    mResolveTargets[slot] = NULL;
 
@@ -93,6 +95,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
    {
       mTargets[slot] = D3D11->mDeviceDepthStencil;
 	   mTargetViews[slot] = D3D11->mDeviceDepthStencilView;
+      mTargetSRViews[slot] = NULL;
 	   mTargets[slot]->AddRef();
 	   mTargetViews[slot]->AddRef();
    }
@@ -114,9 +117,15 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
 		   mTargetViews[slot] = d3dto->getDSView();
 		   if( mTargetViews[slot])
 			   mTargetViews[slot]->AddRef();
+
+         mTargetSRViews[slot] = NULL;
+
       }
       else
       {
+         
+         mTargetSRViews[slot] = d3dto->getSRView();
+         mTargetSRViews[slot]->AddRef();
          // getSurface will almost always return NULL. It will only return non-NULL
          // if the surface that it needs to render to is different than the mip level
          // in the actual texture. This will happen with MSAA.
@@ -180,6 +189,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32
    // Release what we had, it's definitely going to change.
    SAFE_RELEASE(mTargetViews[slot]);
    SAFE_RELEASE(mTargets[slot]);
+   SAFE_RELEASE(mTargetSRViews[slot]);
 
    mResolveTargets[slot] = NULL;
 
@@ -205,6 +215,8 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXCubemap *tex, U32
    mTargets[slot]->AddRef();
    mTargetViews[slot] = cube->getRTView(face);
    mTargetViews[slot]->AddRef();
+   mTargetSRViews[slot] = cube->getSRView();
+   mTargetSRViews[slot]->AddRef();
    
    // Update surface size
    if(slot == Color0)
@@ -249,8 +261,14 @@ void GFXD3D11TextureTarget::activate()
 
 void GFXD3D11TextureTarget::deactivate()
 {
-   // Nothing to do... the next activate() call will
-   // set all the targets correctly.
+   //re-gen mip maps
+   for (U32 i = 0; i < 4; i++)
+   {
+      ID3D11ShaderResourceView* pSRView = mTargetSRViews[GFXTextureTarget::Color0 + i];
+      if (pSRView)
+         D3D11DEVICECONTEXT->GenerateMips(pSRView);
+   }
+   
 }
 
 void GFXD3D11TextureTarget::resolve()
@@ -265,7 +283,7 @@ void GFXD3D11TextureTarget::resolve()
       {
          D3D11_TEXTURE2D_DESC desc;
 		   mTargets[i]->GetDesc(&desc);
-         D3D11DEVICECONTEXT->ResolveSubresource(mResolveTargets[i]->get2DTex(), 0, mTargets[i], 0, desc.Format);
+         D3D11DEVICECONTEXT->CopySubresourceRegion(mResolveTargets[i]->get2DTex(), 0, 0, 0, 0, mTargets[i], 0, NULL);
       }
    }
 }
@@ -279,8 +297,7 @@ void GFXD3D11TextureTarget::resolveTo( GFXTextureObject *tex )
 
    D3D11_TEXTURE2D_DESC desc;
    mTargets[Color0]->GetDesc(&desc);
-   
-   D3D11DEVICECONTEXT->ResolveSubresource(((GFXD3D11TextureObject*)(tex))->get2DTex(),0,mTargets[Color0],0,desc.Format);
+   D3D11DEVICECONTEXT->CopySubresourceRegion(((GFXD3D11TextureObject*)(tex))->get2DTex(), 0, 0, 0, 0, mTargets[Color0], 0, NULL);
       
 }
 
