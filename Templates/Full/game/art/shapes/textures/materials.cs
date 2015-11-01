@@ -39,14 +39,17 @@ singleton Material(PBRTest2Mat)
    roughness[0] = "1";
    metalness[0] = "1";
    translucentBlendOp = "None";
-   diffuseMap[0] = "art/shapes/textures/T3D_Metal_6_basecolor.dds";
    normalMap[0] = "art/shapes/textures/T3D_Metal_6_normal.png";
    materialTag0 = "Miscellaneous";
    metalChan[0] = "2";
    roughness0 = "1";
    pixelSpecular0 = "0";
    smoothness[0] = "1";
-   specularMap[0] = "art/shapes/textures/T3D_Metal_6_any.dds";
+   specularMap[0] = "art/shapes/textures/T3D_Metal_6_any.png";
+   specularPower0 = "0.415939";
+   specular0 = "0.9 0.9 0.9 1";
+   translucent = "0";
+   diffuseMap[0] = "art/shapes/textures/T3D_Metal_6_basecolor.png";
 };
 
 singleton Material(PBRTest2Mat)
