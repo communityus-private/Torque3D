@@ -230,18 +230,17 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 	desc.CPUAccessFlags = 0;
    desc.MiscFlags = miscFlags;
 
+
 	HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &mTexture);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
 	SMViewDesc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	SMViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-	SMViewDesc.TextureCube.MipLevels =  -1;
+   SMViewDesc.TextureCube.MipLevels = -1;
 	SMViewDesc.TextureCube.MostDetailedMip = 0;
 
 	hr = D3D11DEVICE->CreateShaderResourceView(mTexture, &SMViewDesc, &mSRView);
 
-   if (!compressed)
-      D3D11DEVICECONTEXT->GenerateMips(mSRView);
 
 	if(FAILED(hr)) 
 	{

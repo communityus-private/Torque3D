@@ -125,7 +125,7 @@ GFXD3D11OcclusionQuery::OcclusionQueryStatus GFXD3D11OcclusionQuery::getStatus(b
 #endif
 
    HRESULT hRes;
-   DWORD dwOccluded = 0;
+   U64 dwOccluded = 0;
 
    if ( block )
    {      
@@ -139,7 +139,7 @@ GFXD3D11OcclusionQuery::OcclusionQueryStatus GFXD3D11OcclusionQuery::getStatus(b
    if (hRes == S_OK)   
    {
       if (data != NULL)
-         *data = dwOccluded;
+         *data = (U32)dwOccluded;
 
       return dwOccluded > 0 ? NotOccluded : Occluded;   
    }
