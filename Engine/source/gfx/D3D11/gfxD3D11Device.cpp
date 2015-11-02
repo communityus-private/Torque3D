@@ -704,6 +704,10 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       mGenericShader[GSTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSTexture] = mGenericShader[GSTexture]->allocConstBuffer();
       mModelViewProjSC[GSTexture] = mGenericShader[GSTexture]->getShaderConstHandle("$modelView");
+
+      //Force an update
+      mViewportDirty = true;
+      _updateRenderTargets();
    }
 
    MatrixF tempMatrix =  mProjectionMatrix * mViewMatrix * mWorldMatrix[mWorldStackSize];  
