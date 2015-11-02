@@ -126,7 +126,7 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       // Get a linear depth from the light source.
       float distToLight = pxlPosLightProj.z / lightRange;
 
-      float shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
+      float static_shadowed = softShadow_filter(TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                           ssPos.xy,
                                           shadowCoord,
                                           shadowSoftness,
