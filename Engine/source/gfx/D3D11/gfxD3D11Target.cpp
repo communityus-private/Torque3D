@@ -90,12 +90,14 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
       return;
    }
 
+   // TODO: Mip map generation currently only supported on dynamic cubemaps
+   mTargetSRViews[slot] = NULL;
+
    // Take care of default targets
    if( tex == GFXTextureTarget::sDefaultDepthStencil )
    {
       mTargets[slot] = D3D11->mDeviceDepthStencil;
 	   mTargetViews[slot] = D3D11->mDeviceDepthStencilView;
-      mTargetSRViews[slot] = NULL;
 	   mTargets[slot]->AddRef();
 	   mTargetViews[slot]->AddRef();
    }
@@ -116,16 +118,12 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
 
 		   mTargetViews[slot] = d3dto->getDSView();
 		   if( mTargetViews[slot])
-			   mTargetViews[slot]->AddRef();
-
-         mTargetSRViews[slot] = NULL;
+			   mTargetViews[slot]->AddRef();         
 
       }
       else
       {
          
-         mTargetSRViews[slot] = d3dto->getSRView();
-         mTargetSRViews[slot]->AddRef();
          // getSurface will almost always return NULL. It will only return non-NULL
          // if the surface that it needs to render to is different than the mip level
          // in the actual texture. This will happen with MSAA.

@@ -264,10 +264,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 {
    AssertFatal(window, "GFXD3D11Device::init - must specify a window!");
 
-   Win32Window *win = static_cast<Win32Window*>(window);
-   AssertISV(win, "GFXD3D11Device::init - got a non Win32Window window passed in! Did DX go crossplatform?");
-
-   HWND winHwnd = win->getHWND();
+   HWND winHwnd = (HWND)window->getSystemWindow( PlatformWindow::WindowSystem_Windows );
 
    UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifdef TORQUE_DEBUG
@@ -277,24 +274,10 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    DXGI_SWAP_CHAIN_DESC d3dpp = setupPresentParams(mode, winHwnd);
 
    D3D_FEATURE_LEVEL deviceFeature;
-
+   D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;// use D3D_DRIVER_TYPE_REFERENCE for reference device
    // create a device, device context and swap chain using the information in the d3dpp struct
    HRESULT hres = D3D11CreateDeviceAndSwapChain(NULL,
-
-											/*	
-												Anis -> you can also pass EnumAdapter instead NULL but it doesn't work if 
-												the driver type (next param) is different from D3D_DRIVER_TYPE_UNKNOWN.
-
-												The best solution is to use D3D_DRIVER_TYPE_HARDWARE/D3D_DRIVER_TYPE_REFERENCE as Microsoft recommends.
-														
-												infos: http://msdn.microsoft.com/en-us/library/windows/desktop/ff476328(v=vs.85).aspx
-											*/
-
-#ifdef NOTDEBUG
-											D3D_DRIVER_TYPE_REFERENCE,
-#else
-											D3D_DRIVER_TYPE_HARDWARE,
-#endif											
+                                 driverType,
 											NULL,
 											createDeviceFlags,
 											NULL,
@@ -336,8 +319,8 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 		AssertFatal(false, "GFXD3D11Device::init - We don't support Pixel shader version 3.0f devices in Directx11");
 
 	D3D11_QUERY_DESC queryDesc;
-    queryDesc.Query = D3D11_QUERY_OCCLUSION;
-    queryDesc.MiscFlags = 0;
+   queryDesc.Query = D3D11_QUERY_OCCLUSION;
+   queryDesc.MiscFlags = 0;
 
 	ID3D11Query *testQuery = NULL;
 
@@ -352,7 +335,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 	D3D11_TEXTURE2D_DESC desc;
 	desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	desc.CPUAccessFlags = 0;
-	desc.Format = GFXD3D11TextureFormat[GFXFormat::GFXFormatD24S8];
+	desc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
 	desc.Usage = D3D11_USAGE_DEFAULT;
@@ -369,7 +352,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 	}
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthDesc;
-	depthDesc.Format = GFXD3D11TextureFormat[GFXFormat::GFXFormatD24S8];
+	depthDesc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
 	depthDesc.Flags =0 ;
 	depthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthDesc.Texture2D.MipSlice = 0;
@@ -495,7 +478,7 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 	D3D11_TEXTURE2D_DESC desc;
 	desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	desc.CPUAccessFlags = 0;
-	desc.Format = GFXD3D11TextureFormat[GFXFormat::GFXFormatD24S8];
+	desc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
 	desc.MipLevels = 1;
 	desc.ArraySize = 1;
 	desc.Usage = D3D11_USAGE_DEFAULT;
@@ -512,7 +495,7 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 	}
 
 	D3D11_DEPTH_STENCIL_VIEW_DESC depthDesc;
-	depthDesc.Format = GFXD3D11TextureFormat[GFXFormat::GFXFormatD24S8];
+	depthDesc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
 	depthDesc.Flags = 0;
 	depthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthDesc.Texture2D.MipSlice = 0;
@@ -721,6 +704,10 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       mGenericShader[GSTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSTexture] = mGenericShader[GSTexture]->allocConstBuffer();
       mModelViewProjSC[GSTexture] = mGenericShader[GSTexture]->getShaderConstHandle("$modelView");
+
+      //Force an update
+      mViewportDirty = true;
+      _updateRenderTargets();
    }
 
    MatrixF tempMatrix =  mProjectionMatrix * mViewMatrix * mWorldMatrix[mWorldStackSize];  
