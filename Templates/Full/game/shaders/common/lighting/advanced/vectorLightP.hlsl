@@ -34,7 +34,7 @@ TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 
 #ifdef USE_SSAO_MASK
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
-uniform float4 rtParams2;
+uniform float4 rtParams3;
 #endif
 
 TORQUE_UNIFORM_SAMPLER2D(lightBuffer,5);
@@ -292,7 +292,7 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
-      float ao = 1.0 - TORQUE_TEX2D(ssaoMask, viewportCoordToRenderTarget(IN.uv0.xy, rtParams2)).r;
+      float ao = 1.0 - TORQUE_TEX2D(ssaoMask, viewportCoordToRenderTarget(IN.uv0.xy, rtParams3)).r;
       addToResult *= ao;
    #endif
 
