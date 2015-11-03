@@ -82,6 +82,14 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          return newVar;
       }
 
+   case RT_TANGENTW:
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("TANGENTW");
+      return newVar;
+   }
+
    case RT_COLOR:
       {
          Var *newVar = new Var;
