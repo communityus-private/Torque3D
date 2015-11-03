@@ -164,7 +164,7 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
    // cause the hardware occlusion query to disable the shadow.
 
    // Specular term
-   float4 colorSample = tex2D( colorBuffer, uvScene );
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
    float specular = 0;
 
    float3 lightVec = lightPosition - viewSpacePos;
