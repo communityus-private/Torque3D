@@ -134,7 +134,7 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 		wcstombs(str, desc.Description,size);
 		str[size]='\0';
 		String Description=str;
-		delete str;
+      SAFE_DELETE_ARRAY(str);
 
 		dStrncpy(toAdd->mName, Description.c_str(), GFXAdapter::MaxAdapterNameLen);
 		dStrncat(toAdd->mName, " (D3D11)", GFXAdapter::MaxAdapterNameLen);
