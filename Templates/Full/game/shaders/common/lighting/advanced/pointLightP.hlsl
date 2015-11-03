@@ -34,7 +34,6 @@ struct ConvexConnectP
    float4 wsEyeDir : TEXCOORD0;
    float4 ssPos : TEXCOORD1;
    float4 vsEyeDir : TEXCOORD2;
-   float4 color : COLOR0;
 };
 
 
