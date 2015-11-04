@@ -95,7 +95,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       albedoDamageTex->setType("Texture2D");
       albedoDamageTex->setName("albedoDamageTex");
       albedoDamageTex->uniform = true;
-      albedoDamageTex->texture2D = true;
+      albedoDamageTex->texture = true;
       albedoDamageTex->constNum = albedoDamage->constNum;
       if (fd.features[MFT_Imposter])
       {
@@ -235,7 +235,7 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
       damageCMapTex->setType("Texture2D");
       damageCMapTex->setName("damageCMapTex");
       damageCMapTex->uniform = true;
-      damageCMapTex->texture2D = true;
+      damageCMapTex->texture = true;
       damageCMapTex->constNum = damageCMap->constNum;
 
       meta->addStatement(new GenOp("   @ = @.Sample(@, @);\r\n",

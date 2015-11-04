@@ -226,7 +226,7 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
          damageBumpTex->setName("detailBumpTex");
          damageBumpTex->setType("Texture2D");
          damageBumpTex->uniform = true;
-         damageBumpTex->texture2D = true;
+         damageBumpTex->texture = true;
          damageBumpTex->constNum = bumpMap->constNum;
       }
       else

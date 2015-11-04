@@ -71,7 +71,7 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
       specularMapTex->setName("specularMapTex");
       specularMapTex->setType("Texture2D");
       specularMapTex->uniform = true;
-      specularMapTex->texture2D = true;
+      specularMapTex->texture = true;
       specularMapTex->constNum = specularMap->constNum;
 
       texOp = new GenOp("   @.Sample(@, @)", specularMapTex, specularMap, texCoord);
