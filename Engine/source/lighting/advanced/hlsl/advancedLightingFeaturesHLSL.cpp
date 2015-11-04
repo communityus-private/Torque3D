@@ -362,14 +362,33 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       if (fd.features.hasFeature(MFT_NormalDamage))
       {
          bumpMap = new Var;
-         bumpMap->setType("sampler2D");
+         Var* damageBumpTex = NULL; //only used in D3D10 or D3D11
+
          bumpMap->setName("normalDamageMap");
          bumpMap->uniform = true;
          bumpMap->sampler = true;
+
          bumpMap->constNum = Var::getTexUnitNum();
+         if (mIsDirect3D11)
+         {
+            bumpMap->setType("SamplerState");
+
+            damageBumpTex = new Var;
+            damageBumpTex->setName("detailBumpTex");
+            damageBumpTex->setType("Texture2D");
+            damageBumpTex->uniform = true;
+            damageBumpTex->texture2D = true;
+            damageBumpTex->constNum = bumpMap->constNum;
+         }
+         else
+            bumpMap->setType("sampler2D");
 
          texCoord = getInTexCoord("texCoord", "float2", true, componentList);
-         texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+
+         if (mIsDirect3D11)
+            texOp = new GenOp("@.Sample(@, @)", damageBumpTex, bumpMap, texCoord);
+         else
+            texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
 
          Var *damageBump = new Var;
          damageBump->setName("damageBump");
