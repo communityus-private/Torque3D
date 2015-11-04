@@ -466,7 +466,7 @@ Var* ShaderFeatureHLSL::getInVpos(  MultiLine *meta,
    ShaderConnector *connectComp = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
    if (GFX->getAdapterType() == Direct3D11)
    {
-      inVpos = connectComp->getElement(RT_SVPosition);
+      inVpos = connectComp->getElement(RT_SVPOSITION);
       inVpos->setName("vpos");
       inVpos->setStructName("IN");
       inVpos->setType("float4");
@@ -1773,7 +1773,7 @@ void VertPositionHLSL::processPix(Vector<ShaderComponent*> &componentList,
    {
       // grab connector position
       ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
-      Var *outPosition = connectComp->getElement(RT_SVPosition);
+      Var *outPosition = connectComp->getElement(RT_SVPOSITION);
       outPosition->setName("vpos");
       outPosition->setStructName("IN");
    }
