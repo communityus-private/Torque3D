@@ -152,7 +152,7 @@ void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const
       specularMapTex->setName("specularMapTex");
       specularMapTex->setType("Texture2D");
       specularMapTex->uniform = true;
-      specularMapTex->texture2D = true;
+      specularMapTex->texture = true;
       specularMapTex->constNum = specularMap->constNum;
    }
    else

@@ -180,7 +180,7 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
          detailBumpTex->setName("detailBumpTex");
          detailBumpTex->setType("Texture2D");
          detailBumpTex->uniform = true;
-         detailBumpTex->texture2D = true;
+         detailBumpTex->texture = true;
          detailBumpTex->constNum = bumpMap->constNum;
       }
       else

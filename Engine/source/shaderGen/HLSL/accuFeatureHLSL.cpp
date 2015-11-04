@@ -150,7 +150,7 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       accuMapTex->setType("Texture2D");
       accuMapTex->setName("accuMapTex");
       accuMapTex->uniform = true;
-      accuMapTex->texture2D = true;
+      accuMapTex->texture = true;
       accuMapTex->constNum = accuMap->constNum;
       meta->addStatement(new GenOp("   @ = @.Sample(@, @ * @);\r\n", colorAccuDecl, accuMapTex, accuMap, inTex, accuScale));
    }

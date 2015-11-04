@@ -543,7 +543,7 @@ Var* ShaderFeatureHLSL::getNormalMapTex()
          normalMapTex->setName("bumpMapTex");
          normalMapTex->setType("Texture2D");
          normalMapTex->uniform = true;
-         normalMapTex->texture2D = true;
+         normalMapTex->texture = true;
          normalMapTex->constNum = normalMap->constNum;
       }
 
@@ -891,7 +891,7 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       diffuseMapTex->setName("diffuseMapTex");
       diffuseMapTex->setType("Texture2D");
       diffuseMapTex->uniform = true;
-      diffuseMapTex->texture2D = true;
+      diffuseMapTex->texture = true;
       diffuseMapTex->constNum = diffuseMap->constNum;
    }
 
@@ -1112,7 +1112,7 @@ void OverlayTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       diffuseMapTex->setName("overlayMapTex");
       diffuseMapTex->setType("Texture2D");
       diffuseMapTex->uniform = true;
-      diffuseMapTex->texture2D = true;
+      diffuseMapTex->texture = true;
       diffuseMapTex->constNum = diffuseMap->constNum;
    }
 
@@ -1272,7 +1272,7 @@ void LightmapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       lightMapTex->setName("lightMapTex");
       lightMapTex->setType("Texture2D");
       lightMapTex->uniform = true;
-      lightMapTex->texture2D = true;
+      lightMapTex->texture = true;
       lightMapTex->constNum = lightMap->constNum;
    }
    else
@@ -1428,7 +1428,7 @@ void TonemapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       toneMapTex->setName("toneMapTex");
       toneMapTex->setType("Texture2D");
       toneMapTex->uniform = true;
-      toneMapTex->texture2D = true;
+      toneMapTex->texture = true;
       toneMapTex->constNum = toneMap->constNum;
    }
 
@@ -1681,7 +1681,7 @@ void DetailFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       detailMapTex->setName("detailMapTex");
       detailMapTex->setType("Texture2D");
       detailMapTex->uniform = true;
-      detailMapTex->texture2D = true;
+      detailMapTex->texture = true;
       detailMapTex->constNum = detailMap->constNum;
    }
 
@@ -1910,7 +1910,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
             glowMapTex->setName("glowMapTex");
             glowMapTex->setType("Texture2D");
             glowMapTex->uniform = true;
-            glowMapTex->texture2D = true;
+            glowMapTex->texture = true;
             glowMapTex->constNum = newMap->constNum;
          }
 
@@ -1958,7 +1958,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       cubeMapTex->setName("cubeMapTex");
       cubeMapTex->setType("TextureCube");  // cubeMapTex->setType("TextureCube");
       cubeMapTex->uniform = true;
-      cubeMapTex->texture2D = true;
+      cubeMapTex->texture = true;
       cubeMapTex->constNum = cubeMap->constNum;
    }
 

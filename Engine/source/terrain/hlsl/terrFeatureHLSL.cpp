@@ -276,7 +276,7 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
       diffuseTex->setType("Texture2D");
       diffuseTex->setName("baseTexture");
       diffuseTex->uniform = true;
-      diffuseTex->texture2D = true;
+      diffuseTex->texture = true;
       diffuseTex->constNum = diffuseMap->constNum;
       meta->addStatement(new GenOp("   @ = @.Sample( @, @.xy );\r\n", new DecOp(baseColor), diffuseTex, diffuseMap, texCoord));
    }
@@ -451,7 +451,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
          layerTexObj->setName("layerTexObj");
          layerTexObj->setType("Texture2D");
          layerTexObj->uniform = true;
-         layerTexObj->texture2D = true;
+         layerTexObj->texture = true;
          layerTexObj->constNum = layerTex->constNum;
          // Read the layer texture to get the samples.
          meta->addStatement(new GenOp("   @ = round( @.Sample( @, @.xy ) * 255.0f );\r\n",
@@ -521,7 +521,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
             normalMapTex->setName(String::ToString("normalMapTex%d", getProcessIndex()));
             normalMapTex->setType("Texture2D");
             normalMapTex->uniform = true;
-            normalMapTex->texture2D = true;
+            normalMapTex->texture = true;
             normalMapTex->constNum = normalMap->constNum;
          }
 
@@ -620,7 +620,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
       detailTex->setName(String::ToString("detailTex%d", detailIndex));
       detailTex->setType("Texture2D");
       detailTex->uniform = true;
-      detailTex->texture2D = true;
+      detailTex->texture = true;
       detailTex->constNum = detailMap->constNum;
 
       if (fd.features.hasFeature(MFT_TerrainSideProject, detailIndex))
@@ -821,7 +821,7 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
          layerTexObj->setType("Texture2D");
          layerTexObj->setName("macroLayerTexObj");
          layerTexObj->uniform = true;
-         layerTexObj->texture2D = true;
+         layerTexObj->texture = true;
          layerTexObj->constNum = layerTex->constNum;
          meta->addStatement(new GenOp("   @ = round( @.Sample( @, @.xy ) * 255.0f );\r\n",
             new DecOp(layerSample), layerTexObj, layerTex, inTex));
@@ -923,7 +923,7 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
       detailTex->setName(String::ToString("macroMapTex%d", detailIndex));
       detailTex->setType("Texture2D");
       detailTex->uniform = true;
-      detailTex->texture2D = true;
+      detailTex->texture = true;
       detailTex->constNum = detailMap->constNum;
 
    }
@@ -1076,7 +1076,7 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
          normalMapTex->setName(String::ToString("normalMapTex%d", getProcessIndex()));
          normalMapTex->setType("Texture2D");
          normalMapTex->uniform = true;
-         normalMapTex->texture2D = true;
+         normalMapTex->texture = true;
          normalMapTex->constNum = normalMap->constNum;
       }
       if (fd.features.hasFeature(MFT_TerrainSideProject, normalIndex))
@@ -1185,7 +1185,7 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
       lightMapTex->setName("lightMapTex");
       lightMapTex->setType("Texture2D");
       lightMapTex->uniform = true;
-      lightMapTex->texture2D = true;
+      lightMapTex->texture = true;
       lightMapTex->constNum = lightMap->constNum;
       meta->addStatement(new GenOp("   @[0] = @.Sample( @, @.xy ).r;\r\n", lightMask, lightMapTex, lightMap, inTex));
    }

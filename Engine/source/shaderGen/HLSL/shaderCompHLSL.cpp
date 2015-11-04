@@ -55,54 +55,16 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          Var *newVar = new Var;
          mElementList.push_back( newVar );
          newVar->setConnectName( "POSITION" );
-         return newVar;
-      }
-
-   case RT_NORMAL:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "NORMAL" );
-         return newVar;
-      }
-
-   case RT_BINORMAL:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "BINORMAL" );
-         return newVar;
-      }
-
-   case RT_TANGENT:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "TANGENT" );
-         return newVar;
-      }
-
-   case RT_TANGENTW:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back(newVar);
-         newVar->setConnectName("TANGENTW");
-         return newVar;
-      }
-
-   case RT_COLOR:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "COLOR" );
+         newVar->rank = 0;
          return newVar;
       }
 
    case RT_VPOS:
       {
          Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "VPOS" );
+         mElementList.push_back(newVar);
+         newVar->setConnectName("VPOS");
+         newVar->rank = 0;
          return newVar;
       }
 
@@ -111,6 +73,52 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          Var *newVar = new Var;
          mElementList.push_back(newVar);
          newVar->setConnectName("SV_Position");
+         newVar->rank = 0;
+         return newVar;
+      }
+
+   case RT_NORMAL:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+         newVar->setConnectName( "NORMAL" );
+         newVar->rank = 1;
+         return newVar;
+      }
+
+   case RT_BINORMAL:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+         newVar->setConnectName( "BINORMAL" );
+         newVar->rank = 2;
+         return newVar;
+      }
+
+   case RT_TANGENT:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+         newVar->setConnectName( "TANGENT" );
+         newVar->rank = 3;
+         return newVar;
+      }
+
+   case RT_TANGENTW:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back(newVar);
+         newVar->setConnectName("TANGENTW");
+         newVar->rank = 4;
+         return newVar;
+      }
+
+   case RT_COLOR:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+         newVar->setConnectName( "COLOR" );
+         newVar->rank = 5;
          return newVar;
       }
 
@@ -129,6 +137,7 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          newVar->setConnectName( out );
          newVar->constNum = index;
          newVar->arraySize = numElements;
+         newVar->rank = 6 + index;
 
          return newVar;
       }
@@ -142,41 +151,12 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
 
 
 
-U32 ShaderConnectorHLSL::_hlsl4RankElement(Var *var)
-{
-   AssertFatal(var, "ShaderConnectorHLSL::_hlsl4RankElement received an invalid pointer for Var");
-
-   const char* name = (const char*)var->connectName;
-
-   if (dStrstr(name, "SV_Position"))
-      return 0;
-   if (dStrstr(name, "NORMAL"))
-      return 1;
-   if (dStrstr(name, "BINORMAL"))
-      return 2;
-   if (dStrstr(name, "TANGENT"))
-      return 3;
-   if (dStrstr(name, "TANGENTW"))
-      return 4;
-   if (dStrstr(name, "COLOR"))
-      return 5;
-   // TODO: Should we bother sorting TEXCOORD0,TEXCOORD1 etc because the order will be reversed using this current method.
-   if (dStrstr(name, "TEXCOORD"))
-      return 6;
-
-   // Not good if we reach here, we missed a semantic name
-   return 99;
-}
-
 S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void* e2)
 {
    Var* a = *((Var **)e1);
    Var* b = *((Var **)e2);
 
-   U32 rankA = _hlsl4RankElement(a);
-   U32 rankB = _hlsl4RankElement(b);
-
-   return rankA - rankB;
+   return a->rank - b->rank;
 }
 
 void ShaderConnectorHLSL::sortVars()
@@ -250,7 +230,7 @@ void ParamsDefHLSL::assignConstantNumbers()
          Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
          if( var )
          {            
-            bool shaderConst = var->uniform && !var->sampler && !var->texture2D;
+            bool shaderConst = var->uniform && !var->sampler && !var->texture;
             AssertFatal((!shaderConst) || var->constSortPos != cspUninit, "Const sort position has not been set, variable will not receive a constant number!!");
             if( shaderConst && var->constSortPos == bin)
             {
@@ -332,7 +312,7 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
             {
                dSprintf( (char*)varNum, sizeof(varNum), ": register(S%d)", var->constNum );
             }
-            else if (var->texture2D)
+            else if (var->texture)
             {
                dSprintf((char*)varNum, sizeof(varNum), ": register(T%d)", var->constNum);
             }

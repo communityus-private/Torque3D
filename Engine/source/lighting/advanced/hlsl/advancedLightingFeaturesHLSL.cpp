@@ -134,7 +134,7 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
       lightBufferTex->setName("lightInfoBufferTex");
       lightBufferTex->setType("Texture2D");
       lightBufferTex->uniform = true;
-      lightBufferTex->texture2D = true;
+      lightBufferTex->texture = true;
       lightBufferTex->constNum = lightInfoBuffer->constNum;
    }
 
@@ -334,7 +334,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
             detailNormalTex->setName("detailBumpMapTex");
             detailNormalTex->setType("Texture2D");
             detailNormalTex->uniform = true;
-            detailNormalTex->texture2D = true;
+            detailNormalTex->texture = true;
             detailNormalTex->constNum = bumpMap->constNum;
          }
 
@@ -680,7 +680,7 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
       prePassTex->setName("prePassTex");
       prePassTex->setType("Texture2D");
       prePassTex->uniform = true;
-      prePassTex->texture2D = true;
+      prePassTex->texture = true;
       prePassTex->constNum = prepassBuffer->constNum;
    }
 
