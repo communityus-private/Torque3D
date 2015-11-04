@@ -153,7 +153,11 @@ ShaderComponent* ShaderGenComponentFactoryHLSL::createVertexInputConnector( cons
       }
       else if ( element.isSemantic( GFXSemantic::TANGENTW ) )
       {
-         var = vertComp->getIndexedElement( element.getSemanticIndex(), RT_TEXCOORD );
+         if (GFX->getPixelShaderVersion() >= 4.0f)
+            var = vertComp->getElement( RT_TANGENTW );
+         else
+            var = vertComp->getIndexedElement(element.getSemanticIndex(), RT_TEXCOORD);
+
          var->setName( "tangentW" );
       }
       else if ( element.isSemantic( GFXSemantic::BINORMAL ) )

@@ -134,7 +134,7 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 		wcstombs(str, desc.Description,size);
 		str[size]='\0';
 		String Description=str;
-		delete str;
+      SAFE_DELETE_ARRAY(str);
 
 		dStrncpy(toAdd->mName, Description.c_str(), GFXAdapter::MaxAdapterNameLen);
 		dStrncat(toAdd->mName, " (D3D11)", GFXAdapter::MaxAdapterNameLen);
@@ -1324,7 +1324,7 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
    StringBuilder mainBodyData;
    //make shader
    mainBodyData.append("VertOut main(VertIn IN){VertOut OUT;");
-   for (int i = 0; i < elemCount; i++)
+   for (U32 i = 0; i < elemCount; i++)
    {
       const GFXVertexElement &element = vertexFormat->getElement(i);
       String semantic = element.getSemantic();
@@ -1354,6 +1354,12 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
       else if (element.isSemantic(GFXSemantic::BINORMAL))
       {
          semantic = "BINORMAL";
+         semanticOut = semantic;
+      }
+
+      else if (element.isSemantic(GFXSemantic::TANGENTW))
+      {
+         semantic = "TANGENTW";
          semanticOut = semantic;
       }
       else
@@ -1489,22 +1495,15 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
       vd[i].SemanticIndex = 0;
 
       if ( element.isSemantic( GFXSemantic::POSITION ) )
-	   {
-         vd[i].SemanticName = "POSITION";
-		
-	   }
+	         vd[i].SemanticName = "POSITION";
       else if ( element.isSemantic( GFXSemantic::NORMAL ) )
-	   {
          vd[i].SemanticName = "NORMAL";
-		 
-	   }
       else if ( element.isSemantic( GFXSemantic::COLOR ) )
-	   {
          vd[i].SemanticName = "COLOR";
-	     
-	   }
       else if ( element.isSemantic( GFXSemantic::TANGENT ) )
          vd[i].SemanticName = "TANGENT";
+      else if (element.isSemantic(GFXSemantic::TANGENTW))
+         vd[i].SemanticName = "TANGENTW";
       else if ( element.isSemantic( GFXSemantic::BINORMAL ) )
          vd[i].SemanticName = "BINORMAL";
       else

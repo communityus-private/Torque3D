@@ -466,7 +466,7 @@ Var* ShaderFeatureHLSL::getInVpos(  MultiLine *meta,
    ShaderConnector *connectComp = dynamic_cast<ShaderConnector*>(componentList[C_CONNECTOR]);
    if (GFX->getAdapterType() == Direct3D11)
    {
-      inVpos = connectComp->getElement(RT_SVPosition);
+      inVpos = connectComp->getElement(RT_SVPOSITION);
       inVpos->setName("vpos");
       inVpos->setStructName("IN");
       inVpos->setType("float4");
@@ -546,7 +546,7 @@ Var* ShaderFeatureHLSL::getNormalMapTex()
          normalMapTex->setName("bumpMapTex");
          normalMapTex->setType("Texture2D");
          normalMapTex->uniform = true;
-         normalMapTex->texture2D = true;
+         normalMapTex->texture = true;
          normalMapTex->constNum = normalMap->constNum;
       }
 
@@ -919,7 +919,7 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       diffuseMapTex->setName("diffuseMapTex");
       diffuseMapTex->setType("Texture2D");
       diffuseMapTex->uniform = true;
-      diffuseMapTex->texture2D = true;
+      diffuseMapTex->texture = true;
       diffuseMapTex->constNum = diffuseMap->constNum;
    }
 
@@ -1127,7 +1127,7 @@ void OverlayTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       diffuseMapTex->setName("overlayMapTex");
       diffuseMapTex->setType("Texture2D");
       diffuseMapTex->uniform = true;
-      diffuseMapTex->texture2D = true;
+      diffuseMapTex->texture = true;
       diffuseMapTex->constNum = diffuseMap->constNum;
    }
 
@@ -1318,7 +1318,7 @@ void LightmapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       lightMapTex->setName("lightMapTex");
       lightMapTex->setType("Texture2D");
       lightMapTex->uniform = true;
-      lightMapTex->texture2D = true;
+      lightMapTex->texture = true;
       lightMapTex->constNum = lightMap->constNum;
    }
    else
@@ -1474,7 +1474,7 @@ void TonemapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       toneMapTex->setName("toneMapTex");
       toneMapTex->setType("Texture2D");
       toneMapTex->uniform = true;
-      toneMapTex->texture2D = true;
+      toneMapTex->texture = true;
       toneMapTex->constNum = toneMap->constNum;
    }
 
@@ -1727,7 +1727,7 @@ void DetailFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       detailMapTex->setName("detailMapTex");
       detailMapTex->setType("Texture2D");
       detailMapTex->uniform = true;
-      detailMapTex->texture2D = true;
+      detailMapTex->texture = true;
       detailMapTex->constNum = detailMap->constNum;
    }
 
@@ -1822,7 +1822,7 @@ void VertPositionHLSL::processPix(Vector<ShaderComponent*> &componentList,
    {
       // grab connector position
       ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
-      Var *outPosition = connectComp->getElement(RT_SVPosition);
+      Var *outPosition = connectComp->getElement(RT_SVPOSITION);
       outPosition->setName("vpos");
       outPosition->setStructName("IN");
    }
@@ -1959,7 +1959,7 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
             glowMapTex->setName("glowMapTex");
             glowMapTex->setType("Texture2D");
             glowMapTex->uniform = true;
-            glowMapTex->texture2D = true;
+            glowMapTex->texture = true;
             glowMapTex->constNum = newMap->constNum;
          }
 
@@ -2012,7 +2012,7 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       cubeMapTex->setName("cubeMapTex");
       cubeMapTex->setType("TextureCube");  // cubeMapTex->setType("TextureCube");
       cubeMapTex->uniform = true;
-      cubeMapTex->texture2D = true;
+      cubeMapTex->texture = true;
       cubeMapTex->constNum = cubeMap->constNum;
    }
 

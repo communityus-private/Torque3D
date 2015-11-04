@@ -46,7 +46,11 @@ void ParaboloidVertTransformHLSL::processVert(  Vector<ShaderComponent*> &compon
    ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
 
    // Grab connector out position.
-   Var *outPosition = connectComp->getElement( RT_POSITION );
+   RegisterType type = RT_POSITION;
+   if (mIsDirect3D11)
+      type = RT_SVPOSITION;
+
+   Var *outPosition = connectComp->getElement( type );
    outPosition->setName( "hpos" );
    outPosition->setStructName( "OUT" );
 
