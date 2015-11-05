@@ -120,10 +120,11 @@ uniform float3 lightPosition;
 uniform float4 lightMapParams;
 uniform float4 vsFarPlane;
 uniform float3x3 viewToLightProj;
+uniform float  lightRange;
 uniform float4 lightParams;
 uniform float shadowSoftness;
 uniform float2 lightAttenuation;
-uniform float  lightRange;
+
 
 
 float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
