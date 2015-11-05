@@ -48,21 +48,7 @@ void GFXD3D11CardProfiler::init()
 
    mCardDescription = desc.Description;
    mVideoMemory = desc.DedicatedVideoMemory / 1048576; //convert to megabytes
-   
-   //WMI causes issues with graphics debugger in Visual studio
-   
-   /*
-   WMIVideoInfo wmiVidInfo;
-   if(wmiVidInfo.profileAdapters())
-   {
-      const PlatformVideoInfo::PVIAdapter &adapter = wmiVidInfo.getAdapterInformation(D3D11->getAdaterIndex());
 
-      mCardDescription = adapter.description;
-      mChipSet = adapter.chipSet;
-      mVersionString = adapter.driverVersion;
-      mVideoMemory = adapter.vram;
-   }
-   */
    adapter->Release();
    factory->Release();
    Parent::init();
@@ -70,7 +56,9 @@ void GFXD3D11CardProfiler::init()
 
 void GFXD3D11CardProfiler::setupCardCapabilities()
 {
-	// anis -> resource limits direct3d11: http://msdn.microsoft.com/en-us/library/windows/desktop/ff819065(v=vs.85).aspx
+   setCapability("maxTextureWidth", D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION);
+   setCapability("maxTextureHeight", D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION);
+   setCapability("maxTextureSize", D3D11_REQ_TEXTURE2D_U_OR_V_DIMENSION);
 }
 
 bool GFXD3D11CardProfiler::_queryCardCap(const String &query, U32 &foundResult)
