@@ -355,7 +355,7 @@ Var* ShaderFeatureHLSL::getOutTexCoord(   const char *name,
 
       if ( useTexAnim )
       {
-         inTex->setType( "float4" );
+         inTex->setType( "float2" );
          
          // create texture mat var
          Var *texMat = new Var;
@@ -366,8 +366,8 @@ Var* ShaderFeatureHLSL::getOutTexCoord(   const char *name,
          
          // Statement allows for casting of different types which
 		   // eliminates vector truncation problems.
-         String statement = String::ToString( "   @ = (%s)mul(@, @);\r\n", type );
-         meta->addStatement( new GenOp( statement, texCoord, texMat, inTex ) );
+         String statement = String::ToString( "   @ = (%s)mul(@, float4(@,1,1));\r\n", type );
+         meta->addStatement(new GenOp(statement, texCoord, texMat, inTex));
       }
       else
       {
