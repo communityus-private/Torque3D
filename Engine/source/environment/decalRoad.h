@@ -196,7 +196,8 @@ public:
    bool getClosestNode( const Point3F &pos, U32 &idx );
 
    bool containsPoint( const Point3F &worldPos, U32 *nodeIdx ) const;
-   bool castray( const Point3F &start, const Point3F &end ) const;
+   bool castRay( const Point3F &start, const Point3F &end ) const;
+   virtual bool castRay(const Point3F &start, const Point3F &end, RayInfo* info);
    
    Point3F getNodePosition( U32 idx );
    void setNodePosition( U32 idx, const Point3F &pos );

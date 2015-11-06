@@ -893,10 +893,26 @@ bool DecalRoad::containsPoint( const Point3F &worldPos, U32 *nodeIdx ) const
    return false;
 }
 
-bool DecalRoad::castray( const Point3F &start, const Point3F &end ) const
+bool DecalRoad::castRay(const Point3F &start, const Point3F &end) const
 {
    // We just cast against the object box for the editor.
    return mWorldBox.collideLine( start, end );
+}
+
+bool DecalRoad::castRay(const Point3F &start, const Point3F &end, RayInfo *info)
+{
+   F32 fst;
+   if (!mWorldBox.collideLine(start, end, &fst, &info->normal))
+      return false;
+
+   info->t = fst;
+   info->object = this;
+   info->point.interpolate(start, end, fst);
+   if (mMatInst)
+      info->material = mMatInst;
+
+   return true;
+
 }
 
 Point3F DecalRoad::getNodePosition( U32 idx )
