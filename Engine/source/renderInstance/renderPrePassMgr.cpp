@@ -779,7 +779,6 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
       if (!mMaterial->mDynamicCubemap)
          fd.features.addFeature(MFT_StaticCubemap);
       newFeatures.addFeature( MFT_CubeMap );
-      newFeatures.removeFeature(MFT_UseInstancing);
    }
    if (mMaterial->mVertLit[stageNum])
       newFeatures.addFeature(MFT_VertLit);
