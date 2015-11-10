@@ -324,7 +324,6 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    if (  features.hasFeature( MFT_UseInstancing ) &&
          mMaxStages == 1 &&
          !mMaterial->mGlow[0] &&
-         !mMaterial->mDynamicCubemap &&
          shaderVersion >= 3.0f )
       fd.features.addFeature( MFT_UseInstancing );
 
@@ -351,7 +350,6 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
                mMaterial->mDynamicCubemap || envmapped) )
    {
        fd.features.addFeature( MFT_CubeMap );
-       fd.features.removeFeature(MFT_UseInstancing);
    }
    //if (features.hasFeature(MFT_SkyBox))
    if (mMaterial->mIsSky)
