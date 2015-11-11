@@ -283,37 +283,6 @@ void fizzle(vec2 vpos, float visibility)
 /// @note This macro will only work in the void main() method of a pixel shader.
 #define assert(condition, color) { if(!any(condition)) { OUT_col = color; return; } }
 
-// define TORQUE_STOCK_GAMMA
-#ifdef TORQUE_STOCK_GAMMA
-// Sample in linear space. Decodes gamma.
-vec4 tex2DLinear(sampler2D tex, vec2 texCoord)
-{
-   vec4 sampl = texture(tex, texCoord);
-   return sampl;
-}
-
-// Sample in linear space. Decodes gamma.
-vec4 tex2DLodLinear(sampler2D tex, vec4 texCoord)
-{
-   vec4 sampl = textureLod(tex, texCoord.xy,texCoord.w);
-   return sampl;
-}
-#else
-// Sample in linear space. Decodes gamma.
-vec4 tex2DLinear(sampler2D tex, vec2 texCoord)
-{
-   vec4 sampl = texture(tex, texCoord);
-   return vec4(pow(abs(sampl.rgb), vec3(2.2)), sampl.a);
-}
-
-// Sample in linear space. Decodes gamma.
-vec4 tex2DLodLinear(sampler2D tex, vec4 texCoord)
-{
-   vec4 sampl = textureLod(tex, texCoord.xy,texCoord.w);
-   return vec4(pow(abs(sampl.rgb), vec3(2.2)), sampl.a);
-}
-#endif
-
 // Deferred Shading: Material Info Flag Check
 bool getFlag(float flags, int num)
 {
@@ -321,5 +290,30 @@ bool getFlag(float flags, int num)
    float squareNum = pow(2, num);
    return (mod(process, pow(2, squareNum)) >= squareNum); 
 }
+
+// #define TORQUE_STOCK_GAMMA
+#ifdef TORQUE_STOCK_GAMMA
+// Sample in linear space. Decodes gamma.
+vec4 toLinear(vec4 tex)
+{
+   return tex;
+}
+// Encodes gamma.
+vec4 toGamma(vec4 tex)
+{
+   return tex;
+}
+#else
+// Sample in linear space. Decodes gamma.
+vec4 toLinear(vec4 tex)
+{
+   return vec4(pow(abs(tex.rgb), vec3(2.2)), tex.a);
+}
+// Encodes gamma.
+vec4 toGamma(vec4 tex)
+{
+   return vec4(pow(abs(tex.rgb), vec3(1.0/2.2)), tex.a);
+}
+#endif //
 
 #endif // _TORQUE_GLSL_
