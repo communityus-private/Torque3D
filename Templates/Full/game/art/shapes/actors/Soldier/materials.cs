@@ -28,6 +28,7 @@ singleton Material(Mat_Soldier_Main)
    normalMap[0] = "Soldier_N.dds";
    specularMap[0] = "Soldier_c";
    FlipRB[0] = "1";
+   castDynamicShadows = true;
    materialTag0 = "Player";
 };
 
@@ -48,6 +49,7 @@ singleton Material(Mat_Soldier_Dazzle)
    emissive[0] = "1";
    castShadows = "0";
    showFootprints = "0";
+   castDynamicShadows = true;
    materialTag0 = "Player";
 };
 
