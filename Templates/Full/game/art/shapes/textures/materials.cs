@@ -82,3 +82,20 @@ singleton Material(PBRTEST_PBRstone)
    pixelSpecular0 = "0";
    metalChan[0] = "3";
 };
+
+singleton Material(pbrGrid)
+{
+   mapTo = "PBRGrid";
+   diffuseColor[0] = "1 1 1 1";
+   smoothness[0] = "1";
+   metalness[0] = "1";
+   translucentBlendOp = "None";
+   diffuseMap[0] = "art/shapes/textures/PBRGrid_a.dds";
+   normalMap[0] = "art/shapes/textures/PBRGrid_n.png";
+   alphaTest = "1";
+   specularMap[0] = "art/shapes/textures/PBRGrid_c.dds";
+   materialTag0 = "Miscellaneous";
+   pixelSpecular0 = "0";
+   doubleSided = "1";
+   alphaRef = "67";
+};
