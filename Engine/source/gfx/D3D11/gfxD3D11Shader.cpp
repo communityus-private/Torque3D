@@ -210,10 +210,10 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
       switch (pd.constType)
       {
       case GFXSCT_Float2x2 :
-         csize = 32;
+         csize = 24; //this takes up 16+8
          break;
-      case GFXSCT_Float3x3 :
-         csize = 48;
+      case GFXSCT_Float3x3 : 
+         csize = 44; //This takes up 16+16+12
          break;
       default:
          AssertFatal(false, "Unhandled case!");

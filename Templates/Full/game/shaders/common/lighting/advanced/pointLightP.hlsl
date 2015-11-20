@@ -132,6 +132,7 @@ uniform float3x3 dynamicViewToLightProj;
 uniform float4 lightParams;
 uniform float shadowSoftness;
 
+
 float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 {   
    // Compute scene UV
