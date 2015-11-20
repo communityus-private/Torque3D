@@ -265,5 +265,5 @@ void main()
    }
 
 
-   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, matInfo.g*Sat_NL_Att);
+   OUT_col = matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
 }

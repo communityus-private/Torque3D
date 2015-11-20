@@ -265,5 +265,6 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, matInfo.g*Sat_NL_Att);
+   
+   return matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
 }

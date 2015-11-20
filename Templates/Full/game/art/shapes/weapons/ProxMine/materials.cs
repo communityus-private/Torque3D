@@ -32,6 +32,7 @@ singleton Material(ProxMine_Base)
    useAnisotropic[0] = "1";
    materialTag0 = "Miscellaneous";
    specularMap[0] = "art/shapes/weapons/ProxMine/ProxMine_S.dds";
+   castDynamicShadows = true;
 };
 
 singleton Material(ProxMine_Glow_Base)

@@ -300,5 +300,5 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
       lightColorOut = debugColor;
    #endif
 
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, matInfo.g*Sat_NL_Att);
+   return matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
 }
