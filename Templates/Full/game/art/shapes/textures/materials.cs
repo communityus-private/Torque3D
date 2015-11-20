@@ -13,6 +13,7 @@ singleton Material(PBRTEST_PBRMetal)
    specularMap[0] = "art/shapes/textures/Metal_S.png";
    roughness0 = "1";
    pixelSpecular0 = "0";
+   invertSmoothness[0] = "1";
 };
 
 singleton Material(PBRTEST_PBRWood)
@@ -92,7 +93,7 @@ singleton Material(pbrGrid)
    translucentBlendOp = "None";
    diffuseMap[0] = "art/shapes/textures/PBRGrid_a.dds";
    normalMap[0] = "art/shapes/textures/PBRGrid_n.png";
-   alphaTest = "1";
+   alphaTest = "0";
    specularMap[0] = "art/shapes/textures/PBRGrid_c.dds";
    materialTag0 = "Miscellaneous";
    pixelSpecular0 = "0";
