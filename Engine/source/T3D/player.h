@@ -96,6 +96,7 @@ struct PlayerData: public ShapeBaseData {
    F32 upResistFactor;        ///< Factor of resistance once upResistSpeed has been reached
 
    F32 fallingSpeedThreshold; ///< Downward speed at which we consider the player falling
+   F32 vertDrag;
 
    S32 recoverDelay;          ///< # tick
    F32 recoverRunForceScale;  ///< RunForce multiplier in recover state
@@ -465,6 +466,7 @@ protected:
    
    S32 mContactTimer;               ///< Ticks since last contact
 
+   F32 mVertDrag;
    Point3F mJumpSurfaceNormal;      ///< Normal of the surface the player last jumped on
    U32 mJumpSurfaceLastContact;     ///< How long it's been since the player landed (ticks)
    F32  mWeaponBackFraction;        ///< Amount to slide the weapon back (if it's up against something)

@@ -281,6 +281,7 @@ PlayerData::PlayerData()
 
    fallingSpeedThreshold = -10.0f;
 
+   vertDrag = 0.3f;
    recoverDelay = 30;
    recoverRunForceScale = 1.0f;
    landSequenceTime = 0.0f;
@@ -905,6 +906,8 @@ void PlayerData::initPersistFields()
       addField( "fallingSpeedThreshold", TypeF32, Offset(fallingSpeedThreshold, PlayerData),
          "@brief Downward speed at which we consider the player falling.\n\n" );
 
+      addField( "vertDrag", TypeF32, Offset(vertDrag, PlayerData),
+         "@brief Vertical drag force.\n\n" );
       addField( "recoverDelay", TypeS32, Offset(recoverDelay, PlayerData),
          "@brief Number of ticks for the player to recover from falling.\n\n" );
 
@@ -1204,6 +1207,7 @@ void PlayerData::packData(BitStream* stream)
    stream->write(runSurfaceAngle);
 
    stream->write(fallingSpeedThreshold);
+   stream->write(vertDrag);
 
    stream->write(recoverDelay);
    stream->write(recoverRunForceScale);
@@ -1386,6 +1390,7 @@ void PlayerData::unpackData(BitStream* stream)
    stream->read(&runSurfaceAngle);
 
    stream->read(&fallingSpeedThreshold);
+   stream->read(&vertDrag);
    stream->read(&recoverDelay);
    stream->read(&recoverRunForceScale);
    stream->read(&landSequenceTime);
@@ -1651,6 +1656,7 @@ Player::Player()
    mLastAbsoluteYaw = 0.0f;
    mLastAbsolutePitch = 0.0f;
    mLastAbsoluteRoll = 0.0f;
+   mVertDrag = 0.3f;
 }
 
 Player::~Player()
@@ -1927,6 +1933,8 @@ bool Player::onNewDataBlock( GameBaseData *dptr, bool reload )
    mConvex.mSize.x = mObjBox.len_x() / 2.0f;
    mConvex.mSize.y = mObjBox.len_y() / 2.0f;
    mConvex.mSize.z = mObjBox.len_z() / 2.0f;
+
+   mVertDrag = mDataBlock->vertDrag;
 
    // Initialize our scaled attributes as well
    onScaleChanged();
@@ -3122,12 +3130,15 @@ void Player::updateMove(const Move* move)
       }
    }
 */
+	  mVertDrag = mDataBlock->vertDrag;
+
+   VectorF angledDrag = VectorF(mDrag,mDrag,mVertDrag);
 
    // Apply drag
    if ( mSwimming )
-      mVelocity -= mVelocity * mDrag * TickSec * ( mVelocity.len() / mDataBlock->maxUnderwaterForwardSpeed );
+      mVelocity -= mVelocity * angledDrag * TickSec * ( mVelocity.len() / mDataBlock->maxUnderwaterForwardSpeed );
    else
-      mVelocity -= mVelocity * mDrag * TickSec;
+      mVelocity -= mVelocity * angledDrag * TickSec;
 
    // Clamp very small velocity to zero
    if ( mVelocity.isZero() )

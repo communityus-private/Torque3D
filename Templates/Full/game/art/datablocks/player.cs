@@ -512,6 +512,7 @@ datablock PlayerData(DefaultPlayerData)
 
    mass = 120;
    drag = 1.3;
+   vertDrag = 1.3;
    maxdrag = 0.4;
    density = 1.1;
    maxDamage = 100;
