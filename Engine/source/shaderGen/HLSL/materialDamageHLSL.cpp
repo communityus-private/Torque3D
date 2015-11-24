@@ -230,7 +230,7 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
          material->setStructName("OUT");
       }
       
-      meta->addStatement(new GenOp("   @ = float4(0.0,@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
+      meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
    }
    output = meta;
 }
