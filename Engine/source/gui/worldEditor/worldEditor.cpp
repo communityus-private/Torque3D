@@ -48,6 +48,7 @@
 #include "T3D/prefab.h"
 #include "math/mEase.h"
 
+#include "tools/editorTool.h"
 
 
 IMPLEMENT_CONOBJECT( WorldEditor );
@@ -1808,6 +1809,8 @@ WorldEditor::WorldEditor()
    
    mFadeIcons = true;
    mFadeIconsDist = 8.f;
+
+   mActiveEditorTool = NULL;
 }
 
 WorldEditor::~WorldEditor()
@@ -1900,6 +1903,10 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
    setCursor(PlatformCursorController::curArrow);
    mHitObject = NULL;
 
+   //If we have an active tool and it's intercepted our input, bail out
+   if (mActiveEditorTool && mActiveEditorTool->onMouseMove(event))
+      return;
+
    //
    mUsingAxisGizmo = false;
 
@@ -1928,6 +1935,10 @@ void WorldEditor::on3DMouseMove(const Gui3DMouseEvent & event)
 
 void WorldEditor::on3DMouseDown(const Gui3DMouseEvent & event)
 {
+   //If we have an active tool and it's intercepted our input, bail out
+   if (mActiveEditorTool && mActiveEditorTool->onMouseDown(event))
+      return;
+
    mMouseDown = true;
    mMouseDragged = false;
    mPerformedDragCopy = false;
@@ -1995,6 +2006,10 @@ void WorldEditor::on3DMouseDown(const Gui3DMouseEvent & event)
 
 void WorldEditor::on3DMouseUp( const Gui3DMouseEvent &event )
 {
+   //If we have an active tool and it's intercepted our input, bail out
+   if (mActiveEditorTool && mActiveEditorTool->onMouseUp(event))
+      return;
+
    const bool wasUsingAxisGizmo = mUsingAxisGizmo;
    
    mMouseDown = false;
@@ -2150,6 +2165,10 @@ void WorldEditor::on3DMouseUp( const Gui3DMouseEvent &event )
 
 void WorldEditor::on3DMouseDragged(const Gui3DMouseEvent & event)
 {
+   //If we have an active tool and it's intercepted our input, bail out
+   if (mActiveEditorTool && mActiveEditorTool->onMouseDragged(event))
+      return;
+
    if ( !mMouseDown )
       return;
 
@@ -2380,11 +2399,16 @@ static void findDragMeshCallback( SceneObject *obj, void *data )
    }
 }
 
-void WorldEditor::renderScene( const RectI &updateRect )
+void WorldEditor::renderScene(const RectI &updateRect)
 {
-   GFXDEBUGEVENT_SCOPE( Editor_renderScene, ColorI::RED );
+   GFXDEBUGEVENT_SCOPE(Editor_renderScene, ColorI::RED);
 
    smRenderSceneSignal.trigger(this);
+
+   if (mActiveEditorTool)
+   {
+      mActiveEditorTool->render();
+   }
 	
    // Grab this before anything here changes it.
    Frustum frustum;
@@ -3170,6 +3194,19 @@ void WorldEditor::resetSelectedScale()
       if( object )
          object->setScale(Point3F(1,1,1));
    }
+}
+
+//------------------------------------------------------------------------------
+
+void WorldEditor::setEditorTool(EditorTool* newTool)
+{
+   if (mActiveEditorTool)
+      mActiveEditorTool->onDeactivated();
+
+   mActiveEditorTool = newTool;
+
+   if (mActiveEditorTool)
+      mActiveEditorTool->onActivated(this);
 }
 
 //------------------------------------------------------------------------------
@@ -3988,4 +4025,10 @@ DefineEngineMethod( WorldEditor, createConvexShapeFrom, ConvexShape*, ( SceneObj
    }
 
    return shape;
+}
+
+DefineEngineMethod(WorldEditor, setEditorTool, void, (EditorTool* newEditorTool), (NULL),
+   "Create a ConvexShape from the given polyhedral object.")
+{
+   object->setEditorTool(newEditorTool);
 }

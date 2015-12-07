@@ -58,7 +58,7 @@
 
 class SceneObject;
 class WorldEditorSelection;
-
+class EditorTool;
 
 ///
 class WorldEditor : public EditTSCtrl
@@ -282,6 +282,9 @@ class WorldEditor : public EditTSCtrl
       ClassInfo::Entry * getClassEntry(const SimObject * obj);
       bool addClassEntry(ClassInfo::Entry * entry);
 
+
+      EditorTool* mActiveEditorTool;
+
    // persist field data
    public:
 
@@ -406,6 +409,8 @@ class WorldEditor : public EditTSCtrl
       DECLARE_CONOBJECT(WorldEditor);
 
 	  static Signal<void(WorldEditor*)> smRenderSceneSignal;
+
+     void setEditorTool(EditorTool*);
 };
 
 typedef WorldEditor::DropType WorldEditorDropType;
