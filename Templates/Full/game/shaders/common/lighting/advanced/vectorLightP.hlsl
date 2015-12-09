@@ -288,7 +288,7 @@ float4 main( FarFrustumQuadConnectP IN,
                                       lightColor.rgb,
                                       normalize( -lightDirection ), 
                                       normal, 
-                                      IN.vsEyeRay * depth,
+                                      IN.vsEyeRay,
                                       matInfo.b,
                                       matInfo.a );
                                     

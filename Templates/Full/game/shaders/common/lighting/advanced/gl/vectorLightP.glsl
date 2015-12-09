@@ -288,13 +288,13 @@ void main()
                                       lightColor.rgb,
                                       normalize( -lightDirection ), 
                                       normal, 
-                                      vsEyeRay * depth,
+                                      vsEyeRay,
                                       matInfo.b,
                                       matInfo.a );
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-
    vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
+   
    vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
    // Sample the AO texture.      

@@ -226,7 +226,7 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
     //  Microfacet Specular Cook-Torrance
     //
        
-        float alphaSqr = pow( 1.0-roughness, 2 )+0.001;
+        float alphaSqr = pow( 1.0-roughness, 2 );
  
         float D = alphaSqr / ( PI * pow( (pow( nDotH, 2 ) * ( alphaSqr - 1.0f ) + 1.0f ), 2 ) );
  
@@ -242,7 +242,7 @@ float3 AL_CalcSpecular( float3 baseColor, float3 lightColor, float3 toLight, flo
     //  F( v, h ) ==> frensel term, slicks approach.
     //
  
-        float Fc = pow( vDotH,  5.0f );
+        float Fc = pow( 1.0 - vDotH,  5.0f );
  
         float Fdielectric = 0.04 + ( 1.0 - 0.04 ) * Fc;
        
