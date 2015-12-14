@@ -25,8 +25,8 @@
 #include "../../lighting.hlsl"
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
+#include "../../torque.hlsl"
 #include "../../shaderModelAutoGen.hlsl"
-
 
 struct ConvexConnectP
 {
@@ -40,7 +40,7 @@ struct ConvexConnectP
 #ifdef USE_COOKIE_TEX
 
 /// The texture for cookie rendering.
-TORQUE_UNIFORM_SAMPLERCUBE(cookieMap, 2);
+TORQUE_UNIFORM_SAMPLERCUBE(cookieMap, 3);
 
 #endif
 
@@ -109,30 +109,35 @@ TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 
 #ifdef SHADOW_CUBE
 TORQUE_UNIFORM_SAMPLERCUBE(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLERCUBE(dynamicShadowMap, 2);
 #else
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 #endif
 
 uniform float4 rtParams0;
 uniform float4 lightColor;
+
 uniform float  lightBrightness;
 uniform float3 lightPosition;
+
 uniform float4 lightMapParams;
 uniform float4 vsFarPlane;
-uniform float3x3 viewToLightProj;
-uniform float  lightRange;
 uniform float4 lightParams;
+
+uniform float  lightRange;
 uniform float shadowSoftness;
 uniform float2 lightAttenuation;
 
-
+uniform float3x3 viewToLightProj;
+uniform float3x3 dynamicViewToLightProj;
 
 float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 {   
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
-   
+      
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
    float3 normal = prepassSample.rgb;
@@ -176,15 +181,28 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
          
       #else
 
+         // Static
          float2 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) ).xy;
          
-         float shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
+         float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                              ssPos.xy,
                                              shadowCoord,
                                              shadowSoftness,
                                              distToLight,
                                              nDotL,
                                              lightParams.y );
+
+         // Dynamic
+         float2 dynamicShadowCoord = decodeShadowCoord( mul( dynamicViewToLightProj, -lightVec ) ).xy;
+         float dynamic_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
+                                             ssPos.xy,
+                                             dynamicShadowCoord,
+                                             shadowSoftness,
+                                             distToLight,
+                                             nDotL,
+                                             lightParams.y );
+
+         float shadowed = min(static_shadowed, dynamic_shadowed);
 
       #endif
 
