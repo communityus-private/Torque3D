@@ -37,7 +37,7 @@ float4 main( PFXVertToPix IN,
    float metalness = tex2D( matInfoTex, IN.uv0 ).a;
    
    float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   float3 reflectColor = lerp( colorBuffer, lightMapBuffer, metalness*0.4 );
+   float3 reflectColor = lerp( colorBuffer, toGamma(colorBuffer)*lightMapBuffer, metalness);
    colorBuffer = diffuseColor + toLinear(reflectColor);
    colorBuffer *= lightBuffer;
    
