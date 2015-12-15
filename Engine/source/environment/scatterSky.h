@@ -57,12 +57,6 @@ class TimeOfDay;
 class CubemapData;
 class MatrixSet;
 
-
-GFXDeclareVertexFormat( ScatterSkyVertex )
-{
-   Point3F point;
-};
-
 class ScatterSky : public SceneObject, public ISceneLight
 {
    typedef SceneObject Parent;
@@ -205,6 +199,8 @@ protected:
    LightInfo *mLight;
 
    bool mCastShadows;
+   S32 mStaticRefreshFreq;
+   S32 mDynamicRefreshFreq;
    bool mDirty;
 
    LightFlareData *mFlareData;
@@ -226,7 +222,7 @@ protected:
 
    // Prim buffer, vertex buffer and shader for rendering.
    GFXPrimitiveBufferHandle mPrimBuffer;
-   GFXVertexBufferHandle<ScatterSkyVertex> mVB;
+   GFXVertexBufferHandle<GFXVertexP> mVB;
    GFXShaderRef mShader;
 
    GFXStateBlockRef mStateBlock;
