@@ -41,7 +41,7 @@ void main()
    
    vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
    vec3 reflectColor = mix( colorBuffer, colorBuffer*lightMapBuffer, metalness);
-   colorBuffer = colorBuffer + reflectColor;
+   colorBuffer = diffuseColor + reflectColor;
    colorBuffer *= lightBuffer;
    
    OUT_col = hdrEncode( vec4(colorBuffer, 1.0) );

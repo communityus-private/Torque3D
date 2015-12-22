@@ -38,7 +38,7 @@ float4 main( PFXVertToPix IN,
    
    float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
    float3 reflectColor = lerp( colorBuffer, colorBuffer*lightMapBuffer, metalness);
-   colorBuffer = colorBuffer + reflectColor;
+   colorBuffer = diffuseColor + reflectColor;
    colorBuffer *= lightBuffer;
    
    return hdrEncode( float4(colorBuffer, 1.0) );   
