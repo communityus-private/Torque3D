@@ -37,7 +37,7 @@ float4 main( PFXVertToPix IN,
    float metalness = tex2D( matInfoTex, IN.uv0 ).a; //flags|smoothness|ao|metallic
    
    float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   float3 reflectColor = lerp( colorBuffer, colorBuffer*lightMapBuffer, metalness);
+   float3 reflectColor = colorBuffer*lightMapBuffer*metalness;
    colorBuffer = diffuseColor + reflectColor;
    colorBuffer *= lightBuffer;
    

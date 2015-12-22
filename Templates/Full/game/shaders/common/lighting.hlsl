@@ -304,6 +304,9 @@ float3 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 pos
     float3 specular = ( 1.0f - metal ) * Fr_dielec + metal * Fr_conductor;
 	float3 diffuse  = ( 1.0f - metal ) * Fd * f0;
 	
-    float3 ret = lerp(( diffuse + specular ) * NdotL * lightColor,lightColor/baseColor,saturate(metallic*Fr_dielec)); // gloss
+	// cancel out base color multiplication of specular at high grazing angles
+	// see deferredShadingP
+    float3 ret = ( diffuse + specular ) * NdotL * lerp(lightColor,lightColor/baseColor,NdotV);
+	
 	return ret;
 }

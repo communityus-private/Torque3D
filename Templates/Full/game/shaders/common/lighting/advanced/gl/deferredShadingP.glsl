@@ -40,7 +40,7 @@ void main()
    float metalness = texture( matInfoTex, uv0 ).a; //flags|smoothness|ao|metallic
    
    vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   vec3 reflectColor = mix( colorBuffer, colorBuffer*lightMapBuffer, metalness);
+   vec3 reflectColor = colorBuffer*lightMapBuffer*metalness;
    colorBuffer = diffuseColor + reflectColor;
    colorBuffer *= lightBuffer;
    

@@ -307,6 +307,6 @@ vec3 EvalBDRF( vec3 baseColor, vec3 lightColor, vec3 toLight, vec3 position, vec
 	
 	// cancel out base color multiplication of specular at high grazing angles
 	// see deferredShadingP
-    vec3 ret = mix(( diffuse + specular ) * NdotL * lightColor,lightColor/baseColor,saturate(metallic*Fr_dielec));
+    vec3 ret = ( diffuse + specular ) * NdotL * mix(lightColor,lightColor/baseColor,NdotV);
 	return ret;
 }
