@@ -286,11 +286,11 @@ void main()
    vec3 viewSpacePos = vsEyeRay * depth;
    vec3 real_specular = EvalBDRF( colorSample.rgb,
                                     lightColor.rgb,
-									normalize( -lightDirection ),
-									viewSpacePos,
-									normal,
-									1.0-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
-									matInfo.a );
+                                    normalize( -lightDirection ),
+                                    viewSpacePos,
+                                    normal,
+                                    1.0-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    matInfo.a );
    vec3 lightColorOut = real_specular * lightBrightness * shadowed;
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;

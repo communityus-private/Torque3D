@@ -244,11 +244,11 @@ float4 main(   ConvexConnectP IN,
    
    float3 real_specular = EvalBDRF( colorSample.rgb,
                                     lightcol,
-									lightVec,
-									viewSpacePos,
-									normal,
-									1.05-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
-									matInfo.a );
+                                    lightVec,
+                                    viewSpacePos,
+                                    normal,
+                                    1.05-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    matInfo.a );
    float3 lightColorOut = real_specular * lightBrightness * shadowed* atten;
    //lightColorOut /= colorSample.rgb;
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
