@@ -283,20 +283,20 @@ float4 main( FarFrustumQuadConnectP IN,
 
    // Specular term
    float4 colorSample = tex2D( colorBuffer, IN.uv0 );
-   float specular = 0;
-   float3 real_specular = AL_CalcSpecular(  colorSample.rgb,
-                                      lightColor.rgb,
-                                      normalize( -lightDirection ), 
-                                      normal, 
-                                      IN.vsEyeRay,
-                                      matInfo.b,
-                                      matInfo.a );
-                                    
-   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   float3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
    
+   float3 viewSpacePos = IN.vsEyeRay * depth;
+   float3 real_specular = EvalBDRF( colorSample.rgb,
+                                    lightColor.rgb,
+									normalize( -lightDirection ),
+									viewSpacePos,
+									normal,
+									1.0-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+									matInfo.a );
+   float3 lightColorOut = real_specular * lightBrightness * shadowed;
+   
+   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
-
+   
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
       float ao = 1.0 - tex2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams3 ) ).r;
@@ -306,6 +306,6 @@ float4 main( FarFrustumQuadConnectP IN,
    #ifdef PSSM_DEBUG_RENDER
       lightColorOut = debugColor;
    #endif
-
-   return matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
+   
+   return matInfo.g*(float4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
 }
