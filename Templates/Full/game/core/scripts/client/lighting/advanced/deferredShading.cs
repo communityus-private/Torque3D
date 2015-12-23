@@ -24,7 +24,12 @@ singleton ShaderData( DeferredColorShader )
 new GFXStateBlockData( AL_DeferredShadingState : PFX_DefaultStateBlock )
 {  
    cullMode = GFXCullNone;
-   
+      
+   blendDefined = true;
+   blendEnable = true; 
+   blendSrc = GFXBlendSrcAlpha;
+   blendDest = GFXBlendInvSrcAlpha;
+
    samplersDefined = true;
    samplerStates[0] = SamplerWrapLinear;
    samplerStates[1] = SamplerWrapLinear;

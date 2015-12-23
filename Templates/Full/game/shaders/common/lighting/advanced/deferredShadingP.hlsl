@@ -32,14 +32,14 @@ float4 main( PFXVertToPix IN,
              uniform sampler2D lightMapTex : register(S3)) : COLOR0
 {        
    float3 lightBuffer = tex2D( lightPrePassTex, IN.uv0 ).rgb; //shadowmap*specular
-   float3 colorBuffer = tex2D( colorBufferTex, IN.uv0 ).rgb; //albedo
+   float4 colorBuffer = tex2D( colorBufferTex, IN.uv0 ); //albedo
    float3 lightMapBuffer = tex2D( lightMapTex, IN.uv0 ).rgb; //environment mapping*lightmaps
    float metalness = tex2D( matInfoTex, IN.uv0 ).a; //flags|smoothness|ao|metallic
    
-   float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   float3 reflectColor = colorBuffer*lightMapBuffer*metalness;
-   colorBuffer = diffuseColor + reflectColor;
-   colorBuffer *= lightBuffer;
+   float3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * metalness);
+   float3 reflectColor = colorBuffer.rgb*lightMapBuffer*metalness;
+   colorBuffer.rgb = diffuseColor + reflectColor;
+   colorBuffer.rgb *= lightBuffer;
    
-   return hdrEncode( float4(colorBuffer, 1.0) );   
+   return hdrEncode( colorBuffer );   
 }
