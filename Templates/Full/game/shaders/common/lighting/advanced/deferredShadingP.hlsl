@@ -29,17 +29,22 @@ float4 main( PFXVertToPix IN,
              uniform sampler2D colorBufferTex : register(S0),
              uniform sampler2D lightPrePassTex : register(S1),
              uniform sampler2D matInfoTex : register(S2),
-             uniform sampler2D lightMapTex : register(S3)) : COLOR0
-{        
+             uniform sampler2D lightMapTex : register(S3),
+             uniform sampler2D prepassTex : register(S4)) : COLOR0
+{
+   float depth = prepassUncondition( prepassTex, IN.uv0 ).w;
+   if (depth>0.9999)
+      return float4(0,0,0,0);
+	  
    float3 lightBuffer = tex2D( lightPrePassTex, IN.uv0 ).rgb; //shadowmap*specular
-   float4 colorBuffer = tex2D( colorBufferTex, IN.uv0 ); //albedo
+   float3 colorBuffer = tex2D( colorBufferTex, IN.uv0 ).rgb; //albedo
    float3 lightMapBuffer = tex2D( lightMapTex, IN.uv0 ).rgb; //environment mapping*lightmaps
    float metalness = tex2D( matInfoTex, IN.uv0 ).a; //flags|smoothness|ao|metallic
    
-   float3 diffuseColor = colorBuffer.rgb - (colorBuffer.rgb * metalness);
-   float3 reflectColor = colorBuffer.rgb*lightMapBuffer*metalness;
-   colorBuffer.rgb = diffuseColor + reflectColor;
-   colorBuffer.rgb *= lightBuffer;
+   float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
+   float3 reflectColor = colorBuffer*lightMapBuffer*metalness;
+   colorBuffer = diffuseColor + reflectColor;
+   colorBuffer *= lightBuffer;
    
-   return hdrEncode( colorBuffer );   
+   return hdrEncode( float4(colorBuffer,1.0) );   
 }
