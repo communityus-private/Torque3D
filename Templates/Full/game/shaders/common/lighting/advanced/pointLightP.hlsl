@@ -239,16 +239,17 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
    // Specular term
    float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
    float specular = 0;
-   float3 real_specular = AL_CalcSpecular(  colorSample.rgb,
-                                      lightcol,
-                                      lightVec, 
-                                      normal, 
-                                      viewSpacePos,
-                                      matInfo.b,
-                                      matInfo.a );
-                                    
+   
+   float3 real_specular = EvalBDRF( colorSample.rgb,
+                                    lightcol,
+                                    lightVec,
+                                    viewSpacePos,
+                                    normal,
+                                    1.05-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    matInfo.a );
+   float3 lightColorOut = real_specular * lightBrightness * shadowed* atten;
+   //lightColorOut /= colorSample.rgb;
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   float3 lightColorOut = (lightcol + real_specular) * lightBrightness * shadowed * atten;
    float4 addToResult = 0.0;
     
    // TODO: This needs to be removed when lightmapping is disabled
@@ -267,5 +268,5 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
    
-   return matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
+   return matInfo.g*(float4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
 }

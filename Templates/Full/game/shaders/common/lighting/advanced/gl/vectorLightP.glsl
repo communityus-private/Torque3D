@@ -189,7 +189,6 @@ vec4 AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
                                  _dotNL,
                                  dot( finalMask, _overDarkPSSM ) ) );
 }
-
 out vec4 OUT_col;
 void main()             
 {
@@ -283,18 +282,19 @@ void main()
 
    // Specular term
    vec4 colorSample = texture( colorBuffer, uv0 );
-   float specular = 0;
-   vec3 real_specular = AL_CalcSpecular(  colorSample.rgb,
-                                      lightColor.rgb,
-                                      normalize( -lightDirection ), 
-                                      normal, 
-                                      vsEyeRay * depth,
-                                      matInfo.b,
-                                      matInfo.a );
+   
+   vec3 viewSpacePos = vsEyeRay * depth;
+   vec3 real_specular = EvalBDRF( colorSample.rgb,
+                                    lightColor.rgb,
+                                    normalize( -lightDirection ),
+                                    viewSpacePos,
+                                    normal,
+                                    1.0-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    matInfo.a );
+   vec3 lightColorOut = real_specular * lightBrightness * shadowed;
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-
-   vec3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
+   
    vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
 
    // Sample the AO texture.      
@@ -307,5 +307,5 @@ void main()
       lightColorOut = debugColor;
    #endif
 
-   OUT_col = matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);   
+   OUT_col = matInfo.g*(vec4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
 }

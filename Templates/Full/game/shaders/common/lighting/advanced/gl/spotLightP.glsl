@@ -175,16 +175,16 @@ void main()
    float specular = 0;
 
    vec3 lightVec = lightPosition - viewSpacePos;
-   vec3 real_specular = AL_CalcSpecular(  colorSample.rgb,
-                                      lightcol,
-                                      lightVec, 
-                                      normal, 
-                                      viewSpacePos,
-                                      matInfo.b,
-                                      matInfo.a );
-
+   vec3 real_specular = EvalBDRF( colorSample.rgb,
+                                    lightcol,
+                                    lightVec,
+                                    viewSpacePos,
+                                    normal,
+                                    1.05-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    matInfo.a );
+   vec3 lightColorOut = real_specular * lightBrightness * shadowed* atten;
+   
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   vec3 lightColorOut = (lightcol + real_specular) * lightBrightness * shadowed * atten;
    vec4 addToResult = vec4(0.0);
 
    // TODO: This needs to be removed when lightmapping is disabled
@@ -203,5 +203,5 @@ void main()
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   OUT_col = matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
+   OUT_col = matInfo.g*(vec4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
 }

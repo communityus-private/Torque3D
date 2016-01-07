@@ -2083,9 +2083,9 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    {
        //metalness: black(0) = color, white(1) = reflection
        if (fd.features[MFT_ToneMap])
-          meta->addStatement(new GenOp("   @ *= toLinear(@);\r\n", targ, texCube));
+          meta->addStatement(new GenOp("   @ *= @;\r\n", targ, texCube));
        else
-          meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", targ, texCube));
+          meta->addStatement(new GenOp("   @ = @;\r\n", targ, texCube));
    }
    else
    {

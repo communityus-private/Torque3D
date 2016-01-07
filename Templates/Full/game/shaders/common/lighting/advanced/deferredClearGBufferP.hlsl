@@ -46,13 +46,13 @@ Fragout main( Connect IN )
    OUT.col0 =  float4(1.0, 1.0, 1.0, 1.0);
 
    // Clear Color Buffer.
-   OUT.col1 = float4(0.0, 0.0, 0.0, 1.0);
+   OUT.col1 = float4(0.0, 0.0, 0.0, 0.0001);
 
    // Clear Material Info Buffer.
-   OUT.col2 = float4(0.0, 0.0, 0.0, 1.0);
+   OUT.col2 = float4(0.0, 0.0, 0.0, 0.0);
    
    // Clear Light Info Buffer.
-   OUT.col3 = float4(0.0, 0.0, 0.0, 1.0);
+   OUT.col3 = float4(0.0, 0.0, 0.0, 0.0);
 
    return OUT;
 }

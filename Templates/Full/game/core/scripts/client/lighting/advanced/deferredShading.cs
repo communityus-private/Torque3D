@@ -24,12 +24,18 @@ singleton ShaderData( DeferredColorShader )
 new GFXStateBlockData( AL_DeferredShadingState : PFX_DefaultStateBlock )
 {  
    cullMode = GFXCullNone;
-   
+      
+   blendDefined = true;
+   blendEnable = true; 
+   blendSrc = GFXBlendSrcAlpha;
+   blendDest = GFXBlendInvSrcAlpha;
+
    samplersDefined = true;
    samplerStates[0] = SamplerWrapLinear;
    samplerStates[1] = SamplerWrapLinear;
    samplerStates[2] = SamplerWrapLinear;
    samplerStates[3] = SamplerWrapLinear;
+   samplerStates[4] = SamplerWrapLinear;
 };
 
 new ShaderData( AL_DeferredShader )
@@ -44,6 +50,7 @@ new ShaderData( AL_DeferredShader )
    samplerNames[1] = "lightPrePassTex";
    samplerNames[2] = "matInfoTex";
    samplerNames[3] = "lightMapTex";
+   samplerNames[4] = "prepassTex";
    pixVersion = 2.0;
 };
 
@@ -57,6 +64,7 @@ singleton PostEffect( AL_DeferredShading )
    texture[1] = "#lightinfo";
    texture[2] = "#matinfo";
    texture[3] = "#lightmapinfo";
+   texture[4] = "#prepass";
    target = "$backBuffer";
    renderPriority = 10000;
    allowReflectPass = true;

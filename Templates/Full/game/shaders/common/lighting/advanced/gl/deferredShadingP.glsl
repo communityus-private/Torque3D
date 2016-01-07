@@ -29,20 +29,27 @@ uniform sampler2D colorBufferTex;
 uniform sampler2D lightPrePassTex;
 uniform sampler2D matInfoTex;
 uniform sampler2D lightMapTex;
+uniform sampler2D prepassTex;
 
 out vec4 OUT_col;
 
 void main()
-{        
-   vec3 lightBuffer = texture( lightPrePassTex, uv0 ).rgb;
-   vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb;
-   vec3 lightMapBuffer = texture( lightMapTex, uv0 ).rgb;
-   float metalness = texture( matInfoTex, uv0 ).a;
+{
+   float depth = prepassUncondition( prepassTex, uv0 ).w;
+   if (depth>0.9999)
+   {
+      OUT_col = vec4(0.0);
+      return;
+   }
+   vec3 lightBuffer = texture( lightPrePassTex, uv0 ).rgb; //shadowmap*specular
+   vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb; //albedo
+   vec3 lightMapBuffer = texture( lightMapTex, uv0 ).rgb; //environment mapping*lightmaps
+   float metalness = texture( matInfoTex, uv0 ).a; //flags|smoothness|ao|metallic
    
    vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   vec3 reflectColor = mix( colorBuffer, lightMapBuffer, metalness*0.4);
+   vec3 reflectColor = colorBuffer*lightMapBuffer*metalness;
    colorBuffer = diffuseColor + reflectColor;
    colorBuffer *= lightBuffer;
    
-   OUT_col = hdrEncode( vec4(colorBuffer, 1.0) );
+   OUT_col = hdrEncode( vec4(colorBuffer,1.0) );
 }

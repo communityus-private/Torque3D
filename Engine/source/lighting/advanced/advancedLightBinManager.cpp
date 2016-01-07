@@ -710,7 +710,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          // in the light info!
          //
          //ColorF lightAlt = lightInfo->getAltColor();
-         ColorF lightAlt( ColorF::BLACK ); // = lightInfo->getAltColor();
+         ColorF lightAlt( ColorF::ZERO ); // = lightInfo->getAltColor();
          if ( lightAlt.red == 0.0f && lightAlt.green == 0.0f && lightAlt.blue == 0.0f )
             lightAlt = (lightInfo->getColor() + renderState->getAmbientLightColor()) / 2.0f;
 

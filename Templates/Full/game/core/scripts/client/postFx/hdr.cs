@@ -22,7 +22,7 @@
 
 
 /// Blends between the scene and the tone mapped scene.
-$HDRPostFX::enableToneMapping = 1.0;
+$HDRPostFX::enableToneMapping = 0.5;
 
 /// The tone mapping middle grey or exposure value used
 /// to adjust the overall "balance" of the image.

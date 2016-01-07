@@ -294,7 +294,16 @@ float4 toLinear(float4 tex)
    return tex;
 }
 // Encodes gamma.
-float4 toLinear(float4 tex)
+float4 toGamma(float4 tex)
+{
+   return tex;
+}
+float3 toLinear(float3 tex)
+{
+   return tex;
+}
+// Encodes gamma.
+float3 toGamma(float3 tex)
 {
    return tex;
 }

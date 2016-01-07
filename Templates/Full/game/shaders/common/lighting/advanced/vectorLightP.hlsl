@@ -275,19 +275,19 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
    #endif // !NO_SHADOW
 
    // Specular term
-   float4 colorSample = TORQUE_TEX2D(colorBuffer, IN.uv0);
-   float specular = 0;
-   float3 real_specular = AL_CalcSpecular(  colorSample.rgb,
-                                      lightColor.rgb,
-                                      normalize( -lightDirection ), 
-                                      normal, 
-                                      IN.vsEyeRay * depth,
-                                      matInfo.b,
-                                      matInfo.a );
-                                    
-   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   float3 lightColorOut = (lightColor.rgb + real_specular) * lightBrightness * shadowed;
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
    
+   float3 viewSpacePos = IN.vsEyeRay * depth;
+   float3 real_specular = EvalBDRF( colorSample.rgb,
+                                    lightColor.rgb,
+                                    normalize( -lightDirection ),
+                                    viewSpacePos,
+                                    normal,
+                                    1.0-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    matInfo.a );
+   float3 lightColorOut = real_specular * lightBrightness * shadowed;
+   
+   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
 
    // Sample the AO texture.      
@@ -300,5 +300,5 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
       lightColorOut = debugColor;
    #endif
 
-   return matInfo.g*AL_DeferredOutput(lightColorOut, colorSample.rgb, addToResult, Sat_NL_Att);
+   return matInfo.g*(float4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
 }

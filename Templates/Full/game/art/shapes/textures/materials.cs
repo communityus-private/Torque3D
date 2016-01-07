@@ -88,15 +88,16 @@ singleton Material(pbrGrid)
 {
    mapTo = "PBRGrid";
    diffuseColor[0] = "1 1 1 1";
-   smoothness[0] = "1";
-   metalness[0] = "1";
-   translucentBlendOp = "None";
+   smoothness[0] = "0";
+   metalness[0] = "0";
+   translucentBlendOp = "LerpAlpha";
    diffuseMap[0] = "art/shapes/textures/PBRGrid_a.dds";
-   normalMap[0] = "art/shapes/textures/PBRGrid_n.png";
-   alphaTest = "0";
-   specularMap[0] = "art/shapes/textures/PBRGrid_c.dds";
+   alphaTest = "1";
    materialTag0 = "Miscellaneous";
    pixelSpecular0 = "0";
-   doubleSided = "1";
-   alphaRef = "67";
+   doubleSided = "0";
+   alphaRef = "1";
+   diffuseColor[2] = "1 1 1 1";
+   normalMap[0] = "art/shapes/textures/PBRGrid_n.png";
+   specularMap[0] = "art/shapes/textures/PBRGrid_c.dds";
 };

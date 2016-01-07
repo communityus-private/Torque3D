@@ -1,6 +1,6 @@
 //-----------------------------------------------------------------------------
 // Copyright (c) 2012 GarageGames, LLC
-//
+// Portions Copyright Zefiros
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
 // deal in the Software without restriction, including without limitation the
@@ -183,102 +183,130 @@ void compute4Lights( vec3 wsView,
 }
 
 
-// This value is used in AL as a constant power to raise specular values
-// to, before storing them into the light info buffer. The per-material 
-// specular value is then computer by using the integer identity of 
-// exponentiation: 
-//
-//    (a^m)^n = a^(m*n)
-//
-//       or
-//
-//    (specular^constSpecular)^(matSpecular/constSpecular) = specular^(matSpecular*constSpecular)   
-//
-#define AL_ConstantSpecularPower 12.0f
-
-/// The specular calculation used in Advanced Lighting.
-///
-///   @param toLight    Normalized vector representing direction from the pixel 
-///                     being lit, to the light source, in world space.
-///
-///   @param normal  Normalized surface normal.
-///   
-///   @param toEye   The normalized vector representing direction from the pixel 
-///                  being lit to the camera.
-///
-vec3 AL_CalcSpecular( vec3 baseColor, vec3 lightColor, vec3 toLight, vec3 normal, vec3 toEye, float roughness, float metallic )
+vec3 F_schlick( in vec3 f0, in vec3 f90, in float u )
 {
-    float PI = 3.14159265898793f;
-
-    float nDotL = saturate( dot( normal, toLight ) );
- 
-    if ( nDotL == 0 )
-        return vec3( 0.0f, 0.0f, 0.0f );        
-       
-    vec3 V = -toEye;
-    vec3 H = normalize( toLight + V );
- 
-    float nDotH = saturate( dot( normal, H ) );
-    float nDotV = saturate( dot( normal, V ) );
-    float vDotH = saturate(  dot( V, H )  );
- 
+	//
+    //  F( v, h ) =  F0 + ( 1.0 - F0 ) *  pow( 1.0f - HdotV,  5.0f )
     //
-    //  Microfacet Specular Cook-Torrance
     //
-        
-        float alphaSqr = pow( 1.0-roughness, 2 )+0.001;;
- 
-        float D = alphaSqr / ( PI * pow( (pow( nDotH, 2 ) * ( alphaSqr - 1.0f ) + 1.0f ), 2 ) );
- 
+    //  where 
     //
-    //  G( l, v, h ) ==> Geometric attenution, basicly a visibility term
+    //  F0 = BaseColor * nDotL
+    //
+    //  Dielectric materials always have a range of 0.02 < F0 < 0.05 , use a stock value of 0.04 ( roughly plastics )
     //
 
-    float geo_b = (2.0f * nDotH * nDotV ) / vDotH;
-    float geo_c = (2.0f * nDotH * nDotL ) / vDotH;
-    float G   = min( 1.0f, min( geo_b, geo_c ) );
-
-    //
-    //  F( v, h ) ==> frensel term, slicks approach.
-    //
-
-        float Fc = pow( vDotH,  5.0f );
- 
-        float Fdielectric = 0.04 + ( 1.0 - 0.04 ) * Fc;
-       
-        vec3 Fconductor = baseColor + ( vec3( 1.0, 1.0, 1.0 ) - baseColor ) * Fc;
-
-    //
-    // Evalute based on the metallic property
-    //
- 
-    float  fDielectric = ( ( 1.0f - metallic ) * D * G * Fdielectric ) / 4.0f ;
-    vec3 fConductor  = ( metallic * D * G * Fconductor  )  / 4.0f ;
- 
-    //
-    // Specular color
-    //
- 
-    return ( fDielectric + fConductor ) * nDotL * lightColor;
+	return f0 + ( f90 - f0 ) * pow( 1.0f - u ,  5.0f );
 }
 
-/// The output for Deferred Lighting
-///
-///   @param toLight    Normalized vector representing direction from the pixel 
-///                     being lit, to the light source, in world space.
-///
-///   @param normal  Normalized surface normal.
-///   
-///   @param toEye   The normalized vector representing direction from the pixel 
-///                  being lit to the camera.
-///
-vec4 AL_DeferredOutput(
-      vec3   lightColor,
-      vec3   diffuseColor,
-      vec4   ambient,
-      float shadowAttenuation)
-{    
-   lightColor *= vec3(shadowAttenuation);
-   lightColor += ambient.rgb;
-   return vec4(lightColor.rgb, 0.0f); 
+float Fr_DisneyDiffuse ( float NdotV , float NdotL , float LdotH , float linearRoughness )
+{
+	float energyBias = mix (0 , 0.5 , linearRoughness );
+	float energyFactor = mix (1.0 , 1.0 / 1.51 , linearRoughness );
+	float fd90 = energyBias + 2.0 * LdotH * LdotH * linearRoughness ;
+	vec3 f0 = vec3 ( 1.0f , 1.0f , 1.0f );
+	float lightScatter = F_schlick( f0 , vec3(fd90), NdotL ).r;
+	float viewScatter = F_schlick(f0 , vec3(fd90), NdotV ).r;
+
+	return lightScatter * viewScatter * energyFactor ;
+}
+
+float SmithGGX( float NdotL, float NdotV, float alpha )
+{
+    //
+    // G( L, V, h ) = G( L ) G( V )
+    //
+    //                    nDotL
+    // G( L ) = _________________________
+    //             nDotL ( 1 - k ) + k
+    //
+    //         
+    //                     NdotV
+    // G( V ) = _________________________
+    //             NdotV ( 1 - k ) + k
+    //
+    //
+    //               pow( ( Roughness + 1 ), 2)
+    //  , Where  k = __________________________     ( unreal 4 )
+    //                          8
+    //
+	
+	float alphaSqr = alpha * alpha;
+
+	//float GGX_V = NdotL * sqrt ( ( - NdotV * alphaSqr + NdotV ) * NdotV + alphaSqr );
+	//float GGX_L = NdotV * sqrt ( ( - NdotL * alphaSqr + NdotL ) * NdotL + alphaSqr );
+	
+	float GGX_V = NdotL + sqrt ( ( - NdotV * alphaSqr + NdotV ) * NdotV + alphaSqr );
+	float GGX_L = NdotV + sqrt ( ( - NdotL * alphaSqr + NdotL ) * NdotL + alphaSqr );
+	
+	return 1.0/( GGX_V + GGX_L ); 
+	//return 0.5f / ( GGX_V + GGX_L ); 
+}
+
+float D_GGX( float NdotH , float alpha )
+{
+    //
+    // or GGX ( disney / unreal 4 )
+    //
+    //  alpha = pow( roughness, 2 );
+    //
+    //                                    pow( alpha, 2 )
+    //  D( h ) = ________________________________________________________________      
+    //           PI pow( pow( NdotH , 2 ) ( pow( alpha, 2 ) - 1 ) + 1 ), 2 )
+    //
+
+	float alphaSqr = alpha*alpha;
+	float f = ( NdotH * alphaSqr - NdotH ) * NdotH + 1;
+	return alphaSqr / ( M_PI_F * (f * f) );
+}
+
+vec3 EvalBDRF( vec3 baseColor, vec3 lightColor, vec3 toLight, vec3 position, vec3 normal,  float roughness, float metallic )
+{
+	//
+    //  Microfacet Specular Cook-Torrance
+    //
+    //                D( h ) F( v, h ) G( l, v, h )
+    //    f( l, v ) = ____________________________
+    //                 4 ( dot( n, l ) dot( n, v )
+    //                 
+    //
+
+	vec3 L = normalize( toLight );
+	vec3 V = normalize( -position );
+	vec3 H = normalize( L + V );
+	vec3 N = normal;
+	
+	float NdotV = abs( dot( N, V ) ) + 1e-5f;
+	float NdotH = saturate( dot( N, H ) );
+	float NdotL = saturate( dot( N, L ) );
+	float LdotH = saturate( dot( L, H ) );
+	
+	float VdotH = saturate( dot( V, H ) );
+
+	if ( NdotL == 0 ) 
+		return vec3( 0.0f, 0.0f, 0.0f ); 
+	
+	float alpha = roughness;
+	float visLinAlpha = alpha * alpha;
+	
+	vec3 f0 = baseColor;
+	float  metal = metallic;
+	
+	vec3 F_conductor= F_schlick( f0, vec3( 1.0, 1.0, 1.0 ), VdotH );
+	vec3 F_dielec   = F_schlick( vec3( 0.04, 0.04, 0.04 ), vec3( 1.0, 1.0, 1.0 ), VdotH );
+	float  Vis        = SmithGGX( NdotL, NdotV, visLinAlpha );
+	float  D          = D_GGX( NdotH, visLinAlpha );
+	
+	vec3 Fr_dielec    = D * F_dielec * Vis; 
+	vec3 Fr_conductor = D * F_conductor * Vis; 
+	
+	vec3 Fd = vec3(Fr_DisneyDiffuse( NdotV , NdotL , LdotH , visLinAlpha ) / M_PI_F);
+	
+    vec3 specular = ( 1.0f - metal ) * Fr_dielec + metal * Fr_conductor;
+	vec3 diffuse  = ( 1.0f - metal ) * Fd * f0;
+	
+	// cancel out base color multiplication of specular at high grazing angles
+	// see deferredShadingP
+    vec3 ret = ( diffuse + specular ) * NdotL * mix(lightColor,lightColor/baseColor,NdotV);
+	return ret;
 }
