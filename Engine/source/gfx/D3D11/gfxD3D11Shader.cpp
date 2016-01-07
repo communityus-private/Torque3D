@@ -1104,7 +1104,7 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
 
    //get the sampler descriptions from the resource binding description
    U32 resourceCount = tableDesc.BoundResources;
-   for (int i = 0; i < resourceCount; i++)
+   for (U32 i = 0; i < resourceCount; i++)
    {
       GFXShaderConstDesc desc;
       D3D11_SHADER_INPUT_BIND_DESC bindDesc;

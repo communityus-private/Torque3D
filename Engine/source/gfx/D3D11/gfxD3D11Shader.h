@@ -78,16 +78,16 @@ enum REGISTER_TYPE
 struct ConstantDesc
 {
     String Name;
-    int RegisterIndex;
-    int RegisterCount;
-    int Rows;
-    int Columns;
-    int Elements;
-    int StructMembers;
+    S32 RegisterIndex;
+    S32 RegisterCount;
+    S32 Rows;
+    S32 Columns;
+    S32 Elements;
+    S32 StructMembers;
     REGISTER_TYPE RegisterSet;
     CONST_CLASS Class;
     CONST_TYPE Type;
-    size_t Bytes;
+    U32 Bytes;
 };
 
 class ConstantTable
@@ -95,10 +95,10 @@ class ConstantTable
 public:
   bool Create(const void* data);
 
-  size_t GetConstantCount() const { return m_constants.size(); }
+  U32 GetConstantCount() const { return m_constants.size(); }
   const String& GetCreator() const { return m_creator; } 
 
-  const ConstantDesc* GetConstantByIndex(size_t i) const { return &m_constants[i]; }
+  const ConstantDesc* GetConstantByIndex(U32 i) const { return &m_constants[i]; }
   const ConstantDesc* GetConstantByName(const String& name) const;
 
   void ClearConstants() { m_constants.clear(); }

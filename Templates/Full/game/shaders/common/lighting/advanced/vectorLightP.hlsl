@@ -42,20 +42,24 @@ TORQUE_UNIFORM_SAMPLER2D(colorBuffer,6);
 TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer,7);
              
 uniform float3 lightDirection;
-uniform float4 lightColor;
 uniform float  lightBrightness;
-uniform float4 lightAmbient;
-uniform float4x4 eyeMat;
              
+uniform float shadowSoftness;
 uniform float3 eyePosWorld;
+
+uniform float2 fadeStartLength;
+uniform float2 atlasScale;
+
+uniform float4 lightColor;
+uniform float4 lightAmbient;
+
 uniform float4 atlasXOffset;
 uniform float4 atlasYOffset;
-uniform float2 atlasScale;
 uniform float4 zNearFarInvNearFar;
 uniform float4 lightMapParams;
-uniform float2 fadeStartLength;
 uniform float4 overDarkPSSM;
-uniform float shadowSoftness;
+
+uniform float4x4 eyeMat;
 
 // Static Shadows
 uniform float4x4 worldToLightProj;
@@ -196,7 +200,6 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
    {
        return float4(1.0, 1.0, 1.0, 0.0);
    }
-   
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
@@ -246,8 +249,8 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
                                                         atlasScale,
                                                         shadowSoftness, 
                                                         dotNL,
-                                                        overDarkPSSM);      
-        
+                                                        overDarkPSSM);
+
       float static_shadowed = static_shadowed_colors.a;
       float dynamic_shadowed = dynamic_shadowed_colors.a;
 	  
@@ -292,7 +295,7 @@ float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
-      float ao = 1.0 - TORQUE_TEX2D(ssaoMask, viewportCoordToRenderTarget(IN.uv0.xy, rtParams3)).r;
+      float ao = 1.0 - TORQUE_TEX2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams3 ) ).r;
       addToResult *= ao;
    #endif
 
