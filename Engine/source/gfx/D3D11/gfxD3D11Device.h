@@ -125,6 +125,8 @@ protected:
 
    F32 mPixVersion;
 
+   bool mDebugLayers;
+
    DXGI_SAMPLE_DESC mMultisampleDesc;
 
    bool mOcclusionQuerySupported;
