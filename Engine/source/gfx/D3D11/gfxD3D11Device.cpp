@@ -302,7 +302,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
          &mD3DDevice,
          &deviceFeature,
          &mD3DDeviceContext);
-      //if we failed again than it's definatel
+      //if we failed again than we definitely have a problem
       if (FAILED(hres))
          AssertFatal(false, "GFXD3D11Device::init - D3D11CreateDeviceAndSwapChain failed!");
 
