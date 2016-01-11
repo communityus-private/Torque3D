@@ -211,13 +211,13 @@ function disconnectedCleanup()
    
    // Clear misc script stuff
    if (isObject(HudMessageVector))
-      HudMessageVector.clear();
+   HudMessageVector.clear();
    
    //
    if (isObject(LagIcon))
-      LagIcon.setVisible(false);
+   LagIcon.setVisible(false);
    if (isObject(PlayerListGui))
-      PlayerListGui.clear();
+   PlayerListGui.clear();
    
    // Clear all print messages
    clientCmdclearBottomPrint();

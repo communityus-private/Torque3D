@@ -101,34 +101,34 @@ function clientCmdRefreshWeaponHUD(%amount, %preview, %ret, %zoomRet, %amountInC
 {
    if (isObject(AmmoAmount))
    {
-       if (!%amount)
-          AmmoAmount.setVisible(false);
-       else
-       {
-          AmmoAmount.setVisible(true);
-          AmmoAmount.setText("Ammo: " @ %amount @ "/" @ %amountInClips);
-       }
+   if (!%amount)
+      AmmoAmount.setVisible(false);
+   else
+   {
+      AmmoAmount.setVisible(true);
+      AmmoAmount.setText("Ammo: " @ %amount @ "/" @ %amountInClips);
+   }
    }
 
    if (isObject(WeaponHUD))
    {
-       if (%preview $= "")
-          WeaponHUD.setVisible(false);//PreviewImage.setVisible(false);
-       else
-       {
-          WeaponHUD.setVisible(true);//PreviewImage.setVisible(true);
-          PreviewImage.setbitmap("art/gui/weaponHud/"@ detag(%preview));
-       }
+   if (%preview $= "")
+      WeaponHUD.setVisible(false);//PreviewImage.setVisible(false);
+   else
+   {
+      WeaponHUD.setVisible(true);//PreviewImage.setVisible(true);
+      PreviewImage.setbitmap("art/gui/weaponHud/"@ detag(%preview));
+   }
    }
 
    if (isObject(Reticle))
    {
-       if (%ret $= "")
-          Reticle.setVisible(false);
-       else
-       {
-          Reticle.setVisible(true);
-          Reticle.setbitmap("art/gui/weaponHud/"@ detag(%ret));
+   if (%ret $= "")
+      Reticle.setVisible(false);
+   else
+   {
+      Reticle.setVisible(true);
+      Reticle.setbitmap("art/gui/weaponHud/"@ detag(%ret));
        }
    }
 
