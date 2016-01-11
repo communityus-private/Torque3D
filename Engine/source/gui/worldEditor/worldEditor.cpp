@@ -1303,7 +1303,7 @@ void WorldEditor::renderObjectFace(SceneObject * obj, const VectorF & normal, co
 
    PrimBuild::color( col );
 
-   PrimBuild::begin( GFXTriangleFan, 4 );
+   PrimBuild::begin( GFXTriangleStrip, 4 );
       for(U32 k = 0; k < 4; k++)
       {
          PrimBuild::vertex3f(projPnts[k].x, projPnts[k].y, projPnts[k].z);
@@ -2810,7 +2810,7 @@ void WorldEditor::clearSelection()
 
 void WorldEditor::selectObject( SimObject *obj )
 {
-   if ( mSelectionLocked || !mSelected )
+   if ( mSelectionLocked || !mSelected || !obj )
       return;
 
    // Don't check isSelectionEnabled of SceneObjects here as we
@@ -2833,7 +2833,7 @@ void WorldEditor::selectObject( const char* obj )
 
 void WorldEditor::unselectObject( SimObject *obj )
 {
-   if ( mSelectionLocked || !mSelected )
+   if ( mSelectionLocked || !mSelected || !obj )
       return;
 
    if ( !objClassIgnored( obj ) && mSelected->objInSet( obj ) )

@@ -32,25 +32,23 @@
 
 // Notes
 //
-// Position should be specified as a float4. Right now our vertex structures in 
-// the engine output float3s for position. This does NOT mean that the POSITION
-// binding should be float3, because it will assign 0 to the w coordinate, which
-// results in the vertex not getting translated when it is transformed. 
+// Position should be specified as a float3 as our vertex structures in 
+// the engine output float3s for position.
 
 struct VertexIn_P
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
 };
 
 struct VertexIn_PT
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float2 uv0        : TEXCOORD0;
 };
 
 struct VertexIn_PTTT
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float2 uv0        : TEXCOORD0;
    float2 uv1        : TEXCOORD1;
    float2 uv2        : TEXCOORD2;
@@ -58,40 +56,40 @@ struct VertexIn_PTTT
 
 struct VertexIn_PC
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float4 color      : DIFFUSE;
 };
 
 struct VertexIn_PNC
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float3 normal     : NORMAL;
    float4 color      : DIFFUSE;
 };
 
 struct VertexIn_PCT
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float4 color      : DIFFUSE;
    float2 uv0        : TEXCOORD0;
 };
 
 struct VertexIn_PN
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float3 normal     : NORMAL;
 };
 
 struct VertexIn_PNT
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float3 normal     : NORMAL;
    float2 uv0        : TEXCOORD0;
 };
 
 struct VertexIn_PNTT
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float3 normal     : NORMAL;
    float3 tangent    : TANGENT;
    float2 uv0        : TEXCOORD0;
@@ -99,7 +97,7 @@ struct VertexIn_PNTT
 
 struct VertexIn_PNCT
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float3 normal     : NORMAL;
    float4 color      : DIFFUSE;
    float2 uv0        : TEXCOORD0;
@@ -107,7 +105,7 @@ struct VertexIn_PNCT
 
 struct VertexIn_PNTTTB
 {
-   float4 pos        : POSITION;
+   float3 pos        : POSITION;
    float3 normal     : NORMAL; 
    float2 uv0        : TEXCOORD0;
    float2 uv1        : TEXCOORD1;   

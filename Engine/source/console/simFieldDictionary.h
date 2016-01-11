@@ -58,13 +58,13 @@ public:
       Entry *next;
       ConsoleBaseType *type;
    };
-private:
    enum
    {
       HashTableSize = 19
    };
    Entry *mHashTable[HashTableSize];
 
+private:
    static Entry   *smFreeList;
 
    void           freeEntry(Entry *entry);

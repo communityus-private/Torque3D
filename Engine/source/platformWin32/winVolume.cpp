@@ -240,7 +240,7 @@ void Win32FileSystem::verifyCompatibility(const Path& _path, WIN32_FIND_DATAW _i
 {
    if (_path.getFullFileName().isNotEmpty() && _path.getFullFileName().compare(String(_info.cFileName)) != 0)
    {
-      Con::warnf("Linux Compatibility Warning: %s != %s", String(_info.cFileName).c_str(), _path.getFullFileName().c_str());
+      //Con::warnf("Linux Compatibility Warning: %s != %s", String(_info.cFileName).c_str(), _path.getFullFileName().c_str());
    }
 }
 

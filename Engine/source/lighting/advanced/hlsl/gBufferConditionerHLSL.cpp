@@ -28,6 +28,7 @@
 #include "materials/materialFeatureTypes.h"
 #include "materials/materialFeatureData.h"
 #include "shaderGen/hlsl/shaderFeatureHLSL.h"
+#include "gfx/gfxDevice.h"
 
 
 GBufferConditionerHLSL::GBufferConditionerHLSL( const GFXFormat bufferFormat, const NormalSpace nrmSpace ) : 
@@ -232,6 +233,17 @@ Var* GBufferConditionerHLSL::printMethodHeader( MethodType methodType, const Str
       prepassSampler->setType("sampler2D");
       DecOp *prepassSamplerDecl = new DecOp(prepassSampler);
 
+      Var *prepassTex = NULL;
+      DecOp *prepassTexDecl = NULL;
+      if (GFX->getAdapterType() == Direct3D11)
+      {
+         prepassSampler->setType("SamplerState");
+         prepassTex = new Var;
+         prepassTex->setName("prepassTexVar");
+         prepassTex->setType("Texture2D");
+         prepassTexDecl = new DecOp(prepassTex);
+      }
+
       Var *screenUV = new Var;
       screenUV->setName("screenUVVar");
       screenUV->setType("float2");
@@ -242,7 +254,10 @@ Var* GBufferConditionerHLSL::printMethodHeader( MethodType methodType, const Str
       bufferSample->setType("float4");
       DecOp *bufferSampleDecl = new DecOp(bufferSample); 
 
-      meta->addStatement( new GenOp( "@(@, @)\r\n", methodDecl, prepassSamplerDecl, screenUVDecl ) );
+      if (prepassTex)
+         meta->addStatement(new GenOp("@(@, @, @)\r\n", methodDecl, prepassSamplerDecl, prepassTexDecl, screenUVDecl));
+      else
+         meta->addStatement(new GenOp("@(@, @)\r\n", methodDecl, prepassSamplerDecl, screenUVDecl));
 
       meta->addStatement( new GenOp( "{\r\n" ) );
 
@@ -254,11 +269,16 @@ Var* GBufferConditionerHLSL::printMethodHeader( MethodType methodType, const Str
 #else
       // The gbuffer has no mipmaps, so use tex2dlod when 
       // possible so that the shader compiler can optimize.
-      meta->addStatement( new GenOp( "   #if TORQUE_SM >= 30\r\n" ) );
-      meta->addStatement( new GenOp( "      @ = tex2Dlod(@, float4(@,0,0));\r\n", bufferSampleDecl, prepassSampler, screenUV ) );
-      meta->addStatement( new GenOp( "   #else\r\n" ) );
-      meta->addStatement( new GenOp( "      @ = tex2D(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV ) );
-      meta->addStatement( new GenOp( "   #endif\r\n\r\n" ) );
+      meta->addStatement(new GenOp("   #if TORQUE_SM >= 30\r\n"));
+
+      if (prepassTex)
+         meta->addStatement(new GenOp("      @ = @.SampleLevel(@, @,0);\r\n", bufferSampleDecl, prepassTex, prepassSampler, screenUV));
+      else
+         meta->addStatement(new GenOp("      @ = tex2Dlod(@, float4(@,0,0));\r\n", bufferSampleDecl, prepassSampler, screenUV));
+
+      meta->addStatement(new GenOp("   #else\r\n"));
+      meta->addStatement(new GenOp("      @ = tex2D(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV));
+      meta->addStatement(new GenOp("   #endif\r\n\r\n"));
 #endif
 
       // We don't use this way of passing var's around, so this should cause a crash

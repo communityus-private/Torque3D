@@ -64,7 +64,8 @@ protected:
    F32 mBrightness;
 
    bool mCastShadows;
-
+   S32 mStaticRefreshFreq;
+   S32 mDynamicRefreshFreq;
    F32 mPriority;
 
    LightInfo *mLight;

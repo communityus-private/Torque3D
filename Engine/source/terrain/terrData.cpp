@@ -158,9 +158,9 @@ DefineConsoleFunction( getTerrainUnderWorldPoint, S32, (const char* ptOrX, const
                                                       "@hide")
 {
    Point3F pos;
-   if(!dStrIsEmpty(ptOrX) && dStrIsEmpty(y) && dStrIsEmpty(z))
+   if(!String::isEmpty(ptOrX) && String::isEmpty(y) && String::isEmpty(z))
       dSscanf(ptOrX, "%f %f %f", &pos.x, &pos.y, &pos.z);
-   else if(!dStrIsEmpty(ptOrX) && !dStrIsEmpty(y) && !dStrIsEmpty(z))
+   else if(!String::isEmpty(ptOrX) && !String::isEmpty(y) && !String::isEmpty(z))
    {
       pos.x = dAtof(ptOrX);
       pos.y = dAtof(y);
@@ -1366,9 +1366,9 @@ DefineConsoleFunction( getTerrainHeight, F32, (const char* ptOrX, const char* y)
    F32 height = 0.0f;
 
    Point2F pos;
-   if(!dStrIsEmpty(ptOrX) && dStrIsEmpty(y))
+   if(!String::isEmpty(ptOrX) && String::isEmpty(y))
       dSscanf(ptOrX, "%f %f", &pos.x, &pos.y);
-   else if(!dStrIsEmpty(ptOrX) && !dStrIsEmpty(y))
+   else if(!String::isEmpty(ptOrX) && !String::isEmpty(y))
    {
       pos.x = dAtof(ptOrX);
       pos.y = dAtof(y);
@@ -1413,9 +1413,9 @@ DefineConsoleFunction( getTerrainHeightBelowPosition, F32, (const char* ptOrX, c
 	F32 height = 0.0f;
 
    Point3F pos;
-   if(!dStrIsEmpty(ptOrX) && dStrIsEmpty(y) && dStrIsEmpty(z))
+   if(!String::isEmpty(ptOrX) && String::isEmpty(y) && String::isEmpty(z))
       dSscanf(ptOrX, "%f %f %f", &pos.x, &pos.y, &pos.z);
-   else if(!dStrIsEmpty(ptOrX) && !dStrIsEmpty(y) && !dStrIsEmpty(z))
+   else if(!String::isEmpty(ptOrX) && !String::isEmpty(y) && !String::isEmpty(z))
    {
       pos.x = dAtof(ptOrX);
       pos.y = dAtof(y);

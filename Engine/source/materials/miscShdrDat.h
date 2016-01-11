@@ -45,6 +45,7 @@ enum RegisterType
    RT_COLOR,
    RT_TEXCOORD,
    RT_VPOS,
+   RT_SVPOSITION,
 };
 
 enum Components
