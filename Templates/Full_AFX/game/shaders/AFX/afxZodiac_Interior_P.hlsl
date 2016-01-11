@@ -8,27 +8,21 @@
 // Copyright (C) Faust Logic, Inc.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
+#include "../common/shaderModel.hlsl"
+
 struct ConnectData
 {
-   float4 hpos         : POSITION;
+   float4 hpos         : TORQUE_POSITION;
    float2 texCoord     : TEXCOORD0;
 };
 
-struct Fragout
-{
-   float4 col : COLOR0;
-};
+TORQUE_UNIFORM_SAMPLER2D(zodiacMap,0);
+uniform float4    zodiacColor;
 
-Fragout main( ConnectData IN,
-              uniform sampler2D zodiacMap       : register(S0),
-              uniform float4    zodiacColor     : register(C2)
-)
+float4 main( ConnectData IN ) : TORQUE_TARGET0
 {
-   Fragout OUT;
-   
-   OUT.col = zodiacColor*tex2D(zodiacMap, IN.texCoord);
-   
-   return OUT;
+   float4 outColor = zodiacColor*TORQUE_TEX2D(zodiacMap, IN.texCoord);   
+   return outColor;
 }
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
