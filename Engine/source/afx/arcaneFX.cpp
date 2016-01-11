@@ -756,8 +756,8 @@ IMPLEMENT_STRUCT( ByteRange, ByteRange,,
    "" )
 END_IMPLEMENT_STRUCT;
 
-ConsoleType( ByteRange, TypeByteRange, ByteRange)
-ConsoleType( ByteRange, TypeByteRange2, ByteRange)
+ConsoleType( ByteRange, TypeByteRange, ByteRange, "")
+ConsoleType( ByteRange, TypeByteRange2, ByteRange, "")
 
 ConsoleGetType( TypeByteRange )
 {
