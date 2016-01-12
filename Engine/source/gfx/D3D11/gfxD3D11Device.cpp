@@ -269,6 +269,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifdef TORQUE_DEBUG
    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+   mDebugLayers = true;
 #endif
 
    DXGI_SWAP_CHAIN_DESC d3dpp = setupPresentParams(mode, winHwnd);
@@ -291,7 +292,25 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 
 	if(FAILED(hres))
 	{
+      #ifdef TORQUE_DEBUG
+      //try again without debug device layer enabled
+      createDeviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
+      HRESULT hres = D3D11CreateDeviceAndSwapChain(NULL, driverType,NULL,createDeviceFlags,NULL, 0,
+         D3D11_SDK_VERSION,
+         &d3dpp,
+         &mSwapChain,
+         &mD3DDevice,
+         &deviceFeature,
+         &mD3DDeviceContext);
+      //if we failed again than we definitely have a problem
+      if (FAILED(hres))
+         AssertFatal(false, "GFXD3D11Device::init - D3D11CreateDeviceAndSwapChain failed!");
+
+      Con::warnf("GFXD3D11Device::init - Debug layers not detected!");
+      mDebugLayers = false;
+      #else
 		AssertFatal(false, "GFXD3D11Device::init - D3D11CreateDeviceAndSwapChain failed!");
+      #endif
 	}
 
    //set the fullscreen state here if we need to
@@ -604,7 +623,9 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
 
    mOcclusionQuerySupported = false;
 
-   for(int i = 0; i < GS_COUNT; ++i)
+   mDebugLayers = false;
+
+   for(U32 i = 0; i < GS_COUNT; ++i)
       mModelViewProjSC[i] = NULL;
 
    // Set up the Enum translation tables
@@ -644,11 +665,14 @@ GFXD3D11Device::~GFXD3D11Device()
    }
 
 #ifdef TORQUE_DEBUG
-   ID3D11Debug *pDebug = NULL;
-   mD3DDevice->QueryInterface(IID_PPV_ARGS(&pDebug));  
-   AssertFatal(pDebug, "~GFXD3D11Device- Failed to get debug layer");
-   pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-   pDebug->Release();
+   if (mDebugLayers)
+   {
+      ID3D11Debug *pDebug = NULL;
+      mD3DDevice->QueryInterface(IID_PPV_ARGS(&pDebug));
+      AssertFatal(pDebug, "~GFXD3D11Device- Failed to get debug layer");
+      pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+      pDebug->Release();
+   }
 #endif
 
    SAFE_RELEASE(mSwapChain);

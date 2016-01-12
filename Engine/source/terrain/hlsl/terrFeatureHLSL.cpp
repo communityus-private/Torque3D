@@ -540,12 +540,12 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
          if (fd.features.hasFeature(MFT_IsDXTnm, detailIndex))
          {
             meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @, @.xy, @, @.z * @ );\r\n",
-               inDet, normalMap, normalMapTex, inDet, negViewTS, detailInfo, detailBlend));
+               inDet, normalMapTex, normalMap, inDet, negViewTS, detailInfo, detailBlend));
          }
          else
          {
             meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @, @.xy, @, @.z * @ );\r\n",
-               inDet, normalMap, normalMapTex, inDet, negViewTS, detailInfo, detailBlend));
+               inDet, normalMapTex, normalMap, inDet, negViewTS, detailInfo, detailBlend));
          }
       }
       else
