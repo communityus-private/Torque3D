@@ -40,7 +40,7 @@ struct Fragout
 };
 
 TORQUE_UNIFORM_SAMPLER2D(texMap, 0);
-TORQUE_UNIFORM_SAMPLER2D(refractMap, 0);
+TORQUE_UNIFORM_SAMPLER2D(refractMap, 1);
 
 //-----------------------------------------------------------------------------
 // Main                                                                        
