@@ -28,13 +28,18 @@
 float4 main( PFXVertToPix IN, 
              uniform sampler2D colorBufferTex : register(S0),
              uniform sampler2D lightPrePassTex : register(S1),
-             uniform sampler2D matInfoTex : register(S2)) : COLOR0
+             uniform sampler2D matInfoTex : register(S2),
+             uniform sampler2D prepassTex : register(S3)) : COLOR0
 {        
    float4 lightBuffer = tex2D( lightPrePassTex, IN.uv0 );
    float4 colorBuffer = tex2D( colorBufferTex, IN.uv0 );
    float4 matInfo = tex2D( matInfoTex, IN.uv0 );
    float specular = saturate(lightBuffer.a);
+   float depth = prepassUncondition( prepassTex, IN.uv0 ).w;
 
+   if (depth>0.9999)
+      return float4(0,0,0,0);
+	  
    // Diffuse Color Altered by Metalness
    bool metalness = getFlag(matInfo.r, 3);
    if ( metalness )
@@ -45,5 +50,5 @@ float4 main( PFXVertToPix IN,
    colorBuffer *= float4(lightBuffer.rgb, 1.0);
    colorBuffer += float4(specular, specular, specular, 1.0);
 
-   return hdrEncode( colorBuffer );   
+   return hdrEncode( float4(colorBuffer.rgb, 1.0) );   
 }

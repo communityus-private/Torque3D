@@ -28,11 +28,18 @@
 uniform sampler2D colorBufferTex;
 uniform sampler2D lightPrePassTex;
 uniform sampler2D matInfoTex;
+uniform sampler2D prepassTex;
 
 out vec4 OUT_col;
 
 void main()
-{        
+{
+   float depth = prepassUncondition( prepassTex, uv0 ).w;
+   if (depth>0.9999)
+   {
+      OUT_col = vec4(0.0);
+      return;
+   }
    vec4 lightBuffer = texture( lightPrePassTex, uv0 );
    vec4 colorBuffer = texture( colorBufferTex, uv0 );
    vec4 matInfo = texture( matInfoTex, uv0 );
@@ -48,5 +55,5 @@ void main()
    colorBuffer *= vec4(lightBuffer.rgb, 1.0);
    colorBuffer += vec4(specular, specular, specular, 1.0);
 
-   OUT_col = hdrEncode( colorBuffer );
+   OUT_col = hdrEncode( vec4(colorBuffer.rgb, 1.0) );
 }
