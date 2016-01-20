@@ -20,6 +20,7 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "../../shaderModelAutoGen.hlsl"
 #include "../../torque.hlsl"
 #include "../postFx.hlsl"
 
@@ -27,6 +28,7 @@ TORQUE_UNIFORM_SAMPLER2D(sceneTex, 0);
 TORQUE_UNIFORM_SAMPLER2D(luminanceTex, 1);
 TORQUE_UNIFORM_SAMPLER2D(bloomTex, 2);
 TORQUE_UNIFORM_SAMPLER1D(colorCorrectionTex, 3);
+TORQUE_UNIFORM_SAMPLER2D(prepassTex, 4);
 
 uniform float2 texSize0;
 uniform float2 texSize2;
@@ -81,7 +83,9 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    }
 
    // Add the bloom effect.
-   sample += g_fBloomScale * bloom;
+   float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
+   if (depth>0.9999)
+      sample += g_fBloomScale * bloom;
 
    // Apply the color correction.
    sample.r = TORQUE_TEX1D( colorCorrectionTex, sample.r ).r;

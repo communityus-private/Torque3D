@@ -111,6 +111,7 @@ public:
    static const RenderInstType RIT_DecalRoad;
    static const RenderInstType RIT_Water;
    static const RenderInstType RIT_Foliage;
+   static const RenderInstType RIT_VolumetricFog;
    static const RenderInstType RIT_Translucent;
    static const RenderInstType RIT_Begin;
    static const RenderInstType RIT_Custom;

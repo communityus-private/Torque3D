@@ -76,6 +76,8 @@ function initRenderManager()
 	DiffuseRenderPassManager.addManager( new RenderParticleMgr(ParticleBin)    { renderOrder = 1.35; processAddOrder = 1.35; } );
    DiffuseRenderPassManager.addManager( new RenderTranslucentMgr(TranslucentBin){ renderOrder = 1.4; processAddOrder = 1.4; } );
    
+   DiffuseRenderPassManager.addManager(new RenderObjectMgr(FogBin){ bintype = "ObjectVolumetricFog"; renderOrder = 1.45; processAddOrder = 1.45; } );
+   
    // Note that the GlowPostFx is triggered after this bin.
    DiffuseRenderPassManager.addManager( new RenderGlowMgr(GlowBin)             { renderOrder = 1.5; processAddOrder = 1.5; } );
    
