@@ -100,10 +100,6 @@ void RenderMeshMgr::render(SceneRenderState * state)
    if(!mElementList.size())
       return;
 
-   // Check if bin is disabled in advanced lighting.
-   if ( MATMGR->getPrePassEnabled() && mBasicOnly )
-      return;
-
    GFXDEBUGEVENT_SCOPE( RenderMeshMgr_Render, ColorI::GREEN );
 
    // Automagically save & restore our viewport and transforms.
@@ -147,6 +143,14 @@ void RenderMeshMgr::render(SceneRenderState * state)
       if( !mat )
          mat = MATMGR->getWarningMatInstance();
 
+      // Check if bin is disabled in advanced lighting.
+      // Allow forward rendering pass on custom materials.
+
+      if ( ( MATMGR->getPrePassEnabled() && mBasicOnly && !mat->isCustomMaterial() ) )
+      {
+         j++;
+         continue;
+      }
 
       U32 matListEnd = j;
       lastMiscTex = sgData.miscTex;
