@@ -22,15 +22,17 @@
 
 #include "platform/platform.h"
 #include "gfx/gl/gfxGLOcclusionQuery.h"
+#include "gfx/gl/tGL/tGL.h"
 
-GFXGLOcclusionQuery::GFXGLOcclusionQuery(GFXDevice* device) :
-GFXOcclusionQuery(device), mQuery(NULL), mTesting(false)
+GFXGLOcclusionQuery::GFXGLOcclusionQuery(GFXDevice* device) : 
+   GFXOcclusionQuery(device), mQuery(-1)
 {
+   
 }
 
 GFXGLOcclusionQuery::~GFXGLOcclusionQuery()
 {
-   if (!glIsQuery(mQuery))
+   if(mQuery != -1)
       glDeleteQueries(1, &mQuery);
 }
 
@@ -38,15 +40,11 @@ bool GFXGLOcclusionQuery::begin()
 {
    if (GFXDevice::getDisableOcclusionQuery())
       return true;
-
-   if (!glIsQuery(mQuery))
+   
+   if(mQuery == -1)
       glGenQueries(1, &mQuery);
 
-   if (!mTesting)
-   {
-      glBeginQuery(GL_SAMPLES_PASSED, mQuery);
-      mTesting = true;
-   }
+   glBeginQuery(GL_SAMPLES_PASSED, mQuery);
    return true;
 }
 
@@ -54,11 +52,8 @@ void GFXGLOcclusionQuery::end()
 {
    if (GFXDevice::getDisableOcclusionQuery())
       return;
-
-   if (!glIsQuery(mQuery))
-      return;
+      
    glEndQuery(GL_SAMPLES_PASSED);
-   mTesting = false;
 }
 
 GFXOcclusionQuery::OcclusionQueryStatus GFXGLOcclusionQuery::getStatus(bool block, U32* data)
@@ -70,41 +65,37 @@ GFXOcclusionQuery::OcclusionQueryStatus GFXGLOcclusionQuery::getStatus(bool bloc
    if (GFXDevice::getDisableOcclusionQuery())
       return NotOccluded;
 
-   if (!glIsQuery(mQuery))
+   if(mQuery == -1)
       return NotOccluded;
-
+   
    GLint numPixels = 0;
    GLint queryDone = false;
-
+   
    if (block)
       queryDone = true;
    else
       glGetQueryObjectiv(mQuery, GL_QUERY_RESULT_AVAILABLE, &queryDone);
-
+   
    if (queryDone)
       glGetQueryObjectiv(mQuery, GL_QUERY_RESULT, &numPixels);
    else
       return Waiting;
-
+   
    if (data)
       *data = numPixels;
-
+   
    return numPixels > 0 ? NotOccluded : Occluded;
 }
 
 void GFXGLOcclusionQuery::zombify()
 {
-   if (!glIsQuery(mQuery))
-      return;
-
    glDeleteQueries(1, &mQuery);
-   mQuery = NULL;
+   mQuery = -1;
 }
 
 void GFXGLOcclusionQuery::resurrect()
 {
-   if (!glIsQuery(mQuery))
-      glGenQueries(1, &mQuery);
+   glGenQueries(1, &mQuery);
 }
 
 const String GFXGLOcclusionQuery::describeSelf() const
