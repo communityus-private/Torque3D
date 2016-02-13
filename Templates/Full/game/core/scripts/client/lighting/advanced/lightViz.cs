@@ -56,7 +56,7 @@ new ShaderData( AL_DepthVisualizeShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgDepthVisualizeP.glsl";
 
-   samplerNames[0] = "prepassBuffer";
+   samplerNames[0] = "prepassTex";
    samplerNames[1] = "depthViz";
 
    pixVersion = 2.0;
@@ -113,7 +113,7 @@ new ShaderData( AL_NormalsVisualizeShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgNormalVisualizeP.glsl";
    
-   samplerNames[0] = "prepassBuffer";
+   samplerNames[0] = "prepassTex";
    
    pixVersion = 2.0;
 };
