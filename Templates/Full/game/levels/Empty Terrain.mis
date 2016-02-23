@@ -141,29 +141,6 @@ new SimGroup(MissionGroup) {
       canSave = "1";
       canSaveDynamicFields = "1";
    };
-   new OfflineLPV() {
-      voxelSize = "1";
-      regenVolume = "0";
-      showVoxels = "0";
-      lightIntensity = "1";
-      emissiveIntensity = "1";
-      injectLights = "0";
-      showDirectLight = "0";
-      propagationMultiplier = "1";
-      propagateLights = "0";
-      showPropagated = "0";
-      GIMultiplier = "1";
-      exportPropagated = "0";
-      exportDirectLight = "0";
-      renderReflection = "0";
-      saveResults = "0";
-      loadResults = "0";
-      position = "-3.18835 2.68952 279.432";
-      rotation = "1 0 0 0";
-      scale = "100 100 100";
-      canSave = "1";
-      canSaveDynamicFields = "1";
-   };
    new TimeOfDay(tod) {
       axisTilt = "23.44";
       dayLength = "80";
