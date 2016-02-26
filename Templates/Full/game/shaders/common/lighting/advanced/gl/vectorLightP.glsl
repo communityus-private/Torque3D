@@ -239,8 +239,6 @@ void main()
                                                         shadowSoftness, 
                                                         dotNL,
                                                         overDarkPSSM);
-
-                                             
       vec4 dynamic_shadowed_colors = AL_VectorLightShadowCast( dynamicShadowMap,
                                                         uv0.xy,
                                                         dynamicWorldToLightProj,
@@ -253,7 +251,6 @@ void main()
                                                         shadowSoftness, 
                                                         dotNL,
                                                         overDarkPSSM);  
-      
       float static_shadowed = static_shadowed_colors.a;
       float dynamic_shadowed = dynamic_shadowed_colors.a;
 	  

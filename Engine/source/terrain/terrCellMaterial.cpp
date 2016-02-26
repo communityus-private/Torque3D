@@ -316,8 +316,6 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    // cases, but the most common case results in much fewer
    // shader generation failures and permutations leading to
    // faster load time and less hiccups during gameplay.
-   // note that at time of writing, most heightmap based engines push around 8,
-   // so we'll cap at 12 for safeties sake
    U32 matCount = getMin( sgMaxTerrainMaterialsPerPass, materials->size() );
 
    Vector<GFXTexHandle> normalMaps;
