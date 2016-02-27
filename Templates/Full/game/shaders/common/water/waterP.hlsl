@@ -282,7 +282,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    foamColor.rgb *= FOAM_OPACITY * foamAmt * foamColor.a;
 
    // Get reflection map color.
-   float4 refMapColor = hdrDecode( TORQUE_TEX2D( reflectMap, reflectCoord ) );  
+   float4 refMapColor = TORQUE_TEX2D( reflectMap, reflectCoord ); 
    
    // If we do not have a reflection texture then we use the cubemap.
    refMapColor = lerp( refMapColor, TORQUE_TEXCUBE( skyMap, reflectionVec ), NO_REFLECT );
