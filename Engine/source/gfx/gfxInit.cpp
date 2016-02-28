@@ -221,6 +221,7 @@ GFXAdapter* GFXInit::chooseAdapter( GFXAdapterType type, const char* outputDevic
 
 const char* GFXInit::getAdapterNameFromType(GFXAdapterType type)
 {
+   // must match GFXAdapterType order
    static const char* _names[] = { "OpenGL", "D3D11", "D3D9", "NullDevice", "Xenon" };
    
    if( type < 0 || type >= GFXAdapterType_Count )
