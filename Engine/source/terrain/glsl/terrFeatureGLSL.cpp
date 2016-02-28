@@ -396,9 +396,6 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    const S32 detailIndex = getProcessIndex();
    Var *inTex = getVertTexCoord( "texCoord" );
 
-   // new terrain
-   bool hasNormal = fd.features.hasFeature(MFT_TerrainNormalMap, detailIndex);
-
    MultiLine *meta = new MultiLine;
 
    // We need the negative tangent space view vector

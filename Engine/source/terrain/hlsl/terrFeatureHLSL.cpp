@@ -551,7 +551,6 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
    meta->addStatement( new GenOp( "      @ *= @.y * @.w;\r\n",
                                     detailColor, detailInfo, inDet ) );
 
-   Var *baseColor = (Var*)LangElement::find( "baseColor" );
    ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
    if(fd.features.hasFeature( MFT_DeferredTerrainDetailMap ))
@@ -805,8 +804,6 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
 
    meta->addStatement( new GenOp( "      @ *= @.y * @.w;\r\n",
                                     detailColor, detailInfo, inDet ) );
-
-   Var *baseColor = (Var*)LangElement::find( "baseColor" );
 
    ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
