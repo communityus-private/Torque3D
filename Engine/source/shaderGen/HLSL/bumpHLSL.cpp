@@ -384,7 +384,7 @@ void ParallaxFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
       if (mIsDirect3D11)
          meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @, @.xy, @, @ );\r\n",
-            texCoord, normalMap, bumpMapTexture, texCoord, negViewTS, parallaxInfo));
+         texCoord, bumpMapTexture, normalMap, texCoord, negViewTS, parallaxInfo));
       else
          meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @ );\r\n",
             texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
@@ -393,7 +393,7 @@ void ParallaxFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    {
       if (mIsDirect3D11)
          meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @, @.xy, @, @ );\r\n",
-            texCoord, normalMap, bumpMapTexture, texCoord, negViewTS, parallaxInfo));
+         texCoord, bumpMapTexture, normalMap, texCoord, negViewTS, parallaxInfo));
       else
          meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @.xy, @, @ );\r\n",
             texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
