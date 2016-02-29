@@ -517,15 +517,30 @@ Var* ShaderFeatureHLSL::getInViewToTangent( Vector<ShaderComponent*> &componentL
 
 Var* ShaderFeatureHLSL::getNormalMapTex()
 {
-   Var *normalMap = (Var*)LangElement::find( "bumpMap" );
-   if ( !normalMap )
+   Var *normalMap = (Var*)LangElement::find("bumpMap");
+   if (!normalMap)
    {
       normalMap = new Var;
-      normalMap->setType( "sampler2D" );
-      normalMap->setName( "bumpMap" );
+      normalMap->setType("sampler2D");
+      normalMap->setName("bumpMap");
       normalMap->uniform = true;
       normalMap->sampler = true;
       normalMap->constNum = Var::getTexUnitNum();
+
+      // D3D11
+      Var* normalMapTex = NULL;
+      if (GFX->getAdapterType() == Direct3D11)
+      {
+         normalMap->setType("SamplerState");
+         normalMapTex = new Var;
+         normalMapTex->setName("bumpMapTex");
+         normalMapTex->setType("Texture2D");
+         normalMapTex->uniform = true;
+         normalMapTex->texture = true;
+         normalMapTex->constNum = normalMap->constNum;
+      }
+
+
    }
 
    return normalMap;
@@ -900,7 +915,7 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    if (  fd.features[MFT_CubeMap] )
    {
-      if (diffuseMapTex)
+      if (mIsDirect3D11)
          meta->addStatement(new GenOp("   @ = @.Sample(@, @);\r\n", colorDecl, diffuseMapTex, diffuseMap, inTex));
       else
          meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n", colorDecl, diffuseMap, inTex));
@@ -1001,11 +1016,10 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    }
    else
    {
-      LangElement *statement = NULL;
       if (mIsDirect3D11)
-         statement = new GenOp("@.Sample(@, @)", diffuseMapTex, diffuseMap, inTex);
+         meta->addStatement(new GenOp("@ = @.Sample(@, @);\r\n", colorDecl, diffuseMapTex, diffuseMap, inTex));
       else
-         statement = new GenOp("tex2D(@, @)", diffuseMap, inTex);
+         meta->addStatement(new GenOp("@ = tex2D(@, @);\r\n", colorDecl, diffuseMap, inTex));
 
       if (!fd.features[MFT_Imposter])
          meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
@@ -2567,7 +2581,8 @@ void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    // Everything else does a fizzle.
    Var *vPos = getInVpos( meta, componentList );
-   meta->addStatement( new GenOp( "   fizzle( @, @ );\r\n", vPos, visibility ) );
+   // vpos is a float4 in d3d11
+   meta->addStatement( new GenOp( "   fizzle( @.xy, @ );\r\n", vPos, visibility ) );
 }
 
 ShaderFeature::Resources VisibilityFeatHLSL::getResources( const MaterialFeatureData &fd )

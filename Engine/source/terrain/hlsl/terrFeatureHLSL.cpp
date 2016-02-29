@@ -599,6 +599,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
    //Sampled detail texture that is not expanded
    if (mIsDirect3D11)
    {
+      detailMap->setType("SamplerState");
       Var* detailTex = new Var;
       detailTex->setName(String::ToString("detailTex%d", detailIndex));
       detailTex->setType("Texture2D");

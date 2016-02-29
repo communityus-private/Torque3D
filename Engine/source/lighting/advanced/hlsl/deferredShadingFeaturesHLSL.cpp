@@ -79,12 +79,14 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    Var* specColor = new Var;
    specColor->setName("specColor");
    specColor->setType("float4");
+   LangElement *specColorElem = new DecOp(specColor);
+
    meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
    //sample specular map
    if (mIsDirect3D11)
-      meta->addStatement(new GenOp("   @ = @.Sample(@, @);\r\n", specColor, specularMapTex, specularMap, texCoord));
+      meta->addStatement(new GenOp("   @ = @.Sample(@, @);\r\n", specColorElem, specularMapTex, specularMap, texCoord));
    else
-      meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n", specColor, specularMap, texCoord));
+      meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n", specColorElem, specularMap, texCoord));
    
    meta->addStatement(new GenOp("   @.b = dot(@.rgb, float3(0.3, 0.59, 0.11));\r\n", material, specColor));
    meta->addStatement(new GenOp("   @.a = @.a;\r\n", material, specColor));
