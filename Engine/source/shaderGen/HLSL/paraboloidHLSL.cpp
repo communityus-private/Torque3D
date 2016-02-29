@@ -51,6 +51,8 @@ void ParaboloidVertTransformHLSL::processVert(  Vector<ShaderComponent*> &compon
       type = RT_SVPOSITION;
 
    Var *outPosition = connectComp->getElement(type);
+   outPosition->setName("hpos");
+   outPosition->setStructName("OUT");
 
    // Get the atlas scale.
    Var *atlasScale = new Var;
