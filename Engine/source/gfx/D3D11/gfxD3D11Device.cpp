@@ -346,6 +346,8 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 	// detect occlusion query support
 	if (SUCCEEDED(mD3DDevice->CreateQuery(&queryDesc, &testQuery))) mOcclusionQuerySupported = true;
 
+   SAFE_RELEASE(testQuery);
+
 	Con::printf("Hardware occlusion query detected: %s", mOcclusionQuerySupported ? "Yes" : "No");
    
 	mCardProfiler = new GFXD3D11CardProfiler();
