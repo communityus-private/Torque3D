@@ -796,6 +796,7 @@ Var* ShaderFeatureHLSL::addOutDetailTexCoord(   Vector<ShaderComponent*> &compon
 
    // Grab incoming texture coords.
    Var *inTex = getVertTexCoord( "texCoord" );
+   inTex->setType("float2");
 
    // create detail variable
    Var *detScale = new Var;
@@ -814,8 +815,6 @@ Var* ShaderFeatureHLSL::addOutDetailTexCoord(   Vector<ShaderComponent*> &compon
 
    if ( useTexAnim )
    {
-      inTex->setType( "float4" );
-
       // Find or create the texture matrix.
       Var *texMat = (Var*)LangElement::find( "texMat" );
       if ( !texMat )
@@ -827,13 +826,7 @@ Var* ShaderFeatureHLSL::addOutDetailTexCoord(   Vector<ShaderComponent*> &compon
          texMat->constSortPos = cspPass;   
       }
 
-      if (mIsDirect3D11)
-      {
-         inTex->setType("float2");
-         meta->addStatement(new GenOp("   @ = mul(@, float4(@,1,1)) * @;\r\n", outTex, texMat, inTex, detScale));
-      }
-      else
-         meta->addStatement(new GenOp("   @ = mul(@, @).xy * @;\r\n", outTex, texMat, inTex, detScale));
+      meta->addStatement(new GenOp("   @ = mul(@, float4(@,1,1)).xy * @;\r\n", outTex, texMat, inTex, detScale));
    }
    else
    {
