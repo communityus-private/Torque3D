@@ -22,11 +22,13 @@
 
 #include "../../torque.hlsl"
 #include "../postFx.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(sceneTex, 0);
 TORQUE_UNIFORM_SAMPLER2D(luminanceTex, 1);
 TORQUE_UNIFORM_SAMPLER2D(bloomTex, 2);
 TORQUE_UNIFORM_SAMPLER1D(colorCorrectionTex, 3);
+TORQUE_UNIFORM_SAMPLER2D(prepassTex, 4);
 
 uniform float2 texSize0;
 uniform float2 texSize2;
@@ -38,8 +40,10 @@ uniform float g_fEnableBlueShift;
 
 uniform float3 g_fBlueShiftColor;
 uniform float g_fBloomScale;
-uniform float g_fOneOverGamma;
 
+uniform float g_fOneOverGamma;
+uniform float Brightness;
+uniform float Contrast;
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
@@ -79,7 +83,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    }
 
    // Add the bloom effect.
-   float depth = prepassUncondition( prepassTex, IN.uv0 ).w;
+   float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
    if (depth>0.9999)
       sample += g_fBloomScale * bloom;
 
