@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 GarageGames, LLC
+// Copyright (c) 2015 GarageGames, LLC
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -20,24 +20,16 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "../../hlslStructs.hlsl"
-#include "farFrustumQuad.hlsl"
+#ifndef _TORQUE_SHADERMODEL_AUTOGEN_
+#define _TORQUE_SHADERMODEL_AUTOGEN_
 
+#include "shadergen:/autogenConditioners.h"
 
-FarFrustumQuadConnectV main( VertexIn_PNTT IN,
-                             uniform float4 rtParams0 )
-{
-   FarFrustumQuadConnectV OUT;
+// Portability helpers for autogenConditioners
+#if (TORQUE_SM >= 10 && TORQUE_SM <=30)
+   #define TORQUE_PREPASS_UNCONDITION(tex, coords) prepassUncondition(tex, coords)
+#elif TORQUE_SM >= 40
+   #define TORQUE_PREPASS_UNCONDITION(tex, coords) prepassUncondition(tex, texture_##tex, coords)
+#endif
 
-   OUT.hpos = float4( IN.uv0, 0, 1 );
-
-   // Get a RT-corrected UV from the SS coord
-   OUT.uv0 = getUVFromSSPos( OUT.hpos.xyz, rtParams0 );
-   
-   // Interpolators will generate eye rays the 
-   // from far-frustum corners.
-   OUT.wsEyeRay = IN.tangent;
-   OUT.vsEyeRay = IN.normal;
-
-   return OUT;
-}
+#endif //_TORQUE_SHADERMODEL_AUTOGEN_

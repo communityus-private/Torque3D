@@ -20,24 +20,24 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "../../hlslStructs.hlsl"
-#include "farFrustumQuad.hlsl"
+#include "../../shaderModel.hlsl"
 
-
-FarFrustumQuadConnectV main( VertexIn_PNTT IN,
-                             uniform float4 rtParams0 )
+struct Appdata
 {
-   FarFrustumQuadConnectV OUT;
+	float3 pos     : POSITION;
+	float4 color   : COLOR;
+};
 
-   OUT.hpos = float4( IN.uv0, 0, 1 );
+struct Conn
+{
+   float4 hpos : TORQUE_POSITION;
+};
 
-   // Get a RT-corrected UV from the SS coord
-   OUT.uv0 = getUVFromSSPos( OUT.hpos.xyz, rtParams0 );
-   
-   // Interpolators will generate eye rays the 
-   // from far-frustum corners.
-   OUT.wsEyeRay = IN.tangent;
-   OUT.vsEyeRay = IN.normal;
+uniform float4x4 modelview;
 
-   return OUT;
+Conn main( Appdata In )
+{
+   Conn Out;
+   Out.hpos = float4(In.pos,1.0);
+   return Out;
 }

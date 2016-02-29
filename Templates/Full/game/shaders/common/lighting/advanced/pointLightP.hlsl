@@ -20,7 +20,7 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
+#include "../../shaderModelAutoGen.hlsl"
 
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
@@ -31,6 +31,7 @@
 
 struct ConvexConnectP
 {
+   float4 pos : TORQUE_POSITION;
    float4 wsEyeDir : TEXCOORD0;
    float4 ssPos : TEXCOORD1;
    float4 vsEyeDir : TEXCOORD2;
@@ -41,7 +42,7 @@ struct ConvexConnectP
 #ifdef USE_COOKIE_TEX
 
 /// The texture for cookie rendering.
-uniform samplerCUBE cookieMap : register(S3);
+TORQUE_UNIFORM_SAMPLERCUBE(cookieMap, 3);
 
 #endif
 
@@ -53,9 +54,9 @@ uniform samplerCUBE cookieMap : register(S3);
       return shadowCoord;
    }
 
-   float4 shadowSample( samplerCUBE shadowMap, float3 shadowCoord )
+   float4 shadowSample( TORQUE_SAMPLERCUBE(shadowMap), float3 shadowCoord )
    {
-      return texCUBE( shadowMap, shadowCoord );
+      return TORQUE_TEXCUBE( shadowMap, shadowCoord );
    }
   
 #else
@@ -106,44 +107,41 @@ uniform samplerCUBE cookieMap : register(S3);
 
 #endif
 
+TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 
-float4 main(   ConvexConnectP IN,
+#ifdef SHADOW_CUBE
+TORQUE_UNIFORM_SAMPLERCUBE(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLERCUBE(dynamicShadowMap, 2);
+#else
+TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
+#endif
 
-               uniform sampler2D prePassBuffer : register(S0),
+uniform float4 rtParams0;
+uniform float4 lightColor;
 
-               #ifdef SHADOW_CUBE
-                  uniform samplerCUBE shadowMap : register(S1),
-               #else
-                  uniform sampler2D shadowMap : register(S1),
-                  uniform sampler2D dynamicShadowMap : register(S2),
-               #endif
+uniform float  lightBrightness;
+uniform float3 lightPosition;
 
-               uniform sampler2D lightBuffer : register(S5),
-               uniform sampler2D colorBuffer : register(S6),
-               uniform sampler2D matInfoBuffer : register(S7),
+uniform float4 lightMapParams;
+uniform float4 vsFarPlane;
+uniform float4 lightParams;
 
-               uniform float4 rtParams0,
+uniform float  lightRange;
+uniform float shadowSoftness;
+uniform float2 lightAttenuation;
 
-               uniform float3 lightPosition,
-               uniform float4 lightColor,
-               uniform float  lightBrightness,
-               uniform float  lightRange,
-               uniform float2 lightAttenuation,
-               uniform float4 lightMapParams,
+uniform float3x3 viewToLightProj;
+uniform float3x3 dynamicViewToLightProj;
 
-               uniform float4 vsFarPlane,
-               uniform float3x3 viewToLightProj,
-               uniform float3x3 dynamicViewToLightProj,
-
-               uniform float4 lightParams,
-               uniform float shadowSoftness ) : COLOR0
+float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 {   
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
    // Emissive.
-   float4 matInfo = tex2D( matInfoBuffer, uvScene );   
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );   
    bool emissive = getFlag( matInfo.r, 0 );
    if ( emissive )
    {
@@ -151,7 +149,7 @@ float4 main(   ConvexConnectP IN,
    }
    
    // Sample/unpack the normal/z data
-   float4 prepassSample = prepassUncondition( prePassBuffer, uvScene );
+   float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
    float3 normal = prepassSample.rgb;
    float depth = prepassSample.a;
    
@@ -188,14 +186,14 @@ float4 main(   ConvexConnectP IN,
       #ifdef SHADOW_CUBE
               
          // TODO: We need to fix shadow cube to handle soft shadows!
-         float occ = texCUBE( shadowMap, mul( viewToLightProj, -lightVec ) ).r;
+         float occ = TORQUE_TEXCUBE( shadowMap, mul( viewToLightProj, -lightVec ) ).r;
          float shadowed = saturate( exp( lightParams.y * ( occ - distToLight ) ) );
          
       #else
 
          // Static
          float2 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) ).xy;
-         float static_shadowed = softShadow_filter( shadowMap,
+         float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                              ssPos.xy,
                                              shadowCoord,
                                              shadowSoftness,
@@ -205,7 +203,7 @@ float4 main(   ConvexConnectP IN,
 
          // Dynamic
          float2 dynamicShadowCoord = decodeShadowCoord( mul( dynamicViewToLightProj, -lightVec ) ).xy;
-         float dynamic_shadowed = softShadow_filter( dynamicShadowMap,
+         float dynamic_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
                                              ssPos.xy,
                                              dynamicShadowCoord,
                                              shadowSoftness,
@@ -223,7 +221,7 @@ float4 main(   ConvexConnectP IN,
    #ifdef USE_COOKIE_TEX
 
       // Lookup the cookie sample.
-      float4 cookie = texCUBE( cookieMap, mul( viewToLightProj, -lightVec ) );
+      float4 cookie = TORQUE_TEXCUBE( cookieMap, mul( viewToLightProj, -lightVec ) );
 
       // Multiply the light with the cookie tex.
       lightcol *= cookie.rgb;
@@ -263,6 +261,6 @@ float4 main(   ConvexConnectP IN,
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   float4 colorSample = tex2D( colorBuffer, uvScene );
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
    return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }
