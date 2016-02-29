@@ -182,6 +182,8 @@ protected:
    virtual DXGI_SWAP_CHAIN_DESC setupPresentParams( const GFXVideoMode &mode, const HWND &hwnd );
 
    String _createTempShaderInternal(const GFXVertexFormat *vertexFormat);
+   // Supress any debug layer messages we don't want to see
+   void _suppressDebugMessages();
    
 public:
 

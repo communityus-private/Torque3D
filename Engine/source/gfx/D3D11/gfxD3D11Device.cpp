@@ -411,9 +411,40 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    mDeviceDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, depthStencViewName.size(), depthStencViewName.c_str());
    mDeviceBackBufferView->SetPrivateData(WKPDID_D3DDebugObjectName, backBuffViewName.size(), backBuffViewName.c_str());
 
+   _suppressDebugMessages();
+
 #endif 
 	mInitialized = true;
 	deviceInited();
+}
+
+// Supress any debug layer messages we don't want to see
+void GFXD3D11Device::_suppressDebugMessages()
+{
+   if (mDebugLayers)
+   {
+      ID3D11Debug *pDebug = NULL;
+      if (SUCCEEDED(mD3DDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&pDebug)))
+      {
+         ID3D11InfoQueue *pInfoQueue = NULL;
+         if (SUCCEEDED(pDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&pInfoQueue)))
+         {
+            D3D11_MESSAGE_ID hide[] =
+            {
+               //this is harmless and no need to spam the console
+               D3D11_MESSAGE_ID_QUERY_BEGIN_ABANDONING_PREVIOUS_RESULTS
+            };
+
+            D3D11_INFO_QUEUE_FILTER filter;
+            memset(&filter, 0, sizeof(filter));
+            filter.DenyList.NumIDs = _countof(hide);
+            filter.DenyList.pIDList = hide;
+            pInfoQueue->AddStorageFilterEntries(&filter);
+            pInfoQueue->Release();
+         }
+         pDebug->Release();
+      }
+   }
 }
 
 bool GFXD3D11Device::beginSceneInternal() 
