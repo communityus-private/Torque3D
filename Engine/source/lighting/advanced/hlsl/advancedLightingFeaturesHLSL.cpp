@@ -471,7 +471,14 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
          bumpSample->setName( "bumpSample" );
          LangElement *bumpSampleDecl = new DecOp( bumpSample );
 
-         output = new GenOp( "   @ = tex2D(@, @);\r\n", bumpSampleDecl, bumpMap, texCoord );
+         if (mIsDirect3D11)
+         {
+            Var *bumpMapTex = (Var *)LangElement::find("bumpMapTex");
+            output = new GenOp("   @ = @.Sample(@, @);\r\n", bumpSampleDecl, bumpMapTex, bumpMap, texCoord);
+         }
+         else
+            output = new GenOp("   @ = tex2D(@, @);\r\n", bumpSampleDecl, bumpMap, texCoord);
+
          return;
       }
    }

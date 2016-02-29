@@ -35,7 +35,6 @@ struct ConvexConnectP
    float4 wsEyeDir : TEXCOORD0;
    float4 ssPos : TEXCOORD1;
    float4 vsEyeDir : TEXCOORD2;
-   float4 color : COLOR0;
 };
 
 
@@ -111,11 +110,14 @@ TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 
 #ifdef SHADOW_CUBE
 TORQUE_UNIFORM_SAMPLERCUBE(shadowMap, 1);
-TORQUE_UNIFORM_SAMPLERCUBE(dynamicShadowMap, 2);
 #else
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 #endif
+
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
 
 uniform float4 rtParams0;
 uniform float4 lightColor;
