@@ -34,7 +34,7 @@ struct ConnectData
 
 uniform float4x4 modelView;
 
-ConnectData main( VertexIn_PNT IN)    
+ConnectData main( VertexIn_PNTT IN)    
 {  
    ConnectData OUT;
 	
