@@ -22,6 +22,7 @@
 #include "core/resourceManager.h"
 
 struct CameraQuery;
+class CubemapData;
 
 /// A volume in space that blocks visibility.
 class AmbientLightProbe : public ScenePolyhedralSpace
@@ -33,6 +34,10 @@ public:
    ColorF mSkyColor;
    ColorF mGroundColor;
    F32 mIntensity;
+
+   String mCubemapName;
+   CubemapData *mCubemap;
+   bool mUseCubemap;
 
 protected:
    // We sample from prepass and render to light buffer.
@@ -58,6 +63,8 @@ protected:
    GFXShaderConstHandle    *mSkyColorSC;
    GFXShaderConstHandle    *mGroundColorSC;
    GFXShaderConstHandle    *mIntensitySC;
+   GFXShaderConstHandle    *mUseCubemapSC;
+   GFXShaderConstHandle    *mCubemapSC;
 
    void     _initShaders();
 

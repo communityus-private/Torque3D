@@ -18,6 +18,9 @@ uniform float4 SkyColor;
 uniform float4 GroundColor;
 uniform float Intensity;
 
+uniform float useCubemap;
+uniform samplerCUBE  cubeMap : register(S1);
+
 float4 main( Conn IN ) : COLOR0
 { 
    float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
@@ -38,22 +41,34 @@ float4 main( Conn IN ) : COLOR0
    // Need world-space normal.
    float3 wsNormal = mul(normal, invViewMat);
 
-   // Set the direction to the sky
-   float3 SkyDirection = float3(0.0f, 0.0f, 1.0f);
-   
-   // Set ground color
-   float4 Gc = GroundColor;
-   
-   // Set sky color
-   float4 Sc = SkyColor;
-   
-   // Set the intensity of the hemisphere color
-   float Hi = Intensity;
-
    float4 color = float4(1, 1, 1, 1);
 
-   float w = Hi * (1.0 + dot(SkyDirection, normal));
-   color = (w * Sc + (1.0 - w) * Gc) * color;
+   if (!useCubemap)
+   {
+      // Set the direction to the sky
+      float3 SkyDirection = float3(0.0f, 0.0f, 1.0f);
 
+      // Set ground color
+      float4 Gc = GroundColor;
+
+      // Set sky color
+      float4 Sc = SkyColor;
+
+      // Set the intensity of the hemisphere color
+      float Hi = Intensity;
+
+      float w = Hi * (1.0 + dot(SkyDirection, normal));
+      color = (w * Sc + (1.0 - w) * Gc) * color;
+   }
+   else
+   {
+      //float3 reflectionVec = reflect(IN.wsEyeRay, wsNormal);
+
+      //color = (texCUBE(cubeMap, reflectionVec));
+      color = texCUBE(cubeMap, float3(0,0,1));
+      //color.a = 1;
+   }
+
+   //return color;
    return hdrEncode(float4(color.rgb, 0.0));
 }

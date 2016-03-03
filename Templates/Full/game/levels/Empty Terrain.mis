@@ -2,7 +2,7 @@
 new SimGroup(MissionGroup) {
    canSave = "1";
    canSaveDynamicFields = "1";
-      enabled = "1";
+      Enabled = "1";
 
    new LevelInfo(theLevelInfo) {
       nearClip = "0.1";
@@ -40,6 +40,8 @@ new SimGroup(MissionGroup) {
       moonAzimuth = "0";
       moonElevation = "45";
       castShadows = "1";
+      staticRefreshFreq = "8";
+      dynamicRefreshFreq = "8";
       brightness = "1";
       flareScale = "1";
       nightColor = "0.0196078 0.0117647 0.109804 1";
@@ -89,7 +91,7 @@ new SimGroup(MissionGroup) {
    new SimGroup(PlayerDropPoints) {
       canSave = "1";
       canSaveDynamicFields = "1";
-         enabled = "1";
+         Enabled = "1";
 
       new SpawnSphere() {
          autoSpawn = "0";
@@ -105,16 +107,18 @@ new SimGroup(MissionGroup) {
          scale = "1 1 1";
          canSave = "1";
          canSaveDynamicFields = "1";
-            enabled = "1";
+            Enabled = "1";
             homingCount = "0";
             lockCount = "0";
       };
    };
    new AmbientLightProbe() {
+      useCubemap = "0";
+      cubemap = "TestCubemap";
       OverrideSkyColor = "0";
       SkyColor = "0.5 0.5 1 1";
       GroundColor = "0.8 0.7 0.5 1";
-      Intensity = "0.5";
+      Intensity = "0.3";
       position = "-11.7303 -7.00049 245.191";
       rotation = "1 0 0 0";
       scale = "101.379 101.379 101.379";
@@ -145,7 +149,7 @@ new SimGroup(MissionGroup) {
       axisTilt = "23.44";
       dayLength = "80";
       startTime = "0.5";
-      time = "0.786578";
+      time = "0.23426";
       play = "1";
       azimuthOverride = "1";
       dayScale = "1";

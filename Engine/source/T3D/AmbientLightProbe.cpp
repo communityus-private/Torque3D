@@ -49,6 +49,8 @@
 
 #include "collision/optimizedPolyList.h"
 
+#include "gfx/sim/cubemapData.h"
+
 extern ColorI gCanvasClearColor;
 
 IMPLEMENT_CO_NETOBJECT_V1(AmbientLightProbe);
@@ -94,6 +96,9 @@ AmbientLightProbe::AmbientLightProbe()
    mSkyColor = ColorF(0.5f, 0.5f, 1.0f, 1.0f);
    mGroundColor = ColorF(0.8f, 0.7f, 0.5f, 1.0f);
    mIntensity = 0.1f;
+
+   mUseCubemap = false;
+   mCubemap = NULL;
 }
 
 AmbientLightProbe::~AmbientLightProbe()
@@ -110,6 +115,9 @@ void AmbientLightProbe::initPersistFields()
 {
    //
    addGroup("AmbientLightProbe");
+
+   addField("useCubemap", TypeBool, Offset(mUseCubemap, AmbientLightProbe), "Cubemap used instead of reflection texture if fullReflect is off.");
+   addField("cubemap", TypeCubemapName, Offset(mCubemapName, AmbientLightProbe), "Cubemap used instead of reflection texture if fullReflect is off.");
 
    addField("OverrideSkyColor", TypeBool, Offset(mOverrideSkyColor, AmbientLightProbe), "Path of file to save and load results.");
    addField("SkyColor", TypeColorF, Offset(mSkyColor, AmbientLightProbe), "Path of file to save and load results.");
@@ -143,6 +151,12 @@ bool AmbientLightProbe::onAdd()
       mProbeShaderConsts->setSafe(mSkyColorSC, mSkyColor);
       mProbeShaderConsts->setSafe(mGroundColorSC, mGroundColor);
       mProbeShaderConsts->setSafe(mIntensitySC, mIntensity);
+
+      if (isClientObject())
+      {
+         if (mCubemapName.isNotEmpty())
+            Sim::findObject(mCubemapName, mCubemap);
+      }
    }
 
    // Set up the silhouette extractor.
@@ -164,24 +178,6 @@ void AmbientLightProbe::onRemove()
 void AmbientLightProbe::_renderObject(ObjectRenderInst* ri, SceneRenderState* state, BaseMatInstance* overrideMat)
 {
    Parent::_renderObject(ri, state, overrideMat);
-
-   //Grab the ambient light color for our sky, assuming, of course, that we haven't been overriden
-   if (!mOverrideSkyColor)
-   {
-      LightInfo *lightinfo = LIGHTMGR->getSpecialLight(LightManager::slSunLightType);
-      const ColorF &sunlight = state->getAmbientLightColor();
-
-      ColorF ambientColor(sunlight.red, sunlight.green, sunlight.blue);
-      mProbeShaderConsts->setSafe(mSkyColorSC, ambientColor);
-   }
-   else
-   {
-      mProbeShaderConsts->setSafe(mSkyColorSC, mSkyColor);
-   }
-
-   //next, set the ground color
-   mProbeShaderConsts->setSafe(mGroundColorSC, mGroundColor);
-   mProbeShaderConsts->setSafe(mIntensitySC, mIntensity);
 }
 
 //-----------------------------------------------------------------------------
@@ -261,6 +257,9 @@ U32 AmbientLightProbe::packUpdate(NetConnection *connection, U32 mask, BitStream
    stream->write(mGroundColor);
    stream->writeFloat(mIntensity, 7);
 
+   stream->writeFlag(mUseCubemap);
+   stream->write(mCubemapName);
+
    return retMask;
 }
 
@@ -272,6 +271,12 @@ void AmbientLightProbe::unpackUpdate(NetConnection *connection, BitStream *strea
    stream->read(&mSkyColor);
    stream->read(&mGroundColor);
    mIntensity = stream->readFloat(7);
+
+   mUseCubemap = stream->readFlag();
+   stream->read(&mCubemapName);
+
+   if (mCubemapName.isNotEmpty())
+      Sim::findObject(mCubemapName, mCubemap);
 }
 
 //-----------------------------------------------------------------------------
@@ -322,6 +327,10 @@ void AmbientLightProbe::_initShaders()
    mSkyColorSC = mProbeShader->getShaderConstHandle("$SkyColor");
    mGroundColorSC = mProbeShader->getShaderConstHandle("$GroundColor");
    mIntensitySC = mProbeShader->getShaderConstHandle("$Intensity");
+
+   mUseCubemapSC = mProbeShader->getShaderConstHandle("$useCubemap");
+
+   mCubemapSC = mProbeShader->getShaderConstHandle("$cubeMap");
 }
 
 void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
@@ -405,12 +414,28 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
       mProbeShaderConsts->setSafe(mGroundColorSC, mGroundColor);
       mProbeShaderConsts->setSafe(mIntensitySC, mIntensity);
 
+      if (mUseCubemap && mCubemap)
+      {
+         mProbeShaderConsts->setSafe(mUseCubemapSC, 1.0f);
+
+         if (!mCubemap->mCubemap)
+            mCubemap->createMap();
+
+         GFX->setCubeTexture(0, mCubemap->mCubemap);
+      }
+      else
+      {
+         GFX->setCubeTexture(0, NULL);
+         mProbeShaderConsts->setSafe(mUseCubemapSC, 0.0f);
+      }
+
       // Render Target Parameters.
       const Point3I &targetSz = texObject->getSize();
       const RectI &targetVp = mLightInfoTarget->getViewport();
       Point4F rtParams;
       ScreenSpace::RenderTargetParameters(targetSz, targetVp, rtParams);
       mProbeShaderConsts->setSafe(mRTParamsPropSC, rtParams);
+
 
       GFX->pushActiveRenderTarget();
       GFX->setActiveRenderTarget(mRenderTarget);

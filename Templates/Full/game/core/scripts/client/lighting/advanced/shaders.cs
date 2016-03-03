@@ -251,7 +251,10 @@ new CustomMaterial( AL_ParticlePointLightMaterial )
 singleton ShaderData( AmbientLightProbeShaderData )
 {
    DXVertexShaderFile     = "shaders/common/ambientLightProbeV.hlsl";
-   DXPixelShaderFile      = "shaders/common/ambientLightProbeP.hlsl";   
+   DXPixelShaderFile      = "shaders/common/ambientLightProbeP.hlsl";  
+   
+   samplerNames[0] = "$prePassBuffer"; 
+   samplerNames[1] = "$cubeMap";
    
    pixVersion = 3.0;
 };

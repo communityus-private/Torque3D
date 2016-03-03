@@ -259,7 +259,7 @@ void AIPlayer::setAimObject( GameBase *targetObject )
  * @param targetObject The object to target
  * @param offset       The offest from the target location to aim at
  */
-void AIPlayer::setAimObject( GameBase *targetObject, Point3F offset )
+void AIPlayer::setAimObject(GameBase *targetObject, const Point3F& offset)
 {
    mAimObject = targetObject;
    mTargetInLOS = false;
@@ -563,6 +563,21 @@ bool AIPlayer::getAIMove(Move *movePtr)
          }
    }
 
+   Pose desiredPose = mPose;
+
+   if ( mSwimming )  
+      desiredPose = SwimPose;   
+   else if ( mAiPose == 1 && canCrouch() )   
+      desiredPose = CrouchPose;  
+   else if ( mAiPose == 2 && canProne() )  
+      desiredPose = PronePose;  
+   else if ( mAiPose == 3 && canSprint() )  
+      desiredPose = SprintPose;  
+   else if ( canStand() )  
+      desiredPose = StandPose;  
+  
+   setPose( desiredPose );
+   
    // Replicate the trigger state into the move so that
    // triggers can be controlled from scripts.
    for( U32 i = 0; i < MaxTriggerKeys; i++ )
@@ -589,6 +604,16 @@ bool AIPlayer::getAIMove(Move *movePtr)
    mLastLocation = location;
 
    return true;
+}
+
+void AIPlayer::setAiPose( S32 pose )  
+{  
+   mAiPose = pose;  
+}  
+  
+S32 AIPlayer::getAiPose()  
+{  
+   return mAiPose;   
 }
 
 /**
@@ -725,24 +750,20 @@ bool AIPlayer::setPathDestination(const Point3F &pos)
 
    // Create a new path.
    NavPath *path = new NavPath();
-   if(path)
+
+   path->mMesh = getNavMesh();
+   path->mFrom = getPosition();
+   path->mTo = pos;
+   path->mFromSet = path->mToSet = true;
+   path->mAlwaysRender = true;
+   path->mLinkTypes = mLinkTypes;
+   path->mXray = true;
+   // Paths plan automatically upon being registered.
+   if(!path->registerObject())
    {
-      path->mMesh = getNavMesh();
-      path->mFrom = getPosition();
-      path->mTo = pos;
-      path->mFromSet = path->mToSet = true;
-      path->mAlwaysRender = true;
-      path->mLinkTypes = mLinkTypes;
-      path->mXray = true;
-      // Paths plan automatically upon being registered.
-      if(!path->registerObject())
-      {
-         delete path;
-         return false;
-      }
-   }
-   else
+      delete path;
       return false;
+   }
 
    if(path->success())
    {
@@ -831,11 +852,15 @@ void AIPlayer::followObject(SceneObject *obj, F32 radius)
    if(!isServerObject())
       return;
 
+   if ((mFollowData.lastPos - obj->getPosition()).len()<mMoveTolerance)
+      return;
+
    if(setPathDestination(obj->getPosition()))
    {
       clearCover();
       mFollowData.object = obj;
       mFollowData.radius = radius;
+      mFollowData.lastPos = obj->getPosition();
    }
 }
 
@@ -1347,4 +1372,19 @@ DefineEngineMethod( AIPlayer, clearMoveTriggers, void, ( ),,
    "@see clearMoveTrigger()\n")
 {
    object->clearMoveTriggers();
+}
+
+DefineEngineMethod( AIPlayer, setAiPose, void, ( S32 pose ),,  
+   "@brief Sets the AiPose for an AI object.\n"
+   "@param pose StandPose=0, CrouchPose=1, PronePose=2, SprintPose=3.\n"
+   "Uses the new AiPose variable from shapebase (as defined in its PlayerData datablock).\n")  
+{  
+   object->setAiPose(pose);  
+}  
+  
+DefineEngineMethod( AIPlayer, getAiPose, S32, (),,  
+   "@brief Get the object's current AiPose.\n"
+   "@return StandPose=0, CrouchPose=1, PronePose=2, SprintPose=3.\n")  
+{  
+   return object->getAiPose();  
 }
