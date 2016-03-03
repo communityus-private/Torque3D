@@ -421,11 +421,11 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
          if (!mCubemap->mCubemap)
             mCubemap->createMap();
 
-         GFX->setCubeTexture(0, mCubemap->mCubemap);
+         GFX->setCubeTexture(1, mCubemap->mCubemap);
       }
       else
       {
-         GFX->setCubeTexture(0, NULL);
+         GFX->setCubeTexture(1, NULL);
          mProbeShaderConsts->setSafe(mUseCubemapSC, 0.0f);
       }
 

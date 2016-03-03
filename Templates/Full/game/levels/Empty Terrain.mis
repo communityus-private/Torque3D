@@ -113,12 +113,12 @@ new SimGroup(MissionGroup) {
       };
    };
    new AmbientLightProbe() {
-      useCubemap = "0";
-      cubemap = "TestCubemap";
+      useCubemap = "1";
+      cubemap = "DesertSkyCubemap";
       OverrideSkyColor = "0";
       SkyColor = "0.5 0.5 1 1";
       GroundColor = "0.8 0.7 0.5 1";
-      Intensity = "0.3";
+      Intensity = "1";
       position = "-11.7303 -7.00049 245.191";
       rotation = "1 0 0 0";
       scale = "101.379 101.379 101.379";
@@ -149,8 +149,8 @@ new SimGroup(MissionGroup) {
       axisTilt = "23.44";
       dayLength = "80";
       startTime = "0.5";
-      time = "0.23426";
-      play = "1";
+      time = "0.3";
+      play = "0";
       azimuthOverride = "1";
       dayScale = "1";
       nightScale = "1.5";

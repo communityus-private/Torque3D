@@ -62,11 +62,12 @@ float4 main( Conn IN ) : COLOR0
    }
    else
    {
-      //float3 reflectionVec = reflect(IN.wsEyeRay, wsNormal);
+      float3 reflectionVec = reflect(IN.wsEyeRay, wsNormal);
 
-      //color = (texCUBE(cubeMap, reflectionVec));
-      color = texCUBE(cubeMap, float3(0,0,1));
-      //color.a = 1;
+      color = texCUBElod(cubeMap, float4(reflectionVec, 0.1));
+      color.a = 1;
+
+      color *= Intensity;
    }
 
    //return color;
