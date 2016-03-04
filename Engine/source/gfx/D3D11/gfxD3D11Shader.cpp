@@ -799,8 +799,7 @@ bool GFXD3D11Shader::_init()
    _buildShaderConstantHandles(mPixelConstBufferLayout, false);
 
    _buildSamplerShaderConstantHandles( mSamplerDescriptions );
-   //TODO add instancing support
-   //_buildInstancingShaderConstantHandles();
+   _buildInstancingShaderConstantHandles();
 
    // Notify any existing buffers that the buffer 
    // layouts have changed and they need to update.
@@ -1448,9 +1447,9 @@ GFXShaderConstBufferRef GFXD3D11Shader::allocConstBuffer()
       mActiveBuffers.push_back( buffer );
       buffer->registerResourceWithDevice(getOwningDevice());
       return buffer;
-   } else {
-      return NULL;
-   }
+   } 
+
+   return NULL;
 }
 
 /// Returns a shader constant handle for name, if the variable doesn't exist NULL is returned.

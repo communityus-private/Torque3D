@@ -131,6 +131,8 @@ protected:
 
    bool mOcclusionQuerySupported;
 
+   U32 mDrawInstancesCount;   
+
    /// To manage creating and re-creating of these when device is aquired
    void reacquireDefaultPoolResources();
 

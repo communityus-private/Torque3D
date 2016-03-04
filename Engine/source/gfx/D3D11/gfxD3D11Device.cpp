@@ -643,6 +643,8 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
 
    mPixVersion = 0.0;
 
+   mDrawInstancesCount = 0;
+
    mCardProfiler = NULL;
 
    mDeviceDepthStencil = NULL;
@@ -1101,6 +1103,8 @@ void GFXD3D11Device::setVertexStream( U32 stream, GFXVertexBuffer *buffer )
 
 void GFXD3D11Device::setVertexStreamFrequency( U32 stream, U32 frequency )
 {
+   if (stream == 0)
+      mDrawInstancesCount = frequency; // instances count
 }
 
 void GFXD3D11Device::_setPrimitiveBuffer( GFXPrimitiveBuffer *buffer ) 
@@ -1151,7 +1155,10 @@ void GFXD3D11Device::drawPrimitive( GFXPrimitiveType primType, U32 vertexStart, 
 
    mD3DDeviceContext->IASetPrimitiveTopology(GFXD3D11PrimType[primType]);
    
-   mD3DDeviceContext->Draw(primCountToIndexCount(primType, primitiveCount), vertexStart);
+   if ( mDrawInstancesCount )
+      mD3DDeviceContext->DrawInstanced(primCountToIndexCount(primType, primitiveCount), mDrawInstancesCount, vertexStart, 0);
+   else
+      mD3DDeviceContext->Draw(primCountToIndexCount(primType, primitiveCount), vertexStart);
   
    mDeviceStatistics.mDrawCalls++;
    if ( mVertexBufferFrequency[0] > 1 )
@@ -1181,9 +1188,10 @@ void GFXD3D11Device::drawIndexedPrimitive( GFXPrimitiveType primType,
 
    mD3DDeviceContext->IASetPrimitiveTopology(GFXD3D11PrimType[primType]);
   
-
-   mD3DDeviceContext->DrawIndexed(primCountToIndexCount(primType,primitiveCount), mCurrentPB->mVolatileStart + startIndex, startVertex);
-   
+   if ( mDrawInstancesCount )
+      mD3DDeviceContext->DrawIndexedInstanced(primCountToIndexCount(primType, primitiveCount), mDrawInstancesCount, mCurrentPB->mVolatileStart + startIndex, startVertex, 0);
+   else
+      mD3DDeviceContext->DrawIndexed(primCountToIndexCount(primType,primitiveCount), mCurrentPB->mVolatileStart + startIndex, startVertex);   
 
    mDeviceStatistics.mDrawCalls++;
    if ( mVertexBufferFrequency[0] > 1 )
@@ -1534,8 +1542,6 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
    
    AssertFatal(code, "D3D11Device::allocVertexDecl - compiled vert shader code missing!");
 
-   //TODO: Need to  add support for instance support and frequency with the input layouts.
-
    // Setup the declaration struct.
    
    U32 stream;
@@ -1548,13 +1554,21 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
       
       stream = element.getStreamIndex();
 
-	   vd[i].InputSlot = stream;
+      vd[i].InputSlot = stream;
 	 
-	   vd[i].AlignedByteOffset =  D3D11_APPEND_ALIGNED_ELEMENT;//offsets[stream];
+      vd[i].AlignedByteOffset =  D3D11_APPEND_ALIGNED_ELEMENT;
       vd[i].Format = GFXD3D11DeclType[element.getType()];
-       
-	   vd[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	   vd[i].InstanceDataStepRate = 0;
+      // If instancing is enabled, the per instance data is only used on stream 1.
+      if (vertexFormat->hasInstancing() && stream == 1)
+      {
+         vd[i].InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
+         vd[i].InstanceDataStepRate = 1;
+      }
+      else
+      {
+         vd[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+         vd[i].InstanceDataStepRate = 0;
+      }
       // We force the usage index of 0 for everything but 
       // texture coords for now... this may change later.
       vd[i].SemanticIndex = 0;
