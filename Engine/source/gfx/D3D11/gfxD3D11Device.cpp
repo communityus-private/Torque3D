@@ -1427,12 +1427,6 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
          semantic = "BINORMAL";
          semanticOut = semantic;
       }
-
-      else if (element.isSemantic(GFXSemantic::TANGENTW))
-      {
-         semantic = "TANGENTW";
-         semanticOut = semantic;
-      }
       else
       {
          //Anything that falls thru to here will be a texture coord.
@@ -1566,15 +1560,13 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
       vd[i].SemanticIndex = 0;
 
       if ( element.isSemantic( GFXSemantic::POSITION ) )
-	         vd[i].SemanticName = "POSITION";
+         vd[i].SemanticName = "POSITION";
       else if ( element.isSemantic( GFXSemantic::NORMAL ) )
          vd[i].SemanticName = "NORMAL";
       else if ( element.isSemantic( GFXSemantic::COLOR ) )
          vd[i].SemanticName = "COLOR";
       else if ( element.isSemantic( GFXSemantic::TANGENT ) )
          vd[i].SemanticName = "TANGENT";
-      else if (element.isSemantic(GFXSemantic::TANGENTW))
-         vd[i].SemanticName = "TANGENTW";
       else if ( element.isSemantic( GFXSemantic::BINORMAL ) )
          vd[i].SemanticName = "BINORMAL";
       else

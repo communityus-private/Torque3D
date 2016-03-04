@@ -104,21 +104,12 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          return newVar;
       }
 
-   case RT_TANGENTW:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back(newVar);
-         newVar->setConnectName("TANGENTW");
-         newVar->rank = 4;
-         return newVar;
-      }
-
    case RT_COLOR:
       {
          Var *newVar = new Var;
          mElementList.push_back( newVar );
          newVar->setConnectName( "COLOR" );
-         newVar->rank = 5;
+         newVar->rank = 4;
          return newVar;
       }
 
@@ -137,7 +128,7 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          newVar->setConnectName( out );
          newVar->constNum = index;
          newVar->arraySize = numElements;
-         newVar->rank = 6 + index;
+         newVar->rank = 5 + index;
 
          return newVar;
       }
@@ -161,6 +152,7 @@ S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void
 
 void ShaderConnectorHLSL::sortVars()
 {
+
    // If shader model 4+ than we gotta sort the vars to make sure the order is consistent
    if (GFX->getPixelShaderVersion() >= 4.f)
    {
