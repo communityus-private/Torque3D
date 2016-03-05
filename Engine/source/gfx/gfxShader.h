@@ -262,7 +262,7 @@ protected:
    /// their destructor.
    Vector<GFXShaderConstBuffer*> mActiveBuffers;
 
-   GFXVertexFormat mInstancingFormat;
+   GFXVertexFormat *mInstancingFormat;
 
    /// A protected constructor so it cannot be instantiated.
    GFXShader();
@@ -311,7 +311,8 @@ public:
                const Torque::Path &pixFile, 
                F32 pixVersion, 
                const Vector<GFXShaderMacro> &macros,
-               const Vector<String> &samplerNames);
+               const Vector<String> &samplerNames,
+               GFXVertexFormat *instanceFormat = NULL );
 
    /// Reloads the shader from disk.
    bool reload();
@@ -356,6 +357,9 @@ public:
 
    // GFXResource
    const String describeSelf() const { return mDescription; }
+
+   // Get instancing vertex format
+   GFXVertexFormat *getInstancingFormat() { return mInstancingFormat; }
 
 protected:
 
