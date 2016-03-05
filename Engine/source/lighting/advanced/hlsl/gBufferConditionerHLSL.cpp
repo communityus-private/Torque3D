@@ -114,7 +114,7 @@ void GBufferConditionerHLSL::processVert( Vector<ShaderComponent*> &componentLis
       // TODO: Total hack because Conditioner is directly derived
       // from ShaderFeature and not from ShaderFeatureHLSL.
       NamedFeatureHLSL dummy( String::EmptyString );
-      dummy.mInstancingFormat = mInstancingFormat;
+      dummy.setInstancingFormat( mInstancingFormat );
       Var *worldViewOnly = dummy.getWorldView( componentList, fd.features[MFT_UseInstancing], meta );
 
       meta->addStatement(  new GenOp("   @ = mul(@, float4( normalize(@), 0.0 ) ).xyz;\r\n", 

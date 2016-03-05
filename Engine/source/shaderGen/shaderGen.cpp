@@ -264,7 +264,7 @@ void ShaderGen::_processVertFeatures( Vector<GFXShaderMacro> &macros, bool macro
          if ( macrosOnly )
             continue;
 
-         feature->mInstancingFormat = &mInstancingFormat;
+         feature->setInstancingFormat( &mInstancingFormat );
          feature->processVert( mComponents, mFeatureData );
 
          String line;
@@ -304,7 +304,7 @@ void ShaderGen::_processPixFeatures( Vector<GFXShaderMacro> &macros, bool macros
          if ( macrosOnly )
             continue;
 
-         feature->mInstancingFormat = &mInstancingFormat;
+         feature->setInstancingFormat( &mInstancingFormat );
          feature->processPix( mComponents, mFeatureData );
 
          String line;
