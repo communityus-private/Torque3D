@@ -2022,9 +2022,9 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       else
       {
          if (mIsDirect3D11)
-            texCube = new GenOp("@.Sample( @, float4(@, (@.a/4)) )", cubeMapTex, cubeMap, reflectVec, matinfo);
+            texCube = new GenOp("@.Sample( @, float4(@, ((1.0-@.a)*6)) )", cubeMapTex, cubeMap, reflectVec, matinfo);
          else
-            texCube = new GenOp("texCUBElod( @, float4(@, (@.a/4)) )", cubeMap, reflectVec, matinfo);
+            texCube = new GenOp("texCUBElod( @, float4(@, ((1.0-@.a)*6)) )", cubeMap, reflectVec, matinfo);
       }
    }
    else
