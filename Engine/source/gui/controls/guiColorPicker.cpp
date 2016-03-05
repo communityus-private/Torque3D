@@ -120,23 +120,24 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
 
    S32 l = bounds.point.x, r = bounds.point.x + bounds.extent.x;
    S32 t = bounds.point.y, b = bounds.point.y + bounds.extent.y;
-
+   
    //A couple of checks to determine if color blend
-   if (c1 == colorWhite && c3 == colorAlpha && c4 == colorBlack)
+   //A couple of checks to determine if color blend
+   if(c1 == colorWhite && c3 == colorAlpha && c4 == colorBlack)
    {
       //Color
       PrimBuild::begin(GFXTriangleStrip, 4);
 
-      PrimBuild::color(c2);
+      PrimBuild::color( c2 );
       PrimBuild::vertex2i(l, t);
 
-      PrimBuild::color(c2);
+      PrimBuild::color( c2 );
       PrimBuild::vertex2i(r, t);
 
-      PrimBuild::color(c2);
-      PrimBuild::vertex2i(l, b);
+      PrimBuild::color( c2 );
+      PrimBuild::vertex2i( l, b );
 
-      PrimBuild::color(c2);
+      PrimBuild::color( c2 );
       PrimBuild::vertex2i(r, b);
 
       PrimBuild::end();
@@ -147,11 +148,11 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
       PrimBuild::color(c1);
       PrimBuild::vertex2i(l, t);
 
-      PrimBuild::color(colorAlphaW);
+      PrimBuild::color( colorAlphaW );
       PrimBuild::vertex2i(r, t);
 
-      PrimBuild::color(c1);
-      PrimBuild::vertex2i(l, b);
+      PrimBuild::color( c1 );
+      PrimBuild::vertex2i( l, b );
 
       PrimBuild::color(colorAlphaW);
       PrimBuild::vertex2i(r, b);
@@ -163,14 +164,13 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
 
       PrimBuild::color(c3);
       PrimBuild::vertex2i(l, t);
+      PrimBuild::color( c3 );
+      PrimBuild::vertex2i( r, t );
 
-      PrimBuild::color(c3);
-      PrimBuild::vertex2i(r, t);
-
-      PrimBuild::color(c4);
+      PrimBuild::color( c4 );
       PrimBuild::vertex2i(l, b);
 
-      PrimBuild::color(c4);
+      PrimBuild::color( c4 );
       PrimBuild::vertex2i(r, b);
 
       PrimBuild::end();
@@ -179,17 +179,17 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
    {
       PrimBuild::begin(GFXTriangleStrip, 4);
 
-      PrimBuild::color(c1);
-      PrimBuild::vertex2i(l, t);
+      PrimBuild::color( c1 );
+      PrimBuild::vertex2i( l, t );
 
-      PrimBuild::color(c2);
-      PrimBuild::vertex2i(r, t);
+      PrimBuild::color( c2 );
+      PrimBuild::vertex2i( r, t );
 
       PrimBuild::color(c4);
       PrimBuild::vertex2i(l, b);
-
-      PrimBuild::color(c3);
-      PrimBuild::vertex2i(r, b);
+	  
+      PrimBuild::color( c3 );
+      PrimBuild::vertex2i( r, b );
 
       PrimBuild::end();
    }
@@ -199,7 +199,6 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
 /// Function to draw a set of boxes blending throughout an array of colors
 void GuiColorPickerCtrl::drawBlendRangeBox(RectI &bounds, bool vertical, U8 numColors, ColorI *colors)
 {
-
    GFX->setStateBlock(mStateBlock);
 
    S32 l = bounds.point.x, r = bounds.point.x + bounds.extent.x + 4;
