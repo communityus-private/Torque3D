@@ -262,13 +262,12 @@ protected:
    /// their destructor.
    Vector<GFXShaderConstBuffer*> mActiveBuffers;
 
+   GFXVertexFormat mInstancingFormat;
+
    /// A protected constructor so it cannot be instantiated.
    GFXShader();
 
-public:
-
-   // TODO: Add this into init().
-   GFXVertexFormat mInstancingFormat;
+public:  
 
    /// Adds a global shader macro which will be merged with
    /// the script defined macros on every shader reload.
