@@ -429,6 +429,10 @@ void GFXD3D11Device::_suppressDebugMessages()
          ID3D11InfoQueue *pInfoQueue = NULL;
          if (SUCCEEDED(pDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&pInfoQueue)))
          {
+            //Disable breaking on error or corruption, this can be handy when using VS graphics debugging
+            pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, false);
+            pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, false);
+
             D3D11_MESSAGE_ID hide[] =
             {
                //this is harmless and no need to spam the console
