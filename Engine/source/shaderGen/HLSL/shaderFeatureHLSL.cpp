@@ -465,7 +465,17 @@ Var* ShaderFeatureHLSL::getInVpos(  MultiLine *meta,
 
    ShaderConnector *connectComp = dynamic_cast<ShaderConnector*>( componentList[C_CONNECTOR] );
 
-   if ( GFX->getPixelShaderVersion() >= 3.0f )
+   F32 pixelShaderVer = GFX->getPixelShaderVersion();
+
+   if ( pixelShaderVer >= 4.0f )
+   {
+      inVpos = connectComp->getElement( RT_SVPOSITION );
+      inVpos->setName( "vpos" );
+      inVpos->setStructName( "IN" );
+      inVpos->setType( "float4" );
+      return inVpos;
+   }
+   else if ( pixelShaderVer >= 3.0f )
    {
       inVpos = connectComp->getElement( RT_VPOS );
       inVpos->setName( "vpos" );
