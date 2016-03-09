@@ -88,7 +88,7 @@ DXGI_SWAP_CHAIN_DESC GFXD3D11Device::setupPresentParams(const GFXVideoMode &mode
 
    mMultisampleDesc = sampleDesc;
 
-   d3dpp.BufferCount = !smDisableVSync ? 2 : 1; // anis -> triple buffering when vsync is on.
+   d3dpp.BufferCount = !smDisableVSync ? 2 : 1; // triple buffering when vsync is on.
    d3dpp.BufferDesc.Width = mode.resolution.x;
    d3dpp.BufferDesc.Height = mode.resolution.y;
    d3dpp.BufferDesc.Format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8];
@@ -346,6 +346,8 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 	// detect occlusion query support
 	if (SUCCEEDED(mD3DDevice->CreateQuery(&queryDesc, &testQuery))) mOcclusionQuerySupported = true;
 
+   SAFE_RELEASE(testQuery);
+
 	Con::printf("Hardware occlusion query detected: %s", mOcclusionQuerySupported ? "Yes" : "No");
    
 	mCardProfiler = new GFXD3D11CardProfiler();
@@ -409,9 +411,44 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    mDeviceDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, depthStencViewName.size(), depthStencViewName.c_str());
    mDeviceBackBufferView->SetPrivateData(WKPDID_D3DDebugObjectName, backBuffViewName.size(), backBuffViewName.c_str());
 
+   _suppressDebugMessages();
+
 #endif 
 	mInitialized = true;
 	deviceInited();
+}
+
+// Supress any debug layer messages we don't want to see
+void GFXD3D11Device::_suppressDebugMessages()
+{
+   if (mDebugLayers)
+   {
+      ID3D11Debug *pDebug = NULL;
+      if (SUCCEEDED(mD3DDevice->QueryInterface(__uuidof(ID3D11Debug), (void**)&pDebug)))
+      {
+         ID3D11InfoQueue *pInfoQueue = NULL;
+         if (SUCCEEDED(pDebug->QueryInterface(__uuidof(ID3D11InfoQueue), (void**)&pInfoQueue)))
+         {
+            //Disable breaking on error or corruption, this can be handy when using VS graphics debugging
+            pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, false);
+            pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, false);
+
+            D3D11_MESSAGE_ID hide[] =
+            {
+               //this is harmless and no need to spam the console
+               D3D11_MESSAGE_ID_QUERY_BEGIN_ABANDONING_PREVIOUS_RESULTS
+            };
+
+            D3D11_INFO_QUEUE_FILTER filter;
+            memset(&filter, 0, sizeof(filter));
+            filter.DenyList.NumIDs = _countof(hide);
+            filter.DenyList.pIDList = hide;
+            pInfoQueue->AddStorageFilterEntries(&filter);
+            pInfoQueue->Release();
+         }
+         pDebug->Release();
+      }
+   }
 }
 
 bool GFXD3D11Device::beginSceneInternal() 
@@ -576,7 +613,7 @@ static GFXPCD3D11RegisterDevice pPCD3D11RegisterDevice;
 //-----------------------------------------------------------------------------
 static void sgPCD3D11DeviceHandleCommandLine(S32 argc, const char **argv)
 {
-   // anis -> useful to pass parameters by command line for d3d (e.g. -dx9 -dx11)
+   // useful to pass parameters by command line for d3d (e.g. -dx9 -dx11)
    for (U32 i = 1; i < argc; i++)
    {
       argv[i];
@@ -609,6 +646,8 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
    mResourceListHead = NULL;
 
    mPixVersion = 0.0;
+
+   mDrawInstancesCount = 0;
 
    mCardProfiler = NULL;
 
@@ -679,24 +718,18 @@ GFXD3D11Device::~GFXD3D11Device()
    SAFE_RELEASE(mD3DDevice);
 }
 
-/*
-	GFXD3D11Device::setupGenericShaders
-
-	Anis -> used just for draw some ui elements, this implementation avoid to use fixed pipeline functions.
-*/
-
 void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
 {
    AssertFatal(type != GSTargetRestore, ""); //not used
 
    if(mGenericShader[GSColor] == NULL)
    {
-	  ShaderData *shaderData;
+      ShaderData *shaderData;
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/colorV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/colorP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "5.0");
       shaderData->registerObject();
       mGenericShader[GSColor] =  shaderData->getShader();
       mGenericShaderBuffer[GSColor] = mGenericShader[GSColor]->allocConstBuffer();
@@ -705,7 +738,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/modColorTextureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/modColorTextureP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "5.0");
       shaderData->registerObject();
       mGenericShader[GSModColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSModColorTexture] = mGenericShader[GSModColorTexture]->allocConstBuffer();
@@ -714,7 +747,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/addColorTextureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/addColorTextureP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "5.0");
       shaderData->registerObject();
       mGenericShader[GSAddColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSAddColorTexture] = mGenericShader[GSAddColorTexture]->allocConstBuffer();
@@ -723,7 +756,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/textureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/textureP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "5.0");
       shaderData->registerObject();
       mGenericShader[GSTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSTexture] = mGenericShader[GSTexture]->allocConstBuffer();
@@ -1074,6 +1107,8 @@ void GFXD3D11Device::setVertexStream( U32 stream, GFXVertexBuffer *buffer )
 
 void GFXD3D11Device::setVertexStreamFrequency( U32 stream, U32 frequency )
 {
+   if (stream == 0)
+      mDrawInstancesCount = frequency; // instances count
 }
 
 void GFXD3D11Device::_setPrimitiveBuffer( GFXPrimitiveBuffer *buffer ) 
@@ -1124,7 +1159,10 @@ void GFXD3D11Device::drawPrimitive( GFXPrimitiveType primType, U32 vertexStart, 
 
    mD3DDeviceContext->IASetPrimitiveTopology(GFXD3D11PrimType[primType]);
    
-   mD3DDeviceContext->Draw(primCountToIndexCount(primType, primitiveCount), vertexStart);
+   if ( mDrawInstancesCount )
+      mD3DDeviceContext->DrawInstanced(primCountToIndexCount(primType, primitiveCount), mDrawInstancesCount, vertexStart, 0);
+   else
+      mD3DDeviceContext->Draw(primCountToIndexCount(primType, primitiveCount), vertexStart);
   
    mDeviceStatistics.mDrawCalls++;
    if ( mVertexBufferFrequency[0] > 1 )
@@ -1154,9 +1192,10 @@ void GFXD3D11Device::drawIndexedPrimitive( GFXPrimitiveType primType,
 
    mD3DDeviceContext->IASetPrimitiveTopology(GFXD3D11PrimType[primType]);
   
-
-   mD3DDeviceContext->DrawIndexed(primCountToIndexCount(primType,primitiveCount), mCurrentPB->mVolatileStart + startIndex, startVertex+minIndex);
-   
+   if ( mDrawInstancesCount )
+      mD3DDeviceContext->DrawIndexedInstanced(primCountToIndexCount(primType, primitiveCount), mDrawInstancesCount, mCurrentPB->mVolatileStart + startIndex, startVertex, 0);
+   else
+      mD3DDeviceContext->DrawIndexed(primCountToIndexCount(primType,primitiveCount), mCurrentPB->mVolatileStart + startIndex, startVertex);   
 
    mDeviceStatistics.mDrawCalls++;
    if ( mVertexBufferFrequency[0] > 1 )
@@ -1202,7 +1241,7 @@ void GFXD3D11Device::setShader(GFXShader *shader, bool force)
    }
 }
 
-GFXPrimitiveBuffer * GFXD3D11Device::allocPrimitiveBuffer(U32 numIndices, U32 numPrimitives, GFXBufferType bufferType, void* data )
+GFXPrimitiveBuffer * GFXD3D11Device::allocPrimitiveBuffer(U32 numIndices, U32 numPrimitives, GFXBufferType bufferType, void *data )
 {
    // Allocate a buffer to return
    GFXD3D11PrimitiveBuffer * res = new GFXD3D11PrimitiveBuffer(this, numIndices, numPrimitives, bufferType);
@@ -1215,8 +1254,10 @@ GFXPrimitiveBuffer * GFXD3D11Device::allocPrimitiveBuffer(U32 numIndices, U32 nu
    //    - dynamic buffers are write many, use many
    //    - volatile buffers are write once, use once
    // You may never read from a buffer.
+   //TODO: enable proper support for D3D11_USAGE_IMMUTABLE
    switch(bufferType)
    {
+   case GFXBufferTypeImmutable:
    case GFXBufferTypeStatic:
       usage = D3D11_USAGE_DEFAULT; //D3D11_USAGE_IMMUTABLE;
       break;
@@ -1261,10 +1302,18 @@ GFXPrimitiveBuffer * GFXD3D11Device::allocPrimitiveBuffer(U32 numIndices, U32 nu
 		}
    }
 
+   if (data)
+   {
+      void* dest;
+      res->lock(0, numIndices, &dest);
+      dMemcpy(dest, data, sizeof(U16) * numIndices);
+      res->unlock();
+   }
+
    return res;
 }
 
-GFXVertexBuffer * GFXD3D11Device::allocVertexBuffer(U32 numVerts, const GFXVertexFormat *vertexFormat, U32 vertSize, GFXBufferType bufferType,void* data ) 
+GFXVertexBuffer * GFXD3D11Device::allocVertexBuffer(U32 numVerts, const GFXVertexFormat *vertexFormat, U32 vertSize, GFXBufferType bufferType, void *data)
 {
    PROFILE_SCOPE( GFXD3D11Device_allocVertexBuffer );
 
@@ -1284,9 +1333,10 @@ GFXVertexBuffer * GFXD3D11Device::allocVertexBuffer(U32 numVerts, const GFXVerte
    //    - dynamic buffers are write many, use many
    //    - volatile buffers are write once, use once
    // You may never read from a buffer.
-
+   //TODO: enable proper support for D3D11_USAGE_IMMUTABLE
    switch(bufferType)
    {
+   case GFXBufferTypeImmutable:
    case GFXBufferTypeStatic:
       usage = D3D11_USAGE_DEFAULT;
       break;
@@ -1332,6 +1382,15 @@ GFXVertexBuffer * GFXD3D11Device::allocVertexBuffer(U32 numVerts, const GFXVerte
    }
 
    res->mNumVerts = numVerts;
+
+   if (data)
+   {
+      void* dest;
+      res->lock(0, numVerts, &dest);
+      dMemcpy(dest, data, vertSize * numVerts);
+      res->unlock();
+   }
+
    return res;
 }
 
@@ -1378,12 +1437,6 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
       else if (element.isSemantic(GFXSemantic::BINORMAL))
       {
          semantic = "BINORMAL";
-         semanticOut = semantic;
-      }
-
-      else if (element.isSemantic(GFXSemantic::TANGENTW))
-      {
-         semantic = "TANGENTW";
          semanticOut = semantic;
       }
       else
@@ -1493,8 +1546,6 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
    
    AssertFatal(code, "D3D11Device::allocVertexDecl - compiled vert shader code missing!");
 
-   //TODO: Need to  add support for instance support and frequency with the input layouts.
-
    // Setup the declaration struct.
    
    U32 stream;
@@ -1507,27 +1558,33 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
       
       stream = element.getStreamIndex();
 
-	   vd[i].InputSlot = stream;
+      vd[i].InputSlot = stream;
 	 
-	   vd[i].AlignedByteOffset =  D3D11_APPEND_ALIGNED_ELEMENT;//offsets[stream];
+      vd[i].AlignedByteOffset =  D3D11_APPEND_ALIGNED_ELEMENT;
       vd[i].Format = GFXD3D11DeclType[element.getType()];
-       
-	   vd[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-	   vd[i].InstanceDataStepRate = 0;
+      // If instancing is enabled, the per instance data is only used on stream 1.
+      if (vertexFormat->hasInstancing() && stream == 1)
+      {
+         vd[i].InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
+         vd[i].InstanceDataStepRate = 1;
+      }
+      else
+      {
+         vd[i].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+         vd[i].InstanceDataStepRate = 0;
+      }
       // We force the usage index of 0 for everything but 
       // texture coords for now... this may change later.
       vd[i].SemanticIndex = 0;
 
       if ( element.isSemantic( GFXSemantic::POSITION ) )
-	         vd[i].SemanticName = "POSITION";
+         vd[i].SemanticName = "POSITION";
       else if ( element.isSemantic( GFXSemantic::NORMAL ) )
          vd[i].SemanticName = "NORMAL";
       else if ( element.isSemantic( GFXSemantic::COLOR ) )
          vd[i].SemanticName = "COLOR";
       else if ( element.isSemantic( GFXSemantic::TANGENT ) )
          vd[i].SemanticName = "TANGENT";
-      else if (element.isSemantic(GFXSemantic::TANGENTW))
-         vd[i].SemanticName = "TANGENTW";
       else if ( element.isSemantic( GFXSemantic::BINORMAL ) )
          vd[i].SemanticName = "BINORMAL";
       else

@@ -22,6 +22,7 @@
 
 #include "../../shaderModel.hlsl"
 
+<<<<<<< HEAD
 struct VertIn
 {
    float3 pos        : POSITION;
@@ -43,4 +44,24 @@ Connect main(VertIn IN)
    OUT.pos = float4(IN.pos, 1.0);
 
    return OUT;
+=======
+struct Appdata
+{
+	float3 pos     : POSITION;
+	float4 color   : COLOR;
+};
+
+struct Conn
+{
+   float4 hpos : TORQUE_POSITION;
+};
+
+uniform float4x4 modelview;
+
+Conn main( Appdata In )
+{
+   Conn Out;
+   Out.hpos = float4(In.pos,1.0);
+   return Out;
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 }

@@ -423,7 +423,7 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *inTex, void *raw)
 
    if(texture->mFormat == GFXFormatR8G8B8)
    {
-	   // anis -> convert 24 bit to 32 bit
+	   // convert 24 bit to 32 bit
 	   Bits = new U8[texture->getWidth() * texture->getHeight() * texture->getDepth() * 4];
 	   dMemcpy(Bits, raw, texture->getWidth() * texture->getHeight() * texture->getDepth() * 3);
 	   bitmapConvertRGB_to_RGBX(&Bits, texture->getWidth() * texture->getHeight() * texture->getDepth());
@@ -448,7 +448,7 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *inTex, void *raw)
    box.top     = 0;
    box.bottom  = texture->getHeight();
 
-   if(texture->mFormat == GFXFormatR8G8B8) // anis -> converted format also for volume textures
+   if(texture->mFormat == GFXFormatR8G8B8) // converted format also for volume textures
 		dev->getDeviceContext()->UpdateSubresource(texture->get3DTex(), 0, &box, Bits, texture->getWidth() * bytesPerPix, texture->getHeight() * bytesPerPix);
    else
 		dev->getDeviceContext()->UpdateSubresource(texture->get3DTex(), 0, &box, raw, texture->getWidth() * bytesPerPix, texture->getHeight() * bytesPerPix);

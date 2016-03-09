@@ -244,6 +244,7 @@ float SmithGGX( float NdotL, float NdotV, float alpha )
 
 float D_GGX( float NdotH , float alpha )
 {
+<<<<<<< HEAD
     //
     // or GGX ( disney / unreal 4 )
     //
@@ -257,6 +258,21 @@ float D_GGX( float NdotH , float alpha )
 	float alphaSqr = alpha*alpha;
 	float f = ( NdotH * alphaSqr - NdotH ) * NdotH + 1;
 	return alphaSqr / ( M_PI_F * (f * f) );
+=======
+   float3 specularColor = float3(specular, specular, specular);
+   bool metalness = getFlag(matInfo.r, 3);
+   if ( metalness )
+   {
+       specularColor = 0.04 * (1 - specular) + diffuseColor * specular;
+   }
+   
+   //specular = color * map * spec^gloss
+   float specularOut = (specularColor * matInfo.b * min(pow(abs(specular), max(( matInfo.a/ AL_ConstantSpecularPower),1.0f)),matInfo.a)).r;
+   
+   lightColor *= shadowAttenuation;
+   lightColor += ambient.rgb;
+   return float4(lightColor.rgb, specularOut); 
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 }
 
 float3 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 position, float3 normal,  float roughness, float metallic )

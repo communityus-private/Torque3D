@@ -176,9 +176,9 @@ void GuiGraphCtrl::onRender(Point2I offset, const RectI &updateRect)
             F32 prevOffset = 0;
 
             for( S32 sample = 0; sample < numSamples; ++ sample )
-            {                  
-               PrimBuild::begin(GFXTriangleStrip, 4);
-               PrimBuild::color(mGraphColor[k]);
+            {    
+               PrimBuild::begin( GFXTriangleStrip, 4 );
+               PrimBuild::color( mGraphColor[ k ] );
 
                F32 offset = F32(getExtent().x) / F32(MaxDataPoints) * F32(sample + 1);
 

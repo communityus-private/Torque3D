@@ -22,23 +22,39 @@
 
 #include "../../shaderModel.hlsl"
 
+<<<<<<< HEAD
 struct Connect
 {
    float4 pos : TORQUE_POSITION;
+=======
+struct Conn
+{
+   float4 hpos : TORQUE_POSITION;
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 };
 
 struct Fragout
 {
+<<<<<<< HEAD
    float4 col0 : TORQUE_TARGET0;
    float4 col1 : TORQUE_TARGET1;
    float4 col2 : TORQUE_TARGET2;
    float4 col3 : TORQUE_TARGET3;
+=======
+   float4 col : TORQUE_TARGET0;
+   float4 col1 : TORQUE_TARGET1;
+   float4 col2 : TORQUE_TARGET2;
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 };
 
 //-----------------------------------------------------------------------------
 // Main                                                                        
 //-----------------------------------------------------------------------------
+<<<<<<< HEAD
 Fragout main( Connect IN )
+=======
+Fragout main( Conn IN )
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 {
    Fragout OUT;
    

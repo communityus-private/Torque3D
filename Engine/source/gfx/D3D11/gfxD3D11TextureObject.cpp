@@ -29,11 +29,11 @@
 U32 GFXD3D11TextureObject::mTexCount = 0;
 #endif
 
-/*
-	anis -> GFXFormatR8G8B8 has now the same behaviour as GFXFormatR8G8B8X8. 
-	This is because 24 bit format are now deprecated by microsoft, for data alignment reason there's no changes beetween 24 and 32 bit formats.
-	DirectX 10-11 both have 24 bit format no longer.
-*/
+
+//	GFXFormatR8G8B8 has now the same behaviour as GFXFormatR8G8B8X8. 
+//	This is because 24 bit format are now deprecated by microsoft, for data alignment reason there's no changes beetween 24 and 32 bit formats.
+//	DirectX 10-11 both have 24 bit format no longer.
+
 
 GFXD3D11TextureObject::GFXD3D11TextureObject( GFXDevice * d, GFXTextureProfile *profile) : GFXTextureObject( d, profile )
 {

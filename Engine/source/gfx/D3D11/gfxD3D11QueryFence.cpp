@@ -75,12 +75,6 @@ void GFXD3D11QueryFence::block()
    HRESULT hRes;
    while((hRes = D3D11DEVICECONTEXT->GetData(mQuery, NULL, 0, 0)) == S_FALSE); //D3DGETDATA_FLUSH
 
-   //Anis -> Since dx10 device will never lost
-
-   // Check for D3DERR_DEVICELOST, if we lost the device, the fence will get 
-   // re-created next issue()
-   //if( hRes == D3DERR_DEVICELOST )
-      //SAFE_RELEASE( mQuery );
 }
 
 void GFXD3D11QueryFence::zombify()

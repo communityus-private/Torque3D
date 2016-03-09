@@ -64,5 +64,6 @@ float4 main( Conn In ) : TORQUE_TARGET0
    
    Out.a = 1;
    Out = saturate(Out);
+
    return hdrEncode( Out );
 }

@@ -71,7 +71,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    
    //Use normal Z to modulate caustics  
    //float waterDepth = 1 - saturate(pos.z + waterFogPlane.w + 1);
-   caustics *= saturate(prePass.z) * pow(1-depth, 64) * waterDepth; 
+   caustics *= saturate(prePass.z) * pow(abs(1-depth), 64) * waterDepth; 
       
    return caustics;   
 }

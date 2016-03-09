@@ -61,9 +61,12 @@ uniform float3    texScale;
 ConnectData main( CloudVert IN )
 {   
    ConnectData OUT;
+<<<<<<< HEAD
+=======
+
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
    OUT.hpos = mul(modelview, float4(IN.pos,1.0));
    OUT.hpos.w = OUT.hpos.z;
-   
    // Offset the uv so we don't have a seam directly over our head.
    float2 uv = IN.uv0 + float2( 0.5, 0.5 );
    

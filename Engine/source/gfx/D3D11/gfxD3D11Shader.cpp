@@ -799,8 +799,7 @@ bool GFXD3D11Shader::_init()
    _buildShaderConstantHandles(mPixelConstBufferLayout, false);
 
    _buildSamplerShaderConstantHandles( mSamplerDescriptions );
-   //TODO add instancing support
-   //_buildInstancingShaderConstantHandles();
+   _buildInstancingShaderConstantHandles();
 
    // Notify any existing buffers that the buffer 
    // layouts have changed and they need to update.
@@ -1387,10 +1386,14 @@ void GFXD3D11Shader::_buildSamplerShaderConstantHandles( Vector<GFXShaderConstDe
 
 void GFXD3D11Shader::_buildInstancingShaderConstantHandles()
 {
+   // If we have no instancing than just return
+   if (!mInstancingFormat)
+      return;
+
    U32 offset = 0;
-   for ( U32 i=0; i < mInstancingFormat.getElementCount(); i++ )
+   for ( U32 i=0; i < mInstancingFormat->getElementCount(); i++ )
    {
-      const GFXVertexElement &element = mInstancingFormat.getElement( i );
+      const GFXVertexElement &element = mInstancingFormat->getElement( i );
       
       String constName = String::ToString( "$%s", element.getSemantic().c_str() );
 
@@ -1427,9 +1430,9 @@ void GFXD3D11Shader::_buildInstancingShaderConstantHandles()
 
       // If this is a matrix we will have 2 or 3 more of these
       // semantics with the same name after it.
-      for ( ; i < mInstancingFormat.getElementCount(); i++ )
+      for ( ; i < mInstancingFormat->getElementCount(); i++ )
       {
-         const GFXVertexElement &nextElement = mInstancingFormat.getElement( i );
+         const GFXVertexElement &nextElement = mInstancingFormat->getElement( i );
          if ( nextElement.getSemantic() != element.getSemantic() )
          {
             i--;
@@ -1448,9 +1451,9 @@ GFXShaderConstBufferRef GFXD3D11Shader::allocConstBuffer()
       mActiveBuffers.push_back( buffer );
       buffer->registerResourceWithDevice(getOwningDevice());
       return buffer;
-   } else {
-      return NULL;
-   }
+   } 
+
+   return NULL;
 }
 
 /// Returns a shader constant handle for name, if the variable doesn't exist NULL is returned.

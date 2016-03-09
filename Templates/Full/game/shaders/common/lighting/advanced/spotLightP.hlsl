@@ -20,6 +20,12 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+<<<<<<< HEAD
+=======
+#include "../../shaderModel.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
+
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
 #include "../../lighting.hlsl"
@@ -30,7 +36,11 @@
 
 struct ConvexConnectP
 {
+<<<<<<< HEAD
    float4 hpos : TORQUE_POSITION;
+=======
+   float4 pos : TORQUE_POSITION;
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
    float4 wsEyeDir : TEXCOORD0;
    float4 ssPos : TEXCOORD1;
    float4 vsEyeDir : TEXCOORD2;
@@ -43,6 +53,7 @@ TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,2);
 #ifdef USE_COOKIE_TEX
 
 /// The texture for cookie rendering.
+<<<<<<< HEAD
 TORQUE_UNIFORM_SAMPLER2D(cookieMap, 4);
 
 #endif
@@ -61,14 +72,42 @@ uniform float2 lightAttenuation;
 
 uniform float4 lightColor;
 uniform float4 rtParams0;
+=======
+TORQUE_UNIFORM_SAMPLER2D(cookieMap, 3);
+
+#endif
+
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
+
+uniform float4 rtParams0;
+
+uniform float  lightBrightness;
+uniform float3 lightPosition;
+
+uniform float4 lightColor;
+
+uniform float  lightRange;
+uniform float3 lightDirection;
+
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 uniform float4 lightSpotParams;
 uniform float4 lightMapParams;
 uniform float4 vsFarPlane;
 uniform float4x4 viewToLightProj;
+<<<<<<< HEAD
 uniform float4x4 dynamicViewToLightProj;
 uniform float4 lightParams;
 
 uniform float3 lightDirection;
+=======
+uniform float4 lightParams;
+uniform float4x4 dynamicViewToLightProj;
+
+uniform float2 lightAttenuation;
+uniform float shadowSoftness;
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 
 float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 {   
@@ -129,7 +168,11 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       // Get a linear depth from the light source.
       float distToLight = pxlPosLightProj.z / lightRange;
 
+<<<<<<< HEAD
       float static_shadowed = softShadow_filter(TORQUE_SAMPLER2D_MAKEARG(shadowMap),
+=======
+      float static_shadowed = softShadow_filter( ORQUE_SAMPLER2D_MAKEARG(shadowMap),
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
                                           ssPos.xy,
                                           shadowCoord,
                                           shadowSoftness,
@@ -137,7 +180,11 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
                                           nDotL,
                                           lightParams.y );
                                           
+<<<<<<< HEAD
       float dynamic_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
+=======
+      float dynamic_shadowed = softShadow_filter( ORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
                                           ssPos.xy,
                                           dynshadowCoord,
                                           shadowSoftness,
@@ -198,5 +245,11 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
+<<<<<<< HEAD
    return matInfo.g*(float4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
+=======
+
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
+   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 }

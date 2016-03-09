@@ -63,12 +63,12 @@ void ShaderGenPrinterHLSL::printPixelShaderOutputStruct(Stream& stream, const Ma
    for( U32 i = 0; i < FEATUREMGR->getFeatureCount(); i++ )
    {
       const FeatureInfo &info = FEATUREMGR->getAt( i );
-      if( featureData.features.hasFeature( *info.type ) )
+      if ( featureData.features.hasFeature( *info.type ) )
          numMRTs |= info.feature->getOutputTargets( featureData );
    }
 
-   WRITESTR( "struct Fragout\r\n" );
-   WRITESTR( "{\r\n" );
+   WRITESTR("struct Fragout\r\n");
+   WRITESTR("{\r\n");
    if (GFX->getAdapterType() == Direct3D11)
    {
       WRITESTR("   float4 col : SV_Target0;\r\n");
@@ -87,9 +87,9 @@ void ShaderGenPrinterHLSL::printPixelShaderOutputStruct(Stream& stream, const Ma
             WRITESTR(avar("   float4 col%d : COLOR%d;\r\n", i, i));
       }
    }
-   WRITESTR( "};\r\n" );
-   WRITESTR( "\r\n" );
-   WRITESTR( "\r\n" );
+   WRITESTR("};\r\n");
+   WRITESTR("\r\n");
+   WRITESTR("\r\n");
 }
 
 void ShaderGenPrinterHLSL::printPixelShaderCloser(Stream& stream)
@@ -154,11 +154,10 @@ ShaderComponent* ShaderGenComponentFactoryHLSL::createVertexInputConnector( cons
       else if ( element.isSemantic( GFXSemantic::TANGENTW ) )
       {
          if (GFX->getPixelShaderVersion() >= 4.0f)
-            var = vertComp->getElement( RT_TANGENTW );
+            var = vertComp->getElement(RT_TANGENTW);
          else
             var = vertComp->getIndexedElement(element.getSemanticIndex(), RT_TEXCOORD);
-
-         var->setName( "tangentW" );
+         var->setName("tangentW");
       }
       else if ( element.isSemantic( GFXSemantic::BINORMAL ) )
       {

@@ -31,7 +31,7 @@
 #include "gfx/D3D11/gfxD3D11StateBlock.h"
 #include "gfx/D3D11/gfxD3D11TextureManager.h"
 #include "gfx/D3D11/gfxD3D11Cubemap.h"
-#include "gfx/D3D11/gfxD3D11IndexBuffer.h"
+#include "gfx/D3D11/gfxD3D11PrimitiveBuffer.h"
 #include "gfx/gfxInit.h"
 #include "gfx/gfxResource.h"
 #include "platform/tmm_on.h"
@@ -131,6 +131,8 @@ protected:
 
    bool mOcclusionQuerySupported;
 
+   U32 mDrawInstancesCount;   
+
    /// To manage creating and re-creating of these when device is aquired
    void reacquireDefaultPoolResources();
 
@@ -182,6 +184,8 @@ protected:
    virtual DXGI_SWAP_CHAIN_DESC setupPresentParams( const GFXVideoMode &mode, const HWND &hwnd );
 
    String _createTempShaderInternal(const GFXVertexFormat *vertexFormat);
+   // Supress any debug layer messages we don't want to see
+   void _suppressDebugMessages();
    
 public:
 
@@ -244,7 +248,8 @@ public:
                                                 const GFXVertexFormat *vertexFormat,
                                                 U32 vertSize,
                                                 GFXBufferType bufferType,
-                                                void* data);
+                                                void* data = NULL);
+
    virtual GFXPrimitiveBuffer *allocPrimitiveBuffer(  U32 numIndices, 
                                                       U32 numPrimitives, 
                                                       GFXBufferType bufferType,

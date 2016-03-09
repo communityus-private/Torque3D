@@ -89,7 +89,8 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    // accu constants
    Var *accuScale = (Var*)LangElement::find( "accuScale" );
-   if ( !accuScale ) {
+   if ( !accuScale )
+   {
       accuScale = new Var;
       accuScale->setType( "float" );
       accuScale->setName( "accuScale" );
@@ -98,7 +99,8 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       accuScale->constSortPos = cspPotentialPrimitive;
    }
    Var *accuDirection = (Var*)LangElement::find( "accuDirection" );
-   if ( !accuDirection ) {
+   if ( !accuDirection )
+   {
       accuDirection = new Var;
       accuDirection->setType( "float" );
       accuDirection->setName( "accuDirection" );
@@ -107,7 +109,8 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       accuDirection->constSortPos = cspPotentialPrimitive;
    }
    Var *accuStrength = (Var*)LangElement::find( "accuStrength" );
-   if ( !accuStrength ) {
+   if ( !accuStrength )
+   {
       accuStrength = new Var;
       accuStrength->setType( "float" );
       accuStrength->setName( "accuStrength" );
@@ -116,7 +119,8 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       accuStrength->constSortPos = cspPotentialPrimitive;
    }
    Var *accuCoverage = (Var*)LangElement::find( "accuCoverage" );
-   if ( !accuCoverage ) {
+   if ( !accuCoverage )
+   {
       accuCoverage = new Var;
       accuCoverage->setType( "float" );
       accuCoverage->setName( "accuCoverage" );
@@ -125,7 +129,8 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       accuCoverage->constSortPos = cspPotentialPrimitive;
    }
    Var *accuSpecular = (Var*)LangElement::find( "accuSpecular" );
-   if ( !accuSpecular ) {
+   if ( !accuSpecular )
+   {
       accuSpecular = new Var;
       accuSpecular->setType( "float" );
       accuSpecular->setName( "accuSpecular" );
@@ -137,7 +142,8 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    Var *inTex = getInTexCoord( "texCoord", "float2", true, componentList );
    Var *accuVec = getInTexCoord( "accuVec", "float3", true, componentList );
    Var *bumpNorm = (Var *)LangElement::find( "bumpSample" );
-   if( bumpNorm == NULL ) {
+   if( bumpNorm == NULL )
+   {
       bumpNorm = (Var *)LangElement::find( "bumpNormal" );
       if (!bumpNorm)
         return;
@@ -155,7 +161,7 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       meta->addStatement(new GenOp("   @ = @.Sample(@, @ * @);\r\n", colorAccuDecl, accuMapTex, accuMap, inTex, accuScale));
    }
    else
-      meta->addStatement( new GenOp( "   @ = tex2D(@, @ * @);\r\n", colorAccuDecl, accuMap, inTex, accuScale ) );
+      meta->addStatement(new GenOp("   @ = tex2D(@, @ * @);\r\n", colorAccuDecl, accuMap, inTex, accuScale));
    if (!fd.features[MFT_Imposter])
       meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", accuColor, accuColor));
 

@@ -30,7 +30,6 @@
 #include "shaderGen/hlsl/shaderFeatureHLSL.h"
 #include "gfx/gfxDevice.h"
 
-
 GBufferConditionerHLSL::GBufferConditionerHLSL( const GFXFormat bufferFormat, const NormalSpace nrmSpace ) : 
       Parent( bufferFormat )
 {
@@ -115,7 +114,7 @@ void GBufferConditionerHLSL::processVert( Vector<ShaderComponent*> &componentLis
       // TODO: Total hack because Conditioner is directly derived
       // from ShaderFeature and not from ShaderFeatureHLSL.
       NamedFeatureHLSL dummy( String::EmptyString );
-      dummy.mInstancingFormat = mInstancingFormat;
+      dummy.setInstancingFormat( mInstancingFormat );
       Var *worldViewOnly = dummy.getWorldView( componentList, fd.features[MFT_UseInstancing], meta );
 
       meta->addStatement(  new GenOp("   @ = mul(@, float4( normalize(@), 0.0 ) ).xyz;\r\n", 
@@ -223,6 +222,7 @@ Var* GBufferConditionerHLSL::printMethodHeader( MethodType methodType, const Str
       retVal = Parent::printMethodHeader( methodType, methodName, stream, meta );
    else
    {
+      const bool isDirect3D11 = GFX->getAdapterType() == Direct3D11;
       Var *methodVar = new Var;
       methodVar->setName(methodName);
       methodVar->setType("inline float4");
@@ -233,31 +233,33 @@ Var* GBufferConditionerHLSL::printMethodHeader( MethodType methodType, const Str
       prepassSampler->setType("sampler2D");
       DecOp *prepassSamplerDecl = new DecOp(prepassSampler);
 
+      Var *screenUV = new Var;
+      screenUV->setName("screenUVVar");
+      screenUV->setType("float2");
+      DecOp *screenUVDecl = new DecOp(screenUV);
+
       Var *prepassTex = NULL;
       DecOp *prepassTexDecl = NULL;
-      if (GFX->getAdapterType() == Direct3D11)
+      if (isDirect3D11)
       {
          prepassSampler->setType("SamplerState");
          prepassTex = new Var;
          prepassTex->setName("prepassTexVar");
          prepassTex->setType("Texture2D");
+         prepassTex->texture = true;
+         prepassTex->constNum = prepassSampler->constNum;
          prepassTexDecl = new DecOp(prepassTex);
       }
-
-      Var *screenUV = new Var;
-      screenUV->setName("screenUVVar");
-      screenUV->setType("float2");
-      DecOp *screenUVDecl = new DecOp(screenUV);
 
       Var *bufferSample = new Var;
       bufferSample->setName("bufferSample");
       bufferSample->setType("float4");
       DecOp *bufferSampleDecl = new DecOp(bufferSample); 
 
-      if (prepassTex)
+      if (isDirect3D11)
          meta->addStatement(new GenOp("@(@, @, @)\r\n", methodDecl, prepassSamplerDecl, prepassTexDecl, screenUVDecl));
       else
-         meta->addStatement(new GenOp("@(@, @)\r\n", methodDecl, prepassSamplerDecl, screenUVDecl));
+         meta->addStatement( new GenOp( "@(@, @)\r\n", methodDecl, prepassSamplerDecl, screenUVDecl ) );
 
       meta->addStatement( new GenOp( "{\r\n" ) );
 
@@ -269,9 +271,9 @@ Var* GBufferConditionerHLSL::printMethodHeader( MethodType methodType, const Str
 #else
       // The gbuffer has no mipmaps, so use tex2dlod when 
       // possible so that the shader compiler can optimize.
-      meta->addStatement(new GenOp("   #if TORQUE_SM >= 30\r\n"));
 
-      if (prepassTex)
+      meta->addStatement( new GenOp( "   #if TORQUE_SM >= 30\r\n" ) );
+      if (isDirect3D11)
          meta->addStatement(new GenOp("      @ = @.SampleLevel(@, @,0);\r\n", bufferSampleDecl, prepassTex, prepassSampler, screenUV));
       else
          meta->addStatement(new GenOp("      @ = tex2Dlod(@, float4(@,0,0));\r\n", bufferSampleDecl, prepassSampler, screenUV));

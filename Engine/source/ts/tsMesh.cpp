@@ -3005,7 +3005,7 @@ void TSMesh::createTangents(const Vector<Point3F> &_verts, const Vector<Point3F>
                p2Index = baseIdx[j];
             }
             break;
-         }     
+         }
 
       default:
          AssertFatal( false, "TSMesh::createTangents: unknown primitive type!" );

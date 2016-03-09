@@ -166,16 +166,9 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    {
       bumpMap = new Var;
       Var* detailBumpTex = NULL; //only used in D3D10 or D3D11
-
-      bumpMap->setName("detailBumpMap");
-      bumpMap->uniform = true;
-      bumpMap->sampler = true;
-      bumpMap->constNum = Var::getTexUnitNum();
-
       if (mIsDirect3D11)
       {
          bumpMap->setType("SamplerState");
-
          detailBumpTex = new Var;
          detailBumpTex->setName("detailBumpTex");
          detailBumpTex->setType("Texture2D");
@@ -186,9 +179,7 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       else
          bumpMap->setType("sampler2D");
 
-
-
-      texCoord = getInTexCoord("detCoord", "float2", true, componentList);
+      texCoord = getInTexCoord( "detCoord", "float2", true, componentList );
 
       if (mIsDirect3D11)
          texOp = new GenOp("@.Sample(@, @)", detailBumpTex, bumpMap, texCoord);
@@ -454,27 +445,26 @@ void ParallaxFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    // Get the rest of our inputs.
    Var *parallaxInfo = _getUniformVar( "parallaxInfo", "float", cspPotentialPrimitive );
    Var *normalMap = getNormalMapTex();
-
    Var *bumpMapTexture = (Var*)LangElement::find("bumpMapTex");
 
    // Call the library function to do the rest.
-   if(fd.features.hasFeature( MFT_IsDXTnm, getProcessIndex() ))
+   if (fd.features.hasFeature(MFT_IsDXTnm, getProcessIndex()))
    {
-      if(mIsDirect3D11)
+      if (mIsDirect3D11)
          meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @, @.xy, @, @ );\r\n",
-            texCoord, normalMap, bumpMapTexture, texCoord, negViewTS, parallaxInfo));
+         texCoord, bumpMapTexture, normalMap, texCoord, negViewTS, parallaxInfo));
       else
-         meta->addStatement( new GenOp( "   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @ );\r\n", 
-            texCoord, normalMap, texCoord, negViewTS, parallaxInfo ) );
+         meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @ );\r\n",
+            texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
    }
    else
    {
       if (mIsDirect3D11)
          meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @, @.xy, @, @ );\r\n",
-            texCoord, normalMap, bumpMapTexture, texCoord, negViewTS, parallaxInfo));
+         texCoord, bumpMapTexture, normalMap, texCoord, negViewTS, parallaxInfo));
       else
-         meta->addStatement( new GenOp( "   @.xy += parallaxOffset( @, @.xy, @, @ );\r\n", 
-            texCoord, normalMap, texCoord, negViewTS, parallaxInfo ) );
+         meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @.xy, @, @ );\r\n",
+            texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
    }
 
    // TODO: Fix second UV maybe?

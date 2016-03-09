@@ -89,7 +89,7 @@ void GFXD3D11VertexBuffer::lock(U32 vertexStart, U32 vertexEnd, void **vertexPtr
    lockedVertexStart = vertexStart;
    lockedVertexEnd   = vertexEnd;
 
-   /* Anis -> uncomment it for debugging purpose. called many times per frame... spammy! */
+   // uncomment it for debugging purpose. called many times per frame... spammy! 
    //Con::printf("%x: Locking %s range (%d, %d)", this, (mBufferType == GFXBufferTypeVolatile ? "volatile" : "static"), lockedVertexStart, lockedVertexEnd);
 
    U32 sizeToLock = (vertexEnd - vertexStart) * mVertexSize;
@@ -142,7 +142,7 @@ void GFXD3D11VertexBuffer::unlock()
    
    if ( mDebugGuardBuffer )
    {
-		const U32 guardSize = sizeof( _VBGuardString );
+      const U32 guardSize = sizeof( _VBGuardString );
 		const U32 sizeLocked = (lockedVertexEnd - lockedVertexStart) * mVertexSize;
 
 		// First check the guard areas for overwrites.
@@ -162,7 +162,7 @@ void GFXD3D11VertexBuffer::unlock()
 
    #endif // TORQUE_DEBUG
    if(mBufferType == GFXBufferTypeStatic)
-	  {
+   {
 		const U32 sizeLocked = (lockedVertexEnd - lockedVertexStart) * mVertexSize;
 		//set up the update region of the buffer
 		D3D11_BOX box;
@@ -177,19 +177,16 @@ void GFXD3D11VertexBuffer::unlock()
 		//clean up the old buffer
 		delete[] mLockedBuffer;
 		mLockedBuffer = NULL;
-	  }
-	  else
-	  {
-		 
-		D3D11DEVICECONTEXT->Unmap(vb,0);
-      
-   
-	  }
+   }
+   else
+   {	 
+      D3D11DEVICECONTEXT->Unmap(vb,0);
+   }
    
 
    mIsFirstLock = false;
 
-   /* Anis -> uncomment it for debugging purpose. called many times per frame... spammy! */
+   //uncomment it for debugging purpose. called many times per frame... spammy!
    //Con::printf("%x: Unlocking %s range (%d, %d)", this, (mBufferType == GFXBufferTypeVolatile ? "volatile" : "static"), lockedVertexStart, lockedVertexEnd);
 
    lockedVertexEnd = lockedVertexStart = 0;

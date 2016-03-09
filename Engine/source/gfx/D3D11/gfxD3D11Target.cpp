@@ -301,7 +301,7 @@ void GFXD3D11TextureTarget::resolveTo( GFXTextureObject *tex )
 
 void GFXD3D11TextureTarget::zombify()
 {
-   for(int i = 0; i < MaxRenderSlotId; i++)
+   for(U32 i = 0; i < MaxRenderSlotId; i++)
       attachTexture(RenderSlot(i), NULL);
 }
 

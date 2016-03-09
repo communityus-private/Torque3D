@@ -20,14 +20,25 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+<<<<<<< HEAD
+=======
+#include "../../shaderModelAutoGen.hlsl"
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 #include "../../postfx/postFx.hlsl"
 #include "../../shaderModelAutoGen.hlsl"
 
+<<<<<<< HEAD
 TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex, 0);
 
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
+=======
+TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,0);
+
+float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
+{   
+>>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
    float4 lightColor = TORQUE_TEX2D( lightPrePassTex, IN.uv0 );    
    return float4( lightColor.rgb, 1.0 );   
 }
