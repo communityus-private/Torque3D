@@ -21,22 +21,11 @@
 //-----------------------------------------------------------------------------
 
 #include "../../postfx/postFx.hlsl"
-<<<<<<< HEAD
-#include "../../shaderModelAutoGen.hlsl"
 
-TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex, 0);
-
-
-float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
-{   
-   float specular = TORQUE_TEX2D( lightPrePassTex, IN.uv0 ).a;  
-=======
- 
 TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,0);
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {   
-   float specular = TORQUE_TEX2D( lightPrePassTex, IN.uv0 ).a;    
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
+   float specular = TORQUE_TEX2D( lightPrePassTex, IN.uv0 ).a;
    return float4( specular, specular, specular, 1.0 );
 }

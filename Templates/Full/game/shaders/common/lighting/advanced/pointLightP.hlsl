@@ -20,11 +20,6 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-<<<<<<< HEAD
-=======
-#include "../../shaderModelAutoGen.hlsl"
-
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
 #include "../../lighting.hlsl"
@@ -114,34 +109,11 @@ TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 
 #ifdef SHADOW_CUBE
 TORQUE_UNIFORM_SAMPLERCUBE(shadowMap, 1);
-<<<<<<< HEAD
-TORQUE_UNIFORM_SAMPLERCUBE(dynamicShadowMap, 2);
-=======
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 #else
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 #endif
 
-<<<<<<< HEAD
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer,5);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer,6);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer,7);
-
-uniform float  lightBrightness;
-uniform float  lightRange;
-uniform float2 lightAttenuation;
-
-uniform float shadowSoftness;
-uniform float3 lightPosition;
-
-uniform float4 rtParams0;
-uniform float4 lightColor;
-
-uniform float4 lightMapParams;
-uniform float4 vsFarPlane;
-uniform float4 lightParams;
-=======
 TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
 TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
 TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
@@ -159,16 +131,11 @@ uniform float4 lightParams;
 uniform float  lightRange;
 uniform float shadowSoftness;
 uniform float2 lightAttenuation;
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 
 uniform float3x3 viewToLightProj;
 uniform float3x3 dynamicViewToLightProj;
 
-<<<<<<< HEAD
-float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
-=======
 float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 {   
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
@@ -227,10 +194,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
          // Static
          float2 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) ).xy;
-<<<<<<< HEAD
          
-=======
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
          float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                              ssPos.xy,
                                              shadowCoord,
@@ -305,12 +269,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-<<<<<<< HEAD
    
    return matInfo.g*(float4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
-=======
-
-   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 }

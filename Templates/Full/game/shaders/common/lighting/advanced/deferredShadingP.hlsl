@@ -27,7 +27,6 @@
 TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
 TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,1);
 TORQUE_UNIFORM_SAMPLER2D(matInfoTex,2);
-<<<<<<< HEAD
 TORQUE_UNIFORM_SAMPLER2D(lightMapTex,3);
 TORQUE_UNIFORM_SAMPLER2D(prepassTex,4);
 
@@ -39,18 +38,6 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    float metalness = TORQUE_TEX2D( matInfoTex, IN.uv0 ).a; //flags|smoothness|ao|metallic
    float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
    
-=======
-TORQUE_UNIFORM_SAMPLER2D(prepassTex,3);
-
-float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
-{        
-   float4 lightBuffer = TORQUE_TEX2D( lightPrePassTex, IN.uv0 );
-   float4 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 );
-   float4 matInfo = TORQUE_TEX2D( matInfoTex, IN.uv0 );
-   float specular = saturate(lightBuffer.a);
-   float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
-
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
    if (depth>0.9999)
       return float4(0,0,0,0);	  
    

@@ -23,11 +23,7 @@
 #ifndef _TORQUE_HLSL_
 #define _TORQUE_HLSL_
 
-<<<<<<< HEAD
-#include "shaderModel.hlsl"
-=======
 #include "./shaderModel.hlsl"
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 
 static float M_HALFPI_F   = 1.57079632679489661923f;
 static float M_PI_F       = 3.14159265358979323846f;
@@ -145,20 +141,12 @@ float3x3 quatToMat( float4 quat )
 float2 parallaxOffset(TORQUE_SAMPLER2D(texMap), float2 texCoord, float3 negViewTS, float depthScale)
 {
    float depth = TORQUE_TEX2D(texMap, texCoord).a;
-<<<<<<< HEAD
-   float2 offset = negViewTS.xy * ( depth * depthScale );
-=======
    float2 offset = negViewTS.xy * (depth * depthScale);
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 
    for (int i = 0; i < PARALLAX_REFINE_STEPS; i++)
    {
       depth = (depth + TORQUE_TEX2D(texMap, texCoord + offset).a) * 0.5;
-<<<<<<< HEAD
-      offset = negViewTS.xy * ( depth * depthScale );
-=======
       offset = negViewTS.xy * (depth * depthScale);
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
    }
 
    return offset;

@@ -22,29 +22,6 @@
 
 #include "../../shaderModel.hlsl"
 
-<<<<<<< HEAD
-struct VertIn
-{
-   float3 pos        : POSITION;
-   float4 color      : COLOR;
-};
-
-//-----------------------------------------------------------------------------
-// Main                                                                        
-//-----------------------------------------------------------------------------
-
-struct Connect
-{
-   float4 pos : TORQUE_POSITION;
-};
-
-Connect main(VertIn IN)
-{
-   Connect OUT;
-   OUT.pos = float4(IN.pos, 1.0);
-
-   return OUT;
-=======
 struct Appdata
 {
 	float3 pos     : POSITION;
@@ -63,5 +40,4 @@ Conn main( Appdata In )
    Conn Out;
    Out.hpos = float4(In.pos,1.0);
    return Out;
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 }

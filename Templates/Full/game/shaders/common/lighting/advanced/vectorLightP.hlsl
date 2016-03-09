@@ -20,12 +20,8 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-<<<<<<< HEAD
-=======
 #include "../../shaderModel.hlsl"
 #include "../../shaderModelAutoGen.hlsl"
-
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 #include "farFrustumQuad.hlsl"
 #include "../../torque.hlsl"
 #include "../../lighting.hlsl"
@@ -42,54 +38,30 @@ TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
 uniform float4 rtParams3;
 #endif
-<<<<<<< HEAD
 
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer,5);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer,6);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer,7);
-             
-uniform float3 lightDirection;
-uniform float  lightBrightness;
-             
-uniform float shadowSoftness;
-uniform float3 eyePosWorld;
-
-uniform float2 fadeStartLength;
-uniform float2 atlasScale;
-=======
-//register 4?
 TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
 TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
 TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
 
 uniform float  lightBrightness;
 uniform float3 lightDirection;
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 
 uniform float4 lightColor;
 uniform float4 lightAmbient;
 
-<<<<<<< HEAD
-=======
 uniform float shadowSoftness;
 uniform float3 eyePosWorld;
 
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 uniform float4 atlasXOffset;
 uniform float4 atlasYOffset;
 uniform float4 zNearFarInvNearFar;
 uniform float4 lightMapParams;
-<<<<<<< HEAD
-uniform float4 overDarkPSSM;
-
-=======
 uniform float4 farPlaneScalePSSM;
 uniform float4 overDarkPSSM;
 
 uniform float2 fadeStartLength;
 uniform float2 atlasScale;
 
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 uniform float4x4 eyeMat;
 
 // Static Shadows
@@ -98,11 +70,7 @@ uniform float4 scaleX;
 uniform float4 scaleY;
 uniform float4 offsetX;
 uniform float4 offsetY;
-<<<<<<< HEAD
-uniform float4 farPlaneScalePSSM;
 
-=======
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 // Dynamic Shadows
 uniform float4x4 dynamicWorldToLightProj;
 uniform float4 dynamicScaleX;
@@ -110,11 +78,7 @@ uniform float4 dynamicScaleY;
 uniform float4 dynamicOffsetX;
 uniform float4 dynamicOffsetY;
 uniform float4 dynamicFarPlaneScalePSSM;
-<<<<<<< HEAD
              
-=======
-
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                 float2 texCoord,
                                 float4x4 worldToLightProj,
@@ -228,13 +192,8 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                  dotNL,
                                  dot( finalMask, overDarkPSSM ) ) );
 };
-<<<<<<< HEAD
              
-float4 main( FarFrustumQuadConnectP IN) : TORQUE_TARGET0
-=======
-
 float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 {
    // Emissive.
    float4 matInfo = TORQUE_TEX2D( matInfoBuffer, IN.uv0 );   
@@ -346,10 +305,5 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
       lightColorOut = debugColor;
    #endif
 
-<<<<<<< HEAD
    return matInfo.g*(float4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
-=======
-   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 }

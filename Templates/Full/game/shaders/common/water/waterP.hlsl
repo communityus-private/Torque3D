@@ -180,11 +180,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    prepassCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );   
 
    // Get prepass depth at the position of this distorted pixel.
-<<<<<<< HEAD
    float prepassDepth = TORQUE_PREPASS_UNCONDITION(prepassTex, prepassCoord).w;
-=======
-   float prepassDepth = TORQUE_PREPASS_UNCONDITION( prepassTex, prepassCoord ).w;      
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
    if ( prepassDepth > 0.99 )
      prepassDepth = 5.0;
     
@@ -216,11 +212,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
          prepassCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );
 
          // Get prepass depth at the position of this distorted pixel.
-<<<<<<< HEAD
          prepassDepth = TORQUE_PREPASS_UNCONDITION(prepassTex, prepassCoord).w;
-=======
-         prepassDepth = TORQUE_PREPASS_UNCONDITION( prepassTex, prepassCoord ).w;
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 	 if ( prepassDepth > 0.99 )
             prepassDepth = 5.0;
          delta = ( prepassDepth - pixelDepth ) * farPlaneDist;
@@ -290,11 +282,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    foamColor.rgb *= FOAM_OPACITY * foamAmt * foamColor.a;
 
    // Get reflection map color.
-<<<<<<< HEAD
-   float4 refMapColor = TORQUE_TEX2D( reflectMap, reflectCoord ); 
-=======
-   float4 refMapColor = TORQUE_TEX2D( reflectMap, reflectCoord );  
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
+   float4 refMapColor = TORQUE_TEX2D( reflectMap, reflectCoord );
    
    // If we do not have a reflection texture then we use the cubemap.
    refMapColor = lerp( refMapColor, TORQUE_TEXCUBE( skyMap, reflectionVec ), NO_REFLECT );

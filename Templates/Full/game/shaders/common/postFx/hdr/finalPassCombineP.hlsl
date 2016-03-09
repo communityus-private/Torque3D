@@ -20,10 +20,6 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-<<<<<<< HEAD
-#include "../../shaderModelAutoGen.hlsl"
-=======
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 #include "../../torque.hlsl"
 #include "../postFx.hlsl"
 #include "../../shaderModelAutoGen.hlsl"
@@ -48,10 +44,6 @@ uniform float g_fOneOverGamma;
 uniform float Brightness;
 uniform float Contrast;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> caf5ad10dbe54848c139926b37e931ec05da0fac
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
    float4 sample = hdrDecode( TORQUE_TEX2D( sceneTex, IN.uv0 ) );
