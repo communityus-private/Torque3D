@@ -35,7 +35,7 @@
 #include "platformWin32/platformWin32.h"
 #include "windowManager/win32/win32Window.h"
 #include "windowManager/platformWindow.h"
-#include "gfx/screenshot.h"
+#include "gfx/D3D11/screenshotD3D11.h"
 #include "materials/shaderData.h"
 
 #ifdef TORQUE_DEBUG
@@ -413,7 +413,10 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 
    _suppressDebugMessages();
 
-#endif 
+#endif
+
+   gScreenShot = new ScreenShotD3D11;
+
 	mInitialized = true;
 	deviceInited();
 }
@@ -697,11 +700,8 @@ GFXD3D11Device::~GFXD3D11Device()
    SAFE_RELEASE(mDeviceBackbuffer);
    SAFE_RELEASE(mD3DDeviceContext);
 
-   if( mCardProfiler )
-   {
-      delete mCardProfiler;
-      mCardProfiler = NULL;
-   }
+   SAFE_DELETE(mCardProfiler);
+   SAFE_DELETE(gScreenShot);
 
 #ifdef TORQUE_DEBUG
    if (mDebugLayers)
@@ -713,7 +713,7 @@ GFXD3D11Device::~GFXD3D11Device()
       pDebug->Release();
    }
 #endif
-
+   
    SAFE_RELEASE(mSwapChain);
    SAFE_RELEASE(mD3DDevice);
 }

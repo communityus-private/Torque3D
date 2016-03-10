@@ -197,6 +197,7 @@ public:
 
    ID3D11DepthStencilView* getDepthStencilView() { return mDeviceDepthStencilView; }
    ID3D11RenderTargetView* getRenderTargetView() { return mDeviceBackBufferView; }
+   ID3D11Texture2D* getBackBufferTexture() { return mDeviceBackbuffer; }
 
    /// Constructor
    /// @param   d3d   Direct3D object to instantiate this device with
