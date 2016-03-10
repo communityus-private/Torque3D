@@ -827,11 +827,14 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
 
 #ifdef TORQUE_DEBUG
 	U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-   Con::printf( "Compiling Shader: '%s'", filePath.getFullPath().c_str() );
 #else
    U32 flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3; //TODO double check load times with D3DCOMPILE_OPTIMIZATION_LEVEL3
    //recommended flags for NSight, uncomment to use. NSight should be used in release mode only. *Still works with above flags however
    //flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PREFER_FLOW_CONTROL | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+#ifdef D3D11_DEBUG_SPEW
+   Con::printf( "Compiling Shader: '%s'", filePath.getFullPath().c_str() );
 #endif
 
    // Is it an HLSL shader?
@@ -1033,8 +1036,8 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
 
          if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 && dStrcmp(constantBufferDesc.Name, "$Params") != 0)
             AssertFatal(false, "Only $Global and $Params cbuffer supported for now.");
-
-
+   #endif
+   #ifdef D3D11_DEBUG_SPEW
          Con::printf("Constant Buffer Name: %s", constantBufferDesc.Name);
    #endif 
          
@@ -1062,7 +1065,7 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
             else
                desc.arraySize = variableTypeDesc.Elements;
 
-   #ifdef TORQUE_DEBUG
+   #ifdef D3D11_DEBUG_SPEW
             Con::printf("Variable Name %s:, offset: %d, size: %d, constantDesc.Elements: %d", desc.name.c_str(), variableDesc.StartOffset, variableDesc.Size, desc.arraySize);
    #endif           
             if (_convertShaderVariable(variableTypeDesc, desc))

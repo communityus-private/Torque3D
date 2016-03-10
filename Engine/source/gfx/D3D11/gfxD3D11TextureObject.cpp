@@ -37,7 +37,7 @@ U32 GFXD3D11TextureObject::mTexCount = 0;
 
 GFXD3D11TextureObject::GFXD3D11TextureObject( GFXDevice * d, GFXTextureProfile *profile) : GFXTextureObject( d, profile )
 {
-#ifdef TORQUE_DEBUG
+#ifdef D3D11_DEBUG_SPEW
    mTexCount++;
    Con::printf("+ texMake %d %x", mTexCount, this);
 #endif
@@ -55,7 +55,7 @@ GFXD3D11TextureObject::GFXD3D11TextureObject( GFXDevice * d, GFXTextureProfile *
 GFXD3D11TextureObject::~GFXD3D11TextureObject()
 {
    kill();
-#ifdef TORQUE_DEBUG
+#ifdef D3D11_DEBUG_SPEW
    mTexCount--;
    Con::printf("+ texkill %d %x", mTexCount, this);
 #endif
