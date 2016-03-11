@@ -103,44 +103,35 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          newVar->rank = 3;
          return newVar;
       }
-
-   case RT_TANGENTW:
-   {
-      Var *newVar = new Var;
-      mElementList.push_back(newVar);
-      newVar->setConnectName("TANGENTW");
-      newVar->rank = 4;
-      return newVar;
-   }
-
+      
    case RT_COLOR:
-   {
-      Var *newVar = new Var;
-      mElementList.push_back(newVar);
-      newVar->setConnectName("COLOR");
-      newVar->rank = 5;
-      return newVar;
-   }
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+         newVar->setConnectName( "COLOR" );
+         newVar->rank = 4;
+         return newVar;
+      }
 
    case RT_TEXCOORD:
-   {
-      Var *newVar = new Var;
-      mElementList.push_back(newVar);
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
 
-      // This was needed for hardware instancing, but
-      // i don't really remember why right now.
-      if (index > mCurTexElem)
-         mCurTexElem = index + 1;
+         // This was needed for hardware instancing, but
+         // i don't really remember why right now.
+         if ( index > mCurTexElem )
+            mCurTexElem = index + 1;
 
-      char out[32];
-      dSprintf((char*)out, sizeof(out), "TEXCOORD%d", index);
-      newVar->setConnectName(out);
-      newVar->constNum = index;
-      newVar->arraySize = numElements;
-      newVar->rank = 6 + index;
+         char out[32];
+         dSprintf( (char*)out, sizeof(out), "TEXCOORD%d", index );
+         newVar->setConnectName( out );
+         newVar->constNum = index;
+         newVar->arraySize = numElements;
+         newVar->rank = 6 + index;
 
-      return newVar;
-   }
+         return newVar;
+      }
 
    default:
       break;
@@ -150,21 +141,20 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
 }
 
 
-
+   
 S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void* e2)
-{
+      {
    Var* a = *((Var **)e1);
    Var* b = *((Var **)e2);
-
+   
    return a->rank - b->rank;
-}
+   }
 
 void ShaderConnectorHLSL::sortVars()
-{
-
+   {
    // If shader model 4+ than we gotta sort the vars to make sure the order is consistent
    if (GFX->getPixelShaderVersion() >= 4.f)
-   {
+      {
       dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
       return;
    }
