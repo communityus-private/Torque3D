@@ -368,6 +368,7 @@ void GFXD3D11WindowTarget::resetMode()
     mSize = Point2I(mPresentationParams.BufferDesc.Width, mPresentationParams.BufferDesc.Height);
 
     mWindow->setSuppressReset(false);
+    GFX->beginReset();
 }
 
 void GFXD3D11WindowTarget::zombify()

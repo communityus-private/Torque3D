@@ -510,12 +510,16 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 	displayModes.Scaling = d3dpp.BufferDesc.Scaling;
 	displayModes.ScanlineOrdering = d3dpp.BufferDesc.ScanlineOrdering;
 
-	HRESULT hr = mSwapChain->ResizeTarget(&displayModes);
+   HRESULT hr;
+   if (!d3dpp.Windowed)
+   {
+      hr = mSwapChain->ResizeTarget(&displayModes);
 
-	if (FAILED(hr))
-	{
-		AssertFatal(false, "D3D11Device::reset - failed to resize target!");
-	}
+      if (FAILED(hr))
+      {
+         AssertFatal(false, "D3D11Device::reset - failed to resize target!");
+      }
+   }
 
 	// First release all the stuff we allocated from D3DPOOL_DEFAULT
 	releaseDefaultPoolResources();
@@ -526,7 +530,7 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 	SAFE_RELEASE(mDeviceDepthStencilView);
 	SAFE_RELEASE(mDeviceDepthStencil);
 
-	hr = mSwapChain->ResizeBuffers(d3dpp.BufferCount, d3dpp.BufferDesc.Width, d3dpp.BufferDesc.Height, d3dpp.BufferDesc.Format, d3dpp.Windowed ? 0 : DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+   hr = mSwapChain->ResizeBuffers(d3dpp.BufferCount, d3dpp.BufferDesc.Width, d3dpp.BufferDesc.Height, d3dpp.BufferDesc.Format, d3dpp.Windowed ? 0 : DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
 
 	if (FAILED(hr))
 	{
@@ -582,7 +586,7 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 	if (FAILED(hr))
 		AssertFatal(false, "GFXD3D11Device::reset - couldn't create back buffer target view");
 
-	getDeviceContext()->OMSetRenderTargets(1, &mDeviceBackBufferView, mDeviceDepthStencilView);
+   mD3DDeviceContext->OMSetRenderTargets(1, &mDeviceBackBufferView, mDeviceDepthStencilView);
 
 	hr = mSwapChain->SetFullscreenState(!d3dpp.Windowed, NULL);
 
@@ -590,6 +594,19 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 	{
 		AssertFatal(false, "D3D11Device::reset - failed to change screen states!");
 	}
+
+   //Microsoft recommend this, see DXGI documentation
+   if (!d3dpp.Windowed)
+   {
+      displayModes.RefreshRate.Numerator = 0;
+      displayModes.RefreshRate.Denominator = 0;
+      hr = mSwapChain->ResizeTarget(&displayModes);
+
+      if (FAILED(hr))
+      {
+         AssertFatal(false, "D3D11Device::reset - failed to resize target!");
+      }
+   }
 
 	mInitialized = true;
 
