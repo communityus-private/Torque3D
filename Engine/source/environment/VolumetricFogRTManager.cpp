@@ -36,6 +36,7 @@
 #include "windowManager/platformWindowMgr.h"
 #include "console/engineAPI.h"
 #include "gui/core/guiCanvas.h"
+#include "gfx/gfxDevice.h"
    
 MODULE_BEGIN(VolumetricFogRTManager)
    
@@ -127,10 +128,10 @@ void VolumetricFogRTManager::consoleInit()
 bool VolumetricFogRTManager::Init()
 {
    if (mIsInitialized)
-      {
+   {
       Con::errorf("VolumetricFogRTManager allready initialized!!");
       return true;
-      }
+   }
    
    GuiCanvas* cv = dynamic_cast<GuiCanvas*>(Sim::findObject("Canvas"));
    if (cv == NULL)
@@ -142,7 +143,7 @@ bool VolumetricFogRTManager::Init()
    mPlatformWindow = cv->getPlatformWindow();
    mPlatformWindow->getScreenResChangeSignal().notify(this,&VolumetricFogRTManager::ResizeRT);
    
-   if (mTargetScale < 1)
+   if (mTargetScale < 1 || GFX->getAdapterType() == Direct3D11)
       mTargetScale = 1;
    
    mWidth = mFloor(mPlatformWindow->getClientExtent().x / mTargetScale);
@@ -217,8 +218,9 @@ void VolumetricFogRTManager::FogAnswered()
    
 bool VolumetricFogRTManager::Resize()
 {
-   if (mTargetScale < 1)
+   if (mTargetScale < 1 || GFX->getAdapterType() == Direct3D11)
       mTargetScale = 1;
+
    mWidth = mFloor(mPlatformWindow->getClientExtent().x / mTargetScale);
    mHeight = mFloor(mPlatformWindow->getClientExtent().y / mTargetScale);
    
@@ -240,19 +242,19 @@ bool VolumetricFogRTManager::Resize()
    mFrontBuffer = GFXTexHandle(mWidth, mHeight, GFXFormatR32F,
    &GFXDefaultRenderTargetProfile, avar("%s() - mFrontBuffer (line %d)", __FUNCTION__, __LINE__));
    if (!mFrontBuffer.isValid())
-      {
+   {
       Con::errorf("VolumetricFogRTManager::Resize() Fatal Error: Unable to create front buffer");
       return false;
-      }
+   }
    mFrontTarget.setTexture(mFrontBuffer);
    
    mDepthBuffer = GFXTexHandle(mWidth, mHeight, GFXFormatR32F,
    &GFXDefaultRenderTargetProfile, avar("%s() - mDepthBuffer (line %d)", __FUNCTION__, __LINE__));
    if (!mDepthBuffer.isValid())
-      {
-         Con::errorf("VolumetricFogRTManager::Resize() Fatal Error: Unable to create Depthbuffer");
-         return false;
-      }
+   {
+      Con::errorf("VolumetricFogRTManager::Resize() Fatal Error: Unable to create Depthbuffer");
+      return false;
+   }
    mDepthTarget.setTexture(mDepthBuffer);
    return true;
 }
