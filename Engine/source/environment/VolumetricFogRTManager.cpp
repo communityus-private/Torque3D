@@ -146,11 +146,7 @@ bool VolumetricFogRTManager::Init()
       mTargetScale = 1;
    
    mWidth = mFloor(mPlatformWindow->getClientExtent().x / mTargetScale);
-   mHeight = mPlatformWindow->getClientExtent().y;
-   mFullScreen = mPlatformWindow->isFullscreen();
-   if (!mFullScreen)
-      mHeight -= 20;//subtract caption bar from rendertarget size.
-   mHeight = mFloor(mHeight / mTargetScale);
+   mHeight = mFloor(mPlatformWindow->getClientExtent().y / mTargetScale);
    
    mDepthBuffer = GFXTexHandle(mWidth, mHeight, GFXFormatR32F,
    &GFXDefaultRenderTargetProfile, avar("%s() - mDepthBuffer (line %d)", __FUNCTION__, __LINE__));
@@ -224,11 +220,7 @@ bool VolumetricFogRTManager::Resize()
    if (mTargetScale < 1)
       mTargetScale = 1;
    mWidth = mFloor(mPlatformWindow->getClientExtent().x / mTargetScale);
-   mHeight = mPlatformWindow->getClientExtent().y;
-     
-   if (!mPlatformWindow->isFullscreen())
-      mHeight -= 20;//subtract caption bar from rendertarget size.
-   mHeight = mFloor(mHeight / mTargetScale);
+   mHeight = mFloor(mPlatformWindow->getClientExtent().y / mTargetScale);
    
    if (mWidth < 16 || mHeight < 16)
       return false;

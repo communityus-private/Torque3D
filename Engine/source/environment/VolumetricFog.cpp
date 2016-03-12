@@ -317,8 +317,7 @@ void VolumetricFog::handleResize(VolumetricFogRTManager *RTM, bool resize)
    {
       F32 width = (F32)mPlatformWindow->getClientExtent().x;
       F32 height = (F32)mPlatformWindow->getClientExtent().y;
-      if (!mPlatformWindow->isFullscreen())
-         height -= 20;//subtract caption bar from rendertarget size.
+
       mTexScale.x = 2.0f - ((F32)mTexture.getWidth() / width);
       mTexScale.y = 2.0f - ((F32)mTexture.getHeight() / height);
    }
@@ -1075,7 +1074,6 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
 
    mPPShaderConsts->setSafe(mPPModelViewProjSC, xform);
 
-   LightInfo *lightinfo = LIGHTMGR->getSpecialLight(LightManager::slSunLightType);
    const ColorF &sunlight = state->getAmbientLightColor();
 
    Point3F ambientColor(sunlight.red, sunlight.green, sunlight.blue);
@@ -1209,9 +1207,6 @@ void VolumetricFog::InitTexture()
 
       F32 width = (F32)mPlatformWindow->getClientExtent().x;
       F32 height = (F32)mPlatformWindow->getClientExtent().y;
-
-      if (!mPlatformWindow->isFullscreen())
-         height -= 20;//subtract caption bar from rendertarget size.
 
       mTexScale.x = 2.0f - ((F32)mTexture.getWidth() / width);
       mTexScale.y = 2.0f - ((F32)mTexture.getHeight() / height);
