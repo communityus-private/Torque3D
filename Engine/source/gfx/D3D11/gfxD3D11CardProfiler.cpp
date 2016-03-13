@@ -20,12 +20,13 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "gfx/D3D11/gfxD3D11Device.h"
-#include "console/console.h"
-#include "gfx/primBuilder.h"
 #include "gfx/D3D11/gfxD3D11CardProfiler.h"
+#include "gfx/D3D11/gfxD3D11Device.h"
 #include "gfx/D3D11/gfxD3D11EnumTranslate.h"
 #include "platformWin32/videoInfo/wmiVideoInfo.h"
+#include "console/console.h"
+#include "gfx/primBuilder.h"
+
 
 GFXD3D11CardProfiler::GFXD3D11CardProfiler() : GFXCardProfiler()
 {
@@ -38,19 +39,17 @@ GFXD3D11CardProfiler::~GFXD3D11CardProfiler()
 
 void GFXD3D11CardProfiler::init()
 {
-   IDXGIAdapter1 *adapter;
-   IDXGIFactory1* factory;
-   HRESULT hres;
-   hres = CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory));
-   factory->EnumAdapters1(D3D11->getAdaterIndex(), &adapter);
-   DXGI_ADAPTER_DESC1 desc;
-   adapter->GetDesc1(&desc);
+   U32 adapterIndex = D3D11->getAdaterIndex();
+   WMIVideoInfo wmiVidInfo;
+   if (wmiVidInfo.profileAdapters())
+   {
+      const PlatformVideoInfo::PVIAdapter &adapter = wmiVidInfo.getAdapterInformation(adapterIndex);
 
-   mCardDescription = desc.Description;
-   mVideoMemory = desc.DedicatedVideoMemory / 1048576; //convert to megabytes
-
-   adapter->Release();
-   factory->Release();
+      mCardDescription = adapter.description;
+      mChipSet = adapter.chipSet;
+      mVersionString = adapter.driverVersion;
+      mVideoMemory = adapter.vram;
+   }
    Parent::init();
 }
 
