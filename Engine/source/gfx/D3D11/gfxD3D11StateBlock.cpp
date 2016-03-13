@@ -238,7 +238,8 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
 
 	D3D11DEVICECONTEXT->RSSetState(mRasterizerState);
 
-	for ( U32 i = 0; i < getOwningDevice()->getNumSamplers(); i++ )
+   U32 numSamplers = GFX->getNumSamplers();
+   for (U32 i = 0; i < numSamplers; i++)
 	{
 		mSamplerDesc[i].AddressU = GFXD3D11TextureAddress[mDesc.samplers[i].addressModeU];
 		mSamplerDesc[i].AddressV = GFXD3D11TextureAddress[mDesc.samplers[i].addressModeV];
@@ -273,9 +274,10 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
 		mSamplerDesc[i].BorderColor[2] = 0.0f;
 		mSamplerDesc[i].BorderColor[3] = 0.0f;
 		mSamplerDesc[i].ComparisonFunc = D3D11_COMPARISON_NEVER;
-
-      //TODO samplers for vertex shader
-		//D3D11DEVICECONTEXT->VSSetSamplers(i, 1, &mSamplerStates[i]);
-		D3D11DEVICECONTEXT->PSSetSamplers(i, 1, &mSamplerStates[i]);
 	}
+   
+   //TODO samplers for vertex shader
+   // Set all the samplers with one call
+   //D3D11DEVICECONTEXT->VSSetSamplers(0, numSamplers, &mSamplerStates[0]);
+   D3D11DEVICECONTEXT->PSSetSamplers(0, numSamplers, &mSamplerStates[0]);
 }
