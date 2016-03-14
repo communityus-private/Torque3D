@@ -35,23 +35,25 @@ struct ConnectData
 };
 
 uniform float4x4  modelview;
-uniform float     accumTime;
-uniform float     texScale;
 uniform float2    texDirection;
 uniform float2    texOffset;
+uniform float     accumTime;
+uniform float     texScale;
+
 
 ConnectData main( CloudVert IN )
-{   
+{
    ConnectData OUT;
-   
+
    OUT.hpos = mul(modelview, float4(IN.pos,1.0));
-   
+   OUT.hpos.w = OUT.hpos.z;
+
    float2 uv = IN.uv0;
    uv += texOffset;
    uv *= texScale;
    uv += accumTime * texDirection;
 
-   OUT.texCoord = uv;   
-   
+   OUT.texCoord = uv;
+
    return OUT;
 }
