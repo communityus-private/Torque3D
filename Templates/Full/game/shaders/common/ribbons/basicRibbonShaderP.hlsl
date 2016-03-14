@@ -1,5 +1,6 @@
 #define IN_HLSL
 #include "../shdrConsts.h"
+#include "../shaderModel.hlsl"
  
 struct v2f
 {
