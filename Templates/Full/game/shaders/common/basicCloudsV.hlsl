@@ -25,9 +25,6 @@
 struct CloudVert
 {
    float3 pos        : POSITION;
-   float3 normal     : NORMAL;
-   float3 binormal   : BINORMAL;
-   float3 tangent    : TANGENT;
    float2 uv0        : TEXCOORD0;
 };
 
