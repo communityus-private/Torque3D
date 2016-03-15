@@ -1158,6 +1158,11 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
       GFX->setStateBlock(mStateblockF);
 
    GFX->drawPrimitive(0);
+
+   // Ensure these two textures are bound to the pixel shader input on the second run as they are used as pixel shader outputs (render targets).
+   GFX->setTexture(1, NULL); //mDepthBuffer
+   GFX->setTexture(2, NULL); //mFrontBuffer
+   GFX->updateStates(); //update the dirty texture state we set above
 }
 
 void VolumetricFog::reflect_render(ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat)
