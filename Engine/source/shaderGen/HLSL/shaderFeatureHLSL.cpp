@@ -2025,14 +2025,14 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       if (fd.features[MFT_DeferredSpecMap])
       {
          if (mIsDirect3D11)
-            texCube = new GenOp("@.Sample( @, float4(@, (@.a*5)) )", cubeMapTex, cubeMap, reflectVec, matinfo);
+            texCube = new GenOp("@.SampleLevel( @, @, @.a*5)", cubeMapTex, cubeMap, reflectVec, matinfo);
          else
             texCube = new GenOp("texCUBElod( @, float4(@, (@.a*5)) )", cubeMap, reflectVec, matinfo);
       }
       else
       {
          if (mIsDirect3D11)
-            texCube = new GenOp("@.Sample( @, float4(@, ((1.0-@.a)*6)) )", cubeMapTex, cubeMap, reflectVec, matinfo);
+            texCube = new GenOp("@.SampleLevel( @, @, (1.0-@.a)*6 )", cubeMapTex, cubeMap, reflectVec, matinfo);
          else
             texCube = new GenOp("texCUBElod( @, float4(@, ((1.0-@.a)*6)) )", cubeMap, reflectVec, matinfo);
       }
@@ -2042,7 +2042,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       if (glossColor) //failing that, rtry and find color data
       {
          if (mIsDirect3D11)
-            texCube = new GenOp("@.Sample( @, float4(@, @.a*5))", cubeMapTex, cubeMap, reflectVec, glossColor);
+            texCube = new GenOp("@.SampleLevel( @, @, @.a*5)", cubeMapTex, cubeMap, reflectVec, glossColor);
          else
             texCube = new GenOp("texCUBElod( @, float4(@, @.a*5))", cubeMap, reflectVec, glossColor);
       }
