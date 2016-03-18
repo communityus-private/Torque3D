@@ -484,7 +484,6 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
 	   blendDepth->constSortPos = cspPrimitive;
    }
 
-   Var *baseColor = (Var*)LangElement::find("baseColor");
    ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
    if (fd.features.hasFeature(MFT_isDeferred))

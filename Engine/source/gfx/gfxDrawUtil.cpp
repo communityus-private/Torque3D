@@ -1119,7 +1119,7 @@ void GFXDrawUtil::drawObjectBox( const GFXStateBlockDesc &desc, const Point3F &s
    PrimBuild::end();
 }
 
-static const Point2F circlePoints[] = 
+static const Point2F circlePoints[] =
 {
    Point2F(0.707107f, 0.707107f),
    Point2F(0.923880f, 0.382683f),
@@ -1268,27 +1268,57 @@ void GFXDrawUtil::drawCone( const GFXStateBlockDesc &desc, const Point3F &basePn
    mDevice->multWorld(mat);
 
    S32 numPoints = sizeof(circlePoints)/sizeof(Point2F);
-   GFXVertexBufferHandle<GFXVertexPCT> verts(mDevice, numPoints + 2, GFXBufferTypeVolatile);
+   GFXVertexBufferHandle<GFXVertexPCT> verts(mDevice, numPoints * 3 + 2, GFXBufferTypeVolatile);
    verts.lock();
-   verts[0].point = Point3F(0.0f,0.0f,1.0f);
-   verts[0].color = color;
-   for (S32 i=0; i<numPoints + 1; i++)
+
+   F32 sign = -1.f;
+   S32 indexDown = 0; //counting down from numPoints
+   S32 indexUp = 0; //counting up from 0
+   S32 index = 0; //circlePoints index for cap
+
+   for (S32 i = 0; i < numPoints + 1; i++)
    {
+      //Top cap
+      if (i != numPoints)
+      {
+         if (sign < 0)
+            index = indexDown;
+         else
+            index = indexUp;
+
+         verts[i].point = Point3F(circlePoints[index].x, circlePoints[index].y, 0);
+         verts[i].color = color;
+
+         if (sign < 0)
+            indexUp += 1;
+         else
+            indexDown = numPoints - indexUp;
+
+         // invert sign
+         sign *= -1.0f;
+      }
+
+      //cone
       S32 imod = i % numPoints;
-      verts[i + 1].point = Point3F(circlePoints[imod].x,circlePoints[imod].y, 0.0f);
-      verts[i + 1].color = color;
+      S32 vertindex = 2 * i + numPoints;
+      verts[vertindex].point = Point3F(circlePoints[imod].x, circlePoints[imod].y, 0);
+      verts[vertindex].color = color;
+      verts[vertindex + 1].point = Point3F(0.0f, 0.0f, 1.0f);
+      verts[vertindex + 1].color = color;
    }
+
    verts.unlock();
 
    mDevice->setStateBlockByDesc( desc );
 
    mDevice->setVertexBuffer( verts );
-   mDevice->setupGenericShaders( GFXDevice::GSModColorTexture );
+   mDevice->setupGenericShaders();
 
-   mDevice->drawPrimitive( GFXTriangleStrip, 0, numPoints );
-   mDevice->drawPrimitive( GFXTriangleStrip, 1, numPoints-1 );
+   mDevice->drawPrimitive(GFXTriangleStrip, 0, numPoints - 2);
+   mDevice->drawPrimitive(GFXTriangleStrip, numPoints, numPoints * 2);
 
    mDevice->popWorldMatrix();
+
 }
 
 void GFXDrawUtil::drawCylinder( const GFXStateBlockDesc &desc, const Point3F &basePnt, const Point3F &tipPnt, F32 radius, const ColorI &color )
@@ -1307,32 +1337,59 @@ void GFXDrawUtil::drawCylinder( const GFXStateBlockDesc &desc, const Point3F &ba
    mDevice->pushWorldMatrix();
    mDevice->multWorld(mat);
 
-   S32 numPoints = sizeof(circlePoints)/sizeof(Point2F);
-   GFXVertexBufferHandle<GFXVertexPCT> verts(mDevice, numPoints * 4 + 4, GFXBufferTypeVolatile);
+   S32 numPoints = sizeof(circlePoints) / sizeof(Point2F);
+   GFXVertexBufferHandle<GFXVertexPCT> verts(mDevice, numPoints *4 + 2, GFXBufferTypeVolatile);
    verts.lock();
-   for (S32 i=0; i<numPoints + 1; i++)
-   {
-      S32 imod = i % numPoints;
-      verts[i].point = Point3F(circlePoints[imod].x,circlePoints[imod].y, 0.5f);
-      verts[i].color = color;
-      verts[i + numPoints + 1].point = Point3F(circlePoints[imod].x,circlePoints[imod].y, 0);
-      verts[i + numPoints + 1].color = color;
 
-      verts[2*numPoints + 2 + 2 * i].point = Point3F(circlePoints[imod].x,circlePoints[imod].y, 0.5f);
-      verts[2*numPoints + 2 + 2 * i].color = color;
-      verts[2*numPoints + 2 + 2 * i + 1].point = Point3F(circlePoints[imod].x,circlePoints[imod].y, 0);
-      verts[2*numPoints + 2 + 2 * i + 1].color = color;
+   F32 sign = -1.f;
+   S32 indexDown = 0; //counting down from numPoints
+   S32 indexUp = 0; //counting up from 0
+   S32 index = 0; //circlePoints index for caps
+
+   for (S32 i = 0; i < numPoints + 1; i++)
+   {
+      //Top/Bottom cap
+      if (i != numPoints)
+      {
+         if (sign < 0)
+            index = indexDown;
+         else
+            index = indexUp;
+
+         verts[i].point = Point3F(circlePoints[index].x, circlePoints[index].y, 0);
+         verts[i].color = color;
+         verts[i + numPoints].point = Point3F(circlePoints[index].x, circlePoints[index].y, 0.5f);
+         verts[i + numPoints].color = color;
+
+         if (sign < 0)
+            indexUp += 1;
+         else
+            indexDown = numPoints - indexUp;
+
+         // invert sign
+         sign *= -1.0f;
+      }
+
+      //cylinder
+      S32 imod = i % numPoints;
+      S32 vertindex = 2 * i + (numPoints * 2);
+      verts[vertindex].point = Point3F(circlePoints[imod].x, circlePoints[imod].y, 0);
+      verts[vertindex].color = color;
+      verts[vertindex + 1].point = Point3F(circlePoints[imod].x, circlePoints[imod].y, 0.5f);
+      verts[vertindex + 1].color = color;
    }
+
+
    verts.unlock();
 
    mDevice->setStateBlockByDesc( desc );
 
    mDevice->setVertexBuffer( verts );
-   mDevice->setupGenericShaders( GFXDevice::GSModColorTexture );
+   mDevice->setupGenericShaders();
 
-   mDevice->drawPrimitive( GFXTriangleStrip, 0, numPoints );
-   mDevice->drawPrimitive( GFXTriangleStrip, numPoints + 1, numPoints );
-   mDevice->drawPrimitive( GFXTriangleStrip, 2 * numPoints + 2, 2 * numPoints);
+   mDevice->drawPrimitive( GFXTriangleStrip, 0, numPoints-2 );
+   mDevice->drawPrimitive( GFXTriangleStrip, numPoints, numPoints - 2);
+   mDevice->drawPrimitive( GFXTriangleStrip, numPoints*2, numPoints * 2);
 
    mDevice->popWorldMatrix();
 }

@@ -25,7 +25,6 @@ beginModule('d3d11');
    
    if ( T3D_Generator::$platform == "win32" && !isDefined("TORQUE_DEDICATED"))
    {
-      addProjectDefine('TORQUE_D3D11');
       addEngineSrcDir("gfx/D3D11");
    }
 

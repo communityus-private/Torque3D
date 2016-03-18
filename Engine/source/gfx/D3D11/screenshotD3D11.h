@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 GarageGames, LLC
+// Copyright (c) 2016 GarageGames, LLC
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,15 +19,15 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-#ifndef _SCREENSHOTD3D9_H_
-#define _SCREENSHOTD3D9_H_
+#ifndef _SCREENSHOTD3D11_H_
+#define _SCREENSHOTD3D11_H_
 
 #include "gfx/screenshot.h"
 
 //**************************************************************************
 // D3D implementation of screenshot
 //**************************************************************************
-class ScreenShotD3D9 : public ScreenShot
+class ScreenShotD3D11 : public ScreenShot
 {
 protected:
 
@@ -36,4 +36,4 @@ protected:
 };
 
 
-#endif  // _SCREENSHOTD3D9_H_
+#endif  // _SCREENSHOTD3D11_H_

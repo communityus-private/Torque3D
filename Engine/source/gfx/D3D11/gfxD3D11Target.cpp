@@ -161,7 +161,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
          ID3D11Texture2D *surface = mTargets[Color0];
          if ( surface )
          {
-			D3D11_TEXTURE2D_DESC sd;
+            D3D11_TEXTURE2D_DESC sd;
             surface->GetDesc(&sd);
             mTargetSize = Point2I(sd.Width, sd.Height);
 
@@ -244,8 +244,7 @@ void GFXD3D11TextureTarget::activate()
    stateApplied();
    
    // Now set all the new surfaces into the appropriate slots.
-   ID3D11RenderTargetView* rtViews[8] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-   D3D11DEVICECONTEXT->OMSetRenderTargets(8, rtViews, NULL);
+   ID3D11RenderTargetView* rtViews[MaxRenderSlotId] = { NULL, NULL, NULL, NULL, NULL, NULL};
 
    ID3D11DepthStencilView* dsView = (ID3D11DepthStencilView*)(mTargetViews[GFXTextureTarget::DepthStencil]);
    for (U32 i = 0; i < 4; i++)
@@ -368,6 +367,7 @@ void GFXD3D11WindowTarget::resetMode()
     mSize = Point2I(mPresentationParams.BufferDesc.Width, mPresentationParams.BufferDesc.Height);
 
     mWindow->setSuppressReset(false);
+    GFX->beginReset();
 }
 
 void GFXD3D11WindowTarget::zombify()

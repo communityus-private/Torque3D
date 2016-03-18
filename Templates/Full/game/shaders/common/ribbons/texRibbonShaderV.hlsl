@@ -1,11 +1,12 @@
 #define IN_HLSL
 #include "../shdrConsts.h"
- 
+#include "../shaderModel.hlsl"
+
 struct a2v
 {
    float3 position        : POSITION;
-   float3 normal          : NORMAL;
    float4 color           : COLOR0;
+   float3 normal          : NORMAL;   
    float2 texCoord        : TEXCOORD0;
    float2 shiftdata       : TEXCOORD1;
 };
