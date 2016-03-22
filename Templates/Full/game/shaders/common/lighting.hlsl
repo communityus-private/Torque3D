@@ -306,7 +306,7 @@ float3 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 pos
 	
 	// cancel out base color multiplication of specular at high grazing angles
 	// see deferredShadingP
-    float3 ret = ( diffuse + specular ) * NdotL * lerp(lightColor,lightColor/baseColor,NdotV);
+    float3 ret = ( diffuse + specular ) * NdotL * lightColor;
 	
 	return ret;
 }

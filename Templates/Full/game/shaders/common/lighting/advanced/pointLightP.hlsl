@@ -242,13 +242,13 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
    float specular = 0;
    
-   float3 real_specular = EvalBDRF( colorSample.rgb,
+   float3 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
                                     lightcol,
                                     lightVec,
                                     viewSpacePos,
                                     normal,
-                                    1.05-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
-                                    matInfo.a );
+                                    1.0-matInfo.b,
+                                    matInfo.a*0.5 );
    float3 lightColorOut = real_specular * lightBrightness * shadowed* atten;
    //lightColorOut /= colorSample.rgb;
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
@@ -269,6 +269,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-   
-   return matInfo.g*(float4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
+     
+   return matInfo.g*(float4(lightColorOut,nDotL)*Sat_NL_Att+addToResult);
 }
