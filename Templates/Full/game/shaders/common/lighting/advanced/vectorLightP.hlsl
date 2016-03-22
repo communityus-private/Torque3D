@@ -283,14 +283,14 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
    float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
    
    float3 viewSpacePos = IN.vsEyeRay * depth;
-   float3 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
+   float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
                                     lightColor.rgb,
                                     normalize( -lightDirection ),
                                     viewSpacePos,
                                     normal,
                                     1.0-matInfo.b,
                                     matInfo.a );
-   float3 lightColorOut = real_specular * lightBrightness * shadowed;
+   float3 lightColorOut = real_specular.rgb * lightBrightness * shadowed;
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
@@ -305,5 +305,5 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
       lightColorOut = debugColor;
    #endif
       
-   return matInfo.g*(float4(lightColorOut,dotNL)*Sat_NL_Att+addToResult);
+   return matInfo.g*(float4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
 }

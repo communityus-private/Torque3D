@@ -41,15 +41,17 @@ void main()
       OUT_col = vec4(0.0);
       return;
    }
-   vec3 lightBuffer = texture( lightPrePassTex, uv0 ).rgb; //shadowmap*specular
+   
+   vec4 lightBuffer = texture( lightPrePassTex, uv0 ); //shadowmap*specular
    vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb; //albedo
    vec3 lightMapBuffer = texture( lightMapTex, uv0 ).rgb; //environment mapping*lightmaps
    float metalness = texture( matInfoTex, uv0 ).a; //flags|smoothness|ao|metallic
-   
-   vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   vec3 reflectColor = colorBuffer*lightMapBuffer*metalness;
+      
+   float frez = max(0.04,metalness*lightBuffer.a);   
+   vec3 diffuseColor = colorBuffer - (colorBuffer * frez);
+   vec3 reflectColor = frez*lightMapBuffer;
    colorBuffer = diffuseColor + reflectColor;
-   colorBuffer *= lightBuffer;
+   colorBuffer *= lightBuffer.rgb;
    
-   OUT_col = hdrEncode( vec4(colorBuffer,1.0) );
+   OUT_col = vec4(colorBuffer,1.0);
 }

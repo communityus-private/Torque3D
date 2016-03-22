@@ -259,7 +259,7 @@ float D_GGX( float NdotH , float alpha )
 	return alphaSqr / ( M_PI_F * (f * f) );
 }
 
-float3 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 position, float3 normal,  float roughness, float metallic )
+float4 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 position, float3 normal,  float roughness, float metallic )
 {
 	//
     //  Microfacet Specular Cook-Torrance
@@ -283,7 +283,7 @@ float3 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 pos
 	float VdotH = saturate( dot( V, H ) );
 
 	if ( NdotL == 0 ) 
-		return float3( 0.0f, 0.0f, 0.0f ); 
+		return float4( 0.0f, 0.0f, 0.0f, 0.0f ); 
 	
 	float alpha = roughness;
 	float visLinAlpha = alpha * alpha;
@@ -299,14 +299,12 @@ float3 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 pos
 	float3 Fr_dielec    = D * F_dielec * Vis; 
 	float3 Fr_conductor = D * F_conductor * Vis; 
 	
-	float3 Fd = Fr_DisneyDiffuse( NdotV , NdotL , LdotH , visLinAlpha ) / M_PI_F ;
-	
+	float FR = Fr_DisneyDiffuse( NdotV , NdotL , LdotH , visLinAlpha ) / M_PI_F ;
+	float3 Fd = FR;
     float3 specular = ( 1.0f - metal ) * Fr_dielec + metal * Fr_conductor;
 	float3 diffuse  = ( 1.0f - metal ) * Fd * f0;
 	
-	// cancel out base color multiplication of specular at high grazing angles
-	// see deferredShadingP
-    float3 ret = ( diffuse + specular ) * NdotL * lightColor;
+    float3 ret = ( diffuse + specular + lightColor) * NdotL;
 	
-	return ret;
+	return float4(ret,FR);
 }

@@ -175,14 +175,14 @@ void main()
    float specular = 0;
 
    vec3 lightVec = lightPosition - viewSpacePos;
-   vec3 real_specular = EvalBDRF( colorSample.rgb,
+   vec4 real_specular = EvalBDRF( colorSample.rgb,
                                     lightcol,
                                     lightVec,
                                     viewSpacePos,
                                     normal,
                                     1.05-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
                                     matInfo.a );
-   vec3 lightColorOut = real_specular * lightBrightness * shadowed* atten;
+   vec3 lightColorOut = real_specular.rgb * lightBrightness * shadowed* atten;
    
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
    vec4 addToResult = vec4(0.0);
@@ -203,5 +203,5 @@ void main()
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   OUT_col = matInfo.g*(vec4(lightColorOut,1.0)*Sat_NL_Att+addToResult);
+   OUT_col = matInfo.g*(vec4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
 }
