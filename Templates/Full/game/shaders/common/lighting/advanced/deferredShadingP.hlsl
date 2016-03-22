@@ -32,19 +32,19 @@ TORQUE_UNIFORM_SAMPLER2D(prepassTex,4);
 
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
+   float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
+   if (depth>0.9999)
+      return float4(0,0,0,0);
+	  
    float4 lightBuffer = TORQUE_TEX2D( lightPrePassTex, IN.uv0 ); //shadowmap*specular
    float3 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb; //albedo
    float3 lightMapBuffer = TORQUE_TEX2D( lightMapTex, IN.uv0 ).rgb; //environment mapping*lightmaps
    float metalness = TORQUE_TEX2D( matInfoTex, IN.uv0 ).a; //flags|smoothness|ao|metallic
-   float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
-   
-   if (depth>0.9999)
-      return float4(0,0,0,0);	
 	  
    float frez = max(0.04,metalness*lightBuffer.a);   
    float3 diffuseColor = colorBuffer - (colorBuffer * frez);
    float3 reflectColor = frez*lightMapBuffer;
-   colorBuffer = colorBuffer + reflectColor;
+   colorBuffer = diffuseColor + reflectColor;
    colorBuffer *= lightBuffer.rgb;
    
    return hdrEncode( float4(colorBuffer, 1.0) );
