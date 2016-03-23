@@ -165,19 +165,6 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    if (fd.features.hasFeature(MFT_DetailNormalMap))
    {
       bumpMap = new Var;
-      Var* detailBumpTex = NULL; //only used in D3D10 or D3D11
-      if (mIsDirect3D11)
-      {
-         bumpMap->setType("SamplerState");
-         detailBumpTex = new Var;
-         detailBumpTex->setName("detailBumpTex");
-         detailBumpTex->setType("Texture2D");
-         detailBumpTex->uniform = true;
-         detailBumpTex->texture = true;
-         detailBumpTex->constNum = bumpMap->constNum;
-      }
-      else
-         bumpMap->setType("sampler2D");
 
       Var* detailBumpTex = NULL;
       if (mIsDirect3D11)
