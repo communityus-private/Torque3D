@@ -61,9 +61,9 @@ singleton PostEffect( AL_DeferredShading )
    shader = AL_DeferredShader;
    stateBlock = AL_DeferredShadingState;
    texture[0] = "#color";
-   texture[1] = "#lightinfo";
+   texture[1] = "#directLighting";
    texture[2] = "#matinfo";
-   texture[3] = "#lightmapinfo";
+   texture[3] = "#indirectLighting";
    texture[4] = "#prepass";
    target = "$backBuffer";
    renderPriority = 10000;
@@ -182,7 +182,7 @@ function toggleMetalMapViz( %enable )
       AL_MetalMapVisualize.disable();    
 }
 
-//Light map display (lightmapinfo)
+//Light map display (indirectLighting)
 new ShaderData( AL_LightMapShader )
 {
    DXVertexShaderFile = "shaders/common/postFx/postFxV.hlsl";
@@ -199,7 +199,7 @@ singleton PostEffect( AL_LightMapVisualize )
 {   
    shader = AL_LightMapShader;
    stateBlock = AL_DefaultVisualizeState;
-   texture[0] = "#lightmapinfo";
+   texture[0] = "#indirectLighting";
    target = "$backBuffer";
    renderPriority = 9999;
 };

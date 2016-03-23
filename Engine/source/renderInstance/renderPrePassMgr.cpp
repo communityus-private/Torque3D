@@ -56,7 +56,7 @@ const String RenderPrePassMgr::BufferName("prepass");
 const RenderInstType RenderPrePassMgr::RIT_PrePass("PrePass");
 const String RenderPrePassMgr::ColorBufferName("color");
 const String RenderPrePassMgr::MatInfoBufferName("matinfo");
-const String RenderPrePassMgr::LightMapBufferName("lightmapinfo");
+const String RenderPrePassMgr::LightMapBufferName("indirectLighting");
 
 IMPLEMENT_CONOBJECT(RenderPrePassMgr);
 

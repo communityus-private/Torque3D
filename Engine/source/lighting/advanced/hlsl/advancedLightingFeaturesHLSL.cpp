@@ -99,7 +99,7 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
    uvScene->setName("uvScene");
    LangElement *uvSceneDecl = new DecOp(uvScene);
 
-   String rtParamName = String::ToString("rtParams%s", "lightInfoBuffer");
+   String rtParamName = String::ToString("rtParams%s", "directLightingBuffer");
    Var *rtParams = (Var*)LangElement::find(rtParamName);
    if (!rtParams)
    {
@@ -122,7 +122,7 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
    // create texture var
    Var *lightInfoBuffer = new Var;
    lightInfoBuffer->setType("sampler2D");
-   lightInfoBuffer->setName("lightInfoBuffer");
+   lightInfoBuffer->setName("directLightingBuffer");
    lightInfoBuffer->uniform = true;
    lightInfoBuffer->sampler = true;
    lightInfoBuffer->constNum = Var::getTexUnitNum();     // used as texture unit num here
@@ -229,7 +229,7 @@ void DeferredRTLightingFeatHLSL::setTexData( Material::StageData &stageDat,
       mLastTexIndex = texIndex;
 
       passData.mTexType[ texIndex ] = Material::TexTarget;
-      passData.mSamplerNames[ texIndex ]= "lightInfoBuffer";
+      passData.mSamplerNames[ texIndex ]= "directLightingBuffer";
       passData.mTexSlot[ texIndex++ ].texTarget = texTarget;
    }
 }

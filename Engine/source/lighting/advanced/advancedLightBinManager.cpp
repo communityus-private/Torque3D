@@ -41,8 +41,8 @@
 #include "math/util/matrixSet.h"
 #include "console/consoleTypes.h"
 
-const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "LightInfo" );
-const String AdvancedLightBinManager::smBufferName( "lightinfo" );
+const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "directLighting" );
+const String AdvancedLightBinManager::smBufferName( "directLighting" );
 
 ShadowFilterMode AdvancedLightBinManager::smShadowFilterMode = ShadowFilterMode_SoftShadowHighQuality;
 bool AdvancedLightBinManager::smPSSMDebugRender = false;

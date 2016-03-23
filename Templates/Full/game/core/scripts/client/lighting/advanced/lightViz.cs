@@ -158,7 +158,7 @@ singleton PostEffect( AL_LightColorVisualize )
 {   
    shader = AL_LightColorVisualizeShader;
    stateBlock = AL_DefaultVisualizeState;
-   texture[0] = "#lightinfo";
+   texture[0] = "#directLighting";
    target = "$backBuffer";
    renderPriority = 9999;
 };
@@ -193,7 +193,7 @@ singleton PostEffect( AL_LightSpecularVisualize )
 {   
    shader = AL_LightSpecularVisualizeShader;
    stateBlock = AL_DefaultVisualizeState;
-   texture[0] = "#lightinfo";
+   texture[0] = "#directLighting";
    target = "$backBuffer";
    renderPriority = 9999;
 };
