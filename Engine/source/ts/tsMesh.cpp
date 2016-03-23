@@ -86,8 +86,8 @@ S32  TSMesh::smMinStripSize = 1;     // smallest number of _faces_ allowed per s
 bool TSMesh::smUseEncodedNormals = false;
 
 const F32 TSMesh::VISIBILITY_EPSILON = 0.0001f;
-// TIMMY: temp disable max instancing verts while working on d3d11 - default 200 MUST SET BACK
-S32 TSMesh::smMaxInstancingVerts = 0;
+
+S32 TSMesh::smMaxInstancingVerts = 200;
 
 // quick function to force object to face camera -- currently throws out roll :(
 void tsForceFaceCamera( MatrixF *mat, const Point3F *objScale )

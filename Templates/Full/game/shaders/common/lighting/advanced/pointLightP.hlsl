@@ -28,7 +28,6 @@
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
 #include "../../torque.hlsl"
-#include "../../shaderModelAutoGen.hlsl"
 
 struct ConvexConnectP
 {

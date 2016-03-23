@@ -268,11 +268,6 @@ void Material::initPersistFields()
 		addField("metalness", TypeF32, Offset(mMetalness, Material), MAX_STAGES,
          "The degree of Metalness when not using a specularMap." );
 
-      /*addField("pixelSpecular", TypeBool, Offset(mPixelSpecular, Material), MAX_STAGES, 
-         "This enables per-pixel specular highlights controlled by the alpha channel of the "
-         "normal map texture.  Note that if pixel specular is enabled the DXTnm format will not "
-         "work with your normal map, unless you are also using a specular map." );
-         */
       addProtectedField( "accuEnabled", TYPEID< bool >(), Offset( mAccuEnabled, Material ),
             &_setAccuEnabled, &defaultProtectedGetFn, MAX_STAGES, "Accumulation texture." );
 

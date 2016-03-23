@@ -20,6 +20,7 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "shadergen:/autogenConditioners.h"  
 #include "./postFx.hlsl"  
 #include "../torque.hlsl"
 

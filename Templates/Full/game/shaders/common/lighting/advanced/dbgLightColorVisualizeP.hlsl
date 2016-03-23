@@ -22,7 +22,6 @@
 
 #include "../../shaderModelAutoGen.hlsl"
 #include "../../postfx/postFx.hlsl"
-#include "../../shaderModelAutoGen.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,0);
 

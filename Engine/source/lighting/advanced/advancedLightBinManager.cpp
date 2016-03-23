@@ -252,8 +252,6 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
    if ( !_onPreRender( state ) )
       return;
 
-   // Clear as long as there isn't MRT population of light buffer with lightmap data
-   //if ( !MRTLightmapsDuringPrePass() )
       GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
 
    // Restore transforms

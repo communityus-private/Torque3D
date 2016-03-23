@@ -2,26 +2,24 @@
 new SimGroup(MissionGroup) {
    canSave = "1";
    canSaveDynamicFields = "1";
-      Enabled = "1";
+      enabled = "1";
 
    new LevelInfo(theLevelInfo) {
       nearClip = "0.1";
       visibleDistance = "2000";
-      visibleGhostDistance = "0";
       decalBias = "0.0015";
       fogColor = "0.462745 0.698039 0.729412 1";
       fogDensity = "0.005";
       fogDensityOffset = "10";
       fogAtmosphereHeight = "400";
-      canvasClearColor = "0 0 0 255";
+      canvasClearColor = "233 220 143 255";
       ambientLightBlendPhase = "1";
       ambientLightBlendCurve = "0 0 -1 -1";
-      LevelEnvMap = "DesertSkyCubemap";
+      advancedLightmapSupport = "0";
       soundAmbience = "AudioAmbienceDefault";
       soundDistanceModel = "Linear";
       canSave = "1";
       canSaveDynamicFields = "1";
-         advancedLightmapSupport = "1";
          desc = "A \'one of everything\' test level that demonstrates lots of stock classes.";
          levelName = "Outpost";
    };
@@ -35,14 +33,11 @@ new SimGroup(MissionGroup) {
       ambientScale = "1 1 1 1";
       fogScale = "1 1 1 1";
       exposure = "1";
-      zOffset = "0";
       azimuth = "0";
       elevation = "35";
       moonAzimuth = "0";
       moonElevation = "45";
       castShadows = "1";
-      staticRefreshFreq = "8";
-      dynamicRefreshFreq = "8";
       brightness = "1";
       flareType = "SunFlareExample";
       flareScale = "1";
@@ -78,7 +73,7 @@ new SimGroup(MissionGroup) {
       axisTilt = "23.44";
       dayLength = "120";
       startTime = "0.1";
-      time = "0.31947";
+      time = "0.756599";
       play = "1";
       azimuthOverride = "1";
       dayScale = "1";
@@ -116,7 +111,6 @@ new SimGroup(MissionGroup) {
       castShadows = "1";
       squareSize = "2";
       baseTexSize = "1024";
-      baseTexFormat = "JPG";
       lightMapSize = "256";
       screenError = "16";
       position = "-1024 -1024 179.978";
@@ -129,7 +123,7 @@ new SimGroup(MissionGroup) {
    new SimGroup(PlayerDropPoints) {
       canSave = "1";
       canSaveDynamicFields = "1";
-         Enabled = "1";
+         enabled = "1";
 
       new SpawnSphere() {
          autoSpawn = "0";
@@ -145,7 +139,7 @@ new SimGroup(MissionGroup) {
          scale = "1 1 1";
          canSave = "1";
          canSaveDynamicFields = "1";
-            Enabled = "1";
+            enabled = "1";
             homingCount = "0";
             lockCount = "0";
       };
@@ -1053,15 +1047,15 @@ new SimGroup(MissionGroup) {
       disableMove = "0";
       isAIControlled = "0";
       dataBlock = "CheetahCar";
-      position = "29.89 -39.7294 244.411";
-      rotation = "0.277117 -0.957553 -0.0793655 1.73546";
+      position = "29.878 -39.733 244.411";
+      rotation = "0.279703 -0.957384 -0.0719901 1.72959";
       scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
       persistentId = "fab05691-3175-11e4-978f-ce5dedd0cf27";
-         leftBrakeLight = "20094";
+         leftBrakeLight = "4285";
          mountable = "1";
-         rightBrakeLight = "20093";
+         rightBrakeLight = "4284";
    };
    new TSStatic() {
       shapeName = "art/shapes/rocks/rock1.dts";
@@ -1071,10 +1065,6 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "16.9991 -25.9715 240.76";
@@ -1091,10 +1081,6 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "39.7956 -43.2913 238.099";
@@ -1111,10 +1097,6 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-2.17366 -10.0803 233.761";
@@ -1131,10 +1113,6 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-56.0141 31.2388 261.771";
@@ -1184,8 +1162,6 @@ new SimGroup(MissionGroup) {
       color = "1 0.721569 0 1";
       brightness = "5";
       castShadows = "0";
-      staticRefreshFreq = "250";
-      dynamicRefreshFreq = "8";
       priority = "1";
       animate = "1";
       animationType = "FireLightAnim";
@@ -1240,10 +1216,6 @@ new SimGroup(MissionGroup) {
       collisionType = "Visible Mesh";
       decalType = "Visible Mesh";
       allowPlayerStep = "1";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-118.394 34.2259 246.05";
@@ -1312,10 +1284,6 @@ new SimGroup(MissionGroup) {
       collisionType = "Collision Mesh";
       decalType = "Collision Mesh";
       allowPlayerStep = "1";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
       position = "-57.5817 -139.689 238.213";

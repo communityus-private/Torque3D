@@ -201,33 +201,8 @@ bool RenderPrePassMgr::_updateTargets()
       for (U32 i = 0; i < mTargetChainLength; i++)
          mTargetChain[i]->attachTexture(GFXTextureTarget::Color3, mLightMapTarget.getTexture());
    }
-   /*
-   // Attach the light info buffer as a second render target, if there is
-   // lightmapped geometry in the scene.
-   AdvancedLightBinManager *lightBin;
-   if (Sim::findObject("AL_LightBinMgr", lightBin) &&
-      lightBin->MRTLightmapsDuringPrePass() &&
-      lightBin->isProperlyAdded())
-   {
-      // Update the size of the light bin target here. This will call _updateTargets
-      // on the light bin
-      ret &= lightBin->setTargetSize(mTargetSize);
-      if (ret)
-      {
-         // Sanity check
-         AssertFatal(lightBin->getTargetChainLength() == mTargetChainLength, "Target chain length mismatch");
-
-         // Attach light info buffer to Color1 for each target in the chain
-         for (U32 i = 0; i < mTargetChainLength; i++)
-         {
-            mLightMapTarget.setTexture(lightBin->getTargetTexture(0, i));
-            mTargetChain[i]->attachTexture(GFXTextureTarget::Color3, mLightMapTarget.getTexture());
-         }
-      }
-   }
-   */
-   _initShaders();
    GFX->finalizeReset();
+   _initShaders();
 
    return ret;
 }
@@ -1118,7 +1093,7 @@ Var* LinearEyeDepthConditioner::printMethodHeader( MethodType methodType, const 
       }
       meta->addStatement(new GenOp("   #else\r\n"));
       if (GFX->getAdapterType() == OpenGL)
-         meta->addStatement(new GenOp("    @ = texture2D(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV));
+         meta->addStatement( new GenOp( "    @ = texture(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV) );
       else
          meta->addStatement(new GenOp("      @ = tex2D(@, @);\r\n", bufferSampleDecl, prepassSampler, screenUV));
       meta->addStatement(new GenOp("   #endif\r\n\r\n"));

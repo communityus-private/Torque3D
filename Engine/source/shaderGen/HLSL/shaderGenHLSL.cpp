@@ -186,8 +186,7 @@ ShaderComponent* ShaderGenComponentFactoryHLSL::createVertexInputConnector( cons
          continue;
 
       var->setStructName( "IN" );
-      String type = typeToString(element.getType());
-      var->setType( type );
+      var->setType( typeToString( element.getType() ) );
    }
 
    return vertComp;

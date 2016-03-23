@@ -91,6 +91,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    sample.g = TORQUE_TEX1D( colorCorrectionTex, sample.g ).g;
    sample.b = TORQUE_TEX1D( colorCorrectionTex, sample.b ).b;
 
+	  
    // Apply gamma correction
    sample.rgb = pow( abs(sample.rgb), g_fOneOverGamma );
  

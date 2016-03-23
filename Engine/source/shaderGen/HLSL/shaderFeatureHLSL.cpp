@@ -1314,6 +1314,7 @@ void LightmapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       lightMapTex->constNum = lightMap->constNum;
    }
    
+   
    // argh, pixel specular should prob use this too
    if (fd.features[MFT_NormalMap])
    {
@@ -1721,7 +1722,8 @@ void DetailFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
    // diffuse texture.
 
    // TODO: We could add a feature to toggle between this
-   // and a simple multiplication with the detail map
+   // and a simple multiplication with the detail map.
+
    LangElement *statement = NULL;
    if (mIsDirect3D11)
       statement = new GenOp("( @.Sample(@, @) * 2.0 ) - 1.0", detailMapTex, detailMap, inTex);

@@ -32,15 +32,11 @@ GFXGLOcclusionQuery::GFXGLOcclusionQuery(GFXDevice* device) :
 
 GFXGLOcclusionQuery::~GFXGLOcclusionQuery()
 {
-   if(mQuery != -1)
       glDeleteQueries(1, &mQuery);
 }
 
 bool GFXGLOcclusionQuery::begin()
 {
-   if (GFXDevice::getDisableOcclusionQuery())
-      return true;
-   
    if(mQuery == -1)
       glGenQueries(1, &mQuery);
 
@@ -50,9 +46,6 @@ bool GFXGLOcclusionQuery::begin()
 
 void GFXGLOcclusionQuery::end()
 {
-   if (GFXDevice::getDisableOcclusionQuery())
-      return;
-      
    glEndQuery(GL_SAMPLES_PASSED);
 }
 
@@ -61,9 +54,6 @@ GFXOcclusionQuery::OcclusionQueryStatus GFXGLOcclusionQuery::getStatus(bool bloc
    // If this ever shows up near the top of a profile 
    // then your system is GPU bound.
    PROFILE_SCOPE(GFXGLOcclusionQuery_getStatus);
-
-   if (GFXDevice::getDisableOcclusionQuery())
-      return NotOccluded;
 
    if(mQuery == -1)
       return NotOccluded;
@@ -90,7 +80,7 @@ GFXOcclusionQuery::OcclusionQueryStatus GFXGLOcclusionQuery::getStatus(bool bloc
 void GFXGLOcclusionQuery::zombify()
 {
    glDeleteQueries(1, &mQuery);
-   mQuery = -1;
+   mQuery = 0;
 }
 
 void GFXGLOcclusionQuery::resurrect()

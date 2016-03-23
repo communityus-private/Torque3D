@@ -1939,7 +1939,7 @@ void ReflectCubeFeatGLSL::setTexData(  Material::StageData &stageDat,
        !passData.mFeatureData.features[MFT_NormalMap] )
    {
       GFXTextureObject *tex = stageDat.getTex( MFT_DetailMap );
-      if (  tex && (stageFeatures.features[MFT_DiffuseMap]) )
+      if (  tex && stageFeatures.features[MFT_DiffuseMap] )
       {
          passData.mSamplerNames[ texIndex ] = "diffuseMap";
          passData.mTexSlot[ texIndex++ ].texObject = tex;

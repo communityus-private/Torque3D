@@ -29,7 +29,6 @@
 #include "lightingUtils.hlsl"
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
-#include "../../shaderModelAutoGen.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
@@ -202,6 +201,7 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
    {
        return float4(1.0, 1.0, 1.0, 0.0);
    }
+   
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
