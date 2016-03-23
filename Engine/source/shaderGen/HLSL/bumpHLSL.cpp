@@ -179,6 +179,20 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       else
          bumpMap->setType("sampler2D");
 
+      Var* detailBumpTex = NULL;
+      if (mIsDirect3D11)
+      {
+         bumpMap->setType("SamplerState");
+         detailBumpTex = new Var;
+         detailBumpTex->setName("detailBumpTex");
+         detailBumpTex->setType("Texture2D");
+         detailBumpTex->uniform = true;
+         detailBumpTex->texture = true;
+         detailBumpTex->constNum = bumpMap->constNum;
+      }
+      else
+         bumpMap->setType("sampler2D");
+
       texCoord = getInTexCoord( "detCoord", "float2", true, componentList );
 
       if (mIsDirect3D11)

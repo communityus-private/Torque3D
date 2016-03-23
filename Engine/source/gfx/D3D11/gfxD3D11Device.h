@@ -68,7 +68,7 @@ class GFXD3D11Device : public GFXDevice
 
 protected:
 
-	 class D3D11VertexDecl : public GFXVertexDecl
+   class D3D11VertexDecl : public GFXVertexDecl
    {
    public:
       virtual ~D3D11VertexDecl()

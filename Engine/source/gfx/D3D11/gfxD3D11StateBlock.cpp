@@ -39,14 +39,13 @@ GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
 	mColorMask |= (mDesc.colorWriteAlpha ? D3D11_COLOR_WRITE_ENABLE_ALPHA : 0);
 
 	mBlendState = NULL;
-	for (int i = 0; i < 16; i++)
+	for (U32 i = 0; i < GFX->getNumSamplers(); i++)
 	{
 		mSamplerStates[i] = NULL;
-
 	}
 
-    mDepthStencilState = NULL;
-    mRasterizerState = NULL;
+   mDepthStencilState = NULL;
+   mRasterizerState = NULL;
 
 	mBlendDesc.AlphaToCoverageEnable = false;
 	mBlendDesc.IndependentBlendEnable = false;
@@ -152,13 +151,14 @@ GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
 
 GFXD3D11StateBlock::~GFXD3D11StateBlock()
 {
-   mBlendState->Release();
-   mRasterizerState->Release();
-   mDepthStencilState->Release();
+   SAFE_RELEASE(mBlendState);
+   SAFE_RELEASE(mRasterizerState);
+   SAFE_RELEASE(mDepthStencilState);
 
-   for(U32 i = 0; i < 16; ++i)
+   //Use TEXTURE_STAGE_COUNT here, not safe to rely on GFX pointer
+   for (U32 i = 0; i < TEXTURE_STAGE_COUNT; ++i)
    {
-        mSamplerStates[i]->Release();
+      SAFE_RELEASE(mSamplerStates[i]);
    }
 }
 
@@ -180,6 +180,8 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
 {
 	PROFILE_SCOPE( GFXD3D11StateBlock_Activate );
 
+   ID3D11DeviceContext* pDevCxt = D3D11DEVICECONTEXT;
+
 	mBlendDesc.AlphaToCoverageEnable = false;
 	mBlendDesc.IndependentBlendEnable = mDesc.separateAlphaBlendEnable;
 
@@ -194,7 +196,7 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
 
 	float blendFactor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
-	D3D11DEVICECONTEXT->OMSetBlendState(mBlendState, blendFactor , 0xFFFFFFFF);
+   pDevCxt->OMSetBlendState(mBlendState, blendFactor, 0xFFFFFFFF);
    
 	mDepthStencilDesc.DepthWriteMask = mDesc.zWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
 	mDepthStencilDesc.DepthEnable = mDesc.zEnable;
@@ -218,7 +220,7 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
 		mDepthStencilDesc.BackFace.StencilPassOp = GFXD3D11StencilOp[GFXStencilOpKeep];
 	}
 
-	D3D11DEVICECONTEXT->OMSetDepthStencilState(mDepthStencilState, mDesc.stencilRef);
+   pDevCxt->OMSetDepthStencilState(mDepthStencilState, mDesc.stencilRef);
 
 	mRasterizerDesc.CullMode = GFXD3D11CullMode[mDesc.cullMode];
 	mRasterizerDesc.FillMode = GFXD3D11FillMode[mDesc.fillMode];
@@ -236,7 +238,7 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
 	mRasterizerDesc.FrontCounterClockwise = FALSE;
 	mRasterizerDesc.DepthBiasClamp = 0.0f;
 
-	D3D11DEVICECONTEXT->RSSetState(mRasterizerState);
+   pDevCxt->RSSetState(mRasterizerState);
 
    U32 numSamplers = GFX->getNumSamplers();
    for (U32 i = 0; i < numSamplers; i++)
@@ -278,6 +280,6 @@ void GFXD3D11StateBlock::activate(GFXD3D11StateBlock* oldState)
    
    //TODO samplers for vertex shader
    // Set all the samplers with one call
-   //D3D11DEVICECONTEXT->VSSetSamplers(0, numSamplers, &mSamplerStates[0]);
-   D3D11DEVICECONTEXT->PSSetSamplers(0, numSamplers, &mSamplerStates[0]);
+   //pDevCxt->VSSetSamplers(0, numSamplers, &mSamplerStates[0]);
+   pDevCxt->PSSetSamplers(0, numSamplers, &mSamplerStates[0]);
 }

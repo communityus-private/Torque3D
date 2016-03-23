@@ -459,6 +459,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
       if (mIsDirect3D11)
       {
+         layerTex->setType("SamplerState");
          Var* layerTexObj = new Var;
          layerTexObj->setName("layerTexObj");
          layerTexObj->setType("Texture2D");
@@ -548,6 +549,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
             meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @, @.xy, @, @.z * @ );\r\n",
                inDet, normalMapTex, normalMap, inDet, negViewTS, detailInfo, detailBlend));
          }
+
       }
       else
       {
@@ -1093,6 +1095,7 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
          texOp = new GenOp("@.Sample(@, @.xy)", normalMapTex, normalMap, inDet);
 
    }
+
    else
    {
       if (fd.features.hasFeature(MFT_TerrainSideProject, normalIndex))
@@ -1103,6 +1106,7 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
       else
          texOp = new GenOp("tex2D(@, @.xy)", normalMap, inDet);
    }
+
    // create bump normal
    Var *bumpNorm = new Var;
    bumpNorm->setName( "bumpNormal" );
@@ -1181,7 +1185,7 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
    {
       lightMap->setType("SamplerState");
       Var* lightMapTex = new Var;
-      lightMapTex->setName("lightMapTex");
+      lightMapTex->setName("lightMapTexObj");
       lightMapTex->setType("Texture2D");
       lightMapTex->uniform = true;
       lightMapTex->texture = true;
@@ -1190,6 +1194,7 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
    }
    else
       meta->addStatement(new GenOp("   @[0] = tex2D( @, @.xy ).r;\r\n", lightMask, lightMap, inTex));
+
    output = meta;
 }
 

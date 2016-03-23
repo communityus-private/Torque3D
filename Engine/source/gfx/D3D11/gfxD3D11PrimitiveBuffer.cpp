@@ -145,30 +145,28 @@ void GFXD3D11PrimitiveBuffer::unlock()
 
    #endif // TORQUE_DEBUG
     
-      const U32 totalSize = this->mIndexCount * sizeof(U16);
-      /// this->
-    
+   const U32 totalSize = this->mIndexCount * sizeof(U16);
 	  
-      if (mBufferType == GFXBufferTypeStatic || mBufferType == GFXBufferTypeImmutable)
-      {
-         //set up the update region of the buffer
-		   D3D11_BOX box;
-		   box.back  = 1;
-		   box.front = 0;
-		   box.top = 0;
-		   box.bottom =1;
-		   box.left = mIndexStart *sizeof(U16);
-		   box.right = mIndexEnd * sizeof(U16);
-		   //update the real ib buffer
-		   D3D11DEVICECONTEXT->UpdateSubresource(ib, 0, &box,mLockedBuffer,totalSize, 0);
-		   //clean up the old buffer
-		   delete[] mLockedBuffer;
-		   mLockedBuffer = NULL;
-	  }
-	  else
-	  {		 
-         D3D11DEVICECONTEXT->Unmap(ib,0);   
-	  }
+   if (mBufferType == GFXBufferTypeStatic || mBufferType == GFXBufferTypeImmutable)
+   {
+      //set up the update region of the buffer
+      D3D11_BOX box;
+      box.back  = 1;
+      box.front = 0;
+      box.top = 0;
+      box.bottom =1;
+      box.left = mIndexStart *sizeof(U16);
+      box.right = mIndexEnd * sizeof(U16);
+      //update the real ib buffer
+      D3D11DEVICECONTEXT->UpdateSubresource(ib, 0, &box,mLockedBuffer,totalSize, 0);
+      //clean up the old buffer
+      delete[] mLockedBuffer;
+      mLockedBuffer = NULL;
+   }
+   else
+   {		 
+      D3D11DEVICECONTEXT->Unmap(ib,0);   
+   }
   
    mLocked = false;
    mIsFirstLock = false;

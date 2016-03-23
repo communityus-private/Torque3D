@@ -181,9 +181,10 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
          meta->addStatement(new GenOp(avar("   %s(tex2D(@, @ + float2(0.0, @.y)), id_lightcolor, id_NL_Att, id_specular);\r\n",
             unconditionLightInfo.c_str()), lightInfoBuffer, uvScene, oneOverTargetSize));
 
-      meta->addStatement(new GenOp("   @ = lerp(@, id_lightcolor, 0.5);\r\n", d_lightcolor, d_lightcolor));
-      meta->addStatement(new GenOp("   @ = lerp(@, id_NL_Att, 0.5);\r\n", d_NL_Att, d_NL_Att));
-      meta->addStatement(new GenOp("   @ = lerp(@, id_specular, 0.5);\r\n", d_specular, d_specular));
+      meta->addStatement( new GenOp("   @ = lerp(@, id_lightcolor, 0.5);\r\n", d_lightcolor, d_lightcolor ) );
+      meta->addStatement( new GenOp("   @ = lerp(@, id_NL_Att, 0.5);\r\n", d_NL_Att, d_NL_Att ) );
+      meta->addStatement( new GenOp("   @ = lerp(@, id_specular, 0.5);\r\n", d_specular, d_specular ) );
+
    }
 
    // This is kind of weak sauce

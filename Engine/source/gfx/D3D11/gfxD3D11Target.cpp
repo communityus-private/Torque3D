@@ -110,8 +110,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
 
       // Grab the surface level.
       if( slot == DepthStencil )
-      {
-		 
+      {		 
          mTargets[slot] = d3dto->getSurface();
          if ( mTargets[slot] )
             mTargets[slot]->AddRef();
@@ -122,8 +121,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
 
       }
       else
-      {
-         
+      {         
          // getSurface will almost always return NULL. It will only return non-NULL
          // if the surface that it needs to render to is different than the mip level
          // in the actual texture. This will happen with MSAA.
@@ -133,8 +131,7 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
 			   mTargets[slot] = d3dto->get2DTex();
 			   mTargets[slot]->AddRef();
 			   mTargetViews[slot] = d3dto->getRTView();
-			   mTargetViews[slot]->AddRef();
-			
+			   mTargetViews[slot]->AddRef();			
          } 
          else 
          {
@@ -306,7 +303,6 @@ void GFXD3D11TextureTarget::zombify()
 
 void GFXD3D11TextureTarget::resurrect()
 {
-
 }
 
 GFXD3D11WindowTarget::GFXD3D11WindowTarget()
@@ -355,19 +351,19 @@ void GFXD3D11WindowTarget::setImplicitSwapChain()
 
 void GFXD3D11WindowTarget::resetMode()
 {
-    mWindow->setSuppressReset(true);
+   mWindow->setSuppressReset(true);
 
-    // Setup our presentation params.
-    initPresentationParams();
+   // Setup our presentation params.
+   initPresentationParams();
 
-    // Otherwise, we have to reset the device, if we're the implicit swapchain.
-    D3D11->reset(mPresentationParams);
+   // Otherwise, we have to reset the device, if we're the implicit swapchain.
+   D3D11->reset(mPresentationParams);
 
-    // Update our size, too.
-    mSize = Point2I(mPresentationParams.BufferDesc.Width, mPresentationParams.BufferDesc.Height);
+   // Update our size, too.
+   mSize = Point2I(mPresentationParams.BufferDesc.Width, mPresentationParams.BufferDesc.Height);
 
-    mWindow->setSuppressReset(false);
-    GFX->beginReset();
+   mWindow->setSuppressReset(false);
+   GFX->beginReset();
 }
 
 void GFXD3D11WindowTarget::zombify()

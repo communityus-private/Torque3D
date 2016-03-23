@@ -130,11 +130,9 @@ void GFXD3D11TextureObject::unlock(U32 mipLevel)
    if( mProfile->isRenderTarget() )
    {
       //AssertFatal( 0, "GFXD3D11TextureObject::unlock - Need to handle mapping render targets" );
-      GFXD3D11Device* dev = D3D11;
-
       GFXD3D11TextureObject* to = (GFXD3D11TextureObject*)&(*mLockTex);
       
-      dev->getDeviceContext()->Unmap(to->get2DTex(), mLockedSubresource);
+      D3D11->getDeviceContext()->Unmap(to->get2DTex(), mLockedSubresource);
       
       mLockedSubresource = 0;
       mLocked = false;
@@ -221,9 +219,9 @@ bool GFXD3D11TextureObject::copyToBmp(GBitmap* bmp)
 
    PROFILE_START(GFXD3D11TextureObject_copyToBmp_pixCopy);
    // copy data into bitmap
-   for (int row = 0; row < height; ++row)
+   for (U32 row = 0; row < height; ++row)
    {
-      for (int col = 0; col < width; ++col)
+      for (U32 col = 0; col < width; ++col)
       {
          destPtr[0] = srcPtr[2]; // red
          destPtr[1] = srcPtr[1]; // green

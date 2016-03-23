@@ -128,7 +128,7 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          newVar->setConnectName( out );
          newVar->constNum = index;
          newVar->arraySize = numElements;
-         newVar->rank = 6 + index;
+         newVar->rank = 5 + index;
 
          return newVar;
       }
@@ -140,21 +140,20 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
    return NULL;
 }
 
-
-   
 S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void* e2)
-      {
+{
    Var* a = *((Var **)e1);
    Var* b = *((Var **)e2);
-   
+
    return a->rank - b->rank;
-   }
+}
 
 void ShaderConnectorHLSL::sortVars()
-   {
+{
+
    // If shader model 4+ than we gotta sort the vars to make sure the order is consistent
    if (GFX->getPixelShaderVersion() >= 4.f)
-      {
+   {
       dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
       return;
    }

@@ -20,6 +20,9 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "../../shaderModel.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
+
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
 #include "../../lighting.hlsl"
@@ -199,5 +202,5 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-   return matInfo.g*(float4(lightColorOut*Sat_NL_Att+addToResult.rgb,real_specular.a/8));
+   return matInfo.g*(float4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
 }

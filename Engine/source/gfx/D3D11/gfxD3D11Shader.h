@@ -46,25 +46,25 @@ enum CONST_CLASS
 
 enum CONST_TYPE 
 { 
-    D3DPT_VOID, 
-    D3DPT_BOOL, 
-    D3DPT_INT, 
-    D3DPT_FLOAT, 
-    D3DPT_STRING, 
-    D3DPT_TEXTURE, 
-    D3DPT_TEXTURE1D, 
-    D3DPT_TEXTURE2D, 
-    D3DPT_TEXTURE3D, 
-    D3DPT_TEXTURECUBE, 
-    D3DPT_SAMPLER, 
-    D3DPT_SAMPLER1D, 
-    D3DPT_SAMPLER2D, 
-    D3DPT_SAMPLER3D, 
-    D3DPT_SAMPLERCUBE, 
-    D3DPT_PIXELSHADER, 
-    D3DPT_VERTEXSHADER, 
-    D3DPT_PIXELFRAGMENT, 
-    D3DPT_VERTEXFRAGMENT
+   D3DPT_VOID, 
+   D3DPT_BOOL, 
+   D3DPT_INT, 
+   D3DPT_FLOAT, 
+   D3DPT_STRING, 
+   D3DPT_TEXTURE, 
+   D3DPT_TEXTURE1D, 
+   D3DPT_TEXTURE2D, 
+   D3DPT_TEXTURE3D, 
+   D3DPT_TEXTURECUBE, 
+   D3DPT_SAMPLER, 
+   D3DPT_SAMPLER1D, 
+   D3DPT_SAMPLER2D, 
+   D3DPT_SAMPLER3D, 
+   D3DPT_SAMPLERCUBE, 
+   D3DPT_PIXELSHADER, 
+   D3DPT_VERTEXSHADER, 
+   D3DPT_PIXELFRAGMENT, 
+   D3DPT_VERTEXFRAGMENT
 };
 
 enum REGISTER_TYPE
@@ -77,69 +77,69 @@ enum REGISTER_TYPE
 
 struct ConstantDesc
 {
-    String Name;
-    S32 RegisterIndex;
-    S32 RegisterCount;
-    S32 Rows;
-    S32 Columns;
-    S32 Elements;
-    S32 StructMembers;
-    REGISTER_TYPE RegisterSet;
-    CONST_CLASS Class;
-    CONST_TYPE Type;
-    U32 Bytes;
+   String Name;
+   S32 RegisterIndex;
+   S32 RegisterCount;
+   S32 Rows;
+   S32 Columns;
+   S32 Elements;
+   S32 StructMembers;
+   REGISTER_TYPE RegisterSet;
+   CONST_CLASS Class;
+   CONST_TYPE Type;
+   U32 Bytes;
 };
 
 class ConstantTable
 {
 public:
-  bool Create(const void* data);
+   bool Create(const void* data);
 
-  U32 GetConstantCount() const { return m_constants.size(); }
-  const String& GetCreator() const { return m_creator; } 
+   U32 GetConstantCount() const { return m_constants.size(); }
+   const String& GetCreator() const { return m_creator; } 
 
-  const ConstantDesc* GetConstantByIndex(U32 i) const { return &m_constants[i]; }
-  const ConstantDesc* GetConstantByName(const String& name) const;
+   const ConstantDesc* GetConstantByIndex(U32 i) const { return &m_constants[i]; }
+   const ConstantDesc* GetConstantByName(const String& name) const;
 
-  void ClearConstants() { m_constants.clear(); }
+   void ClearConstants() { m_constants.clear(); }
 
 private:
-  Vector<ConstantDesc> m_constants;
-  String m_creator;
+   Vector<ConstantDesc> m_constants;
+   String m_creator;
 };
 
 // Structs
 struct CTHeader
 {
-  U32 Size;
-  U32 Creator;
-  U32 Version;
-  U32 Constants;
-  U32 ConstantInfo;
-  U32 Flags;
-  U32 Target;
+   U32 Size;
+   U32 Creator;
+   U32 Version;
+   U32 Constants;
+   U32 ConstantInfo;
+   U32 Flags;
+   U32 Target;
 };
 
 struct CTInfo
 {
-  U32 Name;
-  U16 RegisterSet;
-  U16 RegisterIndex;
-  U16 RegisterCount;
-  U16 Reserved;
-  U32 TypeInfo;
-  U32 DefaultValue;
+   U32 Name;
+   U16 RegisterSet;
+   U16 RegisterIndex;
+   U16 RegisterCount;
+   U16 Reserved;
+   U32 TypeInfo;
+   U32 DefaultValue;
 };
 
 struct CTType
 {
-  U16 Class;
-  U16 Type;
-  U16 Rows;
-  U16 Columns;
-  U16 Elements;
-  U16 StructMembers;
-  U32 StructMemberInfo;
+   U16 Class;
+   U16 Type;
+   U16 Rows;
+   U16 Columns;
+   U16 Elements;
+   U16 StructMembers;
+   U32 StructMemberInfo;
 };
 
 // Shader instruction opcodes
@@ -152,65 +152,66 @@ const U32 CTAB_CONSTANT = 0x42415443;
 // Member functions
 inline bool ConstantTable::Create(const void* data)
 {
-  const U32* ptr = static_cast<const U32*>(data);
-  while(*++ptr != SIO_END)
-  {
-    if((*ptr & SI_OPCODE_MASK) == SIO_COMMENT)
-    {
-      // Check for CTAB comment
-      U32 comment_size = (*ptr & SI_COMMENTSIZE_MASK) >> 16;
-      if(*(ptr+1) != CTAB_CONSTANT)
+   const U32* ptr = static_cast<const U32*>(data);
+   while(*++ptr != SIO_END)
+   {
+      if((*ptr & SI_OPCODE_MASK) == SIO_COMMENT)
       {
-        ptr += comment_size;
-        continue;
+         // Check for CTAB comment
+         U32 comment_size = (*ptr & SI_COMMENTSIZE_MASK) >> 16;
+         if(*(ptr+1) != CTAB_CONSTANT)
+         {
+            ptr += comment_size;
+            continue;
+         }
+
+         // Read header
+         const char* ctab = reinterpret_cast<const char*>(ptr+2);
+         size_t ctab_size = (comment_size-1)*4;
+
+         const CTHeader* header = reinterpret_cast<const CTHeader*>(ctab);
+         if(ctab_size < sizeof(*header) || header->Size != sizeof(*header))
+            return false;
+         m_creator = ctab + header->Creator;
+
+         // Read constants
+         m_constants.reserve(header->Constants);
+         const CTInfo* info = reinterpret_cast<const CTInfo*>(ctab + header->ConstantInfo);
+         for(U32 i = 0; i < header->Constants; ++i)
+         {
+            const CTType* type = reinterpret_cast<const CTType*>(ctab + info[i].TypeInfo);
+
+            // Fill struct
+            ConstantDesc desc;
+            desc.Name = ctab + info[i].Name;
+            desc.RegisterSet = static_cast<REGISTER_TYPE>(info[i].RegisterSet);
+            desc.RegisterIndex = info[i].RegisterIndex;
+            desc.RegisterCount = info[i].RegisterCount;
+            desc.Rows = type->Rows;
+            desc.Class = static_cast<CONST_CLASS>(type->Class);
+            desc.Type = static_cast<CONST_TYPE>(type->Type);
+            desc.Columns = type->Columns;
+            desc.Elements = type->Elements;
+            desc.StructMembers = type->StructMembers;
+            desc.Bytes = 4 * desc.Elements * desc.Rows * desc.Columns;
+            m_constants.push_back(desc);
+         }
+
+         return true;
       }
-
-      // Read header
-      const char* ctab = reinterpret_cast<const char*>(ptr+2);
-      size_t ctab_size = (comment_size-1)*4;
-
-      const CTHeader* header = reinterpret_cast<const CTHeader*>(ctab);
-      if(ctab_size < sizeof(*header) || header->Size != sizeof(*header))
-        return false;
-      m_creator = ctab + header->Creator;
-
-      // Read constants
-      m_constants.reserve(header->Constants);
-      const CTInfo* info = reinterpret_cast<const CTInfo*>(ctab + header->ConstantInfo);
-      for(U32 i = 0; i < header->Constants; ++i)
-      {
-        const CTType* type = reinterpret_cast<const CTType*>(ctab + info[i].TypeInfo);
-
-        // Fill struct
-        ConstantDesc desc;
-        desc.Name = ctab + info[i].Name;
-        desc.RegisterSet = static_cast<REGISTER_TYPE>(info[i].RegisterSet);
-        desc.RegisterIndex = info[i].RegisterIndex;
-        desc.RegisterCount = info[i].RegisterCount;
-        desc.Rows = type->Rows;
-        desc.Class = static_cast<CONST_CLASS>(type->Class);
-        desc.Type = static_cast<CONST_TYPE>(type->Type);
-        desc.Columns = type->Columns;
-        desc.Elements = type->Elements;
-        desc.StructMembers = type->StructMembers;
-        desc.Bytes = 4 * desc.Elements * desc.Rows * desc.Columns;
-        m_constants.push_back(desc);
-      }
-      return true;
-    }
-  }
-  return false;
+   }
+   return false;
 }
 
 inline const ConstantDesc* ConstantTable::GetConstantByName(const String& name) const
 {
-  Vector<ConstantDesc>::const_iterator it;
-  for(it = m_constants.begin(); it != m_constants.end(); ++it)
-  {
-    if(it->Name == name)
-      return &(*it);
-  }
-  return NULL;
+   Vector<ConstantDesc>::const_iterator it;
+   for(it = m_constants.begin(); it != m_constants.end(); ++it)
+   {
+      if(it->Name == name)
+         return &(*it);
+   }
+   return NULL;
 }
 
 /////////////////// Constant Buffers /////////////////////////////
@@ -409,10 +410,8 @@ protected:
    ID3D11VertexShader *mVertShader;
    ID3D11PixelShader *mPixShader;
 
-
    GFXD3D11ConstBufferLayout* mVertexConstBufferLayout;
-   GFXD3D11ConstBufferLayout* mPixelConstBufferLayout;
-   
+   GFXD3D11ConstBufferLayout* mPixelConstBufferLayout;   
 
    static gfxD3DIncludeRef smD3DInclude;
 

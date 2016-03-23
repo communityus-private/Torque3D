@@ -129,7 +129,7 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 		EnumAdapter->GetDesc1(&desc);
 
 		size_t size=wcslen(desc.Description);
-		char * str=new char[size+1];
+		char *str = new char[size+1];
 
 		wcstombs(str, desc.Description,size);
 		str[size]='\0';
@@ -146,7 +146,7 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 
 		if(hr == DXGI_ERROR_NOT_FOUND)
 		{
-			EnumAdapter->Release();
+         SAFE_RELEASE(EnumAdapter);
 			break;
 		}
 
@@ -184,12 +184,12 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 		}
 
 		delete[] displayModes;
-		pOutput->Release();
-		EnumAdapter->Release();
+      SAFE_RELEASE(pOutput);
+      SAFE_RELEASE(EnumAdapter);
 	   adapterList.push_back(toAdd);
    }
 
-   DXGIFactory->Release();
+   SAFE_RELEASE(DXGIFactory);
 }
 
 void GFXD3D11Device::enumerateVideoModes() 
@@ -198,19 +198,22 @@ void GFXD3D11Device::enumerateVideoModes()
 
    IDXGIAdapter1* EnumAdapter;
    IDXGIFactory1* DXGIFactory;
+   HRESULT hr;
 
-   CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&DXGIFactory));
+   hr = CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&DXGIFactory));
+
+   if (FAILED(hr))
+      AssertFatal(false, "GFXD3D11Device::enumerateVideoModes -> CreateDXGIFactory1 call failure");
 
    for(U32 adapterIndex = 0; DXGIFactory->EnumAdapters1(adapterIndex, &EnumAdapter) != DXGI_ERROR_NOT_FOUND; ++adapterIndex) 
    {
-		IDXGIOutput* pOutput = NULL; 
-		HRESULT hr;
+		IDXGIOutput* pOutput = NULL;		
 
 		hr = EnumAdapter->EnumOutputs(adapterIndex, &pOutput);
 
 		if(hr == DXGI_ERROR_NOT_FOUND)
 		{
-			EnumAdapter->Release();
+         SAFE_RELEASE(EnumAdapter);
 			break;
 		}
 
@@ -248,11 +251,11 @@ void GFXD3D11Device::enumerateVideoModes()
 		}
 
 		delete[] displayModes;
-		pOutput->Release();
-		EnumAdapter->Release();
+      SAFE_RELEASE(pOutput);
+      SAFE_RELEASE(EnumAdapter);
    }
 
-   DXGIFactory->Release();
+   SAFE_RELEASE(DXGIFactory);
 }
 
 IDXGISwapChain* GFXD3D11Device::getSwapChain()
@@ -327,15 +330,11 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 
 	// Now reacquire all the resources we trashed earlier
 	reacquireDefaultPoolResources();
-
+   //TODO implement feature levels?
 	if (deviceFeature >= D3D_FEATURE_LEVEL_11_0)
 		mPixVersion = 5.0f;
-	else if (deviceFeature == D3D_FEATURE_LEVEL_10_1)
-		mPixVersion = 4.1f;
-	else if (deviceFeature == D3D_FEATURE_LEVEL_10_0)
-		mPixVersion = 4.0f;
 	else
-		AssertFatal(false, "GFXD3D11Device::init - We don't support Pixel shader version 3.0f devices in Directx11");
+		AssertFatal(false, "GFXD3D11Device::init - We don't support anything below feature level 11.");
 
 	D3D11_QUERY_DESC queryDesc;
    queryDesc.Query = D3D11_QUERY_OCCLUSION;
@@ -447,9 +446,9 @@ void GFXD3D11Device::_suppressDebugMessages()
             filter.DenyList.NumIDs = _countof(hide);
             filter.DenyList.pIDList = hide;
             pInfoQueue->AddStorageFilterEntries(&filter);
-            pInfoQueue->Release();
+            SAFE_RELEASE(pInfoQueue);
          }
-         pDebug->Release();
+         SAFE_RELEASE(pDebug);
       }
    }
 }
@@ -592,7 +591,7 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 
 	if (FAILED(hr))
 	{
-		AssertFatal(false, "D3D11Device::reset - failed to change screen states!");
+      AssertFatal(false, "D3D11Device::reset - failed to change screen states!");
 	}
 
    //Microsoft recommend this, see DXGI documentation
@@ -727,7 +726,7 @@ GFXD3D11Device::~GFXD3D11Device()
       mD3DDevice->QueryInterface(IID_PPV_ARGS(&pDebug));
       AssertFatal(pDebug, "~GFXD3D11Device- Failed to get debug layer");
       pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-      pDebug->Release();
+      SAFE_RELEASE(pDebug);
    }
 #endif
    
@@ -751,6 +750,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       mGenericShader[GSColor] =  shaderData->getShader();
       mGenericShaderBuffer[GSColor] = mGenericShader[GSColor]->allocConstBuffer();
       mModelViewProjSC[GSColor] = mGenericShader[GSColor]->getShaderConstHandle("$modelView");
+      Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/modColorTextureV.hlsl");
@@ -760,6 +760,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       mGenericShader[GSModColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSModColorTexture] = mGenericShader[GSModColorTexture]->allocConstBuffer();
       mModelViewProjSC[GSModColorTexture] = mGenericShader[GSModColorTexture]->getShaderConstHandle("$modelView");
+      Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/addColorTextureV.hlsl");
@@ -769,6 +770,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       mGenericShader[GSAddColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSAddColorTexture] = mGenericShader[GSAddColorTexture]->allocConstBuffer();
       mModelViewProjSC[GSAddColorTexture] = mGenericShader[GSAddColorTexture]->getShaderConstHandle("$modelView");
+      Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/textureV.hlsl");
@@ -778,6 +780,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       mGenericShader[GSTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSTexture] = mGenericShader[GSTexture]->allocConstBuffer();
       mModelViewProjSC[GSTexture] = mGenericShader[GSTexture]->getShaderConstHandle("$modelView");
+      Sim::getRootGroup()->addObject(shaderData);
 
       //Force an update
       mViewportDirty = true;
@@ -805,8 +808,10 @@ void GFXD3D11Device::setStateBlockInternal(GFXStateBlock* block, bool force)
    AssertFatal(static_cast<GFXD3D11StateBlock*>(block), "Incorrect stateblock type for this device!");
    GFXD3D11StateBlock* d3dBlock = static_cast<GFXD3D11StateBlock*>(block);
    GFXD3D11StateBlock* d3dCurrent = static_cast<GFXD3D11StateBlock*>(mCurrentStateBlock.getPointer());
+
    if (force)
       d3dCurrent = NULL;
+
    d3dBlock->activate(d3dCurrent);   
 }
 
@@ -821,7 +826,9 @@ void GFXD3D11Device::setShaderConstBufferInternal(GFXShaderConstBuffer* buffer)
 
       d3dBuffer->activate(mCurrentConstBuffer);
       mCurrentConstBuffer = d3dBuffer;
-   } else {
+   }
+   else
+   {
       mCurrentConstBuffer = NULL;
    }
 }
@@ -859,10 +866,8 @@ void GFXD3D11Device::clear(U32 flags, ColorI color, F32 z, U32 stencil)
    if (depthstencilFlag && dsView)
       mD3DDeviceContext->ClearDepthStencilView(dsView, depthstencilFlag, z, stencil);
 
-   if(rtView)
-       rtView->Release();
-   if(dsView)
-       dsView->Release();
+   SAFE_RELEASE(rtView);
+   SAFE_RELEASE(dsView);
 }
 
 void GFXD3D11Device::endSceneInternal() 
@@ -914,8 +919,7 @@ void GFXD3D11Device::releaseDefaultPoolResources()
    // Forcibly clean up the pools
    for(U32 i=0; i<mVolatileVBList.size(); i++)
    {
-      mVolatileVBList[i]->vb->Release();
-      mVolatileVBList[i]->vb = NULL;
+      SAFE_RELEASE(mVolatileVBList[i]->vb);
       mVolatileVBList[i] = NULL;
    }
    mVolatileVBList.setSize(0);
@@ -1206,7 +1210,6 @@ void GFXD3D11Device::drawIndexedPrimitive( GFXPrimitiveType primType,
    if ( mVolatileVB )
       startVertex += mVolatileVB->mVolatileStart;
 
-
    mD3DDeviceContext->IASetPrimitiveTopology(GFXD3D11PrimType[primType]);
   
    if ( mDrawInstancesCount )
@@ -1251,7 +1254,6 @@ void GFXD3D11Device::setShader(GFXShader *shader, bool force)
 		  mLastVertShader = d3dShader->mVertShader;
 	   }     
    }
-
    else
    {
 	   setupGenericShaders();
@@ -1689,7 +1691,7 @@ GFXFence *GFXD3D11Device::createFence()
       return fence;
    }
 
-   // CodeReview: At some point I would like a specialized D3D11 implementation of
+   // CodeReview: At some point I would like a specialized implementation of
    // the method used by the general fence, only without the overhead incurred 
    // by using the GFX constructs. Primarily the lock() method on texture handles
    // will do a data copy, and this method doesn't require a copy, just a lock

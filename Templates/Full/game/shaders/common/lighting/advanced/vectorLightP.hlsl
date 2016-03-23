@@ -22,6 +22,7 @@
 
 #include "../../shaderModel.hlsl"
 #include "../../shaderModelAutoGen.hlsl"
+
 #include "farFrustumQuad.hlsl"
 #include "../../torque.hlsl"
 #include "../../lighting.hlsl"
@@ -70,7 +71,6 @@ uniform float4 scaleX;
 uniform float4 scaleY;
 uniform float4 offsetX;
 uniform float4 offsetY;
-
 // Dynamic Shadows
 uniform float4x4 dynamicWorldToLightProj;
 uniform float4 dynamicScaleX;
@@ -78,7 +78,7 @@ uniform float4 dynamicScaleY;
 uniform float4 dynamicOffsetX;
 uniform float4 dynamicOffsetY;
 uniform float4 dynamicFarPlaneScalePSSM;
-             
+
 float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                 float2 texCoord,
                                 float4x4 worldToLightProj,
@@ -192,7 +192,7 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                  dotNL,
                                  dot( finalMask, overDarkPSSM ) ) );
 };
-             
+
 float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
 {
    // Emissive.
@@ -303,7 +303,6 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
 
    #ifdef PSSM_DEBUG_RENDER
       lightColorOut = debugColor;
-   #endif
-      
+   #endif      
    return matInfo.g*(float4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
 }

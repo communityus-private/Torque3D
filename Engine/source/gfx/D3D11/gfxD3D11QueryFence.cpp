@@ -35,16 +35,16 @@ void GFXD3D11QueryFence::issue()
    // Create the query if we need to
    if(mQuery == NULL)
    {
-	  D3D11_QUERY_DESC QueryDesc;
-	  QueryDesc.Query = D3D11_QUERY_EVENT;
-	  QueryDesc.MiscFlags = 0;
+      D3D11_QUERY_DESC QueryDesc;
+      QueryDesc.Query = D3D11_QUERY_EVENT;
+      QueryDesc.MiscFlags = 0;
 
-	  HRESULT hRes = D3D11DEVICE->CreateQuery(&QueryDesc, &mQuery);
+      HRESULT hRes = D3D11DEVICE->CreateQuery(&QueryDesc, &mQuery);
 
-	  if(FAILED(hRes))
-	  {
-		AssertFatal(false, "Hardware does not support D3D11 Queries, this should be caught before this fence type is created" );
-	  }
+      if(FAILED(hRes))
+      {
+         AssertFatal(false, "Hardware does not support D3D11 Queries, this should be caught before this fence type is created" );
+      }
 
       AssertISV(hRes != E_OUTOFMEMORY, "Out of memory");
    }
@@ -88,16 +88,16 @@ void GFXD3D11QueryFence::resurrect()
    // Recreate the query
    if(mQuery == NULL)
    {
-	  D3D11_QUERY_DESC QueryDesc;
-	  QueryDesc.Query = D3D11_QUERY_EVENT;
-	  QueryDesc.MiscFlags = 0;
+      D3D11_QUERY_DESC QueryDesc;
+      QueryDesc.Query = D3D11_QUERY_EVENT;
+      QueryDesc.MiscFlags = 0;
 
-	  HRESULT hRes = D3D11DEVICE->CreateQuery(&QueryDesc, &mQuery);
+      HRESULT hRes = D3D11DEVICE->CreateQuery(&QueryDesc, &mQuery);
 
-	  if(FAILED(hRes))
-	  {
-		 AssertFatal(false, "GFXD3D11QueryFence::resurrect - Hardware does not support D3D11 Queries, this should be caught before this fence type is created");
-	  }
+      if(FAILED(hRes))
+      {
+         AssertFatal(false, "GFXD3D11QueryFence::resurrect - Hardware does not support D3D11 Queries, this should be caught before this fence type is created");
+      }
 
       AssertISV(hRes != E_OUTOFMEMORY, "GFXD3D11QueryFence::resurrect - Out of memory");
    }

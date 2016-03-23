@@ -33,7 +33,7 @@
 
 GFXD3D11TextureManager::GFXD3D11TextureManager()
 {
-    ZeroMemory(mCurTexSet, sizeof(mCurTexSet));
+   ZeroMemory(mCurTexSet, sizeof(mCurTexSet));
 }
 
 GFXD3D11TextureManager::~GFXD3D11TextureManager()
@@ -58,23 +58,21 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
    U32 miscFlags = 0;
    
    if(!retTex->mProfile->isZTarget() && !retTex->mProfile->isSystemMemory())
-     bindFlags =  D3D11_BIND_SHADER_RESOURCE;
+      bindFlags =  D3D11_BIND_SHADER_RESOURCE;
    
    U32 cpuFlags = 0;
 
    retTex->mProfile = profile;
-    retTex->isManaged = false;
+   retTex->isManaged = false;
    DXGI_FORMAT d3dTextureFormat = GFXD3D11TextureFormat[format];
-
 
    if( retTex->mProfile->isDynamic() )
    {
-	  usage = D3D11_USAGE_DYNAMIC;
-	  cpuFlags |= D3D11_CPU_ACCESS_WRITE;
-	  retTex->isManaged = false;
-      
+      usage = D3D11_USAGE_DYNAMIC;
+      cpuFlags |= D3D11_CPU_ACCESS_WRITE;
+      retTex->isManaged = false;      
    }
-   else if (retTex->mProfile->isSystemMemory())
+   else if ( retTex->mProfile->isSystemMemory() )
    {
       usage |= D3D11_USAGE_STAGING;
       cpuFlags |= D3D11_CPU_ACCESS_READ;
@@ -82,13 +80,12 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
    else
    {
       usage = D3D11_USAGE_DEFAULT;
-	 retTex->isManaged = true;
+      retTex->isManaged = true;
    }
 
    if( retTex->mProfile->isRenderTarget() )
    {
-      
-	   bindFlags |= D3D11_BIND_RENDER_TARGET;
+      bindFlags |= D3D11_BIND_RENDER_TARGET;
       //need to check to make sure this format supports render targets
       U32 supportFlag = 0;
       
@@ -97,17 +94,16 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
       if(!(supportFlag & D3D11_FORMAT_SUPPORT_RENDER_TARGET))
          d3dTextureFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
 
-	   retTex->isManaged =false;
+      retTex->isManaged =false;
    }
 
-   if(retTex->mProfile->isZTarget())
+   if( retTex->mProfile->isZTarget() )
    {
-       bindFlags |= D3D11_BIND_DEPTH_STENCIL;
-       retTex->isManaged = false;
+      bindFlags |= D3D11_BIND_DEPTH_STENCIL;
+      retTex->isManaged = false;
    }
 
-   if( !forceMips &&
-       !retTex->mProfile->isSystemMemory() &&
+   if( !forceMips && !retTex->mProfile->isSystemMemory() &&
        numMipLevels == 0 &&
        !(depth > 0) )
    {
@@ -115,10 +111,10 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
       bindFlags |= D3D11_BIND_RENDER_TARGET; // in order to automatically generate mips. Resource needs to be a rendertarget and shader resource
    }
 
-   if(depth > 0)
+   if( depth > 0 )
    {
-	    D3D11_TEXTURE3D_DESC desc;
-		ZeroMemory(&desc, sizeof(D3D11_TEXTURE3D_DESC));
+      D3D11_TEXTURE3D_DESC desc;
+      ZeroMemory(&desc, sizeof(D3D11_TEXTURE3D_DESC));
 
 		desc.BindFlags = bindFlags;
 		desc.CPUAccessFlags = cpuFlags;
@@ -131,15 +127,15 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
 
 		HRESULT hr = D3D11DEVICE->CreateTexture3D(&desc, NULL, retTex->get3DTexPtr());
 
-	    if(FAILED(hr)) 
-	    {
-		   AssertFatal(false, "GFXD3D11TextureManager::_createTexture - failed to create volume texture!");
-	    }
+      if(FAILED(hr)) 
+      {
+         AssertFatal(false, "GFXD3D11TextureManager::_createTexture - failed to create volume texture!");
+      }
 
-        retTex->mTextureSize.set(width, height, depth);
-        retTex->get3DTex()->GetDesc(&desc);
-		retTex->mMipLevels = numMipLevels;
-	    retTex->mFormat = format;
+      retTex->mTextureSize.set(width, height, depth);
+      retTex->get3DTex()->GetDesc(&desc);
+      retTex->mMipLevels = numMipLevels;
+      retTex->mFormat = format;
    }
    else
    {
@@ -221,7 +217,7 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
 
 		if (!retTex->mProfile->isSystemMemory())
 		{
-			createResourceView(height, width, depth, d3dTextureFormat, numMipLevels, bindFlags, retTex);
+         createResourceView(height, width, depth, d3dTextureFormat, numMipLevels, bindFlags, retTex);
 		}
 
 		// Get the actual size of the texture...
@@ -238,12 +234,12 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
 		}
 
 		retTex->mTextureSize.set(probeDesc.Width, probeDesc.Height, 0);
-		int fmt = 0;
+		S32 fmt = 0;
 
 		if(!profile->isZTarget())
-		fmt = probeDesc.Format;
+		   fmt = probeDesc.Format;
 		else
-		fmt = DXGI_FORMAT_D24_UNORM_S8_UINT; // we need to assign this manually.
+		   fmt = DXGI_FORMAT_D24_UNORM_S8_UINT; // we need to assign this manually.
 
 		GFXREVERSE_LOOKUP( GFXD3D11TextureFormat, GFXFormat, fmt );
 		retTex->mFormat = (GFXFormat)fmt;
@@ -306,7 +302,7 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *p
 
    bool isDynamic = texture->mProfile->isDynamic();
    // Fill the texture...
-   for( int i = 0; i < maxDownloadMip; i++ )
+   for( U32 i = 0; i < maxDownloadMip; i++ )
    {
 	   U32 subResource = D3D11CalcSubresource(i, 0, aTexture->mMipLevels);
 
@@ -326,32 +322,32 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *p
 					bitmapConvertRGB_to_RGBX(&Bits, pDL->getWidth(i) * pDL->getHeight(i));
 					copyBuffer = new U8[pDL->getWidth(i) * pDL->getHeight(i) * 4];
 					
-					GFX->getDeviceSwizzle32()->ToBuffer(copyBuffer, Bits, pDL->getWidth(i) * pDL->getHeight(i) * 4);
+					dev->getDeviceSwizzle32()->ToBuffer(copyBuffer, Bits, pDL->getWidth(i) * pDL->getHeight(i) * 4);
 					dev->getDeviceContext()->UpdateSubresource(texture->get2DTex(), subResource, NULL, copyBuffer, pDL->getWidth() * 4, pDL->getHeight() *4);
+               SAFE_DELETE_ARRAY(Bits);
 					break;
 				}
 
 				case GFXFormatR8G8B8A8:
 				case GFXFormatR8G8B8X8:
 				{
-				    PROFILE_SCOPE(Swizzle32_Upload);
-					copyBuffer = new U8[pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel()];
-				    GFX->getDeviceSwizzle32()->ToBuffer(copyBuffer, pDL->getBits(i), pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel());
-					dev->getDeviceContext()->UpdateSubresource(texture->get2DTex(), subResource, NULL, copyBuffer, pDL->getWidth() * pDL->getBytesPerPixel(), pDL->getHeight() *pDL->getBytesPerPixel());
+               PROFILE_SCOPE(Swizzle32_Upload);
+               copyBuffer = new U8[pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel()];
+               dev->getDeviceSwizzle32()->ToBuffer(copyBuffer, pDL->getBits(i), pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel());
+               dev->getDeviceContext()->UpdateSubresource(texture->get2DTex(), subResource, NULL, copyBuffer, pDL->getWidth() * pDL->getBytesPerPixel(), pDL->getHeight() *pDL->getBytesPerPixel());
 					break;
 				}
 
 				default:
 				{
-				      // Just copy the bits in no swizzle or padding
-				      PROFILE_SCOPE(SwizzleNull_Upload);
-				      AssertFatal( pDL->getFormat() == texture->mFormat, "Format mismatch");
-					  dev->getDeviceContext()->UpdateSubresource(texture->get2DTex(), subResource, NULL, pDL->getBits(i), pDL->getWidth() *pDL->getBytesPerPixel(), pDL->getHeight() *pDL->getBytesPerPixel());
+               // Just copy the bits in no swizzle or padding
+               PROFILE_SCOPE(SwizzleNull_Upload);
+               AssertFatal( pDL->getFormat() == texture->mFormat, "Format mismatch");
+               dev->getDeviceContext()->UpdateSubresource(texture->get2DTex(), subResource, NULL, pDL->getBits(i), pDL->getWidth() *pDL->getBytesPerPixel(), pDL->getHeight() *pDL->getBytesPerPixel());
 				}
 			}
 
-			if(copyBuffer)
-				delete[] copyBuffer;
+         SAFE_DELETE_ARRAY(copyBuffer);
 	    }
 	  
 	   else
@@ -370,27 +366,27 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *p
 
 					U8* Bits = new U8[pDL->getWidth(i) * pDL->getHeight(i) * 4];
 					dMemcpy(Bits, pDL->getBits(i), pDL->getWidth(i) * pDL->getHeight(i) * 3);
-					bitmapConvertRGB_to_RGBX(&Bits, pDL->getWidth(i) * pDL->getHeight(i));
-					
+					bitmapConvertRGB_to_RGBX(&Bits, pDL->getWidth(i) * pDL->getHeight(i));					
 
-					GFX->getDeviceSwizzle32()->ToBuffer(mapping.pData, Bits, pDL->getWidth(i) * pDL->getHeight(i) * 4);
+					dev->getDeviceSwizzle32()->ToBuffer(mapping.pData, Bits, pDL->getWidth(i) * pDL->getHeight(i) * 4);
+               SAFE_DELETE_ARRAY(Bits);
 				}
 				break;
 
-				case GFXFormatR8G8B8A8:
-				case GFXFormatR8G8B8X8:
-				{
-				    PROFILE_SCOPE(Swizzle32_Upload);
-				    GFX->getDeviceSwizzle32()->ToBuffer(mapping.pData, pDL->getBits(i), pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel());
-				}
+            case GFXFormatR8G8B8A8:
+            case GFXFormatR8G8B8X8:
+            {
+               PROFILE_SCOPE(Swizzle32_Upload);
+               dev->getDeviceSwizzle32()->ToBuffer(mapping.pData, pDL->getBits(i), pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel());
+            }
 				break;
 
 				default:
 				{
-				      // Just copy the bits in no swizzle or padding
-				      PROFILE_SCOPE(SwizzleNull_Upload);
-				      AssertFatal( pDL->getFormat() == texture->mFormat, "Format mismatch");
-				      dMemcpy(mapping.pData, pDL->getBits(i), pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel());
+               // Just copy the bits in no swizzle or padding
+               PROFILE_SCOPE(SwizzleNull_Upload);
+               AssertFatal( pDL->getFormat() == texture->mFormat, "Format mismatch");
+               dMemcpy(mapping.pData, pDL->getBits(i), pDL->getWidth(i) * pDL->getHeight(i) * pDL->getBytesPerPixel());
 				}
 			}
 
@@ -418,15 +414,15 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *inTex, void *raw)
    GFXD3D11Device* dev = static_cast<GFXD3D11Device *>(GFX);
    // currently only for volume textures...
    if(texture->getDepth() < 1) return false;
-  
-   U8* Bits = NULL;
 
+   U8* Bits = NULL;
+  
    if(texture->mFormat == GFXFormatR8G8B8)
    {
 	   // convert 24 bit to 32 bit
 	   Bits = new U8[texture->getWidth() * texture->getHeight() * texture->getDepth() * 4];
 	   dMemcpy(Bits, raw, texture->getWidth() * texture->getHeight() * texture->getDepth() * 3);
-	   bitmapConvertRGB_to_RGBX(&Bits, texture->getWidth() * texture->getHeight() * texture->getDepth());
+	   bitmapConvertRGB_to_RGBX(&Bits, texture->getWidth() * texture->getHeight() * texture->getDepth());      
    }
 
    U32 bytesPerPix = 1;
@@ -452,6 +448,8 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *inTex, void *raw)
 		dev->getDeviceContext()->UpdateSubresource(texture->get3DTex(), 0, &box, Bits, texture->getWidth() * bytesPerPix, texture->getHeight() * bytesPerPix);
    else
 		dev->getDeviceContext()->UpdateSubresource(texture->get3DTex(), 0, &box, raw, texture->getWidth() * bytesPerPix, texture->getHeight() * bytesPerPix);
+
+   SAFE_DELETE_ARRAY(Bits);
 
    return true;
 }
@@ -507,9 +505,9 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *d
    GFXD3D11TextureObject *texture = static_cast<GFXD3D11TextureObject*>(aTexture);
    GFXD3D11Device* dev = static_cast<GFXD3D11Device *>(GFX);
    // Fill the texture...
-   for( int i = 0; i < aTexture->mMipLevels; i++ )
+   for( U32 i = 0; i < aTexture->mMipLevels; i++ )
    {
-		PROFILE_SCOPE(GFXD3DTexMan_loadSurface);
+      PROFILE_SCOPE(GFXD3DTexMan_loadSurface);
 
 		AssertFatal( dds->mSurfaces.size() > 0, "Assumption failed. DDSFile has no surfaces." );
 
@@ -542,8 +540,7 @@ void GFXD3D11TextureManager::createResourceView(U32 height, U32 width, U32 depth
 	//TODO: add MSAA support later.
 	if(usageFlags & D3D11_BIND_SHADER_RESOURCE)
 	{
-		
-		D3D11_SHADER_RESOURCE_VIEW_DESC desc;
+      D3D11_SHADER_RESOURCE_VIEW_DESC desc;
 
       if(usageFlags & D3D11_BIND_DEPTH_STENCIL)
          desc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS; // reads the depth
@@ -566,6 +563,7 @@ void GFXD3D11TextureManager::createResourceView(U32 height, U32 width, U32 depth
 		hr = D3D11DEVICE->CreateShaderResourceView(resource,&desc, tex->getSRViewPtr());
 		AssertFatal(SUCCEEDED(hr), "CreateShaderResourceView:: failed to create view!");
 	}
+
 	if(usageFlags & D3D11_BIND_RENDER_TARGET)
 	{
 		D3D11_RENDER_TARGET_VIEW_DESC desc;
@@ -575,6 +573,7 @@ void GFXD3D11TextureManager::createResourceView(U32 height, U32 width, U32 depth
 		hr = D3D11DEVICE->CreateRenderTargetView(resource, &desc, tex->getRTViewPtr());
 		AssertFatal(SUCCEEDED(hr), "CreateRenderTargetView:: failed to create view!");
 	}
+
 	if(usageFlags & D3D11_BIND_DEPTH_STENCIL)
 	{
 		D3D11_DEPTH_STENCIL_VIEW_DESC desc;

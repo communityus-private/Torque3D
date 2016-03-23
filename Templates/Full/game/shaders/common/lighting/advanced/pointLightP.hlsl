@@ -20,6 +20,8 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "../../shaderModelAutoGen.hlsl"
+
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
 #include "../../lighting.hlsl"
@@ -194,7 +196,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
          // Static
          float2 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) ).xy;
-         
          float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                              ssPos.xy,
                                              shadowCoord,
@@ -268,7 +269,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       lightColorOut = shadowed;
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
-   }
-     
-   return matInfo.g*(float4(lightColorOut*Sat_NL_Att+addToResult.rgb,real_specular.a/8));
+   }     
+   return matInfo.g*(float4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
 }

@@ -27,37 +27,38 @@
 
 class GFXD3D11PrimitiveBuffer : public GFXPrimitiveBuffer
 {
-   public:
-	  ID3D11Buffer *ib;
-      StrongRefPtr<GFXD3D11PrimitiveBuffer> mVolatileBuffer;
-      U32 mVolatileStart;
-	  U32 mIndexStart;
-	  U32 mIndexEnd;
+public:
+   ID3D11Buffer *ib;
+   StrongRefPtr<GFXD3D11PrimitiveBuffer> mVolatileBuffer;
+   U32 mVolatileStart;
+   U32 mIndexStart;
+   U32 mIndexEnd;
+
 #ifdef TORQUE_DEBUG
    #define _PBGuardString "GFX_PRIMTIVE_BUFFER_GUARD_STRING"
-   U8 *mDebugGuardBuffer;
-   
+   U8 *mDebugGuardBuffer;   
    U32 mLockedSize;
 #endif TORQUE_DEBUG
-      void *mLockedBuffer;
-      bool mLocked;
-      bool                  mIsFirstLock;
 
-      GFXD3D11PrimitiveBuffer( GFXDevice *device, 
+   void *mLockedBuffer;
+   bool mLocked;
+   bool mIsFirstLock;
+
+   GFXD3D11PrimitiveBuffer( GFXDevice *device, 
                               U32 indexCount, 
                               U32 primitiveCount, 
                               GFXBufferType bufferType );
 
-      virtual ~GFXD3D11PrimitiveBuffer();
+   virtual ~GFXD3D11PrimitiveBuffer();
 
-      virtual void lock(U32 indexStart, U32 indexEnd, void **indexPtr);
-      virtual void unlock();
+   virtual void lock(U32 indexStart, U32 indexEnd, void **indexPtr);
+   virtual void unlock();
 
-      virtual void prepare();      
+   virtual void prepare();      
 
-      // GFXResource interface
-      virtual void zombify();
-      virtual void resurrect();
+   // GFXResource interface
+   virtual void zombify();
+   virtual void resurrect();
 };
 
 inline GFXD3D11PrimitiveBuffer::GFXD3D11PrimitiveBuffer(   GFXDevice *device, 

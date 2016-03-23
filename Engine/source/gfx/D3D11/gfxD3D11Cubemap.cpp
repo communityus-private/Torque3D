@@ -44,7 +44,7 @@ GFXD3D11Cubemap::~GFXD3D11Cubemap()
 
 void GFXD3D11Cubemap::releaseSurfaces()
 {
-	if (mDynamic)
+   if (mDynamic)
 		GFXTextureManager::removeEventDelegate(this, &GFXD3D11Cubemap::_onTextureEvent);
 
    for (U32 i = 0; i < CubeFaces; i++)
@@ -59,10 +59,10 @@ void GFXD3D11Cubemap::releaseSurfaces()
 
 void GFXD3D11Cubemap::_onTextureEvent(GFXTexCallbackCode code)
 {
-    if (code == GFXZombify)
-		releaseSurfaces();
-    else if (code == GFXResurrect)
-		initDynamic(mTexSize);
+   if (code == GFXZombify)
+      releaseSurfaces();
+   else if (code == GFXResurrect)
+      initDynamic(mTexSize);
 }
 
 bool GFXD3D11Cubemap::isCompressed(GFXFormat format)
@@ -295,7 +295,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 
 	if(FAILED(hr)) 
 	{
-		AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateDepthStencilView call failure");
+      AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateDepthStencilView call failure");
 	}
 
    SAFE_RELEASE(depthTex);
