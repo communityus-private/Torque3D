@@ -2092,8 +2092,6 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       else
          meta->addStatement(new GenOp("   @.rgb *= @.rgb;\r\n", targ, texCube));
    }
-   if (fd.features[MFT_StaticCubemap]) //dynamic reflections are linearized coming and going. so do statics twice
-      meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", targ, targ));
    output = meta;
 }
 
