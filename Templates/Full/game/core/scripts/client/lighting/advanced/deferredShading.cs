@@ -47,9 +47,9 @@ new ShaderData( AL_DeferredShader )
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/deferredShadingP.glsl";
 
    samplerNames[0] = "colorBufferTex";
-   samplerNames[1] = "lightPrePassTex";
+   samplerNames[1] = "directLightingBuffer";
    samplerNames[2] = "matInfoTex";
-   samplerNames[3] = "lightMapTex";
+   samplerNames[3] = "indirectLightingBuffer";
    samplerNames[4] = "prepassTex";
    pixVersion = 2.0;
 };
@@ -191,7 +191,7 @@ new ShaderData( AL_LightMapShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgLightMapVisualizeP.glsl";
 
-   samplerNames[0] = "lightMapTex";
+   samplerNames[0] = "indirectLightingBuffer";
    pixVersion = 2.0;
 };
 

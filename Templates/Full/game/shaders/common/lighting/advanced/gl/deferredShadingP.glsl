@@ -26,9 +26,9 @@
 #include "../../../gl/torque.glsl"
 
 uniform sampler2D colorBufferTex;
-uniform sampler2D lightPrePassTex;
+uniform sampler2D directLightingBuffer;
 uniform sampler2D matInfoTex;
-uniform sampler2D lightMapTex;
+uniform sampler2D indirectLightingBuffer;
 uniform sampler2D prepassTex;
 
 out vec4 OUT_col;
@@ -42,16 +42,16 @@ void main()
       return;
    }
    
-   vec4 lightBuffer = texture( lightPrePassTex, uv0 ); //shadowmap*specular
+   vec4 directLighting = texture( directLightingBuffer, uv0 ); //shadowmap*specular
    vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb; //albedo
-   vec3 lightMapBuffer = texture( lightMapTex, uv0 ).rgb; //environment mapping*lightmaps
+   vec3 indirectLighting = texture( indirectLightingBuffer, uv0 ).rgb; //environment mapping*lightmaps
    float metalness = texture( matInfoTex, uv0 ).a; //flags|smoothness|ao|metallic
       
-   float frez = max(0.04,metalness*lightBuffer.a);   
+   float frez = max(0.04,metalness*directLighting.a);   
    vec3 diffuseColor = colorBuffer - (colorBuffer * frez);
-   vec3 reflectColor = frez*lightMapBuffer;
+   vec3 reflectColor = frez*indirectLighting;
    colorBuffer = diffuseColor + reflectColor;
-   colorBuffer *= lightBuffer.rgb;
+   colorBuffer *= directLighting.rgb;
    
    OUT_col = vec4(colorBuffer,1.0);
 }

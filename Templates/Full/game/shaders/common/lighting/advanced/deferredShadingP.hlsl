@@ -25,9 +25,9 @@
 #include "shaders/common/torque.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
-TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,1);
+TORQUE_UNIFORM_SAMPLER2D(directLightingBuffer,1);
 TORQUE_UNIFORM_SAMPLER2D(matInfoTex,2);
-TORQUE_UNIFORM_SAMPLER2D(lightMapTex,3);
+TORQUE_UNIFORM_SAMPLER2D(indirectLightingBuffer,3);
 TORQUE_UNIFORM_SAMPLER2D(prepassTex,4);
 
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
@@ -36,16 +36,16 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    if (depth>0.9999)
       return float4(0,0,0,0);
 	  
-   float4 lightBuffer = TORQUE_TEX2D( lightPrePassTex, IN.uv0 ); //shadowmap*specular
+   float4 directLighting = TORQUE_TEX2D( directLightingBuffer, IN.uv0 ); //shadowmap*specular
    float3 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb; //albedo
-   float3 lightMapBuffer = TORQUE_TEX2D( lightMapTex, IN.uv0 ).rgb; //environment mapping*lightmaps
+   float3 indirectLighting = TORQUE_TEX2D( indirectLightingBuffer, IN.uv0 ).rgb; //environment mapping*lightmaps
    float metalness = TORQUE_TEX2D( matInfoTex, IN.uv0 ).a; //flags|smoothness|ao|metallic
 	  
-   float frez = max(0.04,metalness*lightBuffer.a);   
+   float frez = max(0.04,metalness*directLighting.a);   
    float3 diffuseColor = colorBuffer - (colorBuffer * frez);
-   float3 reflectColor = frez*lightMapBuffer;
+   float3 reflectColor = frez*indirectLighting;
    colorBuffer = diffuseColor + reflectColor;
-   colorBuffer *= lightBuffer.rgb;
+   colorBuffer *= directLighting.rgb;
    
    return hdrEncode( float4(colorBuffer, 1.0) );
 }

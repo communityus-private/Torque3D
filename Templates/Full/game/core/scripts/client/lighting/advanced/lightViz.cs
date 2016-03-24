@@ -149,7 +149,7 @@ new ShaderData( AL_LightColorVisualizeShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgLightColorVisualizeP.glsl";
    
-   samplerNames[0] = "lightPrePassTex";
+   samplerNames[0] = "directLightingBuffer";
    
    pixVersion = 2.0;
 };
@@ -184,7 +184,7 @@ new ShaderData( AL_LightSpecularVisualizeShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgLightSpecularVisualizeP.glsl";
    
-   samplerNames[0] = "lightPrePassTex";
+   samplerNames[0] = "directLightingBuffer";
    
    pixVersion = 2.0;
 };

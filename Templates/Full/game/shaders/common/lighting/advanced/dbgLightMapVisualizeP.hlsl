@@ -25,8 +25,8 @@
 
 
 float4 main( PFXVertToPix IN, 
-             uniform sampler2D lightMapTex : register(S0) ) : COLOR0
+             uniform sampler2D indirectLightingBuffer : register(S0) ) : COLOR0
 {
-	float4 lightmap = float4(tex2D( lightMapTex, IN.uv0 ).rgb,1.0);
-   return lightmap;
+	float4 directlighting = float4(tex2D( indirectLightingBuffer, IN.uv0 ).rgb,1.0);
+   return directlighting;
 }
