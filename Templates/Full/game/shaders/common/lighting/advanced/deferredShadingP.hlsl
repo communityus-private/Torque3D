@@ -41,11 +41,11 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    float3 indirectLighting = TORQUE_TEX2D( indirectLightingBuffer, IN.uv0 ).rgb; //environment mapping*lightmaps
    float metalness = TORQUE_TEX2D( matInfoTex, IN.uv0 ).a; //flags|smoothness|ao|metallic
 	  
-   float frez = max(0.04,metalness*directLighting.a);   
+   float frez = max(0.04,directLighting.a);   
    float3 diffuseColor = colorBuffer - (colorBuffer * frez);
    float3 reflectColor = frez*indirectLighting;
-   colorBuffer = diffuseColor + reflectColor;
-   colorBuffer *= directLighting.rgb;
+   diffuseColor *= directLighting.rgb;
+   colorBuffer = lerp(diffuseColor+reflectColor, diffuseColor*reflectColor, metalness*0.6+0.2);
    
    return hdrEncode( float4(colorBuffer, 1.0) );
 }

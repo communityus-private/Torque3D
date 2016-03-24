@@ -16,7 +16,7 @@ new SimGroup(MissionGroup) {
       canvasClearColor = "0 0 0 255";
       ambientLightBlendPhase = "1";
       ambientLightBlendCurve = "0 0 -1 -1";
-      LevelEnvMap = "DesertSkyCubemap";
+      LevelEnvMap = "gdansksubCubemap";
       soundAmbience = "AudioAmbienceDefault";
       soundDistanceModel = "Linear";
       canSave = "1";
@@ -76,7 +76,7 @@ new SimGroup(MissionGroup) {
       alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
-      position = "9.42739 22.576 240.89";
+      position = "9.42739 27.7428 241.796";
       rotation = "1 0 0 0";
       scale = "1 1 1";
       canSave = "1";
@@ -119,7 +119,7 @@ new SimGroup(MissionGroup) {
          Direction = "1 1 -1";
    };
    new SkyBox() {
-      Material = "DesertSkyMat";
+      Material = "GDanskSubSkyMat";
       drawBottom = "1";
       fogBandHeight = "0";
       position = "-79.7465 2.70386 456.287";
@@ -280,6 +280,21 @@ new SimGroup(MissionGroup) {
       scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
+   };
+   new SimGroup(CameraBookmarks) {
+      canSave = "1";
+      canSaveDynamicFields = "1";
+
+      new CameraBookmark() {
+         isAIControlled = "0";
+         dataBlock = "CameraBookmarkMarker";
+         position = "8.56947 28.7013 241.524";
+         rotation = "-0.0952424 0.313705 0.944732 147.992";
+         scale = "1 1 1";
+         internalName = "NewCamera_0";
+         canSave = "1";
+         canSaveDynamicFields = "1";
+      };
    };
 };
 //--- OBJECT WRITE END ---
