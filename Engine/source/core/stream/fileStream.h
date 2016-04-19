@@ -26,11 +26,11 @@
 #ifndef _VOLUME_H_
 #include "core/volume.h"
 #endif
-#ifndef _STREAM_H_
-#include "core/stream/stream.h"
+#ifndef _BITSTREAM_H_
+#include "core/stream/bitStream.h"
 #endif
 
-class FileStream : public Stream
+class FileStream : public BitStream
 {
 public:
    enum
