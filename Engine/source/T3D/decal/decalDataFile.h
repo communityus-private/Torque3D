@@ -36,7 +36,7 @@
 #endif
 
 
-class Stream;
+class BitStream;
 class DecalData;
 
 
@@ -107,10 +107,10 @@ class DecalDataFile
       /// @{
 
       /// Write the decal data to the given stream.
-      bool write( Stream& stream );
+      bool write(BitStream& stream);
 
       /// Read the decal data from the given stream.
-      bool read( Stream& stream );
+      bool read(BitStream& stream);
 
       /// @}
 

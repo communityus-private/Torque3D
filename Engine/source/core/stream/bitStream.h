@@ -82,7 +82,7 @@ public:
    //
    S32 getBitPosition() const { return getCurPos(); }
    void clearStringBuffer();
-
+   BitStream(){};
    BitStream(void *bufPtr, S32 bufSize, S32 maxWriteSize = -1) { setBuffer(bufPtr, bufSize,maxWriteSize); stringBuffer = NULL; }
    void clear();
 

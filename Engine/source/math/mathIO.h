@@ -33,234 +33,236 @@
 #ifndef _MMATH_H_
 #include "math/mMath.h"
 #endif
+#ifndef _BITSTREAM_H_
+#include "core/stream/bitStream.h"
+#endif
 
-
+#define MATH_PRECISION 32
 //------------------------------------------------------------------------------
 //-------------------------------------- READING
 //
-inline bool mathRead(Stream& stream, Point2I* p)
+inline bool mathRead(BitStream& stream, Point2I* p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&p->x);
-   success     &= stream.read(&p->y);
-   return success;
+   p->x = stream.readSignedInt(bitCount);
+   p->y = stream.readSignedInt(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, Point3I* p)
+inline bool mathRead(BitStream& stream, Point3I* p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&p->x);
-   success     &= stream.read(&p->y);
-   success     &= stream.read(&p->z);
-   return success;
+   p->x = stream.readSignedInt(bitCount);
+   p->y = stream.readSignedInt(bitCount);
+   p->z = stream.readSignedInt(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, Point2F* p)
+inline bool mathRead(BitStream& stream, Point2F* p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&p->x);
-   success     &= stream.read(&p->y);
-   return success;
+   p->x = stream.readSignedFloat(bitCount);
+   p->y = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, Point3F* p)
+inline bool mathRead(BitStream& stream, Point3F* p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&p->x);
-   success     &= stream.read(&p->y);
-   success     &= stream.read(&p->z);
-   return success;
+   p->x = stream.readSignedFloat(bitCount);
+   p->y = stream.readSignedFloat(bitCount);
+   p->z = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, Point4F* p)
+inline bool mathRead(BitStream& stream, Point4F* p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&p->x);
-   success     &= stream.read(&p->y);
-   success     &= stream.read(&p->z);
-   success     &= stream.read(&p->w);
-   return success;
+   p->x = stream.readSignedFloat(bitCount);
+   p->y = stream.readSignedFloat(bitCount);
+   p->z = stream.readSignedFloat(bitCount);
+   p->w = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, Point3D* p)
+inline bool mathRead(BitStream& stream, Point3D* p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&p->x);
-   success     &= stream.read(&p->y);
-   success     &= stream.read(&p->z);
-   return success;
+   p->x = stream.readSignedFloat(bitCount);
+   p->y = stream.readSignedFloat(bitCount);
+   p->z = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, PlaneF* p)
+inline bool mathRead(BitStream& stream, PlaneF* p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&p->x);
-   success     &= stream.read(&p->y);
-   success     &= stream.read(&p->z);
-   success     &= stream.read(&p->d);
-   return success;
+   p->x = stream.readSignedFloat(bitCount);
+   p->y = stream.readSignedFloat(bitCount);
+   p->z = stream.readSignedFloat(bitCount);
+   p->d = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, Box3F* b)
+inline bool mathRead(BitStream& stream, Box3F* b, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathRead(stream, &b->minExtents);
-   success     &= mathRead(stream, &b->maxExtents);
-   return success;
+   mathRead(stream, &b->minExtents, bitCount);
+   mathRead(stream, &b->maxExtents, bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, SphereF* s)
+inline bool mathRead(BitStream& stream, SphereF* s, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathRead(stream, &s->center);
-   success     &= stream.read(&s->radius);
-   return success;
+   mathRead(stream, &s->center, bitCount);
+   s->radius = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, RectI* r)
+inline bool mathRead(BitStream& stream, RectI* r, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathRead(stream, &r->point);
-   success     &= mathRead(stream, &r->extent);
-   return success;
+   mathRead(stream, &r->point, bitCount);
+   mathRead(stream, &r->extent, bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, RectF* r)
+inline bool mathRead(BitStream& stream, RectF* r, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathRead(stream, &r->point);
-   success     &= mathRead(stream, &r->extent);
-   return success;
+   mathRead(stream, &r->point, bitCount);
+   mathRead(stream, &r->extent, bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, MatrixF* m)
+inline bool mathRead(BitStream& stream, MatrixF* m, S32 bitCount = MATH_PRECISION)
 {
-   bool success = true;
    F32* pm    = *m;
    for (U32 i = 0; i < 16; i++)
-      success &= stream.read(&pm[i]);
-   return success;
+      pm[i] = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, QuatF* q)
+inline bool mathRead(BitStream& stream, QuatF* q, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read(&q->x);
-   success     &= stream.read(&q->y);
-   success     &= stream.read(&q->z);
-   success     &= stream.read(&q->w);
-   return success;
+   q->x = stream.readSignedFloat(bitCount);
+   q->y = stream.readSignedFloat(bitCount);
+   q->z = stream.readSignedFloat(bitCount);
+   q->w = stream.readSignedFloat(bitCount);
+   return true;
 }
 
-inline bool mathRead(Stream& stream, EaseF* e)
+inline bool mathRead(BitStream& stream, EaseF* e, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.read( &e->dir );
-   success     &= stream.read( &e->type );
-   success     &= stream.read( &e->param[ 0 ] );
-   success     &= stream.read( &e->param[ 1 ] );
-   return success;
+   e->dir = stream.readSignedInt(bitCount);
+   e->type = stream.readSignedInt(bitCount);
+   e->param[0] = stream.readSignedFloat(bitCount);
+   e->param[1] = stream.readSignedFloat(bitCount);
+   return true;
 }
 
 //------------------------------------------------------------------------------
 //-------------------------------------- WRITING
 //
-inline bool mathWrite(Stream& stream, const Point2I& p)
+inline bool mathWrite(BitStream& stream, const Point2I& p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(p.x);
-   success     &= stream.write(p.y);
-   return success;
+   stream.writeSignedInt(p.x, bitCount);
+   stream.writeSignedInt(p.y, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const Point3I& p)
+inline bool mathWrite(BitStream& stream, const Point3I& p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(p.x);
-   success     &= stream.write(p.y);
-   success     &= stream.write(p.z);
-   return success;
+   stream.writeSignedInt(p.x, bitCount);
+   stream.writeSignedInt(p.y, bitCount);
+   stream.writeSignedInt(p.z, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const Point2F& p)
+inline bool mathWrite(BitStream& stream, const Point2F& p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(p.x);
-   success     &= stream.write(p.y);
-   return success;
+   stream.writeSignedFloat(p.x, bitCount);
+   stream.writeSignedFloat(p.y, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const Point3F& p)
+inline bool mathWrite(BitStream& stream, const Point3F& p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(p.x);
-   success     &= stream.write(p.y);
-   success     &= stream.write(p.z);
-   return success;
+   stream.writeSignedFloat(p.x, bitCount);
+   stream.writeSignedFloat(p.y, bitCount);
+   stream.writeSignedFloat(p.z, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const Point4F& p)
+inline bool mathWrite(BitStream& stream, const Point4F& p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(p.x);
-   success     &= stream.write(p.y);
-   success     &= stream.write(p.z);
-   success     &= stream.write(p.w);
-   return success;
+   stream.writeSignedFloat(p.x, bitCount);
+   stream.writeSignedFloat(p.y, bitCount);
+   stream.writeSignedFloat(p.z, bitCount);
+   stream.writeSignedFloat(p.w, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const Point3D& p)
+inline bool mathWrite(BitStream& stream, const Point3D& p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(p.x);
-   success     &= stream.write(p.y);
-   success     &= stream.write(p.z);
-   return success;
+   stream.writeSignedFloat(p.x, bitCount);
+   stream.writeSignedFloat(p.y, bitCount);
+   stream.writeSignedFloat(p.z, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const PlaneF& p)
+inline bool mathWrite(BitStream& stream, const PlaneF& p, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(p.x);
-   success     &= stream.write(p.y);
-   success     &= stream.write(p.z);
-   success     &= stream.write(p.d);
-   return success;
+   stream.writeSignedFloat(p.x, bitCount);
+   stream.writeSignedFloat(p.y, bitCount);
+   stream.writeSignedFloat(p.z, bitCount);
+   stream.writeSignedFloat(p.d, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const Box3F& b)
+inline bool mathWrite(BitStream& stream, const Box3F& b, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathWrite(stream, b.minExtents);
-   success     &= mathWrite(stream, b.maxExtents);
-   return success;
+   mathWrite(stream, b.minExtents, bitCount);
+   mathWrite(stream, b.maxExtents, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const SphereF& s)
+inline bool mathWrite(BitStream& stream, const SphereF& s, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathWrite(stream, s.center);
-   success     &= stream.write(s.radius);
-   return success;
+   mathWrite(stream, s.center, bitCount);
+   stream.writeSignedFloat(s.radius, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const RectI& r)
+inline bool mathWrite(BitStream& stream, const RectI& r, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathWrite(stream, r.point);
-   success     &= mathWrite(stream, r.extent);
-   return success;
+   mathWrite(stream, r.point, bitCount);
+   mathWrite(stream, r.extent, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const RectF& r)
+inline bool mathWrite(BitStream& stream, const RectF& r, S32 bitCount = MATH_PRECISION)
 {
-   bool success = mathWrite(stream, r.point);
-   success     &= mathWrite(stream, r.extent);
-   return success;
+   mathWrite(stream, r.point, bitCount);
+   mathWrite(stream, r.extent, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const MatrixF& m)
+inline bool mathWrite(BitStream& stream, const MatrixF& m, S32 bitCount = MATH_PRECISION)
 {
    bool success    = true;
    const F32* pm = m;
    for (U32 i = 0; i < 16; i++)
-      success &= stream.write(pm[i]);
-   return success;
+      stream.writeSignedFloat(pm[i], bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const QuatF& q)
+inline bool mathWrite(BitStream& stream, const QuatF& q, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(q.x);
-   success     &= stream.write(q.y);
-   success     &= stream.write(q.z);
-   success     &= stream.write(q.w);
-   return success;
+   stream.writeSignedFloat(q.x, bitCount);
+   stream.writeSignedFloat(q.y, bitCount);
+   stream.writeSignedFloat(q.z, bitCount);
+   stream.writeSignedFloat(q.w, bitCount);
+   return true;
 }
 
-inline bool mathWrite(Stream& stream, const EaseF& e)
+inline bool mathWrite(BitStream& stream, const EaseF& e, S32 bitCount = MATH_PRECISION)
 {
-   bool success = stream.write(e.dir);
-   success     &= stream.write(e.type);
-   success     &= stream.write(e.param[0]);
-   success     &= stream.write(e.param[1]);
-   return success;
+   stream.writeSignedInt(e.dir, bitCount);
+   stream.writeSignedInt(e.type, bitCount);
+   stream.writeSignedFloat(e.param[0], bitCount);
+   stream.writeSignedFloat(e.param[1], bitCount);
+   return true;
 }
 
 #endif //_MATHIO_H_

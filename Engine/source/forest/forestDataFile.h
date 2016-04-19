@@ -92,7 +92,7 @@ class ForestData
       void regenCells();
 
       ///
-      bool read( Stream &stream );
+      bool read(BitStream &stream);
 
       ///
       bool write( const char *path );

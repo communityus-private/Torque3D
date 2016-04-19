@@ -88,7 +88,7 @@ void DecalDataFile::clear()
 
 //-----------------------------------------------------------------------------
 
-bool DecalDataFile::write( Stream& stream )
+bool DecalDataFile::write(BitStream& stream)
 {
    // Write our identifier... so we have a better
    // idea if we're reading pure garbage.
@@ -151,7 +151,7 @@ bool DecalDataFile::write( Stream& stream )
 
 //-----------------------------------------------------------------------------
 
-bool DecalDataFile::read( Stream &stream )
+bool DecalDataFile::read(BitStream &stream)
 {
    // NOTE: we are shortcutting by just saving out the DecalInst and 
    // using regular addDecal methods to add them, which will end up

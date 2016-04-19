@@ -83,7 +83,7 @@ void ForestData::clear()
    mIsDirty = true;
 }
 
-bool ForestData::read( Stream &stream )
+bool ForestData::read(BitStream &stream)
 {
    // Read our identifier... so we know we're 
    // not reading in pure garbage.
