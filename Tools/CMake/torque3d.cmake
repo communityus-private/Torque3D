@@ -140,11 +140,6 @@ if(WIN32)
     # warning C4244: 'initializing' : conversion from 'XXX' to 'XXX', possible loss of data
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd4244")
 
-    if( TORQUE_CPU_X64 )
-        link_directories($ENV{DXSDK_DIR}/Lib/x64)
-    else()
-        link_directories($ENV{DXSDK_DIR}/Lib/x86)
-    endif()
 endif()
 
 # build types
@@ -510,13 +505,7 @@ if(WIN32)
    if(TORQUE_OPENGL)
       addLib(OpenGL32.lib)
    endif()
-		
-   # JTH: DXSDK is compiled with older runtime, and MSVC 2015+ is when __vsnprintf is undefined.
-   # This is a workaround by linking with the older legacy library functions.
-   # See this for more info: http://stackoverflow.com/a/34230122
-   if (MSVC14)
-      addLib(legacy_stdio_definitions.lib)
-   endif()
+
 endif()
 
 if(UNIX)
