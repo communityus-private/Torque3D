@@ -139,7 +139,7 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
    }
    else
    {
-		UINT numQualityLevels = 0;
+		U32 numQualityLevels = 0;
 
 		switch (antialiasLevel)
 		{
@@ -151,7 +151,6 @@ void GFXD3D11TextureManager::_innerCreateTexture( GFXD3D11TextureObject *retTex,
 			default:
 			{
 				antialiasLevel = 0;
-				UINT numQualityLevels;
 				D3D11DEVICE->CheckMultisampleQualityLevels(d3dTextureFormat, antialiasLevel, &numQualityLevels);
 				AssertFatal(numQualityLevels, "Invalid AA level!");
 				break;

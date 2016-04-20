@@ -45,12 +45,131 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
 
+class GFXPCD3D11RegisterDevice
+{
+public:
+   GFXPCD3D11RegisterDevice()
+   {
+      GFXInit::getRegisterDeviceSignal().notify(&GFXD3D11Device::enumerateAdapters);
+   }
+};
+
+static GFXPCD3D11RegisterDevice pPCD3D11RegisterDevice;
+
+//-----------------------------------------------------------------------------
+/// Parse command line arguments for window creation
+//-----------------------------------------------------------------------------
+static void sgPCD3D11DeviceHandleCommandLine(S32 argc, const char **argv)
+{
+   // useful to pass parameters by command line for d3d (e.g. -dx9 -dx11)
+   for (U32 i = 1; i < argc; i++)
+   {
+      argv[i];
+   }
+}
+
+// Register the command line parsing hook
+static ProcessRegisterCommandLine sgCommandLine(sgPCD3D11DeviceHandleCommandLine);
+
 GFXAdapter::CreateDeviceInstanceDelegate GFXD3D11Device::mCreateDeviceInstance(GFXD3D11Device::createInstance);
 
 GFXDevice *GFXD3D11Device::createInstance(U32 adapterIndex)
 {
    GFXD3D11Device* dev = new GFXD3D11Device(adapterIndex);
    return dev;
+}
+
+GFXD3D11Device::GFXD3D11Device(U32 index)
+{
+   mDeviceSwizzle32 = &Swizzles::bgra;
+   GFXVertexColor::setSwizzle(mDeviceSwizzle32);
+
+   mDeviceSwizzle24 = &Swizzles::bgr;
+
+   mAdapterIndex = index;
+   mD3DDevice = NULL;
+   mD3DDeviceContext = NULL;
+   mVolatileVB = NULL;
+
+   mCurrentPB = NULL;
+   mDynamicPB = NULL;
+
+   mLastVertShader = NULL;
+   mLastPixShader = NULL;
+
+   mCanCurrentlyRender = false;
+   mTextureManager = NULL;
+   mCurrentStateBlock = NULL;
+   mResourceListHead = NULL;
+
+   mPixVersion = 0.0;
+
+   mDrawInstancesCount = 0;
+
+   mCardProfiler = NULL;
+
+   mDeviceDepthStencil = NULL;
+   mDeviceBackbuffer = NULL;
+   mDeviceBackBufferView = NULL;
+   mDeviceDepthStencilView = NULL;
+
+   mCreateFenceType = -1; // Unknown, test on first allocate
+
+   mCurrentConstBuffer = NULL;
+
+   mOcclusionQuerySupported = false;
+
+   mDebugLayers = false;
+
+   for (U32 i = 0; i < GS_COUNT; ++i)
+      mModelViewProjSC[i] = NULL;
+
+   // Set up the Enum translation tables
+   GFXD3D11EnumTranslate::init();
+}
+
+GFXD3D11Device::~GFXD3D11Device()
+{
+   // Release our refcount on the current stateblock object
+   mCurrentStateBlock = NULL;
+
+   releaseDefaultPoolResources();
+
+   mD3DDeviceContext->ClearState();
+   mD3DDeviceContext->Flush();
+
+   // Free the vertex declarations.
+   VertexDeclMap::Iterator iter = mVertexDecls.begin();
+   for (; iter != mVertexDecls.end(); iter++)
+      delete iter->value;
+
+   // Forcibly clean up the pools
+   mVolatileVBList.setSize(0);
+   mDynamicPB = NULL;
+
+   // And release our D3D resources.
+   SAFE_RELEASE(mDeviceDepthStencilView);
+   SAFE_RELEASE(mDeviceBackBufferView);
+   SAFE_RELEASE(mDeviceDepthStencil);
+   SAFE_RELEASE(mDeviceBackbuffer);
+   SAFE_RELEASE(mD3DDeviceContext);
+
+   SAFE_DELETE(mCardProfiler);
+   SAFE_DELETE(gScreenShot);
+
+#ifdef TORQUE_DEBUG
+   if (mDebugLayers)
+   {
+      ID3D11Debug *pDebug = NULL;
+      mD3DDevice->QueryInterface(IID_PPV_ARGS(&pDebug));
+      AssertFatal(pDebug, "~GFXD3D11Device- Failed to get debug layer");
+      pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+      SAFE_RELEASE(pDebug);
+   }
+#endif
+
+   SAFE_RELEASE(mSwapChain);
+   SAFE_RELEASE(mD3DDevice);
 }
 
 GFXFormat GFXD3D11Device::selectSupportedFormat(GFXTextureProfile *profile, const Vector<GFXFormat> &formats, bool texture, bool mustblend, bool mustfilter)
@@ -258,11 +377,6 @@ void GFXD3D11Device::enumerateVideoModes()
    SAFE_RELEASE(DXGIFactory);
 }
 
-IDXGISwapChain* GFXD3D11Device::getSwapChain()
-{
-	return mSwapChain;
-}
-
 void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 {
    AssertFatal(window, "GFXD3D11Device::init - must specify a window!");
@@ -298,7 +412,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
       #ifdef TORQUE_DEBUG
       //try again without debug device layer enabled
       createDeviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
-      HRESULT hres = D3D11CreateDeviceAndSwapChain(NULL, driverType,NULL,createDeviceFlags,NULL, 0,
+      hres = D3D11CreateDeviceAndSwapChain(NULL, driverType,NULL,createDeviceFlags,NULL, 0,
          D3D11_SDK_VERSION,
          &d3dpp,
          &mSwapChain,
@@ -614,124 +728,6 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 
 	// Mark everything dirty and flush to card, for sanity.
 	updateStates(true);
-}
-
-class GFXPCD3D11RegisterDevice
-{
-public:
-   GFXPCD3D11RegisterDevice()
-   {
-      GFXInit::getRegisterDeviceSignal().notify(&GFXD3D11Device::enumerateAdapters);
-   }
-};
-
-static GFXPCD3D11RegisterDevice pPCD3D11RegisterDevice;
-
-//-----------------------------------------------------------------------------
-/// Parse command line arguments for window creation
-//-----------------------------------------------------------------------------
-static void sgPCD3D11DeviceHandleCommandLine(S32 argc, const char **argv)
-{
-   // useful to pass parameters by command line for d3d (e.g. -dx9 -dx11)
-   for (U32 i = 1; i < argc; i++)
-   {
-      argv[i];
-   }   
-}
-
-// Register the command line parsing hook
-static ProcessRegisterCommandLine sgCommandLine( sgPCD3D11DeviceHandleCommandLine );
-
-GFXD3D11Device::GFXD3D11Device(U32 index)
-{
-   mDeviceSwizzle32 = &Swizzles::bgra;
-   GFXVertexColor::setSwizzle( mDeviceSwizzle32 );
-
-   mDeviceSwizzle24 = &Swizzles::bgr;
-
-   mAdapterIndex = index;
-   mD3DDevice = NULL;
-   mVolatileVB = NULL;
-
-   mCurrentPB = NULL;
-   mDynamicPB = NULL;
-
-   mLastVertShader = NULL;
-   mLastPixShader = NULL;
-
-   mCanCurrentlyRender = false;
-   mTextureManager = NULL;
-   mCurrentStateBlock = NULL;
-   mResourceListHead = NULL;
-
-   mPixVersion = 0.0;
-
-   mDrawInstancesCount = 0;
-
-   mCardProfiler = NULL;
-
-   mDeviceDepthStencil = NULL;
-   mDeviceBackbuffer = NULL;
-   mDeviceBackBufferView = NULL;
-   mDeviceDepthStencilView = NULL;
-
-   mCreateFenceType = -1; // Unknown, test on first allocate
-
-   mCurrentConstBuffer = NULL;
-
-   mOcclusionQuerySupported = false;
-
-   mDebugLayers = false;
-
-   for(U32 i = 0; i < GS_COUNT; ++i)
-      mModelViewProjSC[i] = NULL;
-
-   // Set up the Enum translation tables
-   GFXD3D11EnumTranslate::init();
-}
-
-GFXD3D11Device::~GFXD3D11Device() 
-{
-   // Release our refcount on the current stateblock object
-   mCurrentStateBlock = NULL;
-
-   releaseDefaultPoolResources();
-
-   mD3DDeviceContext->ClearState();
-   mD3DDeviceContext->Flush();
-
-   // Free the vertex declarations.
-   VertexDeclMap::Iterator iter = mVertexDecls.begin();
-   for ( ; iter != mVertexDecls.end(); iter++ )
-      delete iter->value;
-
-   // Forcibly clean up the pools
-   mVolatileVBList.setSize(0);
-   mDynamicPB = NULL;
-
-   // And release our D3D resources.
-   SAFE_RELEASE(mDeviceDepthStencilView);
-   SAFE_RELEASE(mDeviceBackBufferView);
-   SAFE_RELEASE(mDeviceDepthStencil);
-   SAFE_RELEASE(mDeviceBackbuffer);
-   SAFE_RELEASE(mD3DDeviceContext);
-
-   SAFE_DELETE(mCardProfiler);
-   SAFE_DELETE(gScreenShot);
-
-#ifdef TORQUE_DEBUG
-   if (mDebugLayers)
-   {
-      ID3D11Debug *pDebug = NULL;
-      mD3DDevice->QueryInterface(IID_PPV_ARGS(&pDebug));
-      AssertFatal(pDebug, "~GFXD3D11Device- Failed to get debug layer");
-      pDebug->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
-      SAFE_RELEASE(pDebug);
-   }
-#endif
-   
-   SAFE_RELEASE(mSwapChain);
-   SAFE_RELEASE(mD3DDevice);
 }
 
 void GFXD3D11Device::setupGenericShaders(GenericShaderType type)

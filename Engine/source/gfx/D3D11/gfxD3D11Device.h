@@ -141,8 +141,7 @@ protected:
 
    virtual GFXD3D11VertexBuffer* findVBPool( const GFXVertexFormat *vertexFormat, U32 numVertsNeeded );
    virtual GFXD3D11VertexBuffer* createVBPool( const GFXVertexFormat *vertexFormat, U32 vertSize );
-
-   IDXGISwapChain* getSwapChain();
+   
    // State overrides
    // {
 
@@ -234,10 +233,7 @@ public:
    virtual void setClipRect( const RectI &rect );
    virtual const RectI& getClipRect() const { return mClipRect; }
 
-   // }
-
-
-   
+   // }   
    /// @name Render Targets
    /// @{
    virtual void _updateRenderTargets();
@@ -275,6 +271,7 @@ public:
 
    ID3D11DeviceContext* getDeviceContext(){ return mD3DDeviceContext; }
    ID3D11Device* getDevice(){ return mD3DDevice; }
+   IDXGISwapChain* getSwapChain() { return mSwapChain; }
 
    /// Reset
    void reset( DXGI_SWAP_CHAIN_DESC &d3dpp );

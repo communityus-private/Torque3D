@@ -609,7 +609,6 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    ZeroMemory(&pConstData, sizeof(D3D11_MAPPED_SUBRESOURCE));
    
    const U8* buf;
-   HRESULT hr;
    U32 nbBuffers = 0;
    if(mVertexConstBuffer->isDirty())
    {
@@ -1002,20 +1001,20 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
 
    return result;
 }
-void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table, 
+void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *refTable,
                                          GenericConstBufferLayout *bufferLayoutIn,
                                          Vector<GFXShaderConstDesc> &samplerDescriptions )
 {
    PROFILE_SCOPE( GFXD3D11Shader_GetShaderConstants );
 
-   AssertFatal(table, "NULL constant table not allowed, is this an assembly shader?");
+   AssertFatal(refTable, "NULL constant table not allowed, is this an assembly shader?");
 
    GFXD3D11ConstBufferLayout *bufferLayout = (GFXD3D11ConstBufferLayout*)bufferLayoutIn;
    Vector<ConstSubBufferDesc> &subBuffers = bufferLayout->getSubBufferDesc();
    subBuffers.clear();
 
    D3D11_SHADER_DESC tableDesc;
-   HRESULT hr = table->GetDesc(&tableDesc);
+   HRESULT hr = refTable->GetDesc(&tableDesc);
    if (FAILED(hr))
    {
 	   AssertFatal(false, "Shader Reflection table unable to be created");
@@ -1025,7 +1024,7 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
    U32 bufferOffset = 0;
    for (U32 i = 0; i < tableDesc.ConstantBuffers; i++)
    {
-	   ID3D11ShaderReflectionConstantBuffer* constantBuffer = table->GetConstantBufferByIndex(i);
+	   ID3D11ShaderReflectionConstantBuffer* constantBuffer = refTable->GetConstantBufferByIndex(i);
 	   D3D11_SHADER_BUFFER_DESC constantBufferDesc;
 
       if (constantBuffer->GetDesc(&constantBufferDesc) == S_OK)
@@ -1110,7 +1109,7 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
    {
       GFXShaderConstDesc desc;
       D3D11_SHADER_INPUT_BIND_DESC bindDesc;
-      table->GetResourceBindingDesc(i, &bindDesc);
+      refTable->GetResourceBindingDesc(i, &bindDesc);
 
       switch (bindDesc.Type)
       {
