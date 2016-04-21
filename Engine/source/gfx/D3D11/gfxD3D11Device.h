@@ -137,6 +137,7 @@ protected:
    DXGI_SAMPLE_DESC mMultisampleDesc;
 
    bool mOcclusionQuerySupported;
+   bool mCbufferPartialSupported;
 
    U32 mDrawInstancesCount;   
 

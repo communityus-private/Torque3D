@@ -121,6 +121,7 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
    mCurrentConstBuffer = NULL;
 
    mOcclusionQuerySupported = false;
+   mCbufferPartialSupported = false;
 
    mDebugLayers = false;
 
@@ -448,7 +449,17 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
       mD3DDeviceContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(&mD3DDeviceContext1));
       // ID3DUserDefinedAnnotation
       mD3DDeviceContext->QueryInterface(IID_PPV_ARGS(&mUserAnnotation));
+      //Check what is supported, windows 7 supports very little from 11.1
+      D3D11_FEATURE_DATA_D3D11_OPTIONS options;
+      mD3DDevice1->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options,
+         sizeof(D3D11_FEATURE_DATA_D3D11_OPTIONS));
+
+      //Cbuffer partial updates
+      if (options.ConstantBufferOffsetting && options.ConstantBufferPartialUpdate)
+         mCbufferPartialSupported = true;
    }
+
+
 
    //set the fullscreen state here if we need to
    if(mode.fullScreen)
