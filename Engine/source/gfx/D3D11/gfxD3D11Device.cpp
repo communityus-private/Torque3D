@@ -89,6 +89,9 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
    mAdapterIndex = index;
    mD3DDevice = NULL;
    mD3DDeviceContext = NULL;
+   mD3DDevice1 = NULL;
+   mD3DDeviceContext1 = NULL;
+   mUserAnnotation = NULL;
    mVolatileVB = NULL;
 
    mCurrentPB = NULL;
@@ -152,6 +155,8 @@ GFXD3D11Device::~GFXD3D11Device()
    SAFE_RELEASE(mDeviceBackBufferView);
    SAFE_RELEASE(mDeviceDepthStencil);
    SAFE_RELEASE(mDeviceBackbuffer);
+   SAFE_RELEASE(mUserAnnotation);
+   SAFE_RELEASE(mD3DDeviceContext1);
    SAFE_RELEASE(mD3DDeviceContext);
 
    SAFE_DELETE(mCardProfiler);
@@ -169,6 +174,7 @@ GFXD3D11Device::~GFXD3D11Device()
 #endif
 
    SAFE_RELEASE(mSwapChain);
+   SAFE_RELEASE(mD3DDevice1);
    SAFE_RELEASE(mD3DDevice);
 }
 
@@ -392,14 +398,17 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    DXGI_SWAP_CHAIN_DESC d3dpp = setupPresentParams(mode, winHwnd);
 
    D3D_FEATURE_LEVEL deviceFeature;
+   // TODO support at least feature level 10 to match GL
+   D3D_FEATURE_LEVEL pFeatureLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
+   U32 nFeatureCount = ARRAYSIZE(pFeatureLevels);
    D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;// use D3D_DRIVER_TYPE_REFERENCE for reference device
    // create a device, device context and swap chain using the information in the d3dpp struct
    HRESULT hres = D3D11CreateDeviceAndSwapChain(NULL,
                                  driverType,
 											NULL,
 											createDeviceFlags,
-											NULL,
-											0,
+											pFeatureLevels,
+                                 nFeatureCount,
 											D3D11_SDK_VERSION,
 											&d3dpp,
 											&mSwapChain,
@@ -407,6 +416,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 											&deviceFeature,
 											&mD3DDeviceContext);
 
+   
 	if(FAILED(hres))
 	{
       #ifdef TORQUE_DEBUG
@@ -430,6 +440,16 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
       #endif
 	}
 
+   // Grab DX 11.1 device and context if available and also ID3DUserDefinedAnnotation
+   hres = mD3DDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(&mD3DDevice1));
+   if (SUCCEEDED(hres))
+   {
+      //11.1 context
+      mD3DDeviceContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(&mD3DDeviceContext1));
+      // ID3DUserDefinedAnnotation
+      mD3DDeviceContext->QueryInterface(IID_PPV_ARGS(&mUserAnnotation));
+   }
+
    //set the fullscreen state here if we need to
    if(mode.fullScreen)
    {
@@ -444,7 +464,6 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 
 	// Now reacquire all the resources we trashed earlier
 	reacquireDefaultPoolResources();
-   //TODO implement feature levels?
 	if (deviceFeature >= D3D_FEATURE_LEVEL_11_0)
 		mPixVersion = 5.0f;
 	else
@@ -1714,4 +1733,34 @@ GFXCubemap * GFXD3D11Device::createCubemap()
    GFXD3D11Cubemap* cube = new GFXD3D11Cubemap();
    cube->registerResourceWithDevice(this);
    return cube;
+}
+
+// Debug events
+//------------------------------------------------------------------------------
+void GFXD3D11Device::enterDebugEvent(ColorI color, const char *name)
+{
+   if (mUserAnnotation)
+   {
+      WCHAR  eventName[260];
+      MultiByteToWideChar(CP_ACP, 0, name, -1, eventName, 260);
+      mUserAnnotation->BeginEvent(eventName);
+   }
+}
+
+//------------------------------------------------------------------------------
+void GFXD3D11Device::leaveDebugEvent()
+{
+   if (mUserAnnotation)
+      mUserAnnotation->EndEvent();
+}
+
+//------------------------------------------------------------------------------
+void GFXD3D11Device::setDebugMarker(ColorI color, const char *name)
+{
+   if (mUserAnnotation)
+   {
+      WCHAR  eventName[260];
+      MultiByteToWideChar(CP_ACP, 0, name, -1, eventName, 260);
+      mUserAnnotation->SetMarker(eventName);
+   }
 }
