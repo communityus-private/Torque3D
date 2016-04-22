@@ -165,6 +165,9 @@ Material::Material()
 
       // Deferred Shading
       mMatInfoFlags[i] = 0.0f;
+
+      // Diffuse sRGB
+      mDiffuseMapSRGB[i] = false;
    }
 
    dMemset(mCellIndex, 0, sizeof(mCellIndex));
@@ -225,6 +228,9 @@ void Material::initPersistFields()
 
       addField("diffuseMap", TypeImageFilename, Offset(mDiffuseMapFilename, Material), MAX_STAGES,
          "The diffuse color texture map." );
+
+      addField("diffuseMapSRGB", TypeBool, Offset(mDiffuseMapSRGB, Material), MAX_STAGES,
+         "Enable sRGB for the diffuse color texture map.");
 
       addField("overlayMap", TypeImageFilename, Offset(mOverlayMapFilename, Material), MAX_STAGES,
          "A secondary diffuse color texture map which will use the second texcoord of a mesh." );
