@@ -189,8 +189,13 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureType[GFXFormatDXT3] = GL_UNSIGNED_BYTE;
    GFXGLTextureType[GFXFormatDXT4] = GL_ZERO;
    GFXGLTextureType[GFXFormatDXT5] = GL_UNSIGNED_BYTE;
-
+   // sRGB
    GFXGLTextureType[GFXFormatR8G8B8A8_SRGB] = GL_SRGB8_ALPHA8;
+   GFXGLTextureType[GFXFormatDXT1_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+   GFXGLTextureType[GFXFormatDXT2_SRGB] = GL_ZERO;
+   GFXGLTextureType[GFXFormatDXT3_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+   GFXGLTextureType[GFXFormatDXT4_SRGB] = GL_ZERO;
+   GFXGLTextureType[GFXFormatDXT5_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
 
    static GLint Swizzle_GFXFormatA8[] = { GL_NONE, GL_NONE, GL_NONE, GL_RED };
    static GLint Swizzle_GFXFormatL[] = { GL_RED, GL_RED, GL_RED, GL_ALPHA };

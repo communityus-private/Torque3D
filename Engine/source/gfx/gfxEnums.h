@@ -207,6 +207,11 @@ enum GFXFormat
 
    // sRGB formats
    GFXFormatR8G8B8A8_SRGB,
+   GFXFormatDXT1_SRGB,
+   GFXFormatDXT2_SRGB,
+   GFXFormatDXT3_SRGB,
+   GFXFormatDXT4_SRGB,
+   GFXFormatDXT5_SRGB,
 
    GFXFormat_COUNT,
 
