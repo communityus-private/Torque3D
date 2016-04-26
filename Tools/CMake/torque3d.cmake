@@ -358,7 +358,24 @@ if(TORQUE_SDL)
        else()
          set(ENV{LDFLAGS} "${CXX_FLAG32} ${TORQUE_ADDITIONAL_LINKER_FLAGS}")
        endif()
+
+       find_package(PkgConfig REQUIRED)
+       pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+
+       # Setup CMake to use GTK+, tell the compiler where to look for headers
+       # and to the linker where to look for libraries
+       include_directories(${GTK3_INCLUDE_DIRS})
+       link_directories(${GTK3_LIBRARY_DIRS})
+
+       # Add other flags to the compiler
+       add_definitions(${GTK3_CFLAGS_OTHER})
+
+       #addLib(nativeFileDialogs)
+
+       target_link_libraries(nativeFileDialogs ${GTK3_LIBRARIES})	   
     endif()
+
+    addLib(nativeFileDialogs)
     
     #override and hide SDL2 cache variables
     set(SDL_SHARED ON CACHE INTERNAL "" FORCE)
@@ -626,7 +643,11 @@ endif()
 if(UNIX)
 	addInclude("/usr/include/freetype2/freetype")
 	addInclude("/usr/include/freetype2")
+
+     addInclude("${libDir}/nativeFileDialogs/include")	
 endif()
+
+addInclude("${libDir}/nativeFileDialogs/include")
 
 if(TORQUE_OPENGL)
 	addInclude("${libDir}/glew/include")

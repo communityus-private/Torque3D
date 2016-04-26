@@ -31,11 +31,6 @@
 #include "console/engineAPI.h"
 #include <nfd.h>
 #include "core/strings/stringUnit.h"
-#include "core/frameAllocator.h"
-
-#include "platformWin32/platformWin32.h"
-#include <ShlObj.h>
-#include <WindowsX.h>
 
 //#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
@@ -183,38 +178,47 @@ static const U32 convertUTF16toUTF8DoubleNULL( const UTF16 *unistring, UTF8  *ou
    return nCodeunits;
 }
 
-/*static void forwardslash(char *str)
-{
-   while (*str)
-   {
-      if (*str == '\\')
-         *str = '/';
-      str++;
-   }
-}*/
-
 //
 // Execute Method
 //
 bool FileDialog::Execute()
 {
+#ifdef UNICODE
+   UTF16 pszFile[MAX_PATH];
+   UTF16 pszInitialDir[MAX_PATH];
+   UTF16 pszTitle[MAX_PATH];
+   UTF16 pszFilter[1024];
+   UTF16 pszFileTitle[MAX_PATH];
+   UTF16 pszDefaultExtension[MAX_PATH];
+   // Convert parameters to UTF16*'s
+   convertUTF8toUTF16((UTF8 *)mData.mDefaultFile, pszFile);
+   convertUTF8toUTF16((UTF8 *)mData.mDefaultPath, pszInitialDir);
+   convertUTF8toUTF16((UTF8 *)mData.mTitle, pszTitle);
+   convertUTF8toUTF16((UTF8 *)mData.mFilters, pszFilter);
+#else
+   // Not Unicode, All char*'s!
+   char pszFile[MAX_PATH];
+   char pszFilter[1024];
+   char pszFileTitle[MAX_PATH];
+   dStrcpy( pszFile, mData.mDefaultFile );
+   dStrcpy( pszFilter, mData.mFilters );
+   const char* pszInitialDir = mData.mDefaultPath;
+   const char* pszTitle = mData.mTitle;
+
+#endif
+
+   pszFileTitle[0] = 0;
+
    String strippedFilters;
 
-   U32 filtersCount = StringUnit::getUnitCount(mData.mFilters, "|\n");
+   S32 filtersCount = StringUnit::getUnitCount(pszFilter, "|");
 
    for( U32 i = 1; i < filtersCount; ++i )
    {
       //The first of each pair is the name, which we'll skip because NFD doesn't support named filters atm
-      const char* filter = StringUnit::getUnit(mData.mFilters, i, "|\n");
+      const char* filter = StringUnit::getUnit(mData.mFilters, i, -1, "|");
 
-      if (!dStrcmp(filter, "*.*"))
-         continue;
-
-      U32 c = 2;
-      const char* tmpchr = &filter[c];
-      strippedFilters += String(tmpchr);
-
-      strippedFilters += String(";");
+      strippedFilters += filter + ";";
 
       ++i;
    }
@@ -225,49 +229,87 @@ bool FileDialog::Execute()
 
    // Execute Dialog (Blocking Call)
    nfdchar_t *outPath = NULL;
-   nfdpathset_t pathSet;
 
    nfdresult_t result;
-
    if( mData.mStyle & FileDialogData::FDS_OPEN )
-      result = NFD_OpenDialog( strippedFilters, /*mData.mDefaultPath*/NULL, &outPath );
+      result = NFD_OpenDialog( strippedFilters, pszInitialDir, &outPath );
    else if( mData.mStyle & FileDialogData::FDS_SAVE )
-      result = NFD_SaveDialog(strippedFilters, /*mData.mDefaultPath*/NULL, &outPath);
-   else if (mData.mStyle & FileDialogData::FDS_MULTIPLEFILES)
-      result = NFD_OpenDialogMultiple(strippedFilters, /*mData.mDefaultPath*/NULL, &pathSet);
+      result = NFD_OpenDialog( strippedFilters, pszInitialDir, &outPath );
+
+   if ( result == NFD_OKAY )
+   {
+        Con::printf("Success!");
+        Con::printf("Fetched file: %s", outPath);
+   }
+   else if ( result == NFD_CANCEL )
+   {
+        Con::printf("Canceled!");
+   }
+   else
+   {
+        Con::printf("Error! %s", NFD_GetError());
+   }
 
    // Did we select a file?
-   if( result != NFD_OKAY )
+   /*if( result != NFD_OKAY )
       return false;
 
+   // Handle Result Properly for Unicode as well as ANSI
+#ifdef UNICODE
+   if(pszFileTitle[0] || ! ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES ))
+      convertUTF16toUTF8( (UTF16*)pszFile, pszResult);
+   else
+      convertUTF16toUTF8DoubleNULL( (UTF16*)pszFile, (UTF8*)pszResult, sizeof(pszResult));
+#else
+   if(pszFileTitle[0] || ! ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES ))
+      dStrcpy(pszResult,pszFile);
+   else
+   {
+      // [tom, 1/4/2007] pszResult is a double-NULL terminated, NULL separated list in this case so we can't just dSstrcpy()
+      char *sptr = pszFile, *dptr = pszResult;
+      while(! (*sptr == 0 && *(sptr+1) == 0))
+         *dptr++ = *sptr++;
+      *dptr++ = 0;
+   }
+#endif
+
+   forwardslash(pszResult);
+
+   // [tom, 1/5/2007] Windows is ridiculously dumb. If you select a single file in a multiple
+   // select file dialog then it will return the file the same way as it would in a single
+   // select dialog. The only difference is pszFileTitle is empty if multiple files
+   // are selected.
+
    // Store the result on our object
-   if (mData.mStyle & FileDialogData::FDS_OPEN || mData.mStyle & FileDialogData::FDS_SAVE)
+   if( mData.mStyle & FileDialogData::FDS_BROWSEFOLDER || ( pszFileTitle[0] && ! ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES )))
    {
       // Single file selection, do it the easy way
-      mData.mFile = StringTable->insert(outPath);
+      mData.mFile = StringTable->insert( pszResult );
    }
-   else if (mData.mStyle & FileDialogData::FDS_MULTIPLEFILES)
+   else if(pszFileTitle[0] && ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES ))
    {
-      //check if we have multiple files actually selected or not
-      U32 fileCount = NFD_PathSet_GetCount(&pathSet);
-      if (fileCount > 1)
-      {
-         //yep, so parse through them and prep our return
-         for (U32 i = 0; i < fileCount; ++i)
-         {
-            nfdchar_t *path = NFD_PathSet_GetPath(&pathSet, i);
-            setDataField(StringTable->insert("files"), Con::getIntArg(i), path);
-         }
-
-         setDataField(StringTable->insert("fileCount"), NULL, Con::getIntArg(fileCount));
-      }
-      else
-      {
-         //nope, just one file, so set it as normal
-         setDataField(StringTable->insert("files"), "0", outPath);
-         setDataField(StringTable->insert("fileCount"), NULL, "1");
-      }
+      // Single file selection in a multiple file selection dialog
+      setDataField(StringTable->insert("files"), "0", pszResult);
+      setDataField(StringTable->insert("fileCount"), NULL, "1");
    }
+   else
+   {
+      // Multiple file selection, break out into an array
+      S32 numFiles = 0;
+      const char *dir = pszResult;
+      const char *file = dir + dStrlen(dir) + 1;
+      char buffer[1024];
+
+      while(*file)
+      {
+         Platform::makeFullPathName(file, buffer, sizeof(buffer), dir);
+         setDataField(StringTable->insert("files"), Con::getIntArg(numFiles++), buffer);
+
+         file = file + dStrlen(file) + 1;
+      }
+
+      setDataField(StringTable->insert("fileCount"), NULL, Con::getIntArg(numFiles));
+   }*/
 
    // Return success.
    return true;
@@ -382,6 +424,7 @@ bool FileDialog::setFilters( void *object, const char *index, const char *data )
 //-----------------------------------------------------------------------------
 bool FileDialog::setDefaultPath( void *object, const char *index, const char *data )
 {
+
    if( !data || !dStrncmp( data, "", 1 ) )
       return true;
 
@@ -390,7 +433,7 @@ bool FileDialog::setDefaultPath( void *object, const char *index, const char *da
    dStrcpy( szPathValidate, data );
 
    Platform::makeFullPathName( data,szPathValidate, sizeof(szPathValidate));
-   //backslash( szPathValidate );
+   backslash( szPathValidate );
 
    // Remove any trailing \'s
    S8 validateLen = dStrlen( szPathValidate );
@@ -424,7 +467,7 @@ bool FileDialog::setDefaultFile( void *object, const char *index, const char *da
    // Copy and Backslash the path (Windows dialogs are VERY picky about this format)
    static char szPathValidate[512];
    Platform::makeFullPathName( data,szPathValidate, sizeof(szPathValidate) );
-   //backslash( szPathValidate );
+   backslash( szPathValidate );
 
    // Remove any trailing \'s
    S8 validateLen = dStrlen( szPathValidate );
@@ -717,4 +760,24 @@ void OpenFolderDialog::initPersistFields()
 
    Parent::initPersistFields();
 }
-//#endif
+
+DefineConsoleFunction(nfdtest, void, (), , "")
+{
+   nfdchar_t *outPath = NULL;
+   nfdresult_t result = NFD_OpenDialog("png,jpg;pdf", Platform::getCurrentDirectory(), &outPath);
+   if (result == NFD_OKAY)
+   {
+      puts("Success!");
+      puts(outPath);
+      free(outPath);
+   }
+   else if (result == NFD_CANCEL)
+   {
+      puts("User pressed cancel.");
+   }
+   else
+   {
+      printf("Error: %s\n", NFD_GetError());
+   }
+}
+#endif

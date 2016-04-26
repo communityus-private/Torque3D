@@ -20,19 +20,44 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "console/simBase.h"
 #include "platform/nativeDialogs/fileDialog.h"
+#include "platform/threads/mutex.h"
+#include "core/util/safeDelete.h"
+#include "math/mMath.h"
+#include "core/strings/unicode.h"
+#include "console/consoleTypes.h"
+#include "platform/profiler.h"
+#include "console/engineAPI.h"
+#include <nfd.h>
+#include "core/strings/stringUnit.h"
 
-#ifdef TORQUE_TOOLS
+//#ifdef TORQUE_TOOLS
 //-----------------------------------------------------------------------------
 // PlatformFileDlgData Implementation
 //-----------------------------------------------------------------------------
 FileDialogData::FileDialogData()
 {
-    AssertFatal(0, "Not Implemented");
-}
+   // Default Path
+   //
+   //  Try to provide consistent experience by recalling the last file path
+   // - else
+   //  Default to Working Directory if last path is not set or is invalid
+   mDefaultPath = StringTable->insert( Con::getVariable("Tools::FileDialogs::LastFilePath") );
+   if( mDefaultPath == StringTable->lookup("") || !Platform::isDirectory( mDefaultPath ) )
+      mDefaultPath = Platform::getCurrentDirectory();
 
+   mDefaultFile = StringTable->insert("");
+   mFilters = StringTable->insert("");
+   mFile = StringTable->insert("");
+   mTitle = StringTable->insert("");
+
+   mStyle = 0;
+
+}
 FileDialogData::~FileDialogData()
 {
+
 }
 
 //-----------------------------------------------------------------------------
@@ -45,12 +70,12 @@ ConsoleDocClass( FileDialog,
 
    "FileDialog is a platform agnostic dialog interface for querying the user for "
    "file locations. It is designed to be used through the exposed scripting interface.\n\n"
-   
+
    "FileDialog is the base class for Native File Dialog controls in Torque. It provides these basic areas of functionality:\n\n"
    "   - Inherits from SimObject and is exposed to the scripting interface\n"
    "   - Provides blocking interface to allow instant return to script execution\n"
    "   - Simple object configuration makes practical use easy and effective\n\n"
-   
+
    "FileDialog is *NOT* intended to be used directly in script and is only exposed to script to expose generic file dialog attributes.\n\n"
 
    "This base class is usable in TorqueScript, but is does not specify what functionality is intended (open or save?). "
@@ -93,7 +118,9 @@ ConsoleDocClass( FileDialog,
 
 FileDialog::FileDialog() : mData()
 {
-    AssertFatal(0, "Not Implemented");
+   // Default to File Must Exist Open Dialog style
+   mData.mStyle = FileDialogData::FDS_OPEN | FileDialogData::FDS_MUSTEXIST;
+   mChangePath = false;
 }
 
 FileDialog::~FileDialog()
@@ -102,7 +129,53 @@ FileDialog::~FileDialog()
 
 void FileDialog::initPersistFields()
 {
-    Parent::initPersistFields();
+   addProtectedField( "defaultPath", TypeString, Offset(mData.mDefaultPath, FileDialog), &setDefaultPath, &defaultProtectedGetFn,
+      "The default directory path when the dialog is shown." );
+
+   addProtectedField( "defaultFile", TypeString, Offset(mData.mDefaultFile, FileDialog), &setDefaultFile, &defaultProtectedGetFn,
+      "The default file path when the dialog is shown." );
+
+   addProtectedField( "fileName", TypeString, Offset(mData.mFile, FileDialog), &setFile, &defaultProtectedGetFn,
+      "The default file name when the dialog is shown." );
+
+   addProtectedField( "filters", TypeString, Offset(mData.mFilters, FileDialog), &setFilters, &defaultProtectedGetFn,
+      "The filter string for limiting the types of files visible in the dialog.  It makes use of the pipe symbol '|' "
+      "as a delimiter.  For example:\n\n"
+      "'All Files|*.*'\n\n"
+      "'Image Files|*.png;*.jpg|Png Files|*.png|Jepg Files|*.jpg'" );
+
+   addField( "title", TypeString, Offset(mData.mTitle, FileDialog),
+      "The title for the dialog." );
+
+   addProtectedField( "changePath", TypeBool, Offset(mChangePath, FileDialog), &setChangePath, &getChangePath,
+      "True/False whether to set the working directory to the directory returned by the dialog." );
+
+   Parent::initPersistFields();
+}
+
+static const U32 convertUTF16toUTF8DoubleNULL( const UTF16 *unistring, UTF8  *outbuffer, U32 len)
+{
+   AssertFatal(len >= 1, "Buffer for unicode conversion must be large enough to hold at least the null terminator.");
+   PROFILE_START(convertUTF16toUTF8DoubleNULL);
+   U32 walked, nCodeunits, codeunitLen;
+   UTF32 middleman;
+
+   nCodeunits=0;
+   while( ! (*unistring == '\0' && *(unistring + 1) == '\0') && nCodeunits + 3 < len )
+   {
+      walked = 1;
+      middleman  = oneUTF16toUTF32(unistring,&walked);
+      codeunitLen = oneUTF32toUTF8(middleman, &outbuffer[nCodeunits]);
+      unistring += walked;
+      nCodeunits += codeunitLen;
+   }
+
+   nCodeunits = getMin(nCodeunits,len - 1);
+   outbuffer[nCodeunits] = '\0';
+   outbuffer[nCodeunits+1] = '\0';
+
+   PROFILE_END();
+   return nCodeunits;
 }
 
 //
@@ -110,7 +183,237 @@ void FileDialog::initPersistFields()
 //
 bool FileDialog::Execute()
 {
-    return false;
+   U32 MAX_PATH = 1024;
+
+   Con::printf("FILE DIALOG EXECUTE");
+
+/*#ifdef UNICODE
+   UTF16 pszFile[MAX_PATH];
+   UTF16 pszInitialDir[MAX_PATH];
+   UTF16 pszTitle[MAX_PATH];
+   UTF16 pszFilter[1024];
+   UTF16 pszFileTitle[MAX_PATH];
+   UTF16 pszDefaultExtension[MAX_PATH];
+   // Convert parameters to UTF16*'s
+   convertUTF8toUTF16((UTF8 *)mData.mDefaultFile, pszFile, dStrlen(mData.mDefaultFile)+1);
+   convertUTF8toUTF16((UTF8 *)mData.mDefaultPath, pszInitialDir, dStrlen(mData.mDefaultPath)+1);
+   convertUTF8toUTF16((UTF8 *)mData.mTitle, pszTitle, dStrlen(mData.mTitle)+1);
+   convertUTF8toUTF16((UTF8 *)mData.mFilters, pszFilter, dStrlen(mData.mFilters)+1);
+#else
+   // Not Unicode, All char*'s!
+   char pszFile[MAX_PATH];
+   char pszFilter[1024];
+   char pszFileTitle[MAX_PATH];
+   dStrcpy( pszFile, mData.mDefaultFile );
+   dStrcpy( pszFilter, mData.mFilters );
+   const char* pszInitialDir = mData.mDefaultPath;
+   const char* pszTitle = mData.mTitle;
+
+//#endif*/
+
+   //pszFileTitle[0] = 0;
+
+   Con::printf("FILE DIALOG EXECUTE: FILTERS: %s", mData.mFilters);
+
+   String strippedFilters;
+
+   Con::printf("PREPARING FILTER SPLITTING STAGE FOR FILE DIALOG EXECUTE");
+
+   U32 filtersCount = StringUnit::getUnitCount(mData.mFilters, "\n");
+
+   Con::printf("FILTER SPLITTING STAGE FOR FILE DIALOG EXECUTE, NUMBER OF FILTERS: %i", filtersCount);
+
+   for( U32 i = 1; i < filtersCount; ++i )
+   {
+      //The first of each pair is the name, which we'll skip because NFD doesn't support named filters atm
+      const char* filter = StringUnit::getUnit(mData.mFilters, i, "|");
+
+      strippedFilters += String(filter) + String(";");
+
+      ++i;
+   }
+
+   // Get the current working directory, so we can back up to it once Windows has
+   // done its craziness and messed with it.
+   StringTableEntry cwd = Platform::getCurrentDirectory();
+
+   // Execute Dialog (Blocking Call)
+   nfdchar_t *outPath = NULL;
+
+   nfdresult_t result;
+   if( mData.mStyle & FileDialogData::FDS_OPEN )
+      result = NFD_OpenDialog( strippedFilters, mData.mDefaultPath, &outPath );
+   else if( mData.mStyle & FileDialogData::FDS_SAVE )
+      result = NFD_OpenDialog( strippedFilters, mData.mDefaultPath, &outPath );
+
+   if ( result == NFD_OKAY )
+   {
+        Con::printf("Success!");
+        Con::printf("Fetched file: %s", outPath);
+   }
+   else if ( result == NFD_CANCEL )
+   {
+        Con::printf("Canceled!");
+   }
+   else
+   {
+        Con::printf("Error! %s", NFD_GetError());
+   }
+
+   // Did we select a file?
+   /*if( result != NFD_OKAY )
+      return false;
+
+   // Handle Result Properly for Unicode as well as ANSI
+#ifdef UNICODE
+   if(pszFileTitle[0] || ! ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES ))
+      convertUTF16toUTF8( (UTF16*)pszFile, pszResult);
+   else
+      convertUTF16toUTF8DoubleNULL( (UTF16*)pszFile, (UTF8*)pszResult, sizeof(pszResult));
+#else
+   if(pszFileTitle[0] || ! ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES ))
+      dStrcpy(pszResult,pszFile);
+   else
+   {
+      // [tom, 1/4/2007] pszResult is a double-NULL terminated, NULL separated list in this case so we can't just dSstrcpy()
+      char *sptr = pszFile, *dptr = pszResult;
+      while(! (*sptr == 0 && *(sptr+1) == 0))
+         *dptr++ = *sptr++;
+      *dptr++ = 0;
+   }
+#endif
+
+   forwardslash(pszResult);
+
+   // [tom, 1/5/2007] Windows is ridiculously dumb. If you select a single file in a multiple
+   // select file dialog then it will return the file the same way as it would in a single
+   // select dialog. The only difference is pszFileTitle is empty if multiple files
+   // are selected.
+
+   // Store the result on our object
+   if( mData.mStyle & FileDialogData::FDS_BROWSEFOLDER || ( pszFileTitle[0] && ! ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES )))
+   {
+      // Single file selection, do it the easy way
+      mData.mFile = StringTable->insert( pszResult );
+   }
+   else if(pszFileTitle[0] && ( mData.mStyle & FileDialogData::FDS_OPEN && mData.mStyle & FileDialogData::FDS_MULTIPLEFILES ))
+   {
+      // Single file selection in a multiple file selection dialog
+      setDataField(StringTable->insert("files"), "0", pszResult);
+      setDataField(StringTable->insert("fileCount"), NULL, "1");
+   }
+   else
+   {
+      // Multiple file selection, break out into an array
+      S32 numFiles = 0;
+      const char *dir = pszResult;
+      const char *file = dir + dStrlen(dir) + 1;
+      char buffer[1024];
+
+      while(*file)
+      {
+         Platform::makeFullPathName(file, buffer, sizeof(buffer), dir);
+         setDataField(StringTable->insert("files"), Con::getIntArg(numFiles++), buffer);
+
+         file = file + dStrlen(file) + 1;
+      }
+
+      setDataField(StringTable->insert("fileCount"), NULL, Con::getIntArg(numFiles));
+   }*/
+
+   // Return success.
+   return true;
+
+}
+
+DefineEngineMethod( FileDialog, Execute, bool, (),,
+   "@brief Launches the OS file browser\n\n"
+
+   "After an Execute() call, the chosen file name and path is available in one of two areas.  "
+   "If only a single file selection is permitted, the results will be stored in the @a fileName "
+   "attribute.\n\n"
+
+   "If multiple file selection is permitted, the results will be stored in the "
+   "@a files array.  The total number of files in the array will be stored in the "
+   "@a fileCount attribute.\n\n"
+
+   "@tsexample\n"
+   "// NOTE: This is not he preferred class to use, but this still works\n\n"
+   "// Create the file dialog\n"
+   "%baseFileDialog = new FileDialog()\n"
+   "{\n"
+   "   // Allow browsing of all file types\n"
+   "   filters = \"*.*\";\n\n"
+   "   // No default file\n"
+   "   defaultFile = "";\n\n"
+   "   // Set default path relative to project\n"
+   "   defaultPath = \"./\";\n\n"
+   "   // Set the title\n"
+   "   title = \"Durpa\";\n\n"
+   "   // Allow changing of path you are browsing\n"
+   "   changePath = true;\n"
+   "};\n\n"
+   " // Launch the file dialog\n"
+   " %baseFileDialog.Execute();\n"
+   " \n"
+   " // Don't forget to cleanup\n"
+   " %baseFileDialog.delete();\n\n\n"
+
+   " // A better alternative is to use the \n"
+   " // derived classes which are specific to file open and save\n\n"
+   " // Create a dialog dedicated to opening files\n"
+   " %openFileDlg = new OpenFileDialog()\n"
+   " {\n"
+   "    // Look for jpg image files\n"
+   "    // First part is the descriptor|second part is the extension\n"
+   "    Filters = \"Jepg Files|*.jpg\";\n"
+   "    // Allow browsing through other folders\n"
+   "    ChangePath = true;\n\n"
+   "    // Only allow opening of one file at a time\n"
+   "    MultipleFiles = false;\n"
+   " };\n\n"
+   " // Launch the open file dialog\n"
+   " %result = %openFileDlg.Execute();\n\n"
+   " // Obtain the chosen file name and path\n"
+   " if ( %result )\n"
+   " {\n"
+   "    %seletedFile = %openFileDlg.file;\n"
+   " }\n"
+   " else\n"
+   " {\n"
+   "    %selectedFile = \"\";\n"
+   " }\n"
+   " // Cleanup\n"
+   " %openFileDlg.delete();\n\n\n"
+
+   " // Create a dialog dedicated to saving a file\n"
+   " %saveFileDlg = new SaveFileDialog()\n"
+   " {\n"
+   "    // Only allow for saving of COLLADA files\n"
+   "    Filters = \"COLLADA Files (*.dae)|*.dae|\";\n\n"
+   "    // Default save path to where the WorldEditor last saved\n"
+   "    DefaultPath = $pref::WorldEditor::LastPath;\n\n"
+   "    // No default file specified\n"
+   "    DefaultFile = \"\";\n\n"
+   "    // Do not allow the user to change to a new directory\n"
+   "    ChangePath = false;\n\n"
+   "    // Prompt the user if they are going to overwrite an existing file\n"
+   "    OverwritePrompt = true;\n"
+   " };\n\n"
+   " // Launch the save file dialog\n"
+   " %result = %saveFileDlg.Execute();\n\n"
+   " // Obtain the file name\n"
+   " %selectedFile = \"\";\n"
+   " if ( %result )\n"
+   "    %selectedFile = %saveFileDlg.file;\n\n"
+   " // Cleanup\n"
+   " %saveFileDlg.delete();\n"
+   "@endtsexample\n\n"
+
+   "@return True if the file was selected was successfully found (opened) or declared (saved).")
+{
+    Con::printf("FILE DIALOG EXECUTE");
+   return object->Execute();
 }
 
 //-----------------------------------------------------------------------------
@@ -118,7 +421,12 @@ bool FileDialog::Execute()
 //-----------------------------------------------------------------------------
 bool FileDialog::setFilters( void *object, const char *index, const char *data )
 {
+   // Will do validate on write at some point.
+   if( !data )
+      return true;
+
    return true;
+
 };
 
 
@@ -127,7 +435,36 @@ bool FileDialog::setFilters( void *object, const char *index, const char *data )
 //-----------------------------------------------------------------------------
 bool FileDialog::setDefaultPath( void *object, const char *index, const char *data )
 {
+    Con::printf("SET DEFAULT PATH");
+   if( !data || !dStrncmp( data, "", 1 ) )
+      return true;
+
+   // Copy and Backslash the path (Windows dialogs are VERY picky about this format)
+   static char szPathValidate[512];
+   dStrcpy( szPathValidate, data );
+
+   Platform::makeFullPathName( data,szPathValidate, sizeof(szPathValidate));
+   //backslash( szPathValidate );
+
+   // Remove any trailing \'s
+   S8 validateLen = dStrlen( szPathValidate );
+   if( szPathValidate[ validateLen - 1 ] == '\\' )
+      szPathValidate[ validateLen - 1 ] = '\0';
+
+   // Now check
+   if( Platform::isDirectory( szPathValidate ) )
+   {
+      // Finally, assign in proper format.
+      FileDialog *pDlg = static_cast<FileDialog*>( object );
+      pDlg->mData.mDefaultPath = StringTable->insert( szPathValidate );
+   }
+#ifdef TORQUE_DEBUG
+   else
+      Con::errorf(ConsoleLogEntry::GUI, "FileDialog - Invalid Default Path Specified!");
+#endif
+
    return false;
+
 };
 
 //-----------------------------------------------------------------------------
@@ -135,7 +472,25 @@ bool FileDialog::setDefaultPath( void *object, const char *index, const char *da
 //-----------------------------------------------------------------------------
 bool FileDialog::setDefaultFile( void *object, const char *index, const char *data )
 {
-    return false;
+    Con::printf("SET DEFAULT FILE");
+   if( !data || !dStrncmp( data, "", 1 ) )
+      return true;
+
+   // Copy and Backslash the path (Windows dialogs are VERY picky about this format)
+   static char szPathValidate[512];
+   Platform::makeFullPathName( data,szPathValidate, sizeof(szPathValidate) );
+   //backslash( szPathValidate );
+
+   // Remove any trailing \'s
+   S8 validateLen = dStrlen( szPathValidate );
+   if( szPathValidate[ validateLen - 1 ] == '\\' )
+      szPathValidate[ validateLen - 1 ] = '\0';
+
+   // Finally, assign in proper format.
+   FileDialog *pDlg = static_cast<FileDialog*>( object );
+   pDlg->mData.mDefaultFile = StringTable->insert( szPathValidate );
+
+   return false;
 };
 
 //-----------------------------------------------------------------------------
@@ -143,17 +498,30 @@ bool FileDialog::setDefaultFile( void *object, const char *index, const char *da
 //-----------------------------------------------------------------------------
 bool FileDialog::setChangePath( void *object, const char *index, const char *data )
 {
-    return true;
+   bool bMustExist = dAtob( data );
+
+   FileDialog *pDlg = static_cast<FileDialog*>( object );
+
+   if( bMustExist )
+      pDlg->mData.mStyle |= FileDialogData::FDS_CHANGEPATH;
+   else
+      pDlg->mData.mStyle &= ~FileDialogData::FDS_CHANGEPATH;
+
+   return true;
 };
 
 const char* FileDialog::getChangePath(void* obj, const char* data)
 {
-    return 0;
+   FileDialog *pDlg = static_cast<FileDialog*>( obj );
+   if( pDlg->mData.mStyle & FileDialogData::FDS_CHANGEPATH )
+      return StringTable->insert("true");
+   else
+      return StringTable->insert("false");
 }
 
 bool FileDialog::setFile( void *object, const char *index, const char *data )
 {
-    return false;
+   return false;
 };
 
 //-----------------------------------------------------------------------------
@@ -165,7 +533,7 @@ ConsoleDocClass( OpenFileDialog,
 
    "The core usage of this dialog is to locate a file in the OS and return the path and name. This does not handle "
    "the actual file parsing or data manipulation. That functionality is left up to the FileObject class.\n\n"
-   
+
    "@tsexample\n"
    " // Create a dialog dedicated to opening files\n"
    " %openFileDlg = new OpenFileDialog()\n"
@@ -203,11 +571,14 @@ ConsoleDocClass( OpenFileDialog,
 );
 OpenFileDialog::OpenFileDialog()
 {
-    AssertFatal(0, "Not Implemented");
+   // Default File Must Exist
+   mData.mStyle = FileDialogData::FDS_OPEN | FileDialogData::FDS_MUSTEXIST;
 }
 
 OpenFileDialog::~OpenFileDialog()
 {
+   mMustExist = true;
+   mMultipleFiles = false;
 }
 
 IMPLEMENT_CONOBJECT(OpenFileDialog);
@@ -217,6 +588,10 @@ IMPLEMENT_CONOBJECT(OpenFileDialog);
 //-----------------------------------------------------------------------------
 void OpenFileDialog::initPersistFields()
 {
+   addProtectedField("MustExist", TypeBool, Offset(mMustExist, OpenFileDialog), &setMustExist, &getMustExist, "True/False whether the file returned must exist or not" );
+   addProtectedField("MultipleFiles", TypeBool, Offset(mMultipleFiles, OpenFileDialog), &setMultipleFiles, &getMultipleFiles, "True/False whether multiple files may be selected and returned or not" );
+
+   Parent::initPersistFields();
 }
 
 //-----------------------------------------------------------------------------
@@ -224,12 +599,25 @@ void OpenFileDialog::initPersistFields()
 //-----------------------------------------------------------------------------
 bool OpenFileDialog::setMustExist( void *object, const char *index, const char *data )
 {
-    return true;
+   bool bMustExist = dAtob( data );
+
+   OpenFileDialog *pDlg = static_cast<OpenFileDialog*>( object );
+
+   if( bMustExist )
+      pDlg->mData.mStyle |= FileDialogData::FDS_MUSTEXIST;
+   else
+      pDlg->mData.mStyle &= ~FileDialogData::FDS_MUSTEXIST;
+
+   return true;
 };
 
 const char* OpenFileDialog::getMustExist(void* obj, const char* data)
 {
-    return 0;
+   OpenFileDialog *pDlg = static_cast<OpenFileDialog*>( obj );
+   if( pDlg->mData.mStyle & FileDialogData::FDS_MUSTEXIST )
+      return StringTable->insert("true");
+   else
+      return StringTable->insert("false");
 }
 
 //-----------------------------------------------------------------------------
@@ -237,12 +625,25 @@ const char* OpenFileDialog::getMustExist(void* obj, const char* data)
 //-----------------------------------------------------------------------------
 bool OpenFileDialog::setMultipleFiles( void *object, const char *index, const char *data )
 {
+   bool bMustExist = dAtob( data );
+
+   OpenFileDialog *pDlg = static_cast<OpenFileDialog*>( object );
+
+   if( bMustExist )
+      pDlg->mData.mStyle |= FileDialogData::FDS_MULTIPLEFILES;
+   else
+      pDlg->mData.mStyle &= ~FileDialogData::FDS_MULTIPLEFILES;
+
    return true;
 };
 
 const char* OpenFileDialog::getMultipleFiles(void* obj, const char* data)
 {
-    return 0;
+   OpenFileDialog *pDlg = static_cast<OpenFileDialog*>( obj );
+   if( pDlg->mData.mStyle & FileDialogData::FDS_MULTIPLEFILES )
+      return StringTable->insert("true");
+   else
+      return StringTable->insert("false");
 }
 
 //-----------------------------------------------------------------------------
@@ -253,7 +654,7 @@ ConsoleDocClass( SaveFileDialog,
 
    "The core usage of this dialog is to locate a file in the OS and return the path and name. This does not handle "
    "the actual file writing or data manipulation. That functionality is left up to the FileObject class.\n\n"
-   
+
    "@tsexample\n"
    " // Create a dialog dedicated to opening file\n"
    " %saveFileDlg = new SaveFileDialog()\n"
@@ -293,7 +694,9 @@ ConsoleDocClass( SaveFileDialog,
 );
 SaveFileDialog::SaveFileDialog()
 {
-    AssertFatal(0, "Not Implemented");
+   // Default File Must Exist
+   mData.mStyle = FileDialogData::FDS_SAVE | FileDialogData::FDS_OVERWRITEPROMPT;
+   mOverwritePrompt = true;
 }
 
 SaveFileDialog::~SaveFileDialog()
@@ -307,7 +710,9 @@ IMPLEMENT_CONOBJECT(SaveFileDialog);
 //-----------------------------------------------------------------------------
 void SaveFileDialog::initPersistFields()
 {
-    Parent::initPersistFields();
+   addProtectedField("OverwritePrompt", TypeBool, Offset(mOverwritePrompt, SaveFileDialog), &setOverwritePrompt, &getOverwritePrompt, "True/False whether the dialog should prompt before accepting an existing file name" );
+
+   Parent::initPersistFields();
 }
 
 //-----------------------------------------------------------------------------
@@ -315,12 +720,25 @@ void SaveFileDialog::initPersistFields()
 //-----------------------------------------------------------------------------
 bool SaveFileDialog::setOverwritePrompt( void *object, const char *index, const char *data )
 {
-    return true;
+   bool bMustExist = dAtob( data );
+
+   SaveFileDialog *pDlg = static_cast<SaveFileDialog*>( object );
+
+   if( bMustExist )
+      pDlg->mData.mStyle |= FileDialogData::FDS_OVERWRITEPROMPT;
+   else
+      pDlg->mData.mStyle &= ~FileDialogData::FDS_OVERWRITEPROMPT;
+
+   return true;
 };
 
 const char* SaveFileDialog::getOverwritePrompt(void* obj, const char* data)
 {
-    return 0;
+   SaveFileDialog *pDlg = static_cast<SaveFileDialog*>( obj );
+   if( pDlg->mData.mStyle & FileDialogData::FDS_OVERWRITEPROMPT )
+      return StringTable->insert("true");
+   else
+      return StringTable->insert("false");
 }
 
 //-----------------------------------------------------------------------------
@@ -328,8 +746,10 @@ const char* SaveFileDialog::getOverwritePrompt(void* obj, const char* data)
 //-----------------------------------------------------------------------------
 
 OpenFolderDialog::OpenFolderDialog()
-{    
-    AssertFatal(0, "Not Implemented");
+{
+   mData.mStyle = FileDialogData::FDS_OPEN | FileDialogData::FDS_OVERWRITEPROMPT | FileDialogData::FDS_BROWSEFOLDER;
+
+   mMustExistInDir = "";
 }
 
 IMPLEMENT_CONOBJECT(OpenFolderDialog);
@@ -348,7 +768,8 @@ ConsoleDocClass( OpenFolderDialog,
 
 void OpenFolderDialog::initPersistFields()
 {
-    Parent::initPersistFields();
-}
+   addField("fileMustExist", TypeFilename, Offset(mMustExistInDir, OpenFolderDialog), "File that must be in selected folder for it to be valid");
 
-#endif
+   Parent::initPersistFields();
+}
+//#endif
