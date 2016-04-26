@@ -387,8 +387,6 @@ if(TORQUE_SDL)
        set(BLACKLIST ""  )
  	   addLib(comctl32)	   
     endif()
-
-    addLib(nativeFileDialogs)
     
     #override and hide SDL2 cache variables
     set(SDL_SHARED ON CACHE INTERNAL "" FORCE)

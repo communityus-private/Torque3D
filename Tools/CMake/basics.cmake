@@ -72,7 +72,6 @@ macro(addPath dir)
              #${dir}/*.asm
              )
     foreach(entry ${BLACKLIST})
- 	message(${dir}/${entry})
  		list(REMOVE_ITEM tmp_files ${dir}/${entry})
  	endforeach()
     LIST(APPEND ${PROJECT_NAME}_files "${tmp_files}")
