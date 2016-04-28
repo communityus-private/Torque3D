@@ -31,8 +31,8 @@
 #include "softShadow.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
-TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
-TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
+TORQUE_UNIFORM_SAMPLER2DCMP(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2DCMP(dynamicShadowMap, 2);
 
 #ifdef USE_SSAO_MASK
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
@@ -78,7 +78,7 @@ uniform float4 dynamicOffsetX;
 uniform float4 dynamicOffsetY;
 uniform float4 dynamicFarPlaneScalePSSM;
 
-float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
+float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2DCMP(sourceShadowMap),
                                 float2 texCoord,
                                 float4x4 worldToLightProj,
                                 float4 worldPos,
