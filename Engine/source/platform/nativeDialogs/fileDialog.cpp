@@ -33,7 +33,7 @@
 #include "core/strings/stringUnit.h"
 #include "core/frameAllocator.h"
 
-//#ifdef TORQUE_TOOLS
+#if defined(TORQUE_SDL)
 //-----------------------------------------------------------------------------
 // PlatformFileDlgData Implementation
 //-----------------------------------------------------------------------------
@@ -200,7 +200,7 @@ bool FileDialog::Execute()
       const char* tmpchr = &filter[c];
       strippedFilters += String(tmpchr);
 
-      strippedFilters += String(";");
+      //strippedFilters += String(";");
 
       ++i;
    }
@@ -208,24 +208,32 @@ bool FileDialog::Execute()
    // Get the current working directory, so we can back up to it once Windows has
    // done its craziness and messed with it.
    StringTableEntry cwd = Platform::getCurrentDirectory();
+   if (mData.mDefaultPath == StringTable->lookup("") || !Platform::isDirectory(mData.mDefaultPath))
+      mData.mDefaultPath = cwd;
 
    // Execute Dialog (Blocking Call)
    nfdchar_t *outPath = NULL;
    nfdpathset_t pathSet;
 
-   nfdresult_t result;
+   nfdresult_t result = NFD_ERROR;
+   String defaultPath = String(mData.mDefaultPath);
+#if defined(TORQUE_OS_WIN)
+   defaultPath.replace("/", "\\");
+#endif
 
    if (mData.mStyle & FileDialogData::FDS_OPEN)
-      result = NFD_OpenDialog(strippedFilters, mData.mDefaultPath, &outPath);
+      result = NFD_OpenDialog(strippedFilters.c_str(), defaultPath.c_str(), &outPath);
    else if (mData.mStyle & FileDialogData::FDS_SAVE)
-      result = NFD_SaveDialog(strippedFilters, mData.mDefaultPath, &outPath);
+      result = NFD_SaveDialog(strippedFilters.c_str(), defaultPath.c_str(), &outPath);
    else if (mData.mStyle & FileDialogData::FDS_MULTIPLEFILES)
-      result = NFD_OpenDialogMultiple(strippedFilters, mData.mDefaultPath, &pathSet);
+      result = NFD_OpenDialogMultiple(strippedFilters.c_str(), defaultPath.c_str(), &pathSet);
 
    // Did we select a file?
    if (result != NFD_OKAY)
+   {
+      Con::errorf("NFD plugin error: %s", NFD_GetError());
       return false;
-
+   }
    // Store the result on our object
    if (mData.mStyle & FileDialogData::FDS_OPEN || mData.mStyle & FileDialogData::FDS_SAVE)
    {
@@ -703,4 +711,4 @@ void OpenFolderDialog::initPersistFields()
 
    Parent::initPersistFields();
 }
-//#endif
+#endif
