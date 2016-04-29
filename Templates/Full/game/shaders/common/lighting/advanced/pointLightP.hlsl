@@ -111,13 +111,13 @@ TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 #ifdef SHADOW_CUBE
 TORQUE_UNIFORM_SAMPLERCUBE(shadowMap, 1);
 #else
-TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
-TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
+TORQUE_UNIFORM_SAMPLER2DCMP(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2DCMP(dynamicShadowMap, 2);
 #endif
 
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 4);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 6);
 
 uniform float4 rtParams0;
 uniform float4 lightColor;
@@ -194,14 +194,17 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       #else
 
          // Static
-         float2 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) ).xy;
+         float3 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) );
+         float3 shadowPosDX = ddx_fine(shadowCoord);
+         float3 shadowPosDY = ddy_fine(shadowCoord);
          float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                              ssPos.xy,
-                                             shadowCoord,
+                                             shadowCoord.xy,
                                              shadowSoftness,
                                              distToLight,
                                              nDotL,
-                                             lightParams.y );
+                                             shadowPosDX,
+                                             shadowPosDY);
 
          // Dynamic
          float2 dynamicShadowCoord = decodeShadowCoord( mul( dynamicViewToLightProj, -lightVec ) ).xy;
@@ -211,7 +214,8 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
                                              shadowSoftness,
                                              distToLight,
                                              nDotL,
-                                             lightParams.y );
+                                             shadowPosDX,
+                                             shadowPosDY);
 
          float shadowed = min(static_shadowed, dynamic_shadowed);
 

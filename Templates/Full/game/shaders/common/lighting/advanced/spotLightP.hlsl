@@ -39,8 +39,8 @@ struct ConvexConnectP
 };
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
-TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
-TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,2);
+TORQUE_UNIFORM_SAMPLER2DCMP(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2DCMP(dynamicShadowMap,2);
 
 #ifdef USE_COOKIE_TEX
 
@@ -49,9 +49,9 @@ TORQUE_UNIFORM_SAMPLER2D(cookieMap, 3);
 
 #endif
 
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 4);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 6);
 
 uniform float4 rtParams0;
 
@@ -132,13 +132,17 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       // Get a linear depth from the light source.
       float distToLight = pxlPosLightProj.z / lightRange;
 
+      float3 shadowPosDX = ddx_fine(pxlPosLightProj.xyz);
+      float3 shadowPosDY = ddy_fine(pxlPosLightProj.xyz);
+
       float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                           ssPos.xy,
                                           shadowCoord,
                                           shadowSoftness,
                                           distToLight,
                                           nDotL,
-                                          lightParams.y );
+                                          shadowPosDX,
+                                          shadowPosDY);
                                           
       float dynamic_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
                                           ssPos.xy,
@@ -146,7 +150,9 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
                                           shadowSoftness,
                                           distToLight,
                                           nDotL,
-                                          lightParams.y );
+                                          shadowPosDX,
+                                          shadowPosDY);
+
       float shadowed = min(static_shadowed, dynamic_shadowed);
    #endif // !NO_SHADOW
    
