@@ -184,7 +184,7 @@ static const U32 convertUTF16toUTF8DoubleNULL(const UTF16 *unistring, UTF8  *out
 //
 bool FileDialog::Execute()
 {
-   String strippedFilters;
+   String suffix;
 
    U32 filtersCount = StringUnit::getUnitCount(mData.mFilters, "|");
 
@@ -198,12 +198,19 @@ bool FileDialog::Execute()
 
       U32 c = 2;
       const char* tmpchr = &filter[c];
-      strippedFilters += String(tmpchr);
-
-      //strippedFilters += String(";");
+      String tString = String(tmpchr);
+      tString.ToLower(tString);
+      suffix += tString;
+      suffix += String(",");
+      suffix += tString.ToUpper(tString);
 
       ++i;
+      if (i < filtersCount-2)
+         suffix += String(";");
    }
+   String strippedFilters = suffix;
+   strippedFilters.replace(";",",");
+      strippedFilters += String(";") + suffix;
 
    // Get the current working directory, so we can back up to it once Windows has
    // done its craziness and messed with it.
