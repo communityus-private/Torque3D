@@ -201,6 +201,17 @@ void main()
        return;
    }
    
+   vec4 colorSample = texture( colorBuffer, uv0 );
+   vec3 subsurface = vec3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = vec3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = vec3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
    vec4 prepassSample = prepassUncondition( prePassBuffer, uv0 );
    vec3 normal = prepassSample.rgb;
@@ -277,9 +288,7 @@ void main()
 
    #endif // !NO_SHADOW
 
-   // Specular term
-   vec4 colorSample = texture( colorBuffer, uv0 );
-   
+   // Specular term   
    vec3 viewSpacePos = vsEyeRay * depth;
    vec4 real_specular = EvalBDRF( colorSample.rgb,
                                     lightColor.rgb,
@@ -304,5 +313,5 @@ void main()
       lightColorOut = debugColor;
    #endif
 
-   OUT_col = matInfo.g*(vec4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
+   OUT_col = matInfo.g*(vec4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
 }

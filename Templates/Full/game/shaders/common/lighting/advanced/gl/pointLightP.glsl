@@ -147,6 +147,17 @@ void main()
 	   return;
    }
 
+   vec4 colorSample = texture( colorBuffer, uvScene );
+   vec3 subsurface = vec3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = vec3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = vec3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
    vec4 prepassSample = prepassUncondition( prePassBuffer, uvScene );
    vec3 normal = prepassSample.rgb;
@@ -234,7 +245,6 @@ void main()
    // cause the hardware occlusion query to disable the shadow.
 
    // Specular term
-   vec4 colorSample = texture( colorBuffer, uvScene );
    float specular = 0;
    vec4 real_specular = EvalBDRF( colorSample.rgb,
                                     lightcol,
@@ -264,5 +274,5 @@ void main()
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   OUT_col = matInfo.g*(vec4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
+   OUT_col = matInfo.g*(vec4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
 }

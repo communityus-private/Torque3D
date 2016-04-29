@@ -202,6 +202,16 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
        return float4(1.0, 1.0, 1.0, 0.0);
    }
    
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
+   float3 subsurface = float3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = float3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = float3(0.337255, 0.772549, 0.262745);
+	}
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
@@ -279,9 +289,7 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
 
    #endif // !NO_SHADOW
 
-   // Specular term
-   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
-   
+   // Specular term   
    float3 viewSpacePos = IN.vsEyeRay * depth;
    float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
                                     lightColor.rgb,
@@ -304,5 +312,5 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
    #ifdef PSSM_DEBUG_RENDER
       lightColorOut = debugColor;
    #endif      
-   return matInfo.g*(float4(lightColorOut,real_specular.a)*Sat_NL_Att+addToResult);
+   return matInfo.g*(float4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
 }
