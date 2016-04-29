@@ -58,10 +58,6 @@ bool CubeLightShadowMap::setTextureStage( U32 currTexFlag, LightingShaderConstan
 void CubeLightShadowMap::setShaderParameters(   GFXShaderConstBuffer *params, 
                                                 LightingShaderConstants *lsc )
 {
-   if ( lsc->mTapRotationTexSC->isValid() )
-      GFX->setTexture( lsc->mTapRotationTexSC->getSamplerRegister(), 
-                        SHADOWMGR->getTapRotationTex() );
-
    ShadowMapParams *p = mLight->getExtended<ShadowMapParams>();
 
    if ( lsc->mLightParamsSC->isValid() )

@@ -108,10 +108,6 @@ void SingleLightShadowMap::_render( RenderPassManager* renderPass,
 
 void SingleLightShadowMap::setShaderParameters(GFXShaderConstBuffer* params, LightingShaderConstants* lsc)
 {
-   if ( lsc->mTapRotationTexSC->isValid() )
-      GFX->setTexture( lsc->mTapRotationTexSC->getSamplerRegister(), 
-                        SHADOWMGR->getTapRotationTex() );
-
    ShadowMapParams *p = mLight->getExtended<ShadowMapParams>();
 
    if ( lsc->mLightParamsSC->isValid() )

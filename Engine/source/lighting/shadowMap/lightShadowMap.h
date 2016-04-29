@@ -107,9 +107,6 @@ struct LightingShaderConstants
    // fadeStartLength.x = Distance in eye space to start fading shadows
    // fadeStartLength.y = 1 / Length of fade
    GFXShaderConstHandle* mFadeStartLength;
-   GFXShaderConstHandle* mOverDarkFactorPSSM;
-
-   GFXShaderConstHandle* mTapRotationTexSC;
 
    // Static Specific:   
    GFXShaderConstHandle* mWorldToLightProjSC;

@@ -469,8 +469,6 @@ LightingShaderConstants::LightingShaderConstants()
       mAtlasYOffsetSC(NULL),
       mAtlasScaleSC(NULL), 
       mFadeStartLength(NULL), 
-      mOverDarkFactorPSSM(NULL), 
-      mTapRotationTexSC(NULL),
 
       mWorldToLightProjSC(NULL), 
       mViewToLightProjSC(NULL),
@@ -536,8 +534,6 @@ void LightingShaderConstants::init(GFXShader* shader)
    mAtlasScaleSC = shader->getShaderConstHandle("$atlasScale");
 
    mFadeStartLength = shader->getShaderConstHandle("$fadeStartLength");
-   mOverDarkFactorPSSM = shader->getShaderConstHandle("$overDarkPSSM");
-   mTapRotationTexSC = shader->getShaderConstHandle( "$gTapRotationTex" );
 
    mWorldToLightProjSC = shader->getShaderConstHandle("$worldToLightProj");
    mViewToLightProjSC = shader->getShaderConstHandle("$viewToLightProj");

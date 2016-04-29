@@ -24,24 +24,44 @@
 
 //#if defined( SOFTSHADOW ) && defined( SOFTSHADOW_HIGH_QUALITY )
 
+// Optimized PCF from https://github.com/TheRealMJP/Shadows/
+
 float sampleShadowMap(TORQUE_SAMPLER2DCMP(shadowMap), in float2 base_uv, in float u, in float v, in float depth, in float filterRadius)
 {
    float2 uv = base_uv + float2(u, v) *filterRadius;
    return TORQUE_TEX2DCMP(shadowMap, uv, depth);
 }
 
-float optimizedPCF(TORQUE_SAMPLER2DCMP(shadowMap),in float2 shadowPos, in float filterRadius, in float depth)
+float2 computeReceiverPlaneDepthBias(float3 texCoordDX, float3 texCoordDY)
+{
+   float2 biasUV;
+   biasUV.x = texCoordDY.y * texCoordDX.z - texCoordDX.y * texCoordDY.z;
+   biasUV.y = texCoordDX.x * texCoordDY.z - texCoordDY.x * texCoordDX.z;
+   biasUV *= 1.0f / ((texCoordDX.x * texCoordDY.y) - (texCoordDX.y * texCoordDY.x));
+   return biasUV;
+}
+
+float softShadow_filter(   TORQUE_SAMPLER2DCMP(shadowMap),
+                           float2 vpos,
+                           float2 shadowPos,
+                           float filterRadius,
+                           float distToLight,
+                           float dotNL,
+                           float3 shadowPosDX,
+                           float3 shadowPosDY)
 {
    float2 shadowMapSize;
    //bad, again just for testing, production version should pass in shadowmap size
    texture_shadowMap.GetDimensions(shadowMapSize.x, shadowMapSize.y);
 
    float shadow = 0;
-   float lightDepth = depth;
-   //hard coded bias for testing
-   lightDepth -= 0.0005;
+   float lightDepth = distToLight;
+
    float2 uv = shadowPos * shadowMapSize;
    float2 shadowMapSizeInv = 1.0 / shadowMapSize;
+   float2 receiverPlaneDepthBias = computeReceiverPlaneDepthBias(shadowPosDX, shadowPosDY);
+   float fractionalSamplingError = dot(float2(1.0f, 1.0f) * shadowMapSizeInv, abs(receiverPlaneDepthBias));
+   lightDepth -= min(fractionalSamplingError, 0.01f);
    float2 base_uv;
    base_uv.x = floor(uv.x + 0.5);
    base_uv.y = floor(uv.y + 0.5);
@@ -97,16 +117,4 @@ float optimizedPCF(TORQUE_SAMPLER2DCMP(shadowMap),in float2 shadowPos, in float 
    return sum * 1.0f / 2704;
 
    return shadow;
-}
-
-
-float softShadow_filter(   TORQUE_SAMPLER2DCMP(shadowMap),
-                           float2 vpos,
-                           float2 shadowPos,
-                           float filterRadius,
-                           float distToLight,
-                           float dotNL,
-                           float esmFactor )
-{
-   return optimizedPCF(TORQUE_SAMPLER2D_MAKEARG(shadowMap), shadowPos, filterRadius, distToLight);
 }

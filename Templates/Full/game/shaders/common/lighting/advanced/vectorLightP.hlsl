@@ -39,9 +39,9 @@ TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
 uniform float4 rtParams3;
 #endif
 //register 4?
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 4);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 6);
 
 uniform float  lightBrightness;
 uniform float3 lightDirection;
@@ -57,7 +57,6 @@ uniform float4 atlasYOffset;
 uniform float4 zNearFarInvNearFar;
 uniform float4 lightMapParams;
 uniform float4 farPlaneScalePSSM;
-uniform float4 overDarkPSSM;
 
 uniform float2 fadeStartLength;
 uniform float2 atlasScale;
@@ -91,12 +90,14 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2DCMP(sourceShadowMap),
                                 float4 atlasYOffset,
                                 float2 atlasScale,
                                 float shadowSoftness, 
-                                float dotNL ,
-                                float4 overDarkPSSM)
+                                float dotNL )
 {
       // Compute shadow map coordinate
       float4 pxlPosLightProj = mul(worldToLightProj, worldPos);
-      float2 baseShadowCoord = pxlPosLightProj.xy / pxlPosLightProj.w;   
+      float2 baseShadowCoord = pxlPosLightProj.xy / pxlPosLightProj.w; 
+
+      float3 shadowPosDX = ddx_fine(pxlPosLightProj.xyz);
+      float3 shadowPosDY = ddy_fine(pxlPosLightProj.xyz);
 
       // Distance to light, in shadowmap space
       float distToLight = pxlPosLightProj.z / pxlPosLightProj.w;
@@ -188,8 +189,7 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2DCMP(sourceShadowMap),
                                  shadowCoord,
                                  farPlaneScale * shadowSoftness,
                                  distToLight,
-                                 dotNL,
-                                 dot( finalMask, overDarkPSSM ) ) );
+                                 dotNL, shadowPosDX, shadowPosDY));
 };
 
 float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
@@ -227,6 +227,7 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
       #endif
 
    #else
+
       
       float4 static_shadowed_colors = AL_VectorLightShadowCast( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                                         IN.uv0.xy,
@@ -238,8 +239,8 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
                                                         atlasXOffset, atlasYOffset,
                                                         atlasScale,
                                                         shadowSoftness, 
-                                                        dotNL,
-                                                        overDarkPSSM);
+                                                        dotNL);
+
       float4 dynamic_shadowed_colors = AL_VectorLightShadowCast( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
                                                         IN.uv0.xy,
                                                         dynamicWorldToLightProj,
@@ -250,8 +251,7 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
                                                         atlasXOffset, atlasYOffset,
                                                         atlasScale,
                                                         shadowSoftness, 
-                                                        dotNL,
-                                                        overDarkPSSM);
+                                                        dotNL);
       
       float static_shadowed = static_shadowed_colors.a;
       float dynamic_shadowed = dynamic_shadowed_colors.a;
