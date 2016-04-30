@@ -37,12 +37,11 @@ new GFXStateBlockData( AL_VectorLightState )
    samplersDefined = true;
    samplerStates[0] = SamplerClampPoint;  // G-buffer
    mSamplerNames[0] = "prePassBuffer";
-   samplerStates[1] = SamplerClampShadow;  // Shadow Map (Do not change this to linear, as all cards can not filter equally.)
+   samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not change this to linear, as all cards can not filter equally.)
    mSamplerNames[1] = "shadowMap";
-   samplerStates[2] = SamplerClampShadow;  // Shadow Map (Do not change this to linear, as all cards can not filter equally.)
-   mSamplerNames[2] = "dynamicShadowMap";
-   samplerStates[3] = SamplerClampLinear;  // SSAO Mask
-   mSamplerNames[3] = "ssaoMask";
+   samplerStates[2] = SamplerClampLinear;  // SSAO Mask
+   mSamplerNames[2] = "ssaoMask";
+   samplerStates[3] = SamplerWrapPoint;   // Random Direction Map
    
    cullDefined = true;
    cullMode = GFXCullNone;
@@ -69,9 +68,10 @@ new ShaderData( AL_VectorLightShader )
    samplerNames[1] = "$shadowMap";
    samplerNames[2] = "$dynamicShadowMap";
    samplerNames[3] = "$ssaoMask";
-   samplerNames[4] = "$lightBuffer";
-   samplerNames[5] = "$colorBuffer";
-   samplerNames[6] = "$matInfoBuffer";  
+   samplerNames[4] = "$gTapRotationTex";
+   samplerNames[5] = "$lightBuffer";
+   samplerNames[6] = "$colorBuffer";
+   samplerNames[7] = "$matInfoBuffer";  
    pixVersion = 3.0;
 };
 
@@ -84,11 +84,11 @@ new CustomMaterial( AL_VectorLightMaterial )
    sampler["shadowMap"] = "$dynamiclight";
    sampler["dynamicShadowMap"] = "$dynamicShadowMap";
    sampler["ssaoMask"] = "#ssaoMask";  
-   sampler["lightBuffer"] = "#lightinfo";
+   sampler["lightBuffer"] = "#indirectLighting";
    sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
    
-   target = "lightinfo";
+   target = "directLighting";
    
    pixVersion = 3.0;
 };
@@ -112,11 +112,10 @@ new GFXStateBlockData( AL_ConvexLightState )
    samplersDefined = true;
    samplerStates[0] = SamplerClampPoint;  // G-buffer
    mSamplerNames[0] = "prePassBuffer";
-   samplerStates[1] = SamplerClampShadow;  // Shadow Map (Do not use linear, these are perspective projections)
+   samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not use linear, these are perspective projections)
    mSamplerNames[1] = "shadowMap";
-   samplerStates[2] = SamplerClampShadow;  // Shadow Map (Do not use linear, these are perspective projections)
-   mSamplerNames[2] = "dynamicShadowMap";
-   samplerStates[3] = SamplerClampLinear; // Cookie Map   
+   samplerStates[2] = SamplerClampLinear; // Cookie Map   
+   samplerStates[3] = SamplerWrapPoint;   // Random Direction Map
    
    cullDefined = true;
    cullMode = GFXCullCW;
@@ -143,9 +142,10 @@ new ShaderData( AL_PointLightShader )
    samplerNames[1] = "$shadowMap";
    samplerNames[2] = "$dynamicShadowMap";
    samplerNames[3] = "$cookieMap";
-   samplerNames[4] = "$lightBuffer";
-   samplerNames[5] = "$colorBuffer";
-   samplerNames[6] = "$matInfoBuffer";
+   samplerNames[4] = "$gTapRotationTex";
+   samplerNames[5] = "$lightBuffer";
+   samplerNames[6] = "$colorBuffer";
+   samplerNames[7] = "$matInfoBuffer";
    
    pixVersion = 3.0;
 };
@@ -159,11 +159,11 @@ new CustomMaterial( AL_PointLightMaterial )
    sampler["shadowMap"] = "$dynamiclight";
    sampler["dynamicShadowMap"] = "$dynamicShadowMap";
    sampler["cookieMap"] = "$dynamiclightmask";
-   sampler["lightBuffer"] = "#lightinfo";
+   sampler["lightBuffer"] = "#indirectLighting";
    sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
    
-   target = "lightinfo";
+   target = "directLighting";
    
    pixVersion = 3.0;
 };
@@ -181,9 +181,10 @@ new ShaderData( AL_SpotLightShader )
    samplerNames[1] = "$shadowMap";
    samplerNames[2] = "$dynamicShadowMap";
    samplerNames[3] = "$cookieMap";
-   samplerNames[4] = "$lightBuffer";
-   samplerNames[5] = "$colorBuffer";
-   samplerNames[6] = "$matInfoBuffer";
+   samplerNames[4] = "$gTapRotationTex";
+   samplerNames[5] = "$lightBuffer";
+   samplerNames[6] = "$colorBuffer";
+   samplerNames[7] = "$matInfoBuffer";
    
    pixVersion = 3.0;
 };
@@ -197,11 +198,11 @@ new CustomMaterial( AL_SpotLightMaterial )
    sampler["shadowMap"] = "$dynamiclight";
    sampler["dynamicShadowMap"] = "$dynamicShadowMap";
    sampler["cookieMap"] = "$dynamiclightmask";
-   sampler["lightBuffer"] = "#lightinfo";
+   sampler["lightBuffer"] = "#indirectLighting";
    sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
    
-   target = "lightinfo";
+   target = "directLighting";
    
    pixVersion = 3.0;
 };
@@ -264,7 +265,7 @@ new CustomMaterial( AL_ParticlePointLightMaterial )
    stateBlock = AL_ConvexLightState;
    
    sampler["prePassBuffer"] = "#prepass";
-   target = "lightinfo";
+   target = "directLighting";
    
    pixVersion = 3.0;
 };

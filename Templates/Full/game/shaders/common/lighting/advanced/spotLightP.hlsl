@@ -39,8 +39,8 @@ struct ConvexConnectP
 };
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
-TORQUE_UNIFORM_SAMPLER2DCMP(shadowMap, 1);
-TORQUE_UNIFORM_SAMPLER2DCMP(dynamicShadowMap,2);
+TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,2);
 
 #ifdef USE_COOKIE_TEX
 
@@ -49,9 +49,9 @@ TORQUE_UNIFORM_SAMPLER2D(cookieMap, 3);
 
 #endif
 
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 4);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 5);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
 
 uniform float4 rtParams0;
 
@@ -87,6 +87,17 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
        return float4(0.0, 0.0, 0.0, 0.0);
    }
 
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
+   float3 subsurface = float3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = float3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = float3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
    float3 normal = prepassSample.rgb;
@@ -132,17 +143,13 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       // Get a linear depth from the light source.
       float distToLight = pxlPosLightProj.z / lightRange;
 
-      float3 shadowPosDX = ddx_fine(pxlPosLightProj.xyz);
-      float3 shadowPosDY = ddy_fine(pxlPosLightProj.xyz);
-
       float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                           ssPos.xy,
                                           shadowCoord,
                                           shadowSoftness,
                                           distToLight,
                                           nDotL,
-                                          shadowPosDX,
-                                          shadowPosDY);
+                                          lightParams.y );
                                           
       float dynamic_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
                                           ssPos.xy,
@@ -150,9 +157,7 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
                                           shadowSoftness,
                                           distToLight,
                                           nDotL,
-                                          shadowPosDX,
-                                          shadowPosDY);
-
+                                          lightParams.y );
       float shadowed = min(static_shadowed, dynamic_shadowed);
    #endif // !NO_SHADOW
    
@@ -176,12 +181,19 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
    // cause the hardware occlusion query to disable the shadow.
 
    // Specular term
-   float specular = AL_CalcSpecular(   -lightToPxlVec, 
-                                       normal, 
-                                       normalize( -eyeRay ) ) * lightBrightness * atten * shadowed;
+   float specular = 0;
 
+   float3 lightVec = lightPosition - viewSpacePos;
+   float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
+                                    lightcol,
+                                    lightVec,
+                                    viewSpacePos,
+                                    normal,
+                                    1.0-matInfo.b,
+                                    matInfo.a );
+   float3 lightColorOut = real_specular.rgb * lightBrightness * shadowed* atten;
+   
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   float3 lightColorOut = lightMapParams.rgb * lightcol;
    float4 addToResult = 0.0;
 
    // TODO: This needs to be removed when lightmapping is disabled
@@ -199,7 +211,5 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-
-   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   return matInfo.g*(float4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
 }

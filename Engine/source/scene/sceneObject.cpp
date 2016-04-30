@@ -144,6 +144,7 @@ SceneObject::SceneObject()
    mIsScopeAlways = false;
 
    mAccuTex = NULL;
+   mEnvMap = NULL;
 }
 
 //-----------------------------------------------------------------------------
@@ -302,7 +303,7 @@ bool SceneObject::onAdd()
    resolveMountPID();
 
    smSceneObjectAdd.trigger(this);
-
+   
    return true;
 }
 
@@ -314,7 +315,7 @@ void SceneObject::onRemove()
 
    unmount();
    plUnlink();
-
+   
    Parent::onRemove();
 }
 

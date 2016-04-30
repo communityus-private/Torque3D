@@ -31,17 +31,17 @@
 #include "softShadow.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
-TORQUE_UNIFORM_SAMPLER2DCMP(shadowMap, 1);
-TORQUE_UNIFORM_SAMPLER2DCMP(dynamicShadowMap, 2);
+TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
+TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 
 #ifdef USE_SSAO_MASK
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
 uniform float4 rtParams3;
 #endif
-//register 4?
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 4);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 5);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 6);
+
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
 
 uniform float  lightBrightness;
 uniform float3 lightDirection;
@@ -57,6 +57,7 @@ uniform float4 atlasYOffset;
 uniform float4 zNearFarInvNearFar;
 uniform float4 lightMapParams;
 uniform float4 farPlaneScalePSSM;
+uniform float4 overDarkPSSM;
 
 uniform float2 fadeStartLength;
 uniform float2 atlasScale;
@@ -77,7 +78,7 @@ uniform float4 dynamicOffsetX;
 uniform float4 dynamicOffsetY;
 uniform float4 dynamicFarPlaneScalePSSM;
 
-float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2DCMP(sourceShadowMap),
+float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                 float2 texCoord,
                                 float4x4 worldToLightProj,
                                 float4 worldPos,
@@ -90,14 +91,12 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2DCMP(sourceShadowMap),
                                 float4 atlasYOffset,
                                 float2 atlasScale,
                                 float shadowSoftness, 
-                                float dotNL )
+                                float dotNL ,
+                                float4 overDarkPSSM)
 {
       // Compute shadow map coordinate
       float4 pxlPosLightProj = mul(worldToLightProj, worldPos);
-      float2 baseShadowCoord = pxlPosLightProj.xy / pxlPosLightProj.w; 
-
-      float3 shadowPosDX = ddx_fine(pxlPosLightProj.xyz);
-      float3 shadowPosDY = ddy_fine(pxlPosLightProj.xyz);
+      float2 baseShadowCoord = pxlPosLightProj.xy / pxlPosLightProj.w;   
 
       // Distance to light, in shadowmap space
       float distToLight = pxlPosLightProj.z / pxlPosLightProj.w;
@@ -140,7 +139,7 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2DCMP(sourceShadowMap),
       #ifdef NO_SHADOW
          debugColor = float3(1.0,1.0,1.0);
       #endif
-
+	  
       #ifdef PSSM_DEBUG_RENDER
          if ( finalMask.x > 0 )
             debugColor += float3( 1, 0, 0 );
@@ -189,7 +188,8 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2DCMP(sourceShadowMap),
                                  shadowCoord,
                                  farPlaneScale * shadowSoftness,
                                  distToLight,
-                                 dotNL, shadowPosDX, shadowPosDY));
+                                 dotNL,
+                                 dot( finalMask, overDarkPSSM ) ) );
 };
 
 float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
@@ -202,6 +202,16 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
        return float4(1.0, 1.0, 1.0, 0.0);
    }
    
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
+   float3 subsurface = float3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = float3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = float3(0.337255, 0.772549, 0.262745);
+	}
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
@@ -227,7 +237,6 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
       #endif
 
    #else
-
       
       float4 static_shadowed_colors = AL_VectorLightShadowCast( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                                         IN.uv0.xy,
@@ -239,8 +248,8 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
                                                         atlasXOffset, atlasYOffset,
                                                         atlasScale,
                                                         shadowSoftness, 
-                                                        dotNL);
-
+                                                        dotNL,
+                                                        overDarkPSSM);
       float4 dynamic_shadowed_colors = AL_VectorLightShadowCast( TORQUE_SAMPLER2D_MAKEARG(dynamicShadowMap),
                                                         IN.uv0.xy,
                                                         dynamicWorldToLightProj,
@@ -251,15 +260,16 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
                                                         atlasXOffset, atlasYOffset,
                                                         atlasScale,
                                                         shadowSoftness, 
-                                                        dotNL);
-      
+                                                        dotNL,
+                                                        overDarkPSSM);
+
       float static_shadowed = static_shadowed_colors.a;
       float dynamic_shadowed = dynamic_shadowed_colors.a;
 	  
       #ifdef PSSM_DEBUG_RENDER
 	     debugColor = static_shadowed_colors.rgb*0.5+dynamic_shadowed_colors.rgb*0.5;
       #endif
-  
+	  
       // Fade out the shadow at the end of the range.
       float4 zDist = (zNearFarInvNearFar.x + zNearFarInvNearFar.y * depth);
       float fadeOutAmt = ( zDist.x - fadeStartLength.x ) * fadeStartLength.y;
@@ -279,30 +289,19 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
 
    #endif // !NO_SHADOW
 
-   // Specular term
-   float specular = AL_CalcSpecular(   -lightDirection, 
-                                       normal, 
-                                       normalize(-IN.vsEyeRay) ) * lightBrightness * shadowed;
-                                    
-   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   float3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
+   // Specular term   
+   float3 viewSpacePos = IN.vsEyeRay * depth;
+   float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
+                                    lightColor.rgb,
+                                    normalize( -lightDirection ),
+                                    viewSpacePos,
+                                    normal,
+                                    1.0-matInfo.b,
+                                    matInfo.a );
+   float3 lightColorOut = real_specular.rgb * lightBrightness * shadowed;
    
-   float4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
-
-   // TODO: This needs to be removed when lightmapping is disabled
-   // as its extra work per-pixel on dynamic lit scenes.
-   //
-   // Special lightmapping pass.
-   if ( lightMapParams.a < 0.0 )
-   {
-      // This disables shadows on the backsides of objects.
-      shadowed = dotNL < 0.0f ? 1.0f : shadowed;
-
-      Sat_NL_Att = 1.0f;
-      lightColorOut = shadowed;
-      specular *= lightBrightness;
-      addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
-   }
+   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
+   float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
@@ -312,8 +311,6 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
 
    #ifdef PSSM_DEBUG_RENDER
       lightColorOut = debugColor;
-   #endif
-
-   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   #endif      
+   return matInfo.g*(float4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
 }

@@ -399,6 +399,10 @@ void PSSMLightShadowMap::setShaderParameters(GFXShaderConstBuffer* params, Light
    AssertFatal(mNumSplits > 0 && mNumSplits <= MAX_SPLITS,
       avar("PSSMLightShadowMap::_setNumSplits() - Splits must be between 1 and %d!", MAX_SPLITS));
 
+   if ( lsc->mTapRotationTexSC->isValid() )
+      GFX->setTexture( lsc->mTapRotationTexSC->getSamplerRegister(), 
+                        SHADOWMGR->getTapRotationTex() );
+
    const ShadowMapParams *p = mLight->getExtended<ShadowMapParams>();
 
    Point4F  sx(Point4F::Zero), 
@@ -470,7 +474,9 @@ void PSSMLightShadowMap::setShaderParameters(GFXShaderConstBuffer* params, Light
       fadeStartLength.x = (mSplitDist[mNumSplits-1] + mSplitDist[mNumSplits]) / 2.0f;
    }
    fadeStartLength.y = 1.0f / (mSplitDist[mNumSplits] - fadeStartLength.x);
-   params->setSafe( lsc->mFadeStartLength, fadeStartLength);   
+   params->setSafe( lsc->mFadeStartLength, fadeStartLength);
+   
+   params->setSafe( lsc->mOverDarkFactorPSSM, p->overDarkFactor);
 
    // The softness is a factor of the texel size.
    params->setSafe( lsc->mShadowSoftnessConst, p->shadowSoftness * ( 1.0f / mTexSize ) );

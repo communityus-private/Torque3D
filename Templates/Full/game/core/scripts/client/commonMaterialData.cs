@@ -77,15 +77,3 @@ new GFXSamplerStateData(SamplerWrapPoint)
    minFilter = GFXTextureFilterPoint;
    mipFilter = GFXTextureFilterPoint;
 };
-
-new GFXSamplerStateData(SamplerClampShadow)
-{
-   textureColorOp = GFXTOPModulate;
-   addressModeU = GFXAddressClamp;
-   addressModeV = GFXAddressClamp;
-   addressModeW = GFXAddressClamp;
-   magFilter = GFXTextureFilterLinear;
-   minFilter = GFXTextureFilterLinear;
-   mipFilter = GFXTextureFilterPoint;
-   samplerFunc = GFXCmpLessEqual;
-};
