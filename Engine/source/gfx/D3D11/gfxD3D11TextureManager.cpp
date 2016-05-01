@@ -286,7 +286,7 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *p
    const bool supportsAutoMips = GFX->getCardProfiler()->queryProfile("autoMipMapLevel", true);
 
    // Helper bool
-   const bool isCompressedTexFmt = aTexture->mFormat >= GFXFormatDXT1 && aTexture->mFormat <= GFXFormatDXT5;
+   const bool isCompressedTexFmt = aTexture->mFormat >= GFXFormatBC1 && aTexture->mFormat <= GFXFormatBC5;
 
    // Settings for mipmap generation
    U32 maxDownloadMip = pDL->getNumMipLevels();

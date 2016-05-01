@@ -324,7 +324,7 @@ void TerrainBlock::_updateBaseTexture(bool writeToCache)
          blendBmp.extrudeMipLevels();
 
          DDSFile *blendDDS = DDSFile::createDDSFileFromGBitmap( &blendBmp );
-         DDSUtil::squishDDS( blendDDS, GFXFormatDXT1 );
+         DDSUtil::squishDDS( blendDDS, GFXFormatBC1 );
 
          // Write result to file stream
          blendDDS->write( fs );

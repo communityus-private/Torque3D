@@ -663,7 +663,8 @@ void ProcessedPrePassMaterial::_determineFeatures( U32 stageNum,
       }
 
       // Always allow these.
-      else if (   type == MFT_IsDXTnm ||
+      else if (   type == MFT_IsBC3nm ||
+                  type == MFT_IsBC5nm ||
                   type == MFT_TexAnim ||
                   type == MFT_NormalMap ||
                   type == MFT_DetailNormalMap ||

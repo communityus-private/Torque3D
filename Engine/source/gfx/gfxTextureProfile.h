@@ -107,11 +107,11 @@ public:
    enum Compression
    {
       NONE,
-      DXT1,
-      DXT2,
-      DXT3,
-      DXT4,
-      DXT5,
+      BC1,
+      BC2,
+      BC3,
+      BC4,
+      BC5,
    };
 
    GFXTextureProfile(const String &name, Types type, U32 flags, Compression compression = NONE);

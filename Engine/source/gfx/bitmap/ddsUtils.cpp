@@ -42,18 +42,24 @@ bool DDSUtil::squishDDS( DDSFile *srcDDS, const GFXFormat dxtFormat )
    // Flag which format we are using
    switch( dxtFormat )
    {
-      case GFXFormatDXT1:
+      case GFXFormatBC1:
          squishFlags |= squish::kDxt1;
          break;
 
-      case GFXFormatDXT2:
-      case GFXFormatDXT3:
+      case GFXFormatBC2:
          squishFlags |= squish::kDxt3;
          break;
 
-      case GFXFormatDXT4:
-      case GFXFormatDXT5:
+      case GFXFormatBC3:
          squishFlags |= squish::kDxt5;
+         break;
+
+      case GFXFormatBC4:
+         squishFlags |= squish::kBc4;
+         break;
+
+      case GFXFormatBC5:
+         squishFlags |= squish::kBc5;
          break;
 
       default:

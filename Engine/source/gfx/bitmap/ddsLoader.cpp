@@ -80,6 +80,8 @@ enum DDSCapFlags
 #define FOURCC_DXT3  (MakeFourCC('D','X','T','3'))
 #define FOURCC_DXT4  (MakeFourCC('D','X','T','4'))
 #define FOURCC_DXT5  (MakeFourCC('D','X','T','5'))
+#define FOURCC_BC4   (MakeFourCC('A','T','I','1'))
+#define FOURCC_BC5   (MakeFourCC('A','T','I','2'))
 
 DDSFile::DDSFile( const DDSFile &dds )
    :  mFlags( dds.mFlags ),
@@ -133,13 +135,13 @@ U32 DDSFile::getSurfacePitch( U32 mipLevel ) const
 
       switch(mFormat)
       {
-      case GFXFormatDXT1:
+      case GFXFormatBC1:
+      case GFXFormatBC4:
          sizeMultiple = 8;
          break;
-      case GFXFormatDXT2:
-      case GFXFormatDXT3:
-      case GFXFormatDXT4:
-      case GFXFormatDXT5:
+      case GFXFormatBC2:
+      case GFXFormatBC3:      
+      case GFXFormatBC5:
          sizeMultiple = 16;
          break;
       default:
@@ -172,13 +174,13 @@ U32 DDSFile::getSurfaceSize( U32 height, U32 width, U32 mipLevel ) const
 
       switch(mFormat)
       {
-      case GFXFormatDXT1:
+      case GFXFormatBC1:
+      case GFXFormatBC4:
          sizeMultiple = 8;
          break;
-      case GFXFormatDXT2:
-      case GFXFormatDXT3:
-      case GFXFormatDXT4:
-      case GFXFormatDXT5:
+      case GFXFormatBC2:
+      case GFXFormatBC3:      
+      case GFXFormatBC5:
          sizeMultiple = 16;
          break;
       default:
@@ -208,14 +210,14 @@ U32 DDSFile::getSizeInBytes() const
 
 U32 DDSFile::getSizeInBytes( GFXFormat format, U32 height, U32 width, U32 mipLevels )
 {
-   AssertFatal( format >= GFXFormatDXT1 && format <= GFXFormatDXT5, 
-      "DDSFile::getSizeInBytes - Must be a DXT format!" );
+   AssertFatal( format >= GFXFormatBC1 && format <= GFXFormatBC5, 
+      "DDSFile::getSizeInBytes - Must be a Block Compression format!" );
 
    // From the directX docs:
    // max(1, width ÷ 4) x max(1, height ÷ 4) x 8(DXT1) or 16(DXT2-5)
 
    U32 sizeMultiple = 0;
-   if ( format == GFXFormatDXT1 )
+   if ( format == GFXFormatBC1 || format == GFXFormatBC4)
       sizeMultiple = 8;
    else
       sizeMultiple = 16;
@@ -490,20 +492,20 @@ bool DDSFile::readHeader(Stream &s)
       switch(pfFourCC)
       {
       case FOURCC_DXT1:
-         mFormat = GFXFormatDXT1;
+         mFormat = GFXFormatBC1;
          break;
       case FOURCC_DXT2:
-         mFormat = GFXFormatDXT2;
-         break;
       case FOURCC_DXT3:
-         mFormat = GFXFormatDXT3;
+         mFormat = GFXFormatBC2;
          break;
       case FOURCC_DXT4:
-         mFormat = GFXFormatDXT4;
-         break;
       case FOURCC_DXT5:
-         mFormat = GFXFormatDXT5;
+         mFormat = GFXFormatBC3;
          break;
+      case FOURCC_BC4:
+         mFormat = GFXFormatBC4;
+      case FOURCC_BC5:
+         mFormat = GFXFormatBC5;
       default:
          Con::errorf("DDSFile::readHeader - unknown fourcc = '%c%c%c%c'", ((U8*)&pfFourCC)[0], ((U8*)&pfFourCC)[1], ((U8*)&pfFourCC)[2], ((U8*)&pfFourCC)[3]);
          break;
@@ -671,11 +673,11 @@ bool DDSFile::writeHeader( Stream &s )
    if ( mFlags.test( CompressedData ) )
    {
       ddpfFlags = DDPFFourCC;
-      if (mFormat == GFXFormatDXT1)
+      if (mFormat == GFXFormatBC1)
          fourCC = FOURCC_DXT1;
-      if (mFormat == GFXFormatDXT3)
+      else if (mFormat == GFXFormatBC2)
          fourCC = FOURCC_DXT3;
-      if (mFormat == GFXFormatDXT5)
+      else if (mFormat == GFXFormatBC3)
          fourCC = FOURCC_DXT5;
    }
    else
@@ -915,7 +917,7 @@ DDSFile *DDSFile::createDDSFileFromGBitmap( const GBitmap *gbmp )
 bool DDSFile::decompressToGBitmap(GBitmap *dest)
 {
    // TBD: do we support other formats?
-   if (mFormat != GFXFormatDXT1 && mFormat != GFXFormatDXT3 && mFormat != GFXFormatDXT5)
+   if (mFormat != GFXFormatBC1 && mFormat != GFXFormatBC2 && mFormat != GFXFormatBC3)
       return false;
 
    dest->allocateBitmapWithMips(getWidth(), getHeight(), getMipLevels(), GFXFormatR8G8B8A8);
@@ -932,11 +934,11 @@ bool DDSFile::decompressToGBitmap(GBitmap *dest)
       U32 blockSize = 4;
       switch (mFormat)
       {
-      case GFXFormatDXT3:
+      case GFXFormatBC2:
          squishFlag = squish::kDxt3;
          blockSize = 1;
          break;
-      case GFXFormatDXT5:
+      case GFXFormatBC3:
          squishFlag = squish::kDxt5;
          blockSize = 4;
          break;
