@@ -50,6 +50,10 @@ class GFXD3D11ShaderConstBuffer;
 
 class GFXD3D11Device : public GFXDevice
 {
+public:
+   typedef Map<U32, ID3D11SamplerState*> SamplerMap;
+private:
+
    friend class GFXResource;
    friend class GFXD3D11PrimitiveBuffer;
    friend class GFXD3D11VertexBuffer;
@@ -96,6 +100,9 @@ protected:
    /// @see allocVertexDecl
    typedef Map<String,D3D11VertexDecl*> VertexDeclMap;
    VertexDeclMap mVertexDecls;
+
+   /// Used to lookup sampler state for a given hash key
+   SamplerMap mSamplersMap;
 
    ID3D11RenderTargetView* mDeviceBackBufferView;
    ID3D11DepthStencilView* mDeviceDepthStencilView;
@@ -200,8 +207,6 @@ public:
 
    static void enumerateAdapters( Vector<GFXAdapter*> &adapterList );
 
-   GFXTextureObject* createRenderSurface( U32 width, U32 height, GFXFormat format, U32 mipLevel );
-
    ID3D11DepthStencilView* getDepthStencilView() { return mDeviceDepthStencilView; }
    ID3D11RenderTargetView* getRenderTargetView() { return mDeviceBackBufferView; }
    ID3D11Texture2D* getBackBufferTexture() { return mDeviceBackbuffer; }
@@ -298,6 +303,10 @@ public:
 
    // Default multisample parameters
    DXGI_SAMPLE_DESC getMultisampleType() const { return mMultisampleDesc; }
+
+   // grab the sampler map
+   const SamplerMap &getSamplersMap() const { return mSamplersMap; }
+   SamplerMap &getSamplersMap(){ return mSamplersMap; }
 };
 
 #endif

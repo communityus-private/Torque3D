@@ -23,6 +23,15 @@
 #include "gfx/gfxDevice.h"
 #include "gfx/D3D11/gfxD3D11StateBlock.h"
 #include "gfx/D3D11/gfxD3D11EnumTranslate.h"
+#include "core/crc.h"
+
+namespace DictHash
+{
+   inline U32 hash(const GFXSamplerStateDesc &data)
+   {
+      return CRC::calculateCRC(&data, sizeof(GFXSamplerStateDesc));;
+   }
+}
 
 GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
 {
@@ -68,8 +77,6 @@ GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
       AssertFatal(false, "GFXD3D11StateBlock::GFXD3D11StateBlock - CreateBlendState call failure.");
    }
 
-
-
    ZeroMemory(&mDepthStencilDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
    mDepthStencilDesc.DepthWriteMask = mDesc.zWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
    mDepthStencilDesc.DepthEnable = mDesc.zEnable;
@@ -100,7 +107,6 @@ GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
       AssertFatal(false, "GFXD3D11StateBlock::GFXD3D11StateBlock - CreateDepthStencilState call failure.");
    }
 
-
    ZeroMemory(&mRasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
    mRasterizerDesc.CullMode = GFXD3D11CullMode[mDesc.cullMode];
    mRasterizerDesc.FillMode = GFXD3D11FillMode[mDesc.fillMode];
@@ -117,7 +123,6 @@ GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
    else
       mRasterizerDesc.DepthClipEnable = false;
 
-
    hr = D3D11DEVICE->CreateRasterizerState(&mRasterizerDesc, &mRasterizerState);
 
    if (FAILED(hr))
@@ -125,54 +130,67 @@ GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
       AssertFatal(false, "GFXD3D11StateBlock::GFXD3D11StateBlock - CreateDepthStencilState call failure.");
    }
 
-
    ZeroMemory(&mSamplerDesc, sizeof(D3D11_SAMPLER_DESC) * 16);
+
+   GFXD3D11Device::SamplerMap &dx11SamplerMap = D3D11->getSamplersMap();
 
    for (U32 i = 0; i < GFX->getNumSamplers(); i++)
    {
       GFXSamplerStateDesc &gfxSamplerState = mDesc.samplers[i];
+      U32 hash = DictHash::hash(gfxSamplerState);
+      GFXD3D11Device::SamplerMap::Iterator itr = dx11SamplerMap.find(hash);
 
-      mSamplerDesc[i].AddressU = GFXD3D11TextureAddress[gfxSamplerState.addressModeU];
-      mSamplerDesc[i].AddressV = GFXD3D11TextureAddress[gfxSamplerState.addressModeV];
-      mSamplerDesc[i].AddressW = GFXD3D11TextureAddress[gfxSamplerState.addressModeW];
-      mSamplerDesc[i].MaxAnisotropy = gfxSamplerState.maxAnisotropy;
-
-      mSamplerDesc[i].MipLODBias = gfxSamplerState.mipLODBias;
-      mSamplerDesc[i].MinLOD = 0;
-      mSamplerDesc[i].MaxLOD = FLT_MAX;
-
-      const bool comparison = gfxSamplerState.samplerFunc != GFXCmpNever;
-
-      if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT : D3D11_FILTER_MIN_MAG_MIP_POINT;
-      else if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterLinear)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR: D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
-      else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
-      else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterLinear)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
-      else if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterLinear && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT : D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
-      else if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterLinear && gfxSamplerState.mipFilter == GFXTextureFilterLinear)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR : D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
-      else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterLinear && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
-      else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterLinear && mDesc.samplers[i].mipFilter == GFXTextureFilterLinear)
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-      else
-         mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_ANISOTROPIC : D3D11_FILTER_ANISOTROPIC;
-
-      mSamplerDesc[i].BorderColor[0] = 1.0f;
-      mSamplerDesc[i].BorderColor[1] = 1.0f;
-      mSamplerDesc[i].BorderColor[2] = 1.0f;
-      mSamplerDesc[i].BorderColor[3] = 1.0f;
-      mSamplerDesc[i].ComparisonFunc = GFXD3D11CmpFunc[gfxSamplerState.samplerFunc];
-
-      hr = D3D11DEVICE->CreateSamplerState(&mSamplerDesc[i], &mSamplerStates[i]);
-
-      if (FAILED(hr))
+      if (itr == dx11SamplerMap.end())
       {
-         AssertFatal(false, "GFXD3D11StateBlock::GFXD3D11StateBlock - CreateSamplerState call failure.");
+         mSamplerDesc[i].AddressU = GFXD3D11TextureAddress[gfxSamplerState.addressModeU];
+         mSamplerDesc[i].AddressV = GFXD3D11TextureAddress[gfxSamplerState.addressModeV];
+         mSamplerDesc[i].AddressW = GFXD3D11TextureAddress[gfxSamplerState.addressModeW];
+         mSamplerDesc[i].MaxAnisotropy = gfxSamplerState.maxAnisotropy;
+
+         mSamplerDesc[i].MipLODBias = gfxSamplerState.mipLODBias;
+         mSamplerDesc[i].MinLOD = 0;
+         mSamplerDesc[i].MaxLOD = FLT_MAX;
+
+         const bool comparison = gfxSamplerState.samplerFunc != GFXCmpNever;
+
+         if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_MIP_POINT : D3D11_FILTER_MIN_MAG_MIP_POINT;
+         else if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterLinear)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR : D3D11_FILTER_MIN_MAG_POINT_MIP_LINEAR;
+         else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT;
+         else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterPoint && gfxSamplerState.mipFilter == GFXTextureFilterLinear)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR : D3D11_FILTER_MIN_POINT_MAG_MIP_LINEAR;
+         else if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterLinear && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT : D3D11_FILTER_MIN_LINEAR_MAG_MIP_POINT;
+         else if (gfxSamplerState.magFilter == GFXTextureFilterPoint && gfxSamplerState.minFilter == GFXTextureFilterLinear && gfxSamplerState.mipFilter == GFXTextureFilterLinear)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR : D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
+         else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterLinear && gfxSamplerState.mipFilter == GFXTextureFilterPoint)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT : D3D11_FILTER_MIN_MAG_LINEAR_MIP_POINT;
+         else if (gfxSamplerState.magFilter == GFXTextureFilterLinear && gfxSamplerState.minFilter == GFXTextureFilterLinear && mDesc.samplers[i].mipFilter == GFXTextureFilterLinear)
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR : D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+         else
+            mSamplerDesc[i].Filter = comparison ? D3D11_FILTER_COMPARISON_ANISOTROPIC : D3D11_FILTER_ANISOTROPIC;
+
+         mSamplerDesc[i].BorderColor[0] = 1.0f;
+         mSamplerDesc[i].BorderColor[1] = 1.0f;
+         mSamplerDesc[i].BorderColor[2] = 1.0f;
+         mSamplerDesc[i].BorderColor[3] = 1.0f;
+         mSamplerDesc[i].ComparisonFunc = GFXD3D11CmpFunc[gfxSamplerState.samplerFunc];
+
+         hr = D3D11DEVICE->CreateSamplerState(&mSamplerDesc[i], &mSamplerStates[i]);
+         if (FAILED(hr))
+         {
+            AssertFatal(false, "GFXD3D11StateBlock::GFXD3D11StateBlock - CreateSamplerState call failure.");
+         }
+
+         // add sampler state to the map
+         dx11SamplerMap.insert(hash, mSamplerStates[i]);
+      }
+      else
+      {
+         mSamplerStates[i] = itr->value;
+         mSamplerStates[i]->AddRef();
       }
 
 

@@ -142,9 +142,14 @@ GFXD3D11Device::~GFXD3D11Device()
    mD3DDeviceContext->ClearState();
    mD3DDeviceContext->Flush();
 
+   // Free the sampler states
+   SamplerMap::Iterator sampIter = mSamplersMap.begin();
+   for (; sampIter != mSamplersMap.end(); ++sampIter)
+      SAFE_RELEASE(sampIter->value);
+
    // Free the vertex declarations.
    VertexDeclMap::Iterator iter = mVertexDecls.begin();
-   for (; iter != mVertexDecls.end(); iter++)
+   for (; iter != mVertexDecls.end(); ++iter)
       delete iter->value;
 
    // Forcibly clean up the pools
