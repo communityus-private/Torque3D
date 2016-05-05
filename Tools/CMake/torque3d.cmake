@@ -437,12 +437,9 @@ if( TORQUE_OPENGL )
     if( TORQUE_OPENGL AND NOT TORQUE_DEDICATED )
         addPath("${srcDir}/gfx/gl")
         addPath("${srcDir}/gfx/gl/tGL")        
-    addPath("${srcDir}/shaderGen/GLSL")
+        addPath("${srcDir}/shaderGen/GLSL")
         addPath("${srcDir}/terrain/glsl")
         addPath("${srcDir}/forest/glsl")    
-
-    # glew
-    LIST(APPEND ${PROJECT_NAME}_files "${libDir}/glew/src/glew.c")
     endif()
     
     if(WIN32 AND NOT TORQUE_SDL)
@@ -555,9 +552,7 @@ endif()
 
 if(TORQUE_OPENGL)
 	addDef(TORQUE_OPENGL)
-   if(WIN32)
-      addDef(GLEW_STATIC)
-    endif()
+	addLib(epoxy)
 endif()
 
 if(TORQUE_SDL)
@@ -589,16 +584,8 @@ addInclude("${libDir}/opcode")
 addInclude("${libDir}/collada/include")
 addInclude("${libDir}/collada/include/1.4")
 if(TORQUE_OPENGL)
-	addInclude("${libDir}/glew/include")
-endif()
-
-if(UNIX)
-	addInclude("/usr/include/freetype2/freetype")
-	addInclude("/usr/include/freetype2")
-endif()
-
-if(TORQUE_OPENGL)
-	addInclude("${libDir}/glew/include")
+	addInclude("${libDir}/epoxy/include")
+	addInclude("${libDir}/epoxy/src")
 endif()
 
 if(UNIX)
