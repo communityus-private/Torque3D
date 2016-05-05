@@ -190,7 +190,6 @@ GFXD3D11StateBlock::GFXD3D11StateBlock(const GFXStateBlockDesc& desc)
       else
       {
          mSamplerStates[i] = itr->value;
-         mSamplerStates[i]->AddRef();
       }
 
 
@@ -205,7 +204,7 @@ GFXD3D11StateBlock::~GFXD3D11StateBlock()
 
    for (U32 i = 0; i < 16; ++i)
    {
-      SAFE_RELEASE(mSamplerStates[i]);
+      mSamplerStates[i] = NULL;
    }
 }
 
