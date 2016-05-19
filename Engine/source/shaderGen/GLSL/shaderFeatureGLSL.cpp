@@ -1895,14 +1895,20 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    }
    else
    {
+      meta->addStatement(new GenOp("   //forward lit cubemapping\r\n"));
       targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
+
       Var *metalness = (Var*)LangElement::find("metalness");
       if (metalness)
       {
-         meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@, @);\r\n", targ, texCube, metalness, metalness));
+         Var *dColor = new Var("dColor", "vec3");
+         Var *envColor = new Var("envColor", "vec3");
+         meta->addStatement(new GenOp("   @ = @.rgb - (@.rgb * @);\r\n", new DecOp(dColor), targ, targ, metalness));
+         meta->addStatement(new GenOp("   @ = @.rgb*(@).rgb;\r\n", new DecOp(envColor), targ, texCube));
+         meta->addStatement(new GenOp("   @.rgb = toLinear(@)+@*@;\r\n", targ, dColor, envColor, metalness));
       }
       else if (lerpVal)
-         meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, lerpVal));
+         meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
       else
          meta->addStatement(new GenOp("   @.rgb *= @.rgb;\r\n", targ, texCube));
    }
