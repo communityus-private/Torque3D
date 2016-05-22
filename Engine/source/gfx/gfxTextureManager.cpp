@@ -1055,6 +1055,48 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(const Torque::Path &
    return retTexObj;
 }
 
+void GFXTextureManager::saveCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
+   const Torque::Path &saveAs,GFXTextureProfile *profile)
+{
+   PROFILE_SCOPE(GFXTextureManager_createCompositeTexture);
+
+   String inputKeyStr = String::ToString("%d%d%d%d", inputKey[0], inputKey[1], inputKey[2], inputKey[3]);
+
+   String resourceTag = pathR.getFileName() + pathG.getFileName() + pathB.getFileName() + pathA.getFileName() + inputKeyStr; //associate texture object with a key combo
+
+   GFXTextureObject *cacheHit = _lookupTexture(resourceTag, profile);
+   if (cacheHit != NULL)
+   {
+      cacheHit->dumpToDisk("png", saveAs.getFullPath());
+      return;
+   }
+   GBitmap*bitmap[4];
+   bitmap[0] = loadUncompressedTexture(pathR, profile);
+   if (!pathG.isEmpty())
+      bitmap[1] = loadUncompressedTexture(pathG, profile);
+   else
+      bitmap[1] = NULL;
+
+   if (!pathB.isEmpty())
+      bitmap[2] = loadUncompressedTexture(pathB, profile);
+   else
+      bitmap[2] = NULL;
+   if (!pathA.isEmpty())
+      bitmap[3] = loadUncompressedTexture(pathA, profile);
+   else
+      bitmap[3] = NULL;
+
+
+   Path realPath;
+   GFXTextureObject *retTexObj = NULL;
+   realPath = validatePath(pathR); //associate path with r channel texture in.
+
+   retTexObj = createCompositeTexture(bitmap, inputKey, resourceTag, profile, false);
+   if (retTexObj != NULL)
+      retTexObj->dumpToDisk("png", saveAs.getFullPath());
+   return;
+}
+
 GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
    const String &resourceName, GFXTextureProfile *profile, bool deleteBmp)
 {
