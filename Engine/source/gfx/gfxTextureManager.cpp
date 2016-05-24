@@ -1097,6 +1097,19 @@ void GFXTextureManager::saveCompositeTexture(const Torque::Path &pathR, const To
    return;
 }
 
+DefineEngineFunction(saveCompositeTexture, void, (const char* pathR, const char* pathG, const char* pathB, const char* pathA,
+                                                  const char * inputKeyString, const char* saveAs),
+                                                  ("", "", "", "", "", ""), "File1,file2,file3,file4,[chanels for r g b and a locations],saveAs")
+{
+   U32 inputKey[4] = {0,0,0,0};
+
+   if (dStrcmp(inputKeyString, "") != 0)
+   {
+      dSscanf(inputKeyString, "%i %i %i %i", &inputKey[0], &inputKey[1], &inputKey[2], &inputKey[3]);
+   }
+   GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXDefaultStaticDiffuseProfile);
+}
+
 GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
    const String &resourceName, GFXTextureProfile *profile, bool deleteBmp)
 {
