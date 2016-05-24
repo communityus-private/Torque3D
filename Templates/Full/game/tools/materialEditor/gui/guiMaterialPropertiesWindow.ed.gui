@@ -565,7 +565,14 @@
                      isDecoy = "0";
                      Visible = "1";
                      tooltipprofile = "ToolsGuiToolTipProfile";
-                     hovertime = "1000";					 						
+                     hovertime = "1000";
+					 
+                     new GuiContainer(){ // spec Map options
+                        profile="ToolsGuiDefaultProfile";
+                        isContainer = "1";
+                        position = "6 364";
+                        Extent = "185 20";
+                        HorizSizing = "width";
                         new GuiCheckBoxCtrl() {
                            canSaveDynamicFields = "0";
                            internalName = "FlipRBCheckbox";
@@ -574,7 +581,7 @@
                            Profile = "ToolsGuiCheckBoxProfile";
                            HorizSizing = "right";
                            VertSizing = "bottom";
-                           position = "56 34";
+                           position = "5 2";
                            Extent = "57 16";
                            MinExtent = "8 2";
                            canSave = "1";
@@ -597,7 +604,7 @@
                            Profile = "ToolsGuiCheckBoxProfile";
                            HorizSizing = "right";
                            VertSizing = "bottom";
-                           position = "56 34";
+                           position = "70 2";
                            Extent = "57 16";
                            MinExtent = "8 2";
                            canSave = "1";
@@ -612,6 +619,24 @@
                            useMouseEvents = "0";
                            useInactiveState = "0";
                         };
+					 };
+				   new GuiBitmapCtrl() {
+					  bitmap = "tools/gui/images/separator-v";
+					  wrap = "0";
+					  position = "6 75";
+					  extent = "175 2";
+					  minExtent = "8 2";
+					  horizSizing = "width";
+					  vertSizing = "bottom";
+					  profile = "GuiDefaultProfile";
+					  visible = "1";
+					  active = "1";
+					  tooltipProfile = "GuiToolTipProfile";
+					  hovertime = "1000";
+					  isContainer = "0";
+					  canSave = "1";
+					  canSaveDynamicFields = "0";
+				   };
                      new GuiContainer(){ // spec Map
                         profile="ToolsGuiDefaultProfile";
                         isContainer = "1";
@@ -732,6 +757,76 @@
                            bitmap = "tools/gui/images/delete";
                         };
                      };
+				   new GuiBitmapCtrl() {
+					  bitmap = "tools/gui/images/separator-v";
+					  wrap = "0";
+					  position = "6 75";
+					  extent = "175 2";
+					  minExtent = "8 2";
+					  horizSizing = "width";
+					  vertSizing = "bottom";
+					  profile = "GuiDefaultProfile";
+					  visible = "1";
+					  active = "1";
+					  tooltipProfile = "GuiToolTipProfile";
+					  hovertime = "1000";
+					  isContainer = "0";
+					  canSave = "1";
+					  canSaveDynamicFields = "0";
+				   };
+				   new GuiContainer(){ // save composite Map
+					  profile="ToolsGuiDefaultProfile";
+					  isContainer = "1";
+					  position = "0 364";
+					  Extent = "185 20";
+					  HorizSizing = "width";
+					  new GuiTextCtrl() {
+					     canSaveDynamicFields = "0";
+					     Enabled = "1";
+					     isContainer = "0";
+					     Profile = "ToolsGuiDefaultProfile";
+					     HorizSizing = "left";
+					     VertSizing = "bottom";
+					     position = "16 2";
+					     Extent = "100 18";
+					     MinExtent = "8 2";
+					     canSave = "1";
+					     Visible = "1";
+					     hovertime = "1000";
+					     Margin = "0 0 0 0";
+					     Padding = "0 0 0 0";
+					     AnchorTop = "1";
+					     AnchorBottom = "0";
+					     AnchorLeft = "1";
+					     AnchorRight = "0";
+					     text = "Save Composite:";
+					     maxLength = "1024";
+					  };
+					  new GuiBitmapButtonCtrl() {
+						 bitmap = "tools/gui/images/save-icon";
+						 bitmapMode = "Stretched";
+						 autoFitExtents = "0";
+						 useModifiers = "0";
+						 useStates = "1";
+						 groupNum = "-1";
+						 buttonType = "PushButton";
+						 useMouseEvents = "0";
+						 position = "125 2";
+						 extent = "16 16";
+						 minExtent = "8 2";
+						 horizSizing = "left";
+						 vertSizing = "bottom";
+						 profile = "GuiDefaultProfile";
+						 visible = "1";
+						 active = "1";
+						 command = "MaterialEditorGui.saveCompositeMap();";
+						 tooltipProfile = "GuiToolTipProfile";
+						 hovertime = "1000";
+						 isContainer = "0";
+						 canSave = "1";
+						 canSaveDynamicFields = "0";
+					  };
+				   };
 				   new GuiBitmapCtrl() {
 					  bitmap = "tools/gui/images/separator-v";
 					  wrap = "0";
@@ -985,24 +1080,6 @@
 						 canSaveDynamicFields = "0";
 					  };
 				   };
-
-				   new GuiBitmapCtrl() {
-					  bitmap = "tools/gui/images/separator-v";
-					  wrap = "0";
-					  position = "6 75";
-					  extent = "175 2";
-					  minExtent = "8 2";
-					  horizSizing = "width";
-					  vertSizing = "bottom";
-					  profile = "GuiDefaultProfile";
-					  visible = "1";
-					  active = "1";
-					  tooltipProfile = "GuiToolTipProfile";
-					  hovertime = "1000";
-					  isContainer = "0";
-					  canSave = "1";
-					  canSaveDynamicFields = "0";
-				   };
 				   new GuiContainer() {
 					  margin = "0 0 0 0";
 					  padding = "0 0 0 0";
@@ -1238,24 +1315,6 @@
 						 canSave = "1";
 						 canSaveDynamicFields = "0";
 					  };
-				   };
-
-				   new GuiBitmapCtrl() {
-					  bitmap = "tools/gui/images/separator-v";
-					  wrap = "0";
-					  position = "6 75";
-					  extent = "175 2";
-					  minExtent = "8 2";
-					  horizSizing = "width";
-					  vertSizing = "bottom";
-					  profile = "GuiDefaultProfile";
-					  visible = "1";
-					  active = "1";
-					  tooltipProfile = "GuiToolTipProfile";
-					  hovertime = "1000";
-					  isContainer = "0";
-					  canSave = "1";
-					  canSaveDynamicFields = "0";
 				   };
 				   new GuiContainer() {
 					  margin = "0 0 0 0";
