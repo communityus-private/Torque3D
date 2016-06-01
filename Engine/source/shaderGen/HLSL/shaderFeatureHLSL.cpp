@@ -2342,13 +2342,18 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       }
    }
 
-   Var *specularColor = (Var*)LangElement::find( "specularColor" );
-   if ( !specularColor )
+   Var *metalness = (Var*)LangElement::find("metalness");
+   if (!fd.features[MFT_SpecularMap])
    {
-      specularColor  = new Var( "specularColor", "float4" );
-      specularColor->uniform = true;
-      specularColor->constSortPos = cspPotentialPrimitive;
+      if (!metalness)
+      {
+         metalness = new Var("metalness", "float");
+         metalness->uniform = true;
+         metalness->constSortPos = cspPotentialPrimitive;
+      }
    }
+
+   Var *albedo = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
 
    Var *ambient  = new Var( "ambient", "float4" );
    ambient->uniform = true;
@@ -2356,10 +2361,10 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
 
    // Calculate the diffuse shading and specular powers.
    meta->addStatement( new GenOp( "   compute4Lights( @, @, @, @,\r\n"
-                                  "      @, @, @, @, @, @, @, @,\r\n"
+                                  "      @, @, @, @, @, @, @, @, @,\r\n"
                                   "      @, @ );\r\n", 
       wsView, wsPosition, wsNormal, lightMask,
-      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, smoothness, specularColor,
+      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, smoothness, metalness, albedo,
       rtShading, specular ) );
 
    // Apply the lighting to the diffuse color.
