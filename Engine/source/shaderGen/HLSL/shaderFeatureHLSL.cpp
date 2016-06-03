@@ -2089,10 +2089,10 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       if (metalness)
       {
          Var *dColor = new Var("dColor", "float3");
-         Var *envColor = new Var("envColor", "float3");
+         Var *reflectColor = new Var("reflectColor", "float3");
          meta->addStatement(new GenOp("   @ = @.rgb - (@.rgb * @);\r\n", new DecOp(dColor), targ, targ, metalness));
-         meta->addStatement(new GenOp("   @ = @.rgb*(@).rgb;\r\n", new DecOp(envColor), targ, texCube));
-         meta->addStatement(new GenOp("   @.rgb = toLinear(@)+@*@;\r\n", targ, dColor, envColor, metalness));
+         meta->addStatement(new GenOp("   @ = @.rgb*(@).rgb*@;\r\n", new DecOp(reflectColor), targ, texCube, metalness));
+         meta->addStatement(new GenOp("   @.rgb = @+@;\r\n", targ, dColor, reflectColor));
       }
       else if (lerpVal)
          meta->addStatement(new GenOp("   @ *= float4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
