@@ -145,6 +145,7 @@ SceneObject::SceneObject()
 
    mAccuTex = NULL;
    mEnvMap = NULL;
+   mPathfindingIgnore = false;
 }
 
 //-----------------------------------------------------------------------------

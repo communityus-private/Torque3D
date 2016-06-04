@@ -321,7 +321,8 @@ function EWCreatorWindow::navigate( %this, %address )
          }
 
          %fullPath = makeRelativePath( %fullPath, getMainDotCSDir() );                                  
-         %splitPath = strreplace( %fullPath, "/", " " );     
+         %splitPath = strreplace( %fullPath, " ", "_" );
+         %splitPath = strreplace( %splitPath, "/", " " );
          if( getWord(%splitPath, 0) $= "tools" )
          {
             %fullPath = findNextFileMultiExpr( getFormatExtensions() );
@@ -335,6 +336,7 @@ function EWCreatorWindow::navigate( %this, %address )
          // Add this file's path (parent folders) to the
          // popup menu if it isn't there yet.
          %temp = strreplace( %pathFolders, " ", "/" );         
+         %temp = strreplace( %temp, "_", " " );
          %r = CreatorPopupMenu.findText( %temp );
          if ( %r == -1 )
          {
@@ -433,7 +435,8 @@ function EWCreatorWindow::navigate( %this, %address )
       while ( %fullPath !$= "" )
       {         
          %fullPath = makeRelativePath( %fullPath, getMainDotCSDir() );                                  
-         %splitPath = strreplace( %fullPath, "/", " " );     
+         %splitPath = strreplace( %fullPath, " ", "_" );
+         %splitPath = strreplace( %splitPath, "/", " " );
          if( getWord(%splitPath, 0) $= "tools" )
          {
             %fullPath = findNextFile( %expr );
@@ -447,6 +450,7 @@ function EWCreatorWindow::navigate( %this, %address )
          // Add this file's path (parent folders) to the
          // popup menu if it isn't there yet.
          %temp = strreplace( %pathFolders, " ", "/" );         
+         %temp = strreplace( %temp, "_", " " );
          %r = CreatorPopupMenu.findText( %temp );
          if ( %r == -1 )
          {
