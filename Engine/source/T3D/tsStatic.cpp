@@ -524,6 +524,13 @@ void TSStatic::processTick( const Move *move )
 
    if ( isServerObject() )
       mShapeInstance->advanceTime( TickSec, mAmbientThread );
+
+   if ( isMounted() )
+   {
+      MatrixF mat( true );
+      mMount.object->getMountTransform(mMount.node, mMount.xfm, &mat );
+      setTransform( mat );
+   }
 }
 
 void TSStatic::interpolateTick( F32 delta )
@@ -535,6 +542,13 @@ void TSStatic::advanceTime( F32 dt )
    AssertFatal( mPlayAmbient && mAmbientThread, "TSSTatic::advanceTime called with nothing to play." );
    
    mShapeInstance->advanceTime( dt, mAmbientThread );
+
+   if ( isMounted() )
+   {
+      MatrixF mat( true );
+      mMount.object->getRenderMountTransform( dt, mMount.node, mMount.xfm, &mat );
+      setRenderTransform( mat );
+   }
 }
 
 void TSStatic::_updateShouldTick()
@@ -713,7 +727,8 @@ void TSStatic::onScaleChanged()
 void TSStatic::setTransform(const MatrixF & mat)
 {
    Parent::setTransform(mat);
-   setMaskBits( TransformMask );
+   if (!isMounted())
+      setMaskBits( TransformMask );
 
    if ( mPhysicsRep )
       mPhysicsRep->setTransform( mat );
@@ -1158,6 +1173,19 @@ void TSStaticPolysoupConvex::getFeatures(const MatrixF& mat,const VectorF& n, Co
    cf->mFaceList.last().vertex[2] = firstVert+3;
 
    // All done!
+}
+
+void TSStatic::onMount(SceneObject *obj, S32 node)
+{
+   Parent::onMount(obj, node);
+   _updateShouldTick();
+}
+
+void TSStatic::onUnmount(SceneObject *obj, S32 node)
+{
+   Parent::onUnmount(obj, node);
+   setMaskBits(TransformMask);
+   _updateShouldTick();
 }
 
 //------------------------------------------------------------------------

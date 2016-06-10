@@ -632,13 +632,6 @@ void TurretShape::processTick(const Move* move)
    if (!isGhost())
       updateAnimation(TickSec);
 
-   if (isMounted()) {
-      MatrixF mat;
-      mMount.object->getMountTransform( mMount.node, mMount.xfm, &mat );
-      ShapeBase::setTransform(mat);
-      ShapeBase::setRenderTransform(mat);
-   }
-
    updateMove(move);
 }
 
