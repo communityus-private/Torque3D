@@ -101,8 +101,8 @@ void GFXGLTextureObject::unlock(U32 mipLevel)
 
    PRESERVE_TEXTURE(mBinding);
    glBindTexture(mBinding, mHandle);
-   glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mBuffer);
-   glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, (mLockedRectRect.extent.x + 1) * (mLockedRectRect.extent.y + 1) * mBytesPerTexel, mFrameAllocatorPtr, GL_STREAM_DRAW);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, mBuffer);
+   glBufferData(GL_PIXEL_UNPACK_BUFFER, (mLockedRectRect.extent.x + 1) * (mLockedRectRect.extent.y + 1) * mBytesPerTexel, mFrameAllocatorPtr, GL_STREAM_DRAW);
    S32 z = getDepth();
    if (mBinding == GL_TEXTURE_3D)
       glTexSubImage3D(mBinding, mipLevel, mLockedRectRect.point.x, mLockedRectRect.point.y, z,
@@ -114,7 +114,7 @@ void GFXGLTextureObject::unlock(U32 mipLevel)
 		glTexSubImage1D(mBinding, mipLevel, (mLockedRectRect.point.x > 1 ? mLockedRectRect.point.x : mLockedRectRect.point.y), 
 		  (mLockedRectRect.extent.x > 1 ? mLockedRectRect.extent.x : mLockedRectRect.extent.y), GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], NULL);
    
-   glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
    mLockedRect.bits = NULL;
 #if TORQUE_DEBUG
