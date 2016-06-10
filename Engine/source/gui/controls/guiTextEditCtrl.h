@@ -84,7 +84,7 @@ protected:
    S32                  mHistorySize;
    bool                 mPasswordText;
    StringTableEntry     mPasswordMask;
-
+   StringTableEntry		mAcceptableChars;
    /// If set, any non-ESC key is handled here or not at all
    bool    mSinkAllKeyEvents;   
    UTF16   **mHistoryBuf;
