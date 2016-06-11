@@ -553,7 +553,7 @@ void TSStatic::advanceTime( F32 dt )
 
 void TSStatic::_updateShouldTick()
 {
-   bool shouldTick = mPlayAmbient && mAmbientThread;
+   bool shouldTick = (mPlayAmbient && mAmbientThread) || isMounted();
 
    if ( isTicking() != shouldTick )
       setProcessTick( shouldTick );
@@ -749,8 +749,12 @@ U32 TSStatic::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 {
    U32 retMask = Parent::packUpdate(con, mask, stream);
 
-   mathWrite( *stream, getTransform() );
-   mathWrite( *stream, getScale() );
+   if (stream->writeFlag(mask & TransformMask))
+   {
+      mathWrite(*stream, getTransform());
+      mathWrite(*stream, getScale());
+   }
+
    stream->writeString( mShapeName );
 
    if ( stream->writeFlag( mask & UpdateCollisionMask ) )
@@ -792,12 +796,15 @@ void TSStatic::unpackUpdate(NetConnection *con, BitStream *stream)
 {
    Parent::unpackUpdate(con, stream);
 
-   MatrixF mat;
-   Point3F scale;
-   mathRead( *stream, &mat );
-   mathRead( *stream, &scale );
-   setScale( scale);
-   setTransform(mat);
+   if (stream->readFlag()) // TransformMask
+   {
+      MatrixF mat;
+      Point3F scale;
+      mathRead(*stream, &mat);
+      mathRead(*stream, &scale);
+      setScale(scale);
+      setRenderTransform(mat);
+   }
 
    mShapeName = stream->readSTString();
 
