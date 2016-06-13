@@ -67,20 +67,12 @@ if(WIN32)
 else()
 	set(TORQUE_SDL ON) # we need sdl to work on Linux/Mac
 endif()
-if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
-	#mark_as_advanced(TORQUE_OPENGL)
-else()
-	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
-endif()
 
-if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
-	#mark_as_advanced(TORQUE_OPENGL)
-else()
-	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
-	option(TORQUE_DEDICATED "Torque dedicated" OFF)
-endif()
+# OpenGL
+option(TORQUE_OPENGL "Allow OpenGL render" ON)
+mark_as_advanced(TORQUE_OPENGL)
+# Dedicated disabled by default
+option(TORQUE_DEDICATED "Torque dedicated" OFF)
 
 ###############################################################################
 # options
