@@ -147,7 +147,7 @@ void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const
    specularMapTex->uniform = true;
    specularMapTex->texture = true;
    specularMapTex->constNum = specularMap->constNum;
-   LangElement *texOptexOp = new GenOp("@.Sample(@, @)", specularMapTex, specularMap, texCoord);
+   LangElement *texOp = new GenOp("@.Sample(@, @)", specularMapTex, specularMap, texCoord);
 
 
    Var *specularColor = new Var( "specularColor", "float4" );

@@ -63,7 +63,6 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    specularMap->constNum = Var::getTexUnitNum();
 
    Var *specularMapTex = new Var;
-   LangElement *texOp = NULL;
    specularMapTex->setName("specularMapTex");
    specularMapTex->setType("Texture2D");
    specularMapTex->uniform = true;
