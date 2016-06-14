@@ -210,10 +210,6 @@ void compute4Lights( float3 wsView,
    for ( i = 0; i < 3; i++ )
       lightVectors[i] = wsPosition[i] - inLightPos[i];
 
-   float4 squareDists = 0;
-   for ( i = 0; i < 3; i++ )
-      squareDists += lightVectors[i] * lightVectors[i];
-
    // Accumulate the dot product between the light 
    // vector and the normal.
    //
@@ -229,20 +225,11 @@ void compute4Lights( float3 wsView,
    for ( i = 0; i < 3; i++ )
       nDotL += lightVectors[i] * -wsNormal[i];
 
-   float4 rDotL = 0;
- 
-   // Normalize the dots.
-   //
-   // Notice we're using the half type here to get a
-   // much faster sqrt via the rsq_pp instruction at 
-   // the loss of some precision.
-   //
-   // Unless we have some extremely large point lights
-   // i don't believe the precision loss will matter.
-   //
+   float4 squareDists = 0;
+   for ( i = 0; i < 3; i++ )
+      squareDists += lightVectors[i] * lightVectors[i];
    half4 correction = (half4)rsqrt( squareDists );
    nDotL = saturate( nDotL * correction );
-   rDotL = clamp( rDotL * correction, 0.00001, 1.0 );
 
    // First calculate a simple point light linear 
    // attenuation factor.
@@ -253,9 +240,6 @@ void compute4Lights( float3 wsView,
    //
    float4 atten = saturate( 1.0 - ( squareDists * inLightInvRadiusSq ) );
 
-   // Finally apply the shadow masking on the attenuation.
-   atten *= shadowMask;
-
    // Get the final light intensity.
    float4 intensity = nDotL * atten;
 
@@ -263,14 +247,6 @@ void compute4Lights( float3 wsView,
    float4 lightColor = 0;
    for ( i = 0; i < 4; i++ )
       lightColor += intensity[i] * inLightColor[i];
-
-   // Output the specular power.
-   float4 specularIntensity = pow( rDotL, smoothness.xxxx ) * atten;
-   
-   // Apply the per-light specular attenuation.
-   float4 specular = float4(0,0,0,1);
-   for ( i = 0; i < 4; i++ )
-      specular += float4( inLightColor[i].rgb * inLightColor[i].a * specularIntensity[i], 1 );
       
    float3 toLight = 0;
    for ( i = 0; i < 3; i++ )
