@@ -37,7 +37,6 @@ void AccuTexFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
    getOutTexCoord(   "texCoord", 
                      "float2", 
-                     true, 
                      false, 
                      meta, 
                      componentList );
@@ -139,8 +138,8 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       accuSpecular->constSortPos = cspPotentialPrimitive;
    }
 
-   Var *inTex = getInTexCoord( "texCoord", "float2", true, componentList );
-   Var *accuVec = getInTexCoord( "accuVec", "float3", true, componentList );
+   Var *inTex = getInTexCoord( "texCoord", "float2", componentList );
+   Var *accuVec = getInTexCoord( "accuVec", "float3", componentList );
    Var *bumpNorm = (Var *)LangElement::find( "bumpSample" );
    if( bumpNorm == NULL )
    {
@@ -253,7 +252,6 @@ Var* AccuTexFeatHLSL::addOutAccuVec( Vector<ShaderComponent*> &componentList, Mu
       outAccuVec->setName( "accuVec" );
       outAccuVec->setStructName( "OUT" );
       outAccuVec->setType( "float3" );
-      outAccuVec->mapsToSampler = false;
 
       getAccuVec( meta, outAccuVec );
    }

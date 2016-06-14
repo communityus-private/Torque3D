@@ -41,7 +41,7 @@
 void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord( "texCoord", "float2", true, componentList );
+   Var *texCoord = getInTexCoord( "texCoord", "float2", componentList );
 
    // search for color var
    Var *material = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
@@ -137,7 +137,6 @@ void DeferredSpecMapHLSL::processVert( Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
    getOutTexCoord(   "texCoord", 
                      "float2", 
-                     true, 
                      fd.features[MFT_TexAnim], 
                      meta, 
                      componentList );

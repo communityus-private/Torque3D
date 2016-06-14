@@ -54,7 +54,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    }
 
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
    Var *damage = new Var("materialDamage", "float");
    damage->uniform = true;
@@ -152,7 +152,6 @@ void AlbedoDamageFeatHLSL::processVert(Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
       "float2",
-      true,
       fd.features[MFT_TexAnim],
       meta,
       componentList);
@@ -166,7 +165,7 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    const MaterialFeatureData &fd)
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
    Var *damage = (Var*)LangElement::find("materialDamage");
    if (!damage){
@@ -310,7 +309,6 @@ void CompositeDamageFeatHLSL::processVert(Vector<ShaderComponent*> &componentLis
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
       "float2",
-      true,
       fd.features[MFT_TexAnim],
       meta,
       componentList);

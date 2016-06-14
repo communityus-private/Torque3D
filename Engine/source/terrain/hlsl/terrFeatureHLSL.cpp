@@ -99,7 +99,6 @@ Var* TerrainFeatHLSL::_getInDetailCoord( Vector<ShaderComponent*> &componentList
       inDet->setName( name );
       inDet->setStructName( "IN" );
       inDet->setType( "float4" );
-      inDet->mapsToSampler = true;
    }
 
    return inDet;
@@ -118,7 +117,6 @@ Var* TerrainFeatHLSL::_getInMacroCoord( Vector<ShaderComponent*> &componentList 
       inDet->setName( name );
       inDet->setStructName( "IN" );
       inDet->setType( "float4" );
-      inDet->mapsToSampler = true;
    }
 
    return inDet;
@@ -219,7 +217,6 @@ void TerrainBaseMapFeatHLSL::processVert( Vector<ShaderComponent*> &componentLis
    outTex->setName( "outTexCoord" );
    outTex->setStructName( "OUT" );
    outTex->setType( "float3" );
-   outTex->mapsToSampler = true;
    meta->addStatement( new GenOp( "   @.xy = @.xy;\r\n", outTex, inTex ) );
 
    // If this shader has a side projected layer then we 
@@ -253,7 +250,7 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    // grab connector texcoord register
-   Var *texCoord = getInTexCoord( "texCoord", "float3", true, componentList );
+   Var *texCoord = getInTexCoord( "texCoord", "float3", componentList );
 
    // create texture var
    Var *diffuseMap = new Var;
@@ -382,7 +379,6 @@ void TerrainDetailMapFeatHLSL::processVert(  Vector<ShaderComponent*> &component
    outTex->setName( String::ToString( "detCoord%d", detailIndex ) );
    outTex->setStructName( "OUT" );
    outTex->setType( "float4" );
-   outTex->mapsToSampler = true;
 
    // Get the detail scale and fade info.
    Var *detScaleAndFade = new Var;
@@ -762,7 +758,6 @@ void TerrainMacroMapFeatHLSL::processVert(  Vector<ShaderComponent*> &componentL
    outTex->setName( String::ToString( "macroCoord%d", detailIndex ) );
    outTex->setStructName( "OUT" );
    outTex->setType( "float4" );
-   outTex->mapsToSampler = true;
 
    // Get the detail scale and fade info.
    Var *detScaleAndFade = new Var;

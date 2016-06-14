@@ -340,7 +340,6 @@ Var* ShaderFeatureHLSL::getOutViewToTangent( Vector<ShaderComponent*> &component
 
 Var* ShaderFeatureHLSL::getOutTexCoord(   const char *name,
                                           const char *type,
-                                          bool mapsToSampler,
                                           bool useTexAnim,
                                           MultiLine *meta,
                                           Vector<ShaderComponent*> &componentList )
@@ -358,7 +357,6 @@ Var* ShaderFeatureHLSL::getOutTexCoord(   const char *name,
       texCoord->setName( outTexName );
       texCoord->setStructName( "OUT" );
       texCoord->setType( type );
-      texCoord->mapsToSampler = mapsToSampler;
 
       if ( useTexAnim )
       {
@@ -393,7 +391,6 @@ Var* ShaderFeatureHLSL::getOutTexCoord(   const char *name,
 
 Var* ShaderFeatureHLSL::getInTexCoord( const char *name,
                                        const char *type,
-                                       bool mapsToSampler,
                                        Vector<ShaderComponent*> &componentList )
 {
    Var* texCoord = (Var*)LangElement::find( name );
@@ -404,7 +401,6 @@ Var* ShaderFeatureHLSL::getInTexCoord( const char *name,
       texCoord->setName( name );
       texCoord->setStructName( "IN" );
       texCoord->setType( type );
-      texCoord->mapsToSampler = mapsToSampler;
    }
 
    AssertFatal( dStrcmp( type, (const char*)texCoord->type ) == 0, 
@@ -452,7 +448,6 @@ Var* ShaderFeatureHLSL::addOutVpos( MultiLine *meta,
       outVpos->setName( "outVpos" );
       outVpos->setStructName( "OUT" );
       outVpos->setType( "float4" );
-      outVpos->mapsToSampler = false;
 
       Var *outPosition = (Var*) LangElement::find( "hpos" );
       AssertFatal( outPosition, "ShaderFeatureHLSL::addOutVpos - Didn't find the output position." );
@@ -755,7 +750,6 @@ Var* ShaderFeatureHLSL::addOutWsPosition( Vector<ShaderComponent*> &componentLis
       outWsPosition->setName( "outWsPosition" );
       outWsPosition->setStructName( "OUT" );
       outWsPosition->setType( "float3" );
-      outWsPosition->mapsToSampler = false;
 
       getWsPosition( componentList, useInstancing, meta, outWsPosition );
    }
@@ -828,7 +822,6 @@ Var* ShaderFeatureHLSL::addOutDetailTexCoord(   Vector<ShaderComponent*> &compon
    outTex->setName( "detCoord" );
    outTex->setStructName( "OUT" );
    outTex->setType( "float2" );
-   outTex->mapsToSampler = true;
 
    if ( useTexAnim )
    {
@@ -870,7 +863,6 @@ void DiffuseMapFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
    getOutTexCoord(   "texCoord", 
                      "float2", 
-                     true, 
                      fd.features[MFT_TexAnim], 
                      meta, 
                      componentList );
@@ -886,7 +878,7 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
                                        const MaterialFeatureData &fd )
 {
    // grab connector texcoord register
-   Var *inTex = getInTexCoord( "texCoord", "float2", true, componentList );
+   Var *inTex = getInTexCoord( "texCoord", "float2", componentList );
 
    //determine output target
    ShaderFeature::OutputTarget targ = ShaderFeature::DefaultTarget;
@@ -1075,7 +1067,6 @@ void OverlayTexFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
    outTex->setName( "outTexCoord2" );
    outTex->setStructName( "OUT" );
    outTex->setType( "float2" );
-   outTex->mapsToSampler = true;
 
    if( fd.features[MFT_TexAnim] )
    {
@@ -1110,7 +1101,6 @@ void OverlayTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    inTex->setName("texCoord2");
    inTex->setStructName("IN");
    inTex->setType("float2");
-   inTex->mapsToSampler = true;
 
    // create texture var
    Var *diffuseMap = new Var;
@@ -1285,7 +1275,6 @@ void LightmapFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
    outTex->setName( "texCoord2" );
    outTex->setStructName( "OUT" );
    outTex->setType( "float2" );
-   outTex->mapsToSampler = true;
 
    // setup language elements to output incoming tex coords to output
    output = new GenOp( "   @ = @;\r\n", outTex, inTex );
@@ -1300,7 +1289,6 @@ void LightmapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    inTex->setName("texCoord2");
    inTex->setStructName("IN");
    inTex->setType("float2");
-   inTex->mapsToSampler = true;
 
    // create texture var
    Var *lightMap = new Var;
@@ -1434,7 +1422,6 @@ void TonemapFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
       outTex2->setName( "texCoord2" );
       outTex2->setStructName( "OUT" );
       outTex2->setType( "float2" );
-      outTex2->mapsToSampler = true;
 
       output = new GenOp( "   @ = @;\r\n", outTex2, inTex2 );
    }
@@ -1450,7 +1437,6 @@ void TonemapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    inTex2->setName("texCoord2");
    inTex2->setStructName("IN");
    inTex2->setType("float2");
-   inTex2->mapsToSampler = true;
 
    // create texture var
    Var *toneMap = new Var;
@@ -1702,7 +1688,7 @@ void DetailFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
                                  const MaterialFeatureData &fd )
 {
    // Get the detail texture coord.
-   Var *inTex = getInTexCoord( "detCoord", "float2", true, componentList );
+   Var *inTex = getInTexCoord( "detCoord", "float2", componentList );
 
    // create texture var
    Var *detailMap = new Var;
@@ -1857,7 +1843,6 @@ void ReflectCubeFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
          outTex->setName( "texCoord" );
          outTex->setStructName( "OUT" );
          outTex->setType( "float2" );
-         outTex->mapsToSampler = true;
 
          // setup language elements to output incoming tex coords to output
          meta->addStatement( new GenOp( "   @ = @;\r\n", outTex, inTex ) );
@@ -1913,7 +1898,6 @@ void ReflectCubeFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
     reflectVec->setName( "reflectVec" );
     reflectVec->setStructName( "OUT" );
     reflectVec->setType( "float3" );
-    reflectVec->mapsToSampler = true;
 
     meta->addStatement( new GenOp( "   @ = reflect(@, @);\r\n", reflectVec, eyeToVert, cubeNormal ) );
 
@@ -1936,7 +1920,7 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
           fd.materialFeatures[MFT_NormalMap])
       {
          // grab connector texcoord register
-         Var *inTex = getInTexCoord("texCoord", "float2", true, componentList);
+         Var *inTex = getInTexCoord("texCoord", "float2", componentList);
 
          // create texture var
          Var *newMap = new Var;
@@ -1991,7 +1975,6 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    reflectVec->setName("reflectVec");
    reflectVec->setStructName("IN");
    reflectVec->setType("float3");
-   reflectVec->mapsToSampler = true;
 
    // create cubemap var
    Var *cubeMap = new Var;
@@ -2205,7 +2188,6 @@ void RTLightingFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
          outNormal->setName( "wsNormal" );
          outNormal->setStructName( "OUT" );
          outNormal->setType( "float3" );
-         outNormal->mapsToSampler = false;
 
          // Transform the normal to world space.
          meta->addStatement( new GenOp( "   @ = normalize( @ - @.xyz );\r\n", outNormal, eyePos, inPosition ) );
@@ -2237,7 +2219,6 @@ void RTLightingFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
       outNormal->setName( "wsNormal" );
       outNormal->setStructName( "OUT" );
       outNormal->setType( "float3" );
-      outNormal->mapsToSampler = false;
 
       // Get the transform to world space.
       Var *objTrans = getObjTrans( componentList, fd.features[MFT_UseInstancing], meta );
@@ -2433,7 +2414,6 @@ void FogFeatHLSL::processVert(   Vector<ShaderComponent*> &componentList,
       fogAmount->setName( "fogAmount" );
       fogAmount->setStructName( "OUT" );
       fogAmount->setType( "float" );
-      fogAmount->mapsToSampler = false;
 
       meta->addStatement( new GenOp( "   @ = saturate( computeSceneFog( @, @, @.r, @.g, @.b ) );\r\n", 
          fogAmount, eyePos, wsPosition, fogData, fogData, fogData ) );
@@ -2573,7 +2553,7 @@ void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    // Get the visibility constant.
    Var *visibility = NULL;
    if ( fd.features[ MFT_UseInstancing ] )
-      visibility = getInTexCoord( "visibility", "float", false, componentList );
+      visibility = getInTexCoord( "visibility", "float", componentList );
    else
    {
       visibility = (Var*)LangElement::find( "visibility" );

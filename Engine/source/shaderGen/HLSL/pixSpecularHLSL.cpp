@@ -122,7 +122,6 @@ void SpecularMapHLSL::processVert(Vector<ShaderComponent*> &componentList, const
    // Add the texture coords.
    getOutTexCoord("texCoord",
      "float2",
-      true,
       fd.features[MFT_TexAnim],
       meta,
       componentList);
@@ -133,7 +132,7 @@ void SpecularMapHLSL::processVert(Vector<ShaderComponent*> &componentList, const
 void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
    // create texture var
    Var *specularMap = new Var;

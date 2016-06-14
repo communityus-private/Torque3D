@@ -254,7 +254,6 @@ void DeferredBumpFeatHLSL::processVert(   Vector<ShaderComponent*> &componentLis
 
          getOutTexCoord(   "texCoord", 
                            "float2", 
-                           true, 
                            useTexAnim, 
                            meta, 
                            componentList );
@@ -294,7 +293,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
 
       // create texture var
       Var *bumpMap = getNormalMapTex();
-      Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+      Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
       LangElement *texOp = NULL;
 
@@ -339,7 +338,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
          }
 
 
-         texCoord = getInTexCoord("detCoord", "float2", true, componentList);
+         texCoord = getInTexCoord("detCoord", "float2", componentList);
 
          if (mIsDirect3D11)
             texOp = new GenOp("@.Sample(@, @)", detailNormalTex, bumpMap, texCoord);
@@ -382,7 +381,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
          else
             bumpMap->setType("sampler2D");
 
-         texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+         texCoord = getInTexCoord("texCoord", "float2", componentList);
 
          if (mIsDirect3D11)
             texOp = new GenOp("@.Sample(@, @)", damageBumpTex, bumpMap, texCoord);
@@ -444,7 +443,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       {
          MultiLine *meta = new MultiLine;
 
-         Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+         Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
          Var *bumpMap = getNormalMapTex();
 
@@ -486,7 +485,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
                bumpMapTex->constNum = bumpMap->constNum;
             }
 
-            texCoord = getInTexCoord( "detCoord", "float2", true, componentList );
+            texCoord = getInTexCoord( "detCoord", "float2", componentList );
             LangElement *texOp = NULL;
             if (mIsDirect3D11)
                texOp = new GenOp("@.Sample(@, @)", bumpMap, bumpMapTex, texCoord);
@@ -523,7 +522,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       Var *bumpSample = (Var *)LangElement::find("bumpSample");
       if (bumpSample == NULL)
       {
-         Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+         Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
          Var *bumpMap = getNormalMapTex();
          Var *bumpMapTex = (Var *)LangElement::find("bumpMapTex");

@@ -42,7 +42,6 @@ void BumpFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
    // Output the texture coord.
    getOutTexCoord(   "texCoord", 
                      "float2", 
-                     true, 
                      useTexAnim, 
                      meta, 
                      componentList );
@@ -64,7 +63,7 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    output = meta;
 
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
    // Sample the bumpmap.
    Var *bumpMap = getNormalMapTex();
@@ -183,7 +182,7 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
          detailBumpTex->constNum = bumpMap->constNum;
       }
 
-      texCoord = getInTexCoord( "detCoord", "float2", true, componentList );
+      texCoord = getInTexCoord( "detCoord", "float2", componentList );
 
       if (mIsDirect3D11)
          texOp = new GenOp("@.Sample(@, @)", detailBumpTex, bumpMap, texCoord);
@@ -227,7 +226,7 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       else
          bumpMap->setType("sampler2D");
 
-      texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+      texCoord = getInTexCoord("texCoord", "float2", componentList);
 
       if (mIsDirect3D11)
          texOp = new GenOp("@.Sample(@, @)", damageBumpTex, bumpMap, texCoord);
@@ -371,7 +370,6 @@ void ParallaxFeatHLSL::processVert( Vector<ShaderComponent*> &componentList,
    // Add the texture coords.
    getOutTexCoord(   "texCoord", 
                      "float2", 
-                     true, 
                      fd.features[MFT_TexAnim], 
                      meta, 
                      componentList );
@@ -424,7 +422,7 @@ void ParallaxFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
 
    // Order matters... get this first!
-   Var *texCoord = getInTexCoord( "texCoord", "float2", true, componentList );
+   Var *texCoord = getInTexCoord( "texCoord", "float2", componentList );
 
    ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
 
@@ -529,7 +527,6 @@ void NormalsOutFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList,
    outNormal->setName( "wsNormal" );
    outNormal->setStructName( "OUT" );
    outNormal->setType( "float3" );
-   outNormal->mapsToSampler = false;
 
    // Find the incoming vertex normal.
    Var *inNormal = (Var*)LangElement::find( "normal" );   
