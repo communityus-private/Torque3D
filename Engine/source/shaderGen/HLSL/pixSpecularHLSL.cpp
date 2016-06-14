@@ -136,29 +136,19 @@ void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const
 
    // create texture var
    Var *specularMap = new Var;
-   specularMap->setName("specularMap");
+   specularMap->setName("SamplerState");
    specularMap->uniform = true;
    specularMap->sampler = true;
    specularMap->constNum = Var::getTexUnitNum();
    
-   Var *specularMapTex = NULL;
-   LangElement *texOp = NULL;
-   if (mIsDirect3D11)
-   {
-      specularMap->setType("SamplerState");
-      specularMapTex = new Var;
-      specularMapTex->setName("specularMapTex");
-      specularMapTex->setType("Texture2D");
-      specularMapTex->uniform = true;
-      specularMapTex->texture = true;
-      specularMapTex->constNum = specularMap->constNum;
-      texOp = new GenOp("@.Sample(@, @)", specularMapTex, specularMap, texCoord);
-   }
-   else
-   {
-      specularMap->setType("sampler2D");
-      texOp = new GenOp("tex2D(@, @)", specularMap, texCoord);
-   }
+   Var *specularMapTex = new Var;
+   specularMapTex->setName("specularMapTex");
+   specularMapTex->setType("Texture2D");
+   specularMapTex->uniform = true;
+   specularMapTex->texture = true;
+   specularMapTex->constNum = specularMap->constNum;
+   LangElement *texOptexOp = new GenOp("@.Sample(@, @)", specularMapTex, specularMap, texCoord);
+
 
    Var *specularColor = new Var( "specularColor", "float4" );
    Var *metalness = (Var*)LangElement::find("metalness");

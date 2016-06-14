@@ -150,15 +150,7 @@ S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void
 
 void ShaderConnectorHLSL::sortVars()
 {
-
-   // If shader model 4+ than we gotta sort the vars to make sure the order is consistent
-   if (GFX->getPixelShaderVersion() >= 4.f)
-   {
-      dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
-      return;
-   }
-
-   return;
+   dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
 }
 
 void ShaderConnectorHLSL::setName( char *newName )

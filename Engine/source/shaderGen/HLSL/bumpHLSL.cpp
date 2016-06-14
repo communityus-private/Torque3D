@@ -70,11 +70,7 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    LangElement *texOp = NULL;
 
    //if it's D3D11 let's create the texture object
-   Var* bumpMapTex = NULL;
-   if (mIsDirect3D11)
-   {
-      bumpMapTex = (Var*)LangElement::find("bumpMapTex");
-   }
+   Var* bumpMapTex = (Var*)LangElement::find("bumpMapTex");
 
    // Handle atlased textures
    // http://www.infinity-universe.com/Infinity/index.php?option=com_content&task=view&id=65&Itemid=47
@@ -132,27 +128,12 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
 
       // Add a newline
       meta->addStatement(new GenOp("\r\n"));
+      texOp = new GenOp("@.SampleLevel(@, @, mipLod_bump)", bumpMapTex, bumpMap, texCoord);
 
-
-      if (mIsDirect3D11)
-      {
-         texOp = new GenOp("@.SampleLevel(@, @, mipLod_bump)", bumpMapTex, bumpMap, texCoord);
-      }
-      else if (is_sm3)
-      {
-         texOp = new GenOp("tex2Dlod(@, float4(@, 0.0, mipLod_bump))", bumpMap, texCoord);
-      }
-      else
-      {
-         texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
-      }
    }
    else
    {
-      if (mIsDirect3D11)
-         texOp = new GenOp("@.Sample(@, @)", bumpMapTex, bumpMap, texCoord);
-      else
-         texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+      texOp = new GenOp("@.Sample(@, @)", bumpMapTex, bumpMap, texCoord);
    }
 
    Var *bumpNorm = new Var("bumpNormal", "float4");
@@ -164,30 +145,22 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    if (fd.features.hasFeature(MFT_DetailNormalMap))
    {
       bumpMap = new Var;
-      bumpMap->setType("sampler2D");
+      bumpMap->setType("SamplerState");
       bumpMap->setName("detailBumpMap");
       bumpMap->uniform = true;
       bumpMap->sampler = true;
       bumpMap->constNum = Var::getTexUnitNum();
 
-      Var* detailBumpTex = NULL;
-      if (mIsDirect3D11)
-      {
-         bumpMap->setType("SamplerState");
-         detailBumpTex = new Var;
-         detailBumpTex->setName("detailBumpTex");
-         detailBumpTex->setType("Texture2D");
-         detailBumpTex->uniform = true;
-         detailBumpTex->texture = true;
-         detailBumpTex->constNum = bumpMap->constNum;
-      }
+      Var* detailBumpTex = new Var;
+      detailBumpTex->setName("detailBumpTex");
+      detailBumpTex->setType("Texture2D");
+      detailBumpTex->uniform = true;
+      detailBumpTex->texture = true;
+      detailBumpTex->constNum = bumpMap->constNum;
 
       texCoord = getInTexCoord( "detCoord", "float2", componentList );
 
-      if (mIsDirect3D11)
-         texOp = new GenOp("@.Sample(@, @)", detailBumpTex, bumpMap, texCoord);
-      else
-         texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+      texOp = new GenOp("@.Sample(@, @)", detailBumpTex, bumpMap, texCoord);
 
       Var *detailBump = new Var;
       detailBump->setName("detailBump");
@@ -205,33 +178,20 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    if (fd.features.hasFeature(MFT_NormalDamage))
    {
       bumpMap = new Var;
-      Var* damageBumpTex = NULL; //only used in D3D10 or D3D11
-
       bumpMap->setName("normalDamageMap");
       bumpMap->uniform = true;
       bumpMap->sampler = true;
-
       bumpMap->constNum = Var::getTexUnitNum();
-      if (mIsDirect3D11)
-      {
-         bumpMap->setType("SamplerState");
 
-         damageBumpTex = new Var;
-         damageBumpTex->setName("detailBumpTex");
-         damageBumpTex->setType("Texture2D");
-         damageBumpTex->uniform = true;
-         damageBumpTex->texture = true;
-         damageBumpTex->constNum = bumpMap->constNum;
-      }
-      else
-         bumpMap->setType("sampler2D");
+      Var* damageBumpTex = NULL;
+      damageBumpTex->setName("detailBumpTex");
+      damageBumpTex->setType("Texture2D");
+      damageBumpTex->uniform = true;
+      damageBumpTex->texture = true;
+      damageBumpTex->constNum = bumpMap->constNum;
 
       texCoord = getInTexCoord("texCoord", "float2", componentList);
-
-      if (mIsDirect3D11)
-         texOp = new GenOp("@.Sample(@, @)", damageBumpTex, bumpMap, texCoord);
-      else
-         texOp = new GenOp("tex2D(@, @)", bumpMap, texCoord);
+      texOp = new GenOp("@.Sample(@, @)", damageBumpTex, bumpMap, texCoord);
 
       Var *damageBump = new Var;
       damageBump->setName("damageBump");
@@ -452,21 +412,13 @@ void ParallaxFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    // Call the library function to do the rest.
    if (fd.features.hasFeature(MFT_IsBC3nm, getProcessIndex()))
    {
-      if (mIsDirect3D11)
-         meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @, @.xy, @, @ );\r\n",
+      meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @, @.xy, @, @ );\r\n",
          texCoord, bumpMapTexture, normalMap, texCoord, negViewTS, parallaxInfo));
-      else
-         meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @ );\r\n",
-            texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
    }
    else
    {
-      if (mIsDirect3D11)
-         meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @, @.xy, @, @ );\r\n",
+      meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @, @.xy, @, @ );\r\n",
          texCoord, bumpMapTexture, normalMap, texCoord, negViewTS, parallaxInfo));
-      else
-         meta->addStatement(new GenOp("   @.xy += parallaxOffset( @, @.xy, @, @ );\r\n",
-            texCoord, normalMap, texCoord, negViewTS, parallaxInfo));
    }
 
    // TODO: Fix second UV maybe?

@@ -33,8 +33,6 @@ struct RenderPassData;
 
 class ShaderFeatureHLSL : public ShaderFeature
 {
-protected:
-   bool mIsDirect3D11;
 public:
    ShaderFeatureHLSL();
 
