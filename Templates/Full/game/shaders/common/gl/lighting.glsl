@@ -38,149 +38,11 @@ uniform vec4 inLightColor[4];
 
 uniform vec4 ambient;
 #define ambientCameraFactor 0.3
-uniform float specularPower;
-uniform vec4 specularColor;
+uniform float smoothness;
+uniform float metalness;
+uniform vec4 albedo;
 
 #endif // !TORQUE_SHADERGEN
-
-
-void compute4Lights( vec3 wsView, 
-                     vec3 wsPosition, 
-                     vec3 wsNormal,
-                     vec4 shadowMask,
-
-                     #ifdef TORQUE_SHADERGEN
-                     
-                        vec4 inLightPos[3],
-                        vec4 inLightInvRadiusSq,
-                        vec4 inLightColor[4],
-                        vec4 inLightSpotDir[3],
-                        vec4 inLightSpotAngle,
-                        vec4 inLightSpotFalloff,
-                        float specularPower,
-                        vec4 specularColor,
-
-                     #endif // TORQUE_SHADERGEN
-                     
-                     out vec4 outDiffuse,
-                     out vec4 outSpecular )
-{
-   // NOTE: The light positions and spotlight directions
-   // are stored in SoA order, so inLightPos[0] is the
-   // x coord for all 4 lights... inLightPos[1] is y... etc.
-   //
-   // This is the key to fully utilizing the vector units and
-   // saving a huge amount of instructions.
-   //
-   // For example this change saved more than 10 instructions 
-   // over a simple for loop for each light.
-   
-   int i;
-
-   vec4 lightVectors[3];
-   for ( i = 0; i < 3; i++ )
-      lightVectors[i] = wsPosition[i] - inLightPos[i];
-
-   vec4 squareDists = vec4(0);
-   for ( i = 0; i < 3; i++ )
-      squareDists += lightVectors[i] * lightVectors[i];
-
-   // Accumulate the dot product between the light 
-   // vector and the normal.
-   //
-   // The normal is negated because it faces away from
-   // the surface and the light faces towards the
-   // surface... this keeps us from needing to flip
-   // the light vector direction which complicates
-   // the spot light calculations.
-   //
-   // We normalize the result a little later.
-   //
-   vec4 nDotL = vec4(0);
-   for ( i = 0; i < 3; i++ )
-      nDotL += lightVectors[i] * -wsNormal[i];
-
-   vec4 rDotL = vec4(0);
-   #ifndef TORQUE_BL_NOSPECULAR
-
-      // We're using the Phong specular reflection model
-      // here where traditionally Torque has used Blinn-Phong
-      // which has proven to be more accurate to real materials.
-      //
-      // We do so because its cheaper as do not need to 
-      // calculate the half angle for all 4 lights.
-      //   
-      // Advanced Lighting still uses Blinn-Phong, but the
-      // specular reconstruction it does looks fairly similar
-      // to this.
-      //
-      vec3 R = reflect( wsView, -wsNormal );
-
-      for ( i = 0; i < 3; i++ )
-         rDotL += lightVectors[i] * R[i];
-
-   #endif
- 
-   // Normalize the dots.
-   //
-   // Notice we're using the half type here to get a
-   // much faster sqrt via the rsq_pp instruction at 
-   // the loss of some precision.
-   //
-   // Unless we have some extremely large point lights
-   // i don't believe the precision loss will matter.
-   //
-   half4 correction = half4(inversesqrt( squareDists ));
-   nDotL = saturate( nDotL * correction );
-   rDotL = clamp( rDotL * correction, 0.00001, 1.0 );
-
-   // First calculate a simple point light linear 
-   // attenuation factor.
-   //
-   // If this is a directional light the inverse
-   // radius should be greater than the distance
-   // causing the attenuation to have no affect.
-   //
-   vec4 atten = saturate( 1.0 - ( squareDists * inLightInvRadiusSq ) );
-
-   #ifndef TORQUE_BL_NOSPOTLIGHT
-
-      // The spotlight attenuation factor.  This is really
-      // fast for what it does... 6 instructions for 4 spots.
-
-      vec4 spotAtten = vec4(0);
-      for ( i = 0; i < 3; i++ )
-         spotAtten += lightVectors[i] * inLightSpotDir[i];
-
-      vec4 cosAngle = ( spotAtten * correction ) - inLightSpotAngle;
-      atten *= saturate( cosAngle * inLightSpotFalloff );
-
-   #endif
-
-   // Finally apply the shadow masking on the attenuation.
-   atten *= shadowMask;
-
-   // Get the final light intensity.
-   vec4 intensity = nDotL * atten;
-
-   // Combine the light colors for output.
-   outDiffuse = vec4(0);
-   for ( i = 0; i < 4; i++ )
-      outDiffuse += intensity[i] * inLightColor[i];
-
-   // Output the specular power.
-   vec4 specularIntensity = pow( rDotL, vec4(specularPower) ) * atten;
-   
-   // Apply the per-light specular attenuation.
-   vec4 specular = vec4(0,0,0,1);
-   for ( i = 0; i < 4; i++ )
-      specular += vec4( inLightColor[i].rgb * inLightColor[i].a * specularIntensity[i], 1 );
-
-   // Add the final specular intensity values together
-   // using a single dot product operation then get the
-   // final specular lighting color.
-   outSpecular = specularColor * specular;
-}
 
 
 vec3 F_schlick( in vec3 f0, in vec3 f90, in float u )
@@ -310,4 +172,103 @@ vec4 EvalBDRF( vec3 baseColor, vec3 lightColor, vec3 toLight, vec3 position, vec
 	// see deferredShadingP
     vec3 ret = ( diffuse + specular+lightColor) * NdotL;
 	return vec4(ret,FR);
+}
+
+void compute4Lights( vec3 wsView, 
+                     vec3 wsPosition, 
+                     vec3 wsNormal,
+                     vec4 shadowMask,
+
+                     #ifdef TORQUE_SHADERGEN
+                     
+                        vec4 inLightPos[3],
+                        vec4 inLightInvRadiusSq,
+                        vec4 inLightColor[4],
+                        vec4 inLightSpotDir[3],
+                        vec4 inLightSpotAngle,
+                        vec4 inLightSpotFalloff,
+                        float smoothness,
+                        float metalness,
+                        vec4 albedo,
+
+                     #endif // TORQUE_SHADERGEN
+                     
+                     out vec4 outDiffuse,
+                     out vec4 outSpecular )
+{
+   // NOTE: The light positions and spotlight directions
+   // are stored in SoA order, so inLightPos[0] is the
+   // x coord for all 4 lights... inLightPos[1] is y... etc.
+   //
+   // This is the key to fully utilizing the vector units and
+   // saving a huge amount of instructions.
+   //
+   // For example this change saved more than 10 instructions 
+   // over a simple for loop for each light.
+   
+   int i;
+
+   vec4 lightVectors[3];
+   for ( i = 0; i < 3; i++ )
+      lightVectors[i] = wsPosition[i] - inLightPos[i];
+
+
+   // Accumulate the dot product between the light 
+   // vector and the normal.
+   //
+   // The normal is negated because it faces away from
+   // the surface and the light faces towards the
+   // surface... this keeps us from needing to flip
+   // the light vector direction which complicates
+   // the spot light calculations.
+   //
+   // We normalize the result a little later.
+   //
+   vec4 nDotL = vec4(0);
+   for ( i = 0; i < 3; i++ )
+      nDotL += lightVectors[i] * -wsNormal[i];
+ 
+   vec4 squareDists = vec4(0);
+   for ( i = 0; i < 3; i++ )
+      squareDists += lightVectors[i] * lightVectors[i];
+   half4 correction = half4(inversesqrt( squareDists ));
+   nDotL = saturate( nDotL * correction );
+
+   // First calculate a simple point light linear 
+   // attenuation factor.
+   //
+   // If this is a directional light the inverse
+   // radius should be greater than the distance
+   // causing the attenuation to have no affect.
+   //
+   vec4 atten = saturate( 1.0 - ( squareDists * inLightInvRadiusSq ) );
+
+   #ifndef TORQUE_BL_NOSPOTLIGHT
+
+      // The spotlight attenuation factor.  This is really
+      // fast for what it does... 6 instructions for 4 spots.
+
+      vec4 spotAtten = vec4(0);
+      for ( i = 0; i < 3; i++ )
+         spotAtten += lightVectors[i] * inLightSpotDir[i];
+
+      vec4 cosAngle = ( spotAtten * correction ) - inLightSpotAngle;
+      atten *= saturate( cosAngle * inLightSpotFalloff );
+
+   #endif
+
+   // Get the final light intensity.
+   vec4 intensity = nDotL * atten;
+   
+   // Combine the light colors for output.
+   vec4 lightColor = vec4(0);
+   for ( i = 0; i < 4; i++ )
+      lightColor += intensity[i] * inLightColor[i];
+      
+   vec3 toLight = vec3(0);
+   for ( i = 0; i < 3; i++ )
+      toLight += lightVectors[i].rgb;
+      
+   outDiffuse = vec4(albedo.rgb*(1.0-metalness),albedo.a);
+   outSpecular = EvalBDRF( vec3( 1.0, 1.0, 1.0 ), lightColor.rgb, toLight, wsPosition, wsNormal, smoothness, metalness );
 }
