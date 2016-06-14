@@ -57,6 +57,7 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
 
    // create texture var
    Var *specularMap = new Var;
+   specularMap->setName("specularMap");
    specularMap->setType("SamplerState");
    specularMap->uniform = true;
    specularMap->sampler = true;

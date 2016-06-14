@@ -136,7 +136,8 @@ void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const
 
    // create texture var
    Var *specularMap = new Var;
-   specularMap->setName("SamplerState");
+   specularMap->setName("specularMap");
+   specularMap->setType("SamplerState");
    specularMap->uniform = true;
    specularMap->sampler = true;
    specularMap->constNum = Var::getTexUnitNum();
