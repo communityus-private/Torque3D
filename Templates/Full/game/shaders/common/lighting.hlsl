@@ -239,7 +239,21 @@ void compute4Lights( float3 wsView,
    // causing the attenuation to have no affect.
    //
    float4 atten = saturate( 1.0 - ( squareDists * inLightInvRadiusSq ) );
+   
+   #ifndef TORQUE_BL_NOSPOTLIGHT
 
+      // The spotlight attenuation factor.  This is really
+      // fast for what it does... 6 instructions for 4 spots.
+
+      float4 spotAtten = 0;
+      for ( i = 0; i < 3; i++ )
+         spotAtten += lightVectors[i] * inLightSpotDir[i];
+
+      float4 cosAngle = ( spotAtten * correction ) - inLightSpotAngle;
+      atten *= saturate( cosAngle * inLightSpotFalloff );
+
+   #endif
+   
    // Get the final light intensity.
    float4 intensity = nDotL * atten;
 
