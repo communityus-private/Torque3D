@@ -294,9 +294,6 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *pDL)
 
 bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
 {
-   PROFILE_SCOPE(GFXGLTextureManager_loadTextureDDS);
-
-   AssertFatal(!(dds->mFormat == GFXFormatDXT2 || dds->mFormat == GFXFormatDXT4), "GFXGLTextureManager::_loadTexture - OpenGL does not support DXT2 or DXT4 compressed textures");
    GFXGLTextureObject* texture = static_cast<GFXGLTextureObject*>(aTexture);
    
    AssertFatal(texture->getBinding() == GL_TEXTURE_2D, 
