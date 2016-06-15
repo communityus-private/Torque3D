@@ -150,15 +150,7 @@ S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void
 
 void ShaderConnectorHLSL::sortVars()
 {
-
-   // If shader model 4+ than we gotta sort the vars to make sure the order is consistent
-   if (GFX->getPixelShaderVersion() >= 4.f)
-   {
-      dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
-      return;
-   }
-
-   return;
+   dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
 }
 
 void ShaderConnectorHLSL::setName( char *newName )
@@ -247,9 +239,6 @@ void VertexParamsDefHLSL::print( Stream &stream, bool isVerterShader )
 {
    assignConstantNumbers();
 
-   const char *opener = "ConnectData main( VertData IN";
-   stream.write( dStrlen(opener), opener );
-
    // find all the uniform variables and print them out
    for( U32 i=0; i<LangElement::elementList.size(); i++)
    {
@@ -258,33 +247,27 @@ void VertexParamsDefHLSL::print( Stream &stream, bool isVerterShader )
       {
          if( var->uniform )
          {
-            const char* nextVar = ",\r\n                  ";
-            stream.write( dStrlen(nextVar), nextVar );            
-
             U8 varNum[64];
             dSprintf( (char*)varNum, sizeof(varNum), "register(C%d)", var->constNum );
 
             U8 output[256];
             if (var->arraySize <= 1)
-               dSprintf( (char*)output, sizeof(output), "uniform %-8s %-15s : %s", var->type, var->name, varNum );
+               dSprintf( (char*)output, sizeof(output), "uniform %-8s %-15s : %s;\r\n", var->type, var->name, varNum );
             else
-               dSprintf( (char*)output, sizeof(output), "uniform %-8s %s[%d] : %s", var->type, var->name, var->arraySize, varNum );
+               dSprintf( (char*)output, sizeof(output), "uniform %-8s %s[%d] : %s;\r\n", var->type, var->name, var->arraySize, varNum );
 
             stream.write( dStrlen((char*)output), output );
          }
       }
    }
 
-   const char *closer = "\r\n)\r\n{\r\n   ConnectData OUT;\r\n\r\n";
+   const char *closer = "\r\nConnectData main(VertData IN)\r\n{\r\n   ConnectData OUT;\r\n\r\n";
    stream.write( dStrlen(closer), closer );
 }
 
 void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
 {
    assignConstantNumbers();
-
-   const char * opener = "Fragout main( ConnectData IN";
-   stream.write( dStrlen(opener), opener );
 
    // find all the sampler & uniform variables and print them out
    for( U32 i=0; i<LangElement::elementList.size(); i++)
@@ -294,8 +277,6 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
       {
          if( var->uniform )
          {
-            WRITESTR( ",\r\n              " );
-
             U8 varNum[32];
 
             if( var->sampler )
@@ -313,15 +294,35 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
 
             U8 output[256];
             if (var->arraySize <= 1)
-               dSprintf( (char*)output, sizeof(output), "uniform %-9s %-15s %s", var->type, var->name, varNum );
+               dSprintf((char*)output, sizeof(output), "uniform %-9s %-15s %s;\r\n", var->type, var->name, varNum);
             else
-               dSprintf( (char*)output, sizeof(output), "uniform %-9s %s[%d] %s", var->type, var->name, var->arraySize, varNum );
+               dSprintf( (char*)output, sizeof(output), "uniform %-9s %s[%d] %s;\r\n", var->type, var->name, var->arraySize, varNum );
 
             WRITESTR( (char*) output );
          }
       }
    }
 
-   const char *closer = "\r\n)\r\n{\r\n   Fragout OUT;\r\n\r\n";
+   const char *closer = "\r\nFragout main(ConnectData IN)\r\n{\r\n   Fragout OUT;\r\n\r\n";
    stream.write( dStrlen(closer), closer );
+
+   // Dump uniforms to temp variable so they can be modified, if the temp variables are not used they will
+   // be compiled out anyway and the uniform that they point to will be used directly
+   for (U32 i = 0; i<LangElement::elementList.size(); i++)
+   {
+      Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
+      if (var)
+      {
+         if (var->uniform && !var->sampler && !var->texture)
+         {
+            U8 output[256];
+            if (var->arraySize <= 1)
+               dSprintf((char*)output, sizeof(output), "   %s _tmp_%s = %s;\r\n", var->type, var->name, var->name);
+            else
+               dSprintf((char*)output, sizeof(output), "   %s _tmp_%s[%d] = %s;\r\n", var->type, var->name, var->arraySize, var->name);
+
+            stream.write(dStrlen((char*)output), output);
+         }
+      }
+   }
 }

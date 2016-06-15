@@ -321,10 +321,10 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
             U32 squishFlag = squish::kDxt1;
             switch (dds->mFormat)
             {
-               case GFXFormatDXT3:
+               case GFXFormatBC2:
                   squishFlag = squish::kDxt3;
                   break;
-               case GFXFormatDXT5:
+               case GFXFormatBC3:
                   squishFlag = squish::kDxt5;
                   break;
                default:

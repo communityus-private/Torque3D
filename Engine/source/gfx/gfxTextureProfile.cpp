@@ -46,7 +46,7 @@ GFX_ImplementTextureProfile(GFXDefaultStaticNormalMapProfile,
 GFX_ImplementTextureProfile(GFXDefaultStaticDXT5nmProfile, 
                             GFXTextureProfile::NormalMap, 
                             GFXTextureProfile::Static, 
-                            GFXTextureProfile::DXT5);
+                            GFXTextureProfile::BC3);
 GFX_ImplementTextureProfile(GFXDefaultPersistentProfile,
                             GFXTextureProfile::DiffuseMap, 
                             GFXTextureProfile::PreserveSize | GFXTextureProfile::Static | GFXTextureProfile::KeepBitmap, 

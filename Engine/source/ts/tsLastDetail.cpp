@@ -486,10 +486,10 @@ void TSLastDetail::_update()
    //delete tempMap;
 
    DDSFile *ddsDest = DDSFile::createDDSFileFromGBitmap( &destBmp );
-   DDSUtil::squishDDS( ddsDest, GFXFormatDXT3 );
+   DDSUtil::squishDDS( ddsDest, GFXFormatBC2 );
 
    DDSFile *ddsNormals = DDSFile::createDDSFileFromGBitmap( &destNormal );
-   DDSUtil::squishDDS( ddsNormals, GFXFormatDXT5 );
+   DDSUtil::squishDDS( ddsNormals, GFXFormatBC3 );
 
    // Finally save the imposters to disk.
    FileStream fs;

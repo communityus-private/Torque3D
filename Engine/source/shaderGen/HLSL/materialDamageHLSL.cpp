@@ -54,7 +54,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    }
 
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
    Var *damage = new Var("materialDamage", "float");
    damage->uniform = true;
@@ -62,10 +62,7 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
 
    // create texture var
    Var *albedoDamage = new Var;
-   if (mIsDirect3D11)
-      albedoDamage->setType("SamplerState");
-   else
-      albedoDamage->setType("sampler2D");
+   albedoDamage->setType("SamplerState");
    albedoDamage->setName("albedoDamageMap");
    albedoDamage->uniform = true;
    albedoDamage->sampler = true;
@@ -89,34 +86,19 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
 
    LangElement *statement = NULL;
 
-   if (mIsDirect3D11)
+   Var *albedoDamageTex = new Var;
+   albedoDamageTex->setType("Texture2D");
+   albedoDamageTex->setName("albedoDamageTex");
+   albedoDamageTex->uniform = true;
+   albedoDamageTex->texture = true;
+   albedoDamageTex->constNum = albedoDamage->constNum;
+   if (fd.features[MFT_Imposter])
    {
-      Var *albedoDamageTex = new Var;
-      albedoDamageTex->setType("Texture2D");
-      albedoDamageTex->setName("albedoDamageTex");
-      albedoDamageTex->uniform = true;
-      albedoDamageTex->texture = true;
-      albedoDamageTex->constNum = albedoDamage->constNum;
-      if (fd.features[MFT_Imposter])
-      {
-         statement = new GenOp("@.Sample(@, @)", albedoDamageTex, albedoDamage, texCoord);
-      }
-      else
-      {
-         statement = new GenOp("toLinear(@.Sample(@, @))", albedoDamageTex, albedoDamage, texCoord);
-      }
-
+      statement = new GenOp("@.Sample(@, @)", albedoDamageTex, albedoDamage, texCoord);
    }
    else
    {
-      if (fd.features[MFT_Imposter])
-      {
-         statement = new GenOp("tex2D(@, @)", albedoDamage, texCoord);
-      }
-      else
-      {
-         statement = new GenOp("toLinear(tex2D(@, @))", albedoDamage, texCoord);
-      }
+      statement = new GenOp("toLinear(@.Sample(@, @))", albedoDamageTex, albedoDamage, texCoord);
    }
 
    meta->addStatement(new GenOp("   @ = lerp(@,@,@);\r\n", targ, targ, statement, damageResult));
@@ -152,7 +134,6 @@ void AlbedoDamageFeatHLSL::processVert(Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
       "float2",
-      true,
       fd.features[MFT_TexAnim],
       meta,
       componentList);
@@ -166,7 +147,7 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    const MaterialFeatureData &fd)
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "float2", componentList);
 
    Var *damage = (Var*)LangElement::find("materialDamage");
    if (!damage){
@@ -177,10 +158,7 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
 
    // create texture var
    Var *damageCMap = new Var;
-   if (mIsDirect3D11)
-      damageCMap->setType("SamplerState");
-   else
-      damageCMap->setType("sampler2D");
+   damageCMap->setType("SamplerState");
    damageCMap->setName("compositeDamageMap");
    damageCMap->uniform = true;
    damageCMap->sampler = true;
@@ -229,24 +207,15 @@ void CompositeDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    else
       meta->addStatement(new GenOp("   @ = max(@,@);\r\n", damageResult, floor, damage));
 
-   if (mIsDirect3D11)
-   {
-      Var *damageCMapTex = new Var;
-      damageCMapTex->setType("Texture2D");
-      damageCMapTex->setName("damageCMapTex");
-      damageCMapTex->uniform = true;
-      damageCMapTex->texture = true;
-      damageCMapTex->constNum = damageCMap->constNum;
+   Var *damageCMapTex = new Var;
+   damageCMapTex->setType("Texture2D");
+   damageCMapTex->setName("damageCMapTex");
+   damageCMapTex->uniform = true;
+   damageCMapTex->texture = true;
+   damageCMapTex->constNum = damageCMap->constNum;
 
-      meta->addStatement(new GenOp("   @ = @.Sample(@, @);\r\n",
+   meta->addStatement(new GenOp("   @ = @.Sample(@, @);\r\n",
          new DecOp(damageComposite), damageCMapTex, damageCMap, texCoord));
-   }
-   else
-   {
-      meta->addStatement(new GenOp("   @ = tex2D(@, @);\r\n",
-         new DecOp(damageComposite), damageCMap, texCoord));
-   }
-
 
    if (declareSmooth)
       meta->addStatement(new GenOp("   @ = lerp(0.0,@.r,@);\r\n", new DecOp(smoothness), damageComposite, damageResult));
@@ -310,7 +279,6 @@ void CompositeDamageFeatHLSL::processVert(Vector<ShaderComponent*> &componentLis
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
       "float2",
-      true,
       fd.features[MFT_TexAnim],
       meta,
       componentList);

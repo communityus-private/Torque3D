@@ -65,10 +65,10 @@ inline GLenum minificationFilter(U32 minFilter, U32 mipFilter, U32 /*mipLevels*/
 inline bool isCompressedFormat( GFXFormat format )
 {
    bool compressed = false;
-   if(format == GFXFormatDXT1 || format == GFXFormatDXT2
-         || format == GFXFormatDXT3
-         || format == GFXFormatDXT4
-         || format == GFXFormatDXT5 )
+   if(format == GFXFormatBC1 || format == GFXFormatBC2
+         || format == GFXFormatBC3
+         || format == GFXFormatBC4
+         || format == GFXFormatBC5 )
    {
       compressed = true;
    }
@@ -87,7 +87,7 @@ inline U32 getCompressedSurfaceSize(GFXFormat format,U32 width, U32 height, U32 
    width = getMax(U32(1), width >> mipLevel);
 
    U32 sizeMultiple = 0;
-   if(format == GFXFormatDXT1)
+   if(format == GFXFormatBC1)
       sizeMultiple = 8;
    else
       sizeMultiple = 16;

@@ -390,11 +390,9 @@ GFXTextureObject *GFXTextureManager::_createTexture(  GBitmap *bmp,
             // This shouldn't live here, I don't think
             switch( realFmt )
             {
-               case GFXFormatDXT1:
-               case GFXFormatDXT2:
-               case GFXFormatDXT3:
-               case GFXFormatDXT4:
-               case GFXFormatDXT5:
+               case GFXFormatBC1:
+               case GFXFormatBC2:
+               case GFXFormatBC3:
                   // If this is a Normal Map profile, than the data needs to be conditioned
                   // to use the swizzle trick
                   if( ret->mProfile->getType() == GFXTextureProfile::NormalMap )
@@ -1324,8 +1322,8 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
    GFXFormat testingFormat = inOutFormat;
    if( profile->getCompression() != GFXTextureProfile::NONE )
    {
-      const S32 offset = profile->getCompression() - GFXTextureProfile::DXT1;
-      testingFormat = GFXFormat( GFXFormatDXT1 + offset );
+      const S32 offset = profile->getCompression() - GFXTextureProfile::BC1;
+      testingFormat = GFXFormat( GFXFormatBC1 + offset );
 
       // No auto-gen mips on compressed textures
       autoGenSupp = false;

@@ -73,6 +73,7 @@
    //1D is emulated to a 2D for now
    #define TORQUE_UNIFORM_SAMPLER1D(tex,regist) uniform Texture2D texture_##tex : register(T##regist); uniform SamplerState tex : register(S##regist)
    #define TORQUE_UNIFORM_SAMPLER2D(tex,regist) uniform Texture2D texture_##tex : register(T##regist); uniform SamplerState tex : register(S##regist)
+   #define TORQUE_UNIFORM_SAMPLER2DCMP(tex,regist) uniform Texture2D texture_##tex : register(T##regist); uniform SamplerComparisonState tex : register(S##regist)
    #define TORQUE_UNIFORM_SAMPLER3D(tex,regist) uniform Texture3D texture_##tex : register(T##regist); uniform SamplerState tex : register(S##regist)
    #define TORQUE_UNIFORM_SAMPLERCUBE(tex,regist) uniform TextureCube texture_##tex : register(T##regist); uniform SamplerState tex : register(S##regist)
    // Sampling functions
@@ -83,11 +84,17 @@
    #define TORQUE_TEXCUBE(tex,coords) texture_##tex.Sample(tex,coords)
    // The mipmap LOD is specified in coord.w
    #define TORQUE_TEX2DLOD(tex,coords) texture_##tex.SampleLevel(tex,coords.xy,coords.w)
+   // Tex2d comparison
+   #define TORQUE_TEX2DCMP(tex,coords,compare) texture_##tex.SampleCmpLevelZero(tex,coords,compare)
+
+   #define TORQUE_TEX2DGATHER(tex,coords,compare,offset) texture_##tex.GatherCmp(tex,coords,compare,offset)
 
    //helper if you want to pass sampler/texture in a function
    //2D
    #define TORQUE_SAMPLER2D(tex) Texture2D texture_##tex, SamplerState tex
    #define TORQUE_SAMPLER2D_MAKEARG(tex) texture_##tex, tex
+   // Sampler comparison state - use above MAKEARG with this
+   #define TORQUE_SAMPLER2DCMP(tex) Texture2D texture_##tex, SamplerComparisonState tex
    //Cube
    #define TORQUE_SAMPLERCUBE(tex) TextureCube texture_##tex, SamplerState tex
    #define TORQUE_SAMPLERCUBE_MAKEARG(tex) texture_##tex, tex
