@@ -267,6 +267,8 @@ GFXD3D11ShaderConstBuffer::GFXD3D11ShaderConstBuffer( GFXD3D11Shader* shader,
     mPixelConstBufferLayout = pixelLayout;
     mPixelConstBuffer = new GenericConstBuffer(pixelLayout);
 
+    mDeviceContext = D3D11DEVICECONTEXT;
+
     _createBuffers();
 	
 }
@@ -603,8 +605,6 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       }      
    }
 
-   ID3D11DeviceContext* devCtx = D3D11DEVICECONTEXT;
-
    D3D11_MAPPED_SUBRESOURCE pConstData;
    ZeroMemory(&pConstData, sizeof(D3D11_MAPPED_SUBRESOURCE));
    
@@ -619,11 +619,11 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
+         mDeviceContext->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
-      devCtx->VSSetConstantBuffers(0, nbBuffers, mConstantBuffersV);
+      mDeviceContext->VSSetConstantBuffers(0, nbBuffers, mConstantBuffersV);
    }
 
    nbBuffers = 0;
@@ -637,11 +637,11 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersP[i], 0, NULL, buf + desc.start, desc.size, 0);
+         mDeviceContext->UpdateSubresource(mConstantBuffersP[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
-      devCtx->PSSetConstantBuffers(0, nbBuffers, mConstantBuffersP);
+      mDeviceContext->PSSetConstantBuffers(0, nbBuffers, mConstantBuffersP);
    }
 
    #ifdef TORQUE_DEBUG
