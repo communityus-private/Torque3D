@@ -334,6 +334,8 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
          bumpMap->setType("SamplerState");
          bumpMap->uniform = true;
          bumpMap->sampler = true;
+         bumpMap->constNum = Var::getTexUnitNum();
+         bumpMap->setType("SamplerState");
 
          Var* damageBumpTex = new Var;
          damageBumpTex->setName("detailBumpTex");

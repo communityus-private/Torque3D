@@ -182,8 +182,9 @@ void BumpFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       bumpMap->uniform = true;
       bumpMap->sampler = true;
       bumpMap->constNum = Var::getTexUnitNum();
+      bumpMap->setType("SamplerState");
 
-      Var* damageBumpTex = NULL;
+      Var* damageBumpTex = new Var;
       damageBumpTex->setName("detailBumpTex");
       damageBumpTex->setType("Texture2D");
       damageBumpTex->uniform = true;
