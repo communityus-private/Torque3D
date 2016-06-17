@@ -613,7 +613,7 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    if(mVertexConstBuffer->isDirty())
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mVertexConstBufferLayout->getSubBufferDesc();
-      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: This is not very efficient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
       // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mVertexConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
@@ -1033,8 +1033,8 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *refTable,
    #ifdef TORQUE_DEBUG
          AssertFatal(constantBufferDesc.Type == D3D_CT_CBUFFER, "Only scalar cbuffers supported for now.");
 
-         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 && dStrcmp(constantBufferDesc.Name, "$Params") != 0)
-            AssertFatal(false, "Only $Global and $Params cbuffer supported for now.");
+         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 )
+            AssertFatal(false, "Only $Global cbuffer supported for now.");
    #endif
    #ifdef D3D11_DEBUG_SPEW
          Con::printf("Constant Buffer Name: %s", constantBufferDesc.Name);
