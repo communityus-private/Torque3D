@@ -120,9 +120,10 @@ struct Var : public LangElement
    bool  vertData;      // argument coming from vertex data
    bool  connector;     // variable that will be passed to pixel shader
    bool  sampler;       // texture
-   bool  texture;       //for D3D11 texture variables
+   bool  texture;       // for D3D11 texture variables
    U32   arraySize;     // 1 = no array, > 1 array of "type"
    U32   rank;          // optional rank system to assist in sorting vars if needed
+   bool  _uniformLocal;  // mark uniform to use local var system(internal use only)
 
    static U32  texUnitCount;
    static U32  getTexUnitNum(U32 numElements = 1);
@@ -138,8 +139,8 @@ struct Var : public LangElement
   
    virtual void print( Stream &stream );
 
-   // Construct a uniform / shader const var
-   void setUniform(const String& constType, const String& constName, ConstantSortPosition sortPos);
+   // Generic uniform creator, not be used for samplers or texture objects. This allows uniforms to be read/write in the shader
+   static Var* findOrCreateUniform(const char *name, const char *type, ConstantSortPosition sortPos = cspUninit);
 };
 
 //----------------------------------------------------------------------------

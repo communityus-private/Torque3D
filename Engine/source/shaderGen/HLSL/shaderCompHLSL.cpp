@@ -245,7 +245,7 @@ void VertexParamsDefHLSL::print( Stream &stream, bool isVerterShader )
       Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
       if( var )
       {
-         if( var->uniform )
+         if( var->uniform && !var->_uniformLocal)
          {
             U8 varNum[64];
             dSprintf( (char*)varNum, sizeof(varNum), "register(C%d)", var->constNum );
@@ -275,7 +275,7 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
       Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
       if( var )
       {
-         if( var->uniform )
+         if( var->uniform && !var->_uniformLocal)
          {
             U8 varNum[32];
 
@@ -313,7 +313,7 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
       Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
       if (var)
       {
-         if (var->uniform && !var->sampler && !var->texture)
+         if (var->uniform && !var->sampler && !var->texture && !var->_uniformLocal)
          {
             U8 output[256];
             if (var->arraySize <= 1)

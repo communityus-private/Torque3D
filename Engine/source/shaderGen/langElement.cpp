@@ -94,6 +94,7 @@ Var::Var()
    constNum = 0;
    texCoordNum = 0;
    uniform = false;
+   _uniformLocal = false;
    vertData = false;
    connector = false;
    sampler = false;
@@ -107,6 +108,7 @@ Var::Var( const char *inName, const char *inType )
    structName[0] = '\0';
    connectName[0] = '\0';
    uniform = false;
+   _uniformLocal = false;
    vertData = false;
    connector = false;
    sampler = false;
@@ -120,12 +122,34 @@ Var::Var( const char *inName, const char *inType )
    setType( inType );
 }
 
-void Var::setUniform(const String& constType, const String& constName, ConstantSortPosition sortPos)
-{ 
-   uniform = true;
-   setType(constType.c_str());
-   setName(constName.c_str());   
-   constSortPos = cspPass;      
+Var* Var::findOrCreateUniform(const char *name, const char *type, ConstantSortPosition sortPos)
+{
+   String nameStr = String(name);
+   nameStr.insert(0, "_tmp_");
+   for (U32 i = 0; i<elementList.size(); i++)
+   {
+      if (!dStrcmp((char*)elementList[i]->name, nameStr.c_str()))
+      {
+         return (Var*)elementList[i];
+      }
+   }
+
+   // Regular Var
+   Var* pVar = new Var;
+   pVar->uniform = true;
+   pVar->setType(type);
+   pVar->setName(name);
+   pVar->constSortPos = sortPos;
+
+   // Local Var
+   Var* pLocalVar = new Var;
+   pLocalVar->uniform = true;
+   pLocalVar->_uniformLocal = true;
+   pLocalVar->setType(type);
+   pLocalVar->setName(nameStr.c_str());
+   pLocalVar->constSortPos = sortPos;
+
+   return pLocalVar;
 }
 
 //--------------------------------------------------------------------------
