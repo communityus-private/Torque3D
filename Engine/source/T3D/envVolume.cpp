@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
-#include "T3D/EnvVolume.h"
+#include "T3D/envVolume.h"
 
 #include "scene/sceneManager.h"
 #include "scene/sceneRenderState.h"

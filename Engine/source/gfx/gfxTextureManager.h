@@ -131,7 +131,7 @@ public:
    virtual GFXTextureObject *createCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
       GFXTextureProfile *profile);
 
-   void GFXTextureManager::saveCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
+   void saveCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
       const Torque::Path &saveAs,GFXTextureProfile *profile);
 
    virtual GFXTextureObject *createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
