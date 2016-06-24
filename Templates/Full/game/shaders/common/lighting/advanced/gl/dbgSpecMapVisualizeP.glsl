@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 #include "../../../gl/hlslCompat.glsl"
 #include "shadergen:/autogenConditioners.h"
-#include "../../../postFx/gl/postFX.glsl"
 
 uniform sampler2D matinfoTex;
 
