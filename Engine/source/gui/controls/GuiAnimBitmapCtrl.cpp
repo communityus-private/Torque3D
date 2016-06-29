@@ -81,19 +81,6 @@ void GuiAnimBitmapCtrl::initPersistFields()
    endGroup("Animation");
 }
 
-static void cAnimatedBitmapSetDML(SimObject *obj, S32, const char **argv)
-{
-   GuiAnimBitmapCtrl *ctrl = static_cast<GuiAnimBitmapCtrl*>(obj);
-   ctrl->setDML(argv[2]);
-}
-
-S32 cGuiAnimBitmapCtrlSetFrame(SimObject *obj, S32 argc, const char **argv)
-{
-   GuiAnimBitmapCtrl* control = (GuiAnimBitmapCtrl*)obj;
-   return control->setFrame(dAtoi(argv[2]));
-}
-
-
 void GuiAnimBitmapCtrl::setIs3d(bool temp)
 {
    mIs3d = temp;
