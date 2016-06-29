@@ -78,6 +78,7 @@ void GuiAnimBitmapCtrl::initPersistFields()
    addField("rotation", TypeF32, Offset(mRotation, GuiAnimBitmapCtrl));
    addField("deltaRotation", TypeF32, Offset(mDeltaRotation, GuiAnimBitmapCtrl));
    addField("alpha", TypeF32, Offset(mAlpha, GuiAnimBitmapCtrl));
+   addField("color", TypeColorF, Offset(mColor, GuiAnimBitmapCtrl));
    endGroup("Animation");
 }
 
@@ -223,7 +224,7 @@ void GuiAnimBitmapCtrl::onRender(Point2I offset, const RectI &updateRect)
       Parent::setBitmap(mBitmapNames[mIndex]);
 
    S32 a = (S32)(255 * mAlpha);
-   ColorI alphaColor(mColor.red, mColor.green, mColor.blue, a);
+   ColorI alphaColor((S32)(255 * mColor.red), (S32)(255 * mColor.green), (S32)(255 * mColor.blue), a);
 
    // update rotation?
    if (mDeltaRotation != 0)
