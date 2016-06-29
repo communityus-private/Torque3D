@@ -34,13 +34,13 @@ GuiAnimBitmapCtrl::GuiAnimBitmapCtrl(void)
    mBitmapName = StringTable->insert("");
    mDmlFilename = StringTable->insert("");
 
-   for (int i=0; i<50; i++)
+   for (int i = 0; i<50; i++)
    {
       mBitmapNames[i] = StringTable->insert("");
       mTextureHandles[i] = NULL;
    }
-   
-   mStartPoint.set(0,0);
+
+   mStartPoint.set(0, 0);
    mWrap = false;
    mIs3d = false;
    mInterval = 0;
@@ -51,7 +51,7 @@ GuiAnimBitmapCtrl::GuiAnimBitmapCtrl(void)
 
    mRotation = 0.0f;
    mDeltaRotation = 0.0f;
-   mLastDeltaRotationTime =-1; // set when deltaRotation becomes non zero
+   mLastDeltaRotationTime = -1; // set when deltaRotation becomes non zero
    mAlpha = 1.0f;
    mColor = ColorF::WHITE;
 }
@@ -67,15 +67,15 @@ void GuiAnimBitmapCtrl::setDML(const char *dml)
 void GuiAnimBitmapCtrl::initPersistFields()
 {
    Parent::initPersistFields();
-   addField("is3d", TypeBool, Offset(mIs3d,GuiAnimBitmapCtrl));
+   addField("is3d", TypeBool, Offset(mIs3d, GuiAnimBitmapCtrl));
    //
    removeField("Bitmap");
    addGroup("Animation");
-   addField("Interval", TypeS32, Offset(mInterval,GuiAnimBitmapCtrl));
-   addField("DML", TypeFilename, Offset(mDmlFilename,GuiAnimBitmapCtrl));
+   addField("Interval", TypeS32, Offset(mInterval, GuiAnimBitmapCtrl));
+   addField("DML", TypeFilename, Offset(mDmlFilename, GuiAnimBitmapCtrl));
    addField("autoPlay", TypeBool, Offset(mIsPlaying, GuiAnimBitmapCtrl));
    //
-   addField("rotation", TypeF32, Offset(mRotation,GuiAnimBitmapCtrl));
+   addField("rotation", TypeF32, Offset(mRotation, GuiAnimBitmapCtrl));
    addField("deltaRotation", TypeF32, Offset(mDeltaRotation, GuiAnimBitmapCtrl));
    addField("alpha", TypeF32, Offset(mAlpha, GuiAnimBitmapCtrl));
    endGroup("Animation");
@@ -89,8 +89,8 @@ static void cAnimatedBitmapSetDML(SimObject *obj, S32, const char **argv)
 
 S32 cGuiAnimBitmapCtrlSetFrame(SimObject *obj, S32 argc, const char **argv)
 {
-	GuiAnimBitmapCtrl* control = (GuiAnimBitmapCtrl*)obj;
-	return control->setFrame(dAtoi(argv[2])); 
+   GuiAnimBitmapCtrl* control = (GuiAnimBitmapCtrl*)obj;
+   return control->setFrame(dAtoi(argv[2]));
 }
 
 
@@ -109,11 +109,11 @@ void GuiAnimBitmapCtrl::setBitmap(S32 index, const char *name)
 {
    if (index < 0 || index >= 50)
       return;
-   
+
    mBitmapNames[index] = StringTable->insert(name);
    if (*mBitmapNames[index])
    {
-      mTextureHandles[index].set(mBitmapNames[index], &GFXDefaultGUIProfile, avar("%s() - mTextureHandles[index] (line %d)", __FUNCTION__, __LINE__) );
+      mTextureHandles[index].set(mBitmapNames[index], &GFXDefaultGUIProfile, avar("%s() - mTextureHandles[index] (line %d)", __FUNCTION__, __LINE__));
    }
    else
       mTextureHandles[index] = NULL;
@@ -121,26 +121,26 @@ void GuiAnimBitmapCtrl::setBitmap(S32 index, const char *name)
 }
 
 bool GuiAnimBitmapCtrl::onWake()
-{   
-   if (! Parent::onWake())
+{
+   if (!Parent::onWake())
       return false;
    setActive(true);
 
    if (dStrlen(mDmlFilename))
       loadDml();
-   
+
    mIndex = 0;
    Parent::setBitmap(mTextureHandles[mIndex], false);
    mLastTime = Sim::getCurrentTime();
-   
+
    return true;
 }
 void GuiAnimBitmapCtrl::onSleep()
 {
 
-   for(S32 i = 0; i < mMaxBitmaps;i++)
+   for (S32 i = 0; i < mMaxBitmaps; i++)
    {
-		mTextureHandles[i] = NULL;
+      mTextureHandles[i] = NULL;
    }
    mMaxBitmaps = 0;
    Parent::onSleep();
@@ -149,14 +149,14 @@ void GuiAnimBitmapCtrl::onSleep()
 bool GuiAnimBitmapCtrl::isImageFileName(const char *filename)
 {
    char buffer[1025];
-   dStrncpy(buffer,filename,1024);
+   dStrncpy(buffer, filename, 1024);
    dStrlwr(buffer);
    const char *p = buffer;
 
-   return  dStrstr( p, ".jpg" ) ||
-           dStrstr( p , ".bmp" ) ||
-           dStrstr( p, ".png" ) ||
-           dStrstr( p, ".gif" ) ;
+   return  dStrstr(p, ".jpg") ||
+      dStrstr(p, ".bmp") ||
+      dStrstr(p, ".png") ||
+      dStrstr(p, ".gif");
 }
 
 
@@ -164,43 +164,43 @@ void GuiAnimBitmapCtrl::loadDml()
 {
    mMaxBitmaps = 0;
 
-   FileStream  *stream = FileStream::createAndOpen( mDmlFilename, Torque::FS::File::Read );
-   
+   FileStream  *stream = FileStream::createAndOpen(mDmlFilename, Torque::FS::File::Read);
+
    if (stream == NULL)
    {
       return;
    }
 
-   if(isImageFileName(mDmlFilename))
+   if (isImageFileName(mDmlFilename))
    {
       mMaxBitmaps = 1;
       setBitmap(0, mDmlFilename);
    }
    else
    {
-	   mMaterialList.read(*stream);
-	   stream->close();
-	   
-	   delete stream;
+      mMaterialList.read(*stream);
+      stream->close();
 
-	   const Torque::Path  thePath( mDmlFilename);
+      delete stream;
 
-	   if(!mMaterialList.load(thePath.getPath()))
-	   {
-		  return;
-	   }
+      const Torque::Path  thePath(mDmlFilename);
 
-	   S32 x;
+      if (!mMaterialList.load(thePath.getPath()))
+      {
+         return;
+      }
 
-	   for(x = 0; x < mMaterialList.size(); ++x, ++mMaxBitmaps)
-	   {
-		  if (x >= 50) break;
-		  mTextureHandles[x] = mMaterialList.getDiffuseTexture(x);
-	   }
+      S32 x;
+
+      for (x = 0; x < mMaterialList.size(); ++x, ++mMaxBitmaps)
+      {
+         if (x >= 50) break;
+         mTextureHandles[x] = mMaterialList.getDiffuseTexture(x);
+      }
    }
 }
 
-void GuiAnimBitmapCtrl::onPreRender() 
+void GuiAnimBitmapCtrl::onPreRender()
 {
    S32 thisTime = Sim::getCurrentTime();
    S32 timeDelta = thisTime - mLastTime;
@@ -210,155 +210,155 @@ void GuiAnimBitmapCtrl::onPreRender()
    }
 }
 
-void GuiAnimBitmapCtrl::onRender(Point2I offset, const RectI &updateRect) 
+void GuiAnimBitmapCtrl::onRender(Point2I offset, const RectI &updateRect)
 {
    S32 thisTime = Sim::getCurrentTime();
    S32 timeDelta = thisTime - mLastTime;
    if (timeDelta > mInterval && mIsPlaying)
    {
-      mIndex ++;
+      mIndex++;
       if (mIndex >= mMaxBitmaps)
       {
          if (mStopAtEnd)
          {
             mIndex--;  // stay at end and stop playing...
             stop();
-            Con::executef(this,  "onStoppedAtEnd");
+            Con::executef(this, "onStoppedAtEnd");
          }
          else
          {
-            mIndex = 0;         
+            mIndex = 0;
          }
       }
       mLastTime = thisTime;
    }
    if (mTextureHandles[mIndex])
-       Parent::setBitmap(mTextureHandles[mIndex]);
+      Parent::setBitmap(mTextureHandles[mIndex]);
 
- 	 S32 a = (S32)(255 * mAlpha);
-    ColorI alphaColor(mColor.red, mColor.green, mColor.blue, a);
+   S32 a = (S32)(255 * mAlpha);
+   ColorI alphaColor(mColor.red, mColor.green, mColor.blue, a);
 
    // update rotation?
    if (mDeltaRotation != 0)
    {
-       // how much time?
-       S32 now = Sim::getCurrentTime();
-       F32 factor = 0.0f;
-       if (mLastDeltaRotationTime >= 0)
-           factor = F32(now - mLastDeltaRotationTime) / 1000.0f;
-       mLastDeltaRotationTime = now;
-       
-       mRotation += mDeltaRotation * factor;
+      // how much time?
+      S32 now = Sim::getCurrentTime();
+      F32 factor = 0.0f;
+      if (mLastDeltaRotationTime >= 0)
+         factor = F32(now - mLastDeltaRotationTime) / 1000.0f;
+      mLastDeltaRotationTime = now;
+
+      mRotation += mDeltaRotation * factor;
    }
 
-   if (mTextureHandles[mIndex]) 
-   { 
+   if (mTextureHandles[mIndex])
+   {
       GFX->getDrawUtil()->clearBitmapModulation();
       GFX->getDrawUtil()->setBitmapModulation(alphaColor);
 
-		if(mWrap)
-		{
- 			GFXTextureObject* texture = mTextureHandles[mIndex];
-			RectI srcRegion;
-			RectI dstRegion;
-			float xdone = ((float)getExtent().x/(float)texture->mBitmapSize.x)+1;
-			float ydone = ((float)getExtent().y/(float)texture->mBitmapSize.y)+1;
+      if (mWrap)
+      {
+         GFXTextureObject* texture = mTextureHandles[mIndex];
+         RectI srcRegion;
+         RectI dstRegion;
+         float xdone = ((float)getExtent().x / (float)texture->mBitmapSize.x) + 1;
+         float ydone = ((float)getExtent().y / (float)texture->mBitmapSize.y) + 1;
 
          int xshift = mStartPoint.x%texture->mBitmapSize.x;
          int yshift = mStartPoint.y%texture->mBitmapSize.y;
-			for(int y = 0; y < ydone; ++y)
-				for(int x = 0; x < xdone; ++x)
-				{
-		 			srcRegion.set(0,0,texture->mBitmapSize.x,texture->mBitmapSize.y);
-  					dstRegion.set( ((texture->mBitmapSize.x*x)+offset.x)-xshift,
-								      ((texture->mBitmapSize.y*y)+offset.y)-yshift,
-								      texture->mBitmapSize.x,
-								      texture->mBitmapSize.y);
+         for (int y = 0; y < ydone; ++y)
+            for (int x = 0; x < xdone; ++x)
+            {
+               srcRegion.set(0, 0, texture->mBitmapSize.x, texture->mBitmapSize.y);
+               dstRegion.set(((texture->mBitmapSize.x*x) + offset.x) - xshift,
+                  ((texture->mBitmapSize.y*y) + offset.y) - yshift,
+                  texture->mBitmapSize.x,
+                  texture->mBitmapSize.y);
                GFX->getDrawUtil()->drawBitmapStretchSR(texture, dstRegion, srcRegion);
             }
 
-	}
-	else
+      }
+      else
       {
          RectI rect(offset, getExtent());
          GFXTextureObject* texture = mTextureHandles[mIndex];
-         RectI subRegion( 0, 0, texture->mBitmapSize.x, texture->mBitmapSize.y );
+         RectI subRegion(0, 0, texture->mBitmapSize.x, texture->mBitmapSize.y);
          GFX->getDrawUtil()->drawBitmapStretchSR(texture, rect, subRegion);
       }
-   } 
-   else 
-   { 
- 	   // if we have NO bitmap..then just draw a white squre in the current color...
+   }
+   else
+   {
+      // if we have NO bitmap..then just draw a white squre in the current color...
       RectI rect(offset.x, offset.y, getExtent().x, getExtent().y);
-      GFX->getDrawUtil()->drawRectFill(rect,mColor);
-   } 
+      GFX->getDrawUtil()->drawRectFill(rect, mColor);
+   }
 
    // if we are "playing" then rendering causes the next rendering...
-   if(mIsPlaying)
-		setUpdate();
+   if (mIsPlaying)
+      setUpdate();
 
-	//render childern
-	renderChildControls(offset, updateRect);
+   //render childern
+   renderChildControls(offset, updateRect);
 }
 
 
 void GuiAnimBitmapCtrl::play(bool stopAtEnd)
 {
-	mIsPlaying = true;
+   mIsPlaying = true;
    mStopAtEnd = stopAtEnd;
-	mLastTime = Platform::getVirtualMilliseconds();
-	setUpdate();
+   mLastTime = Platform::getVirtualMilliseconds();
+   setUpdate();
 }
 
 
 S32 GuiAnimBitmapCtrl::setFrame(S32 index)
 {
-	S32 ret = mIndex;
-	if (index >= 0 && index < mMaxBitmaps)
-	{
-	   mIndex = index;
-	   setUpdate();
-	}
+   S32 ret = mIndex;
+   if (index >= 0 && index < mMaxBitmaps)
+   {
+      mIndex = index;
+      setUpdate();
+   }
 
-	return ret;
+   return ret;
 }
 
 void GuiAnimBitmapCtrl::stop()
 {
-	mIsPlaying = false;
+   mIsPlaying = false;
 }
 
 
 void GuiAnimBitmapCtrl::rewind()
 {
-	mIndex = 0;
-	if(mIsPlaying)
-		mLastTime = Platform::getVirtualMilliseconds();
-	setUpdate();
+   mIndex = 0;
+   if (mIsPlaying)
+      mLastTime = Platform::getVirtualMilliseconds();
+   setUpdate();
 }
 
 void GuiAnimBitmapCtrl::onMouseUp(const GuiEvent &event)
 {
    //if this control is a dead end, make sure the event stops here
-   if ( !mVisible || !mAwake || mAlpha <= 0.0)
+   if (!mVisible || !mAwake || mAlpha <= 0.0)
       return;
 
-    UTF8 *pointStr = Con::getArgBuffer(128);
-    dSprintf(pointStr,128,"%d %d",event.mousePoint.x,event.mousePoint.y);
+   UTF8 *pointStr = Con::getArgBuffer(128);
+   dSprintf(pointStr, 128, "%d %d", event.mousePoint.x, event.mousePoint.y);
 
-    Con::executef(this,"onMouseUp",pointStr);
+   Con::executef(this, "onMouseUp", pointStr);
 }
 
 void GuiAnimBitmapCtrl::onMouseDown(const GuiEvent &event)
 {
    //if this control is a dead end, make sure the event stops here
-   if ( !mVisible || !mAwake || mAlpha <= 0.0)
+   if (!mVisible || !mAwake || mAlpha <= 0.0)
       return;
 
-    UTF8 *pointStr = Con::getArgBuffer(128);
-    dSprintf(pointStr,128,"%d %d",event.mousePoint.x,event.mousePoint.y);
+   UTF8 *pointStr = Con::getArgBuffer(128);
+   dSprintf(pointStr, 128, "%d %d", event.mousePoint.x, event.mousePoint.y);
 
-    Con::executef(this,"onMouseDown",pointStr);
+   Con::executef(this, "onMouseDown", pointStr);
 }
 
 DefineEngineMethod(GuiAnimBitmapCtrl, setIs3d, void, (bool _Is3d), (false),
@@ -379,7 +379,7 @@ DefineEngineMethod(GuiAnimBitmapCtrl, play, void, (bool _stopAtEnd), (false),
    object->play(_stopAtEnd);
 }
 
-DefineEngineMethod(GuiAnimBitmapCtrl, stop, void,(), ,
+DefineEngineMethod(GuiAnimBitmapCtrl, stop, void, (), ,
    "GuiAnimBitmapCtrl.stop()")
 {
    object->stop();
