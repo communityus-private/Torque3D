@@ -117,7 +117,7 @@ bool GuiAnimBitmapCtrl::onWake()
       loadDml();
 
    mIndex = 0;
-   Parent::setBitmap(mTextureHandles[mIndex], false);
+   Parent::setBitmap(mBitmapNames[mIndex], false);
    mLastTime = Sim::getCurrentTime();
 
    return true;
@@ -171,10 +171,10 @@ void GuiAnimBitmapCtrl::loadDml()
       delete stream;
 
       const Torque::Path  thePath(mDmlFilename);
-
-      if (!mMaterialList.load(thePath.getPath()))
+      for (U32 i = 0; i < mMaterialList.size(); i++)
       {
-         return;
+         if (mMaterialList.getMaterialName(i) == thePath.getPath())
+            return;
       }
 
       S32 x;
@@ -219,8 +219,8 @@ void GuiAnimBitmapCtrl::onRender(Point2I offset, const RectI &updateRect)
       }
       mLastTime = thisTime;
    }
-   if (mTextureHandles[mIndex])
-      Parent::setBitmap(mTextureHandles[mIndex]);
+   if (mBitmapNames[mIndex])
+      Parent::setBitmap(mBitmapNames[mIndex]);
 
    S32 a = (S32)(255 * mAlpha);
    ColorI alphaColor(mColor.red, mColor.green, mColor.blue, a);
@@ -263,7 +263,6 @@ void GuiAnimBitmapCtrl::onRender(Point2I offset, const RectI &updateRect)
                   texture->mBitmapSize.y);
                GFX->getDrawUtil()->drawBitmapStretchSR(texture, dstRegion, srcRegion);
             }
-
       }
       else
       {
