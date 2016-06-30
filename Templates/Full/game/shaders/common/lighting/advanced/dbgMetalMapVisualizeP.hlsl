@@ -23,10 +23,11 @@
 #include "shadergen:/autogenConditioners.h"
 #include "../../postfx/postFx.hlsl"
 
+TORQUE_UNIFORM_SAMPLER2D(matinfoTex,0);
 
-float4 main( PFXVertToPix IN, 
-             uniform sampler2D matinfoTex : register(S0) ) : COLOR0
+float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {     
-   float specular = tex2D( matinfoTex, IN.uv0 ).a;  
+   float specular = TORQUE_TEX2D( matinfoTex, IN.uv0 ).a;  
    return float4( specular, specular, specular, 1.0 );   
 }
+
