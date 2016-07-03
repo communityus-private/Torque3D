@@ -1018,8 +1018,8 @@ U32 TerrainMacroMapFeatHLSL::getOutputTargets( const MaterialFeatureData &fd ) c
 void TerrainNormalMapFeatHLSL::processVert(  Vector<ShaderComponent*> &componentList, 
                                              const MaterialFeatureData &fd )
 {
-   // We only need to process normals during the prepass.
-   if ( !fd.features.hasFeature( MFT_PrePassConditioner ) )
+   // We only need to process normals during the deferred.
+   if ( !fd.features.hasFeature( MFT_DeferredConditioner ) )
       return;
 
    MultiLine *meta = new MultiLine;
@@ -1039,7 +1039,7 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
    Var *viewToTangent = getInViewToTangent( componentList );
 
    // This var is read from GBufferConditionerHLSL and 
-   // used in the prepass output.
+   // used in the deferred output.
    Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
    if ( !gbNormal )
    {

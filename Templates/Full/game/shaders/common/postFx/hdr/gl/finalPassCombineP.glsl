@@ -29,7 +29,7 @@ uniform sampler2D sceneTex;
 uniform sampler2D luminanceTex;
 uniform sampler2D bloomTex;
 uniform sampler1D colorCorrectionTex;
-uniform sampler2D prepassTex;
+uniform sampler2D deferredTex;
 
 uniform vec2 texSize0;
 uniform vec2 texSize2;
@@ -87,7 +87,7 @@ void main()
    }
 
    // Add the bloom effect.
-   float depth = prepassUncondition( prepassTex, IN_uv0 ).w;
+   float depth = deferredUncondition( deferredTex, IN_uv0 ).w;
    if (depth>0.9999)
       _sample += g_fBloomScale * bloom;
 

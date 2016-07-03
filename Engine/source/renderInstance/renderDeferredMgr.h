@@ -19,8 +19,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-#ifndef _PREPASS_MGR_H_
-#define _PREPASS_MGR_H_
+#ifndef _DEFERRED_MGR_H_
+#define _DEFERRED_MGR_H_
 
 #include "renderInstance/renderTexTargetBinManager.h"
 #include "materials/matInstance.h"
@@ -29,12 +29,12 @@
 #include "core/util/autoPtr.h"
 
 // Forward declare
-class PrePassMatInstance;
+class DeferredMatInstance;
 
 // This render manager renders opaque objects to the z-buffer as a z-fill pass.
 // It can optionally accumulate data from this opaque render pass into a render
 // target for later use.
-class RenderPrePassMgr : public RenderTexTargetBinManager
+class RenderDeferredMgr : public RenderTexTargetBinManager
 {
    typedef RenderTexTargetBinManager Parent;
 
@@ -48,15 +48,15 @@ public:
    static const String MatInfoBufferName;
    static const String LightMapBufferName;
 
-   // Generic PrePass Render Instance Type
-   static const RenderInstType RIT_PrePass;
+   // Generic Deferred Render Instance Type
+   static const RenderInstType RIT_Deferred;
 
-   RenderPrePassMgr( bool gatherDepth = true, 
+   RenderDeferredMgr( bool gatherDepth = true, 
                      GFXFormat format = GFXFormatR16G16B16A16 );
 
-   virtual ~RenderPrePassMgr();
+   virtual ~RenderDeferredMgr();
 
-   virtual void setPrePassMaterial( PrePassMatInstance *mat );
+   virtual void setDeferredMaterial( DeferredMatInstance *mat );
 
    // RenderBinManager interface
    virtual void render(SceneRenderState * state);
@@ -65,10 +65,10 @@ public:
    virtual void addElement( RenderInst *inst );
 
    // ConsoleObject
-   DECLARE_CONOBJECT(RenderPrePassMgr);
+   DECLARE_CONOBJECT(RenderDeferredMgr);
 
 
-   typedef Signal<void(const SceneRenderState*, RenderPrePassMgr*, bool)> RenderSignal;
+   typedef Signal<void(const SceneRenderState*, RenderDeferredMgr*, bool)> RenderSignal;
 
    static RenderSignal& getRenderSignal();  
 
@@ -80,7 +80,7 @@ public:
 
    virtual bool setTargetSize(const Point2I &newTargetSize);
 
-   inline BaseMatInstance* getPrePassMaterial( BaseMatInstance *mat );
+   inline BaseMatInstance* getDeferredMaterial( BaseMatInstance *mat );
 
 protected:
 
@@ -90,12 +90,12 @@ protected:
    /// The object render instance elements.
    Vector< MainSortElem > mObjectElementList;
 
-   PrePassMatInstance *mPrePassMatInstance;
+   DeferredMatInstance *mDeferredMatInstance;
 
    virtual void _registerFeatures();
    virtual void _unregisterFeatures();
    virtual bool _updateTargets();
-   virtual void _createPrePassMaterial();
+   virtual void _createDeferredMaterial();
 
    bool _lightManagerActivate(bool active);
 
@@ -118,12 +118,12 @@ public:
 
 //------------------------------------------------------------------------------
 
-class ProcessedPrePassMaterial : public ProcessedShaderMaterial
+class ProcessedDeferredMaterial : public ProcessedShaderMaterial
 {
    typedef ProcessedShaderMaterial Parent;
    
 public:   
-   ProcessedPrePassMaterial(Material& mat, const RenderPrePassMgr *prePassMgr);
+   ProcessedDeferredMaterial(Material& mat, const RenderDeferredMgr *deferredMgr);
 
    virtual U32 getNumStages();
 
@@ -132,19 +132,19 @@ public:
 protected:
    virtual void _determineFeatures( U32 stageNum, MaterialFeatureData &fd, const FeatureSet &features );
 
-   const RenderPrePassMgr *mPrePassMgr;
+   const RenderDeferredMgr *mDeferredMgr;
    bool mIsLightmappedGeometry;
 };
 
 //------------------------------------------------------------------------------
 
-class PrePassMatInstance : public MatInstance
+class DeferredMatInstance : public MatInstance
 {
    typedef MatInstance Parent;
 
 public:   
-   PrePassMatInstance(MatInstance* root, const RenderPrePassMgr *prePassMgr);
-   virtual ~PrePassMatInstance();
+   DeferredMatInstance(MatInstance* root, const RenderDeferredMgr *deferredMgr);
+   virtual ~DeferredMatInstance();
 
    bool init()
    {
@@ -158,27 +158,27 @@ public:
 protected:      
    virtual ProcessedMaterial* getShaderMaterial();
 
-   const RenderPrePassMgr *mPrePassMgr;
+   const RenderDeferredMgr *mDeferredMgr;
 };
 
 //------------------------------------------------------------------------------
 
-class PrePassMatInstanceHook : public MatInstanceHook
+class DeferredMatInstanceHook : public MatInstanceHook
 {
 public:
-   PrePassMatInstanceHook(MatInstance *baseMatInst, const RenderPrePassMgr *prePassMgr);
-   virtual ~PrePassMatInstanceHook();
+   DeferredMatInstanceHook(MatInstance *baseMatInst, const RenderDeferredMgr *deferredMgr);
+   virtual ~DeferredMatInstanceHook();
 
-   virtual PrePassMatInstance *getPrePassMatInstance() { return mHookedPrePassMatInst; }
+   virtual DeferredMatInstance *getDeferredMatInstance() { return mHookedDeferredMatInst; }
 
    virtual const MatInstanceHookType& getType() const { return Type; }
 
-   /// The type for prepass material hooks.
+   /// The type for deferred material hooks.
    static const MatInstanceHookType Type;
 
 protected:
-   PrePassMatInstance *mHookedPrePassMatInst; 
-   const RenderPrePassMgr *mPrePassManager;
+   DeferredMatInstance *mHookedDeferredMatInst; 
+   const RenderDeferredMgr *mDeferredManager;
 };
 
 //------------------------------------------------------------------------------
@@ -209,17 +209,17 @@ protected:
 };
 
 
-inline BaseMatInstance* RenderPrePassMgr::getPrePassMaterial( BaseMatInstance *mat )
+inline BaseMatInstance* RenderDeferredMgr::getDeferredMaterial( BaseMatInstance *mat )
 {
-   PrePassMatInstanceHook *hook = static_cast<PrePassMatInstanceHook*>( mat->getHook( PrePassMatInstanceHook::Type ) );
+   DeferredMatInstanceHook *hook = static_cast<DeferredMatInstanceHook*>( mat->getHook( DeferredMatInstanceHook::Type ) );
    if ( !hook )
    {
-      hook = new PrePassMatInstanceHook( static_cast<MatInstance*>( mat ), this );
+      hook = new DeferredMatInstanceHook( static_cast<MatInstance*>( mat ), this );
       mat->addHook( hook );
    }
 
-   return hook->getPrePassMatInstance();
+   return hook->getDeferredMatInstance();
 }
 
-#endif // _PREPASS_MGR_H_
+#endif // _DEFERRED_MGR_H_
 

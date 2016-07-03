@@ -28,7 +28,7 @@ TORQUE_UNIFORM_SAMPLER2D(sceneTex, 0);
 TORQUE_UNIFORM_SAMPLER2D(luminanceTex, 1);
 TORQUE_UNIFORM_SAMPLER2D(bloomTex, 2);
 TORQUE_UNIFORM_SAMPLER1D(colorCorrectionTex, 3);
-TORQUE_UNIFORM_SAMPLER2D(prepassTex, 4);
+TORQUE_UNIFORM_SAMPLER2D(deferredTex, 4);
 
 uniform float2 texSize0;
 uniform float2 texSize2;
@@ -82,7 +82,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    }
 
    // Add the bloom effect.
-   float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
+   float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
    if (depth>0.9999)
       sample += g_fBloomScale * bloom;
 
