@@ -294,6 +294,30 @@ void AIPlayer::clearAim()
 }
 
 /**
+ * Sets the correct aim for the bot to the target
+ */
+void AIPlayer::getMuzzleVector(U32 imageSlot,VectorF* vec)
+{
+   MatrixF mat;
+   getMuzzleTransform(imageSlot,&mat);
+
+   MountedImage& image = mMountedImageList[imageSlot];
+
+   if (image.dataBlock->correctMuzzleVector)
+   {
+      disableHeadZCalc();
+      if (getCorrectedAim(mat, vec))
+      {
+         enableHeadZCalc();
+         return;
+      }
+      enableHeadZCalc();
+
+   }
+   mat.getColumn(1,vec);
+}
+
+/**
  * Set the state of a movement trigger.
  *
  * @param slot The trigger slot to set
@@ -582,7 +606,7 @@ bool AIPlayer::getAIMove(Move *movePtr)
    // Replicate the trigger state into the move so that
    // triggers can be controlled from scripts.
    for( U32 i = 0; i < MaxTriggerKeys; i++ )
-      movePtr->trigger[ i ] = mMoveTriggers[ i ];
+      movePtr->trigger[ i ] = getImageTriggerState( i );
 
 #ifdef TORQUE_NAVIGATION_ENABLED
    if(mJump == Now)

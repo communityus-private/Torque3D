@@ -872,6 +872,7 @@ void TSStatic::unpackUpdate(NetConnection *con, BitStream *stream)
       stream->read(&mRenderNormalScalar);
 
       stream->read(&mForceDetail);
+      mPlayAmbient = stream->readFlag();
    }
 
    mUseAlphaFade = stream->readFlag();  
