@@ -27,7 +27,7 @@
 #include "shaderGen/langElement.h"
 #include "shaderGen/shaderOp.h"
 #include "shaderGen/conditionerFeature.h"
-#include "renderInstance/renderPrePassMgr.h"
+#include "renderInstance/renderDeferredMgr.h"
 #include "materials/processedMaterial.h"
 #include "materials/materialFeatureTypes.h"
 
@@ -161,7 +161,7 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
          unconditionLightInfo.c_str()), lightInfoBuffer, uvScene, d_lightcolor, d_NL_Att, d_specular));
 
    // If this has an interlaced pre-pass, do averaging here
-   if (fd.features[MFT_InterlacedPrePass])
+   if (fd.features[MFT_InterlacedDeferred])
    {
       Var *oneOverTargetSize = (Var*)LangElement::find("oneOverTargetSize");
       if (!oneOverTargetSize)
@@ -238,7 +238,7 @@ void DeferredRTLightingFeatHLSL::setTexData( Material::StageData &stageDat,
 void DeferredBumpFeatHLSL::processVert(   Vector<ShaderComponent*> &componentList, 
                                           const MaterialFeatureData &fd )
 {
-   if( fd.features[MFT_PrePassConditioner] )
+   if( fd.features[MFT_DeferredConditioner] )
    {
       // There is an output conditioner active, so we need to supply a transform
       // to the pixel shader. 
@@ -286,7 +286,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
    // NULL output in case nothing gets handled
    output = NULL;
 
-   if (fd.features[MFT_PrePassConditioner])
+   if (fd.features[MFT_DeferredConditioner])
    {
       MultiLine *meta = new MultiLine;
 
@@ -419,7 +419,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       }
 
       // This var is read from GBufferConditionerHLSL and 
-      // used in the prepass output.
+      // used in the deferred output.
       //
       // By using the 'half' type here we get a bunch of partial
       // precision optimized code on further operations on the normal
@@ -568,7 +568,7 @@ ShaderFeature::Resources DeferredBumpFeatHLSL::getResources( const MaterialFeatu
       res.numTex = 1;
       res.numTexReg = 1;
 
-      if (  fd.features[MFT_PrePassConditioner] &&
+      if (  fd.features[MFT_DeferredConditioner] &&
             fd.features.hasFeature( MFT_DetailNormalMap ) )
       {
          res.numTex += 1;
@@ -593,7 +593,7 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
       return;
    }
 
-   if (  !fd.features[MFT_PrePassConditioner] && fd.features[MFT_AccuMap] )
+   if (  !fd.features[MFT_DeferredConditioner] && fd.features[MFT_AccuMap] )
    {
       passData.mTexType[ texIndex ] = Material::Bump;
       passData.mSamplerNames[ texIndex ] = "bumpMap";
@@ -614,14 +614,14 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
       }
    }
    else if (  !fd.features[MFT_Parallax] && !fd.features[MFT_SpecularMap] &&
-         ( fd.features[MFT_PrePassConditioner] ||
+         ( fd.features[MFT_DeferredConditioner] ||
            fd.features[MFT_PixSpecular] ) )
    {
       passData.mTexType[ texIndex ] = Material::Bump;
       passData.mSamplerNames[ texIndex ] = "bumpMap";
       passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_NormalMap );
 
-      if (  fd.features[MFT_PrePassConditioner] &&
+      if (  fd.features[MFT_DeferredConditioner] &&
             fd.features.hasFeature( MFT_DetailNormalMap ) )
       {
          passData.mTexType[ texIndex ] = Material::DetailBump;
@@ -629,7 +629,7 @@ void DeferredBumpFeatHLSL::setTexData( Material::StageData &stageDat,
          passData.mTexSlot[ texIndex++ ].texObject = stageDat.getTex( MFT_DetailNormalMap );
       }
 
-      if (fd.features[MFT_PrePassConditioner] &&
+      if (fd.features[MFT_DeferredConditioner] &&
          fd.features.hasFeature(MFT_NormalDamage))
       {
          passData.mTexType[texIndex] = Material::Bump;
@@ -766,11 +766,11 @@ void DeferredMinnaertHLSL::setTexData( Material::StageData &stageDat,
 {
    if( fd.features[MFT_isDeferred] && fd.features[MFT_RTLighting] )
    {
-      NamedTexTarget *texTarget = NamedTexTarget::find(RenderPrePassMgr::BufferName);
+      NamedTexTarget *texTarget = NamedTexTarget::find(RenderDeferredMgr::BufferName);
       if ( texTarget )
       {
          passData.mTexType[texIndex] = Material::TexTarget;
-         passData.mSamplerNames[texIndex] = "prepassBuffer";
+         passData.mSamplerNames[texIndex] = "deferredBuffer";
          passData.mTexSlot[ texIndex++ ].texTarget = texTarget;
       }
    }
@@ -782,11 +782,11 @@ void DeferredMinnaertHLSL::processPixMacros( Vector<GFXShaderMacro> &macros,
    if( fd.features[MFT_isDeferred] && fd.features[MFT_RTLighting] )
    {
       // Pull in the uncondition method for the g buffer
-      NamedTexTarget *texTarget = NamedTexTarget::find( RenderPrePassMgr::BufferName );
+      NamedTexTarget *texTarget = NamedTexTarget::find( RenderDeferredMgr::BufferName );
       if ( texTarget && texTarget->getConditioner() )
       {
          ConditionerMethodDependency *unconditionMethod = texTarget->getConditioner()->getConditionerMethodDependency(ConditionerFeature::UnconditionMethod);
-         unconditionMethod->createMethodMacro( String::ToLower(RenderPrePassMgr::BufferName) + "Uncondition", macros );
+         unconditionMethod->createMethodMacro( String::ToLower(RenderDeferredMgr::BufferName) + "Uncondition", macros );
          addDependency(unconditionMethod);
       }
    }
@@ -826,23 +826,23 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
    minnaertConstant->constSortPos = cspPotentialPrimitive;
 
    // create texture var
-   Var *prepassBuffer = new Var;
-   prepassBuffer->setType("sampler2D");
-   prepassBuffer->setName("prepassBuffer");
-   prepassBuffer->uniform = true;
-   prepassBuffer->sampler = true;
-   prepassBuffer->constNum = Var::getTexUnitNum();     // used as texture unit num here
+   Var *deferredBuffer = new Var;
+   deferredBuffer->setType("sampler2D");
+   deferredBuffer->setName("deferredBuffer");
+   deferredBuffer->uniform = true;
+   deferredBuffer->sampler = true;
+   deferredBuffer->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
-   Var* prePassTex = NULL;
+   Var* deferredTex = NULL;
    if (mIsDirect3D11)
    {
-      prepassBuffer->setType("SamplerState");
-      prePassTex = new Var;
-      prePassTex->setName("prePassTex");
-      prePassTex->setType("Texture2D");
-      prePassTex->uniform = true;
-      prePassTex->texture = true;
-      prePassTex->constNum = prepassBuffer->constNum;
+      deferredBuffer->setType("SamplerState");
+      deferredTex = new Var;
+      deferredTex->setName("deferredTex");
+      deferredTex->setType("Texture2D");
+      deferredTex->uniform = true;
+      deferredTex->texture = true;
+      deferredTex->constNum = deferredBuffer->constNum;
    }
 
    // Texture coord
@@ -854,19 +854,19 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
    // Get the world space view vector.
    Var *wsViewVec = getWsView(getInWsPosition(componentList), meta);
 
-   String unconditionPrePassMethod = String::ToLower(RenderPrePassMgr::BufferName) + "Uncondition";
+   String unconditionDeferredMethod = String::ToLower(RenderDeferredMgr::BufferName) + "Uncondition";
 
    Var *d_NL_Att = (Var*)LangElement::find("d_NL_Att");
 
-   if (prePassTex)
-      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, ,@, @);\r\n", unconditionPrePassMethod.c_str()), prepassBuffer, prePassTex, uvScene));
+   if (deferredTex)
+      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, ,@, @);\r\n", unconditionDeferredMethod.c_str()), deferredBuffer, deferredTex, uvScene));
    else
-      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, @);\r\n", unconditionPrePassMethod.c_str()), prepassBuffer, uvScene));
+      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, @);\r\n", unconditionDeferredMethod.c_str()), deferredBuffer, uvScene));
 
    if (mIsDirect3D11)
-      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, ,@, @);\r\n", unconditionPrePassMethod.c_str()), prepassBuffer, prePassTex, uvScene));
+      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, ,@, @);\r\n", unconditionDeferredMethod.c_str()), deferredBuffer, deferredTex, uvScene));
    else
-      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, @);\r\n", unconditionPrePassMethod.c_str()), prepassBuffer, uvScene));
+      meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, @);\r\n", unconditionDeferredMethod.c_str()), deferredBuffer, uvScene));
 
    meta->addStatement( new GenOp( "   float vDotN = dot(normalDepth.xyz, @);\r\n", wsViewVec ) );
    meta->addStatement( new GenOp( "   float Minnaert = pow( @, @) * pow(vDotN, 1.0 - @);\r\n", d_NL_Att, minnaertConstant, minnaertConstant ) );

@@ -115,7 +115,7 @@ half4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    //med.rgb = large;
    
    //nearCoc = 0;
-   depth = half(TORQUE_PREPASS_UNCONDITION( depthSampler, IN.uv3 ).w);  
+   depth = half(TORQUE_DEFERRED_UNCONDITION( depthSampler, IN.uv3 ).w);  
    //return half4(depth.rrr,1);
    //return half4(nearCoc.rrr,1.0);
    

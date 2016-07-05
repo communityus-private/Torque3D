@@ -152,8 +152,8 @@ protected:
 
    NamedTexTargetRef mLightInfoTarget;
 
-   /// The prepass material for this material.
-   TerrainCellMaterial *mPrePassMat;
+   /// The deferred material for this material.
+   TerrainCellMaterial *mDeferredMat;
 
    /// The reflection material for this material.
    TerrainCellMaterial *mReflectMat;
@@ -164,7 +164,7 @@ protected:
    bool _createPass( Vector<MaterialInfo*> *materials, 
                      Pass *pass, 
                      bool firstPass,
-                     bool prePassMat,
+                     bool deferredMat,
                      bool reflectMat,
                      bool baseOnly );
 
@@ -177,12 +177,12 @@ public:
 
    void init(  TerrainBlock *block, 
                U64 activeMaterials,
-               bool prePassMat = false,
+               bool deferredMat = false,
                bool reflectMat = false,
                bool baseOnly = false );
 
-   /// Returns a prepass material from this material.
-   TerrainCellMaterial* getPrePassMat();
+   /// Returns a deferred material from this material.
+   TerrainCellMaterial* getDeferredMat();
 
    /// Returns the reflection material from this material.
    TerrainCellMaterial* getReflectMat();

@@ -50,7 +50,7 @@ new ShaderData( AL_DeferredShader )
    samplerNames[1] = "directLightingBuffer";
    samplerNames[2] = "matInfoTex";
    samplerNames[3] = "indirectLightingBuffer";
-   samplerNames[4] = "prepassTex";
+   samplerNames[4] = "deferredTex";
    pixVersion = 2.0;
 };
 
@@ -64,7 +64,7 @@ singleton PostEffect( AL_DeferredShading )
    texture[1] = "#directLighting";
    texture[2] = "#matinfo";
    texture[3] = "#indirectLighting";
-   texture[4] = "#prepass";
+   texture[4] = "#deferred";
    target = "$backBuffer";
    renderPriority = 10000;
    allowReflectPass = true;

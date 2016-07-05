@@ -29,7 +29,7 @@
 #include "lighting/shadowMap/shadowMapPass.h"
 #include "lighting/shadowMap/lightShadowMap.h"
 #include "lighting/common/lightMapParams.h"
-#include "renderInstance/renderPrePassMgr.h"
+#include "renderInstance/renderDeferredMgr.h"
 #include "gfx/gfxTransformSaver.h"
 #include "scene/sceneManager.h"
 #include "scene/sceneRenderState.h"
@@ -130,7 +130,7 @@ AdvancedLightBinManager::AdvancedLightBinManager( AdvancedLightManager *lm /* = 
    // We want a full-resolution buffer
    mTargetSizeType = RenderTexTargetBinManager::WindowSize;
 
-   mMRTLightmapsDuringPrePass = true;
+   mMRTLightmapsDuringDeferred = true;
 
    Con::NotifyDelegate callback( this, &AdvancedLightBinManager::_deleteLightMaterials );
    Con::addVariableNotify( "$pref::Shadows::filterMode", callback );
@@ -571,23 +571,23 @@ void AdvancedLightBinManager::setupSGData( SceneData &data, const SceneRenderSta
    }
 }
 
-void AdvancedLightBinManager::MRTLightmapsDuringPrePass( bool val )
+void AdvancedLightBinManager::MRTLightmapsDuringDeferred( bool val )
 {
    // Do not enable if the GFX device can't do MRT's
    if ( GFX->getNumRenderTargets() < 2 )
       val = false;
 
-   if ( mMRTLightmapsDuringPrePass != val )
+   if ( mMRTLightmapsDuringDeferred != val )
    {
-      mMRTLightmapsDuringPrePass = val;
+      mMRTLightmapsDuringDeferred = val;
 
-      // Reload materials to cause a feature recalculation on prepass materials
+      // Reload materials to cause a feature recalculation on deferred materials
       if(mLightManager->isActive())
          MATMGR->flushAndReInitInstances();
 
-      RenderPrePassMgr *prepass;
-      if ( Sim::findObject( "AL_PrePassBin", prepass ) && prepass->getTargetTexture( 0 ) )
-         prepass->updateTargets();
+      RenderDeferredMgr *deferred;
+      if ( Sim::findObject( "AL_DeferredBin", deferred ) && deferred->getTargetTexture( 0 ) )
+         deferred->updateTargets();
    }
 }
 
@@ -855,21 +855,21 @@ bool LightMatInstance::init( const FeatureSet &features, const GFXVertexFormat *
    // in the same way.
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = false;
-   litState.stencilMask = RenderPrePassMgr::OpaqueDynamicLitMask | RenderPrePassMgr::OpaqueStaticLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
    mLitState[DynamicLight] = GFX->createStateBlock(litState);
 
    // StaticLightNonLMGeometry State: This will treat non-lightmapped geometry
    // in the usual way, but will not effect lightmapped geometry.
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = false;
-   litState.stencilMask = RenderPrePassMgr::OpaqueDynamicLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask;
    mLitState[StaticLightNonLMGeometry] = GFX->createStateBlock(litState);
 
    // StaticLightLMGeometry State: This will add specular information (alpha) but
    // multiply-darken color information. 
    litState.blendDest = GFXBlendSrcColor;
    litState.blendSrc = GFXBlendZero;
-   litState.stencilMask = RenderPrePassMgr::OpaqueStaticLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueStaticLitMask;
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = true;
    litState.separateAlphaBlendSrc = GFXBlendOne;
