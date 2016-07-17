@@ -38,7 +38,6 @@ TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
 uniform float4 rtParams3;
 #endif
-//register 4?
 TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
 TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
 TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
@@ -195,7 +194,14 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
 float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
 {
    // Matinfo flags
-   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, IN.uv0 );   
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, IN.uv0 );
+   //early out if emissive
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
+   {
+      return float4(0.0, 0.0, 0.0, 0.0);
+   }
+
    float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
    float3 subsurface = float3(0.0,0.0,0.0); 
    if (getFlag( matInfo.r, 1 ))
