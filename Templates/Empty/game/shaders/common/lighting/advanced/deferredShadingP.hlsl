@@ -31,14 +31,22 @@ TORQUE_UNIFORM_SAMPLER2D(prepassTex,3);
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {        
-   float4 lightBuffer = TORQUE_TEX2D( lightPrePassTex, IN.uv0 );
-   float4 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 );
-   float4 matInfo = TORQUE_TEX2D( matInfoTex, IN.uv0 );
-   float specular = saturate(lightBuffer.a);
    float depth = TORQUE_PREPASS_UNCONDITION( prepassTex, IN.uv0 ).w;
 
    if (depth>0.9999)
       return float4(0,0,0,0);
+
+   float4 colorBuffer = TORQUE_TEX2D(colorBufferTex, IN.uv0);
+   float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0);
+
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
+   {
+      return hdrEncode(float4(colorBuffer.rgb, 1.0));
+   }
+
+   float4 lightBuffer = TORQUE_TEX2D(lightPrePassTex, IN.uv0);
+   float specular = saturate(lightBuffer.a);
 	  
    // Diffuse Color Altered by Metalness
    bool metalness = getFlag(matInfo.r, 3);

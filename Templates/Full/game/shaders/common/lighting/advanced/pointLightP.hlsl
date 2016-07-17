@@ -142,13 +142,8 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
-   // Emissive.
+   // Matinfo flags
    float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
-   {
-       return float4(0.0, 0.0, 0.0, 0.0);
-   }
    float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
    float3 subsurface = float3(0.0,0.0,0.0); 
    if (getFlag( matInfo.r, 1 ))

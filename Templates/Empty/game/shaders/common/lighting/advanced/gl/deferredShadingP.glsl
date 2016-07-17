@@ -40,9 +40,17 @@ void main()
       OUT_col = vec4(0.0);
       return;
    }
-   vec4 lightBuffer = texture( lightPrePassTex, uv0 );
+   
    vec4 colorBuffer = texture( colorBufferTex, uv0 );
    vec4 matInfo = texture( matInfoTex, uv0 );
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
+   {
+      OUT_col = hdrEncode(float4(colorBuffer.rgb, 1.0));
+	  return;
+   }
+   
+   vec4 lightBuffer = texture( lightPrePassTex, uv0 );
    float specular = clamp(lightBuffer.a,0.0,1.0);
 
    // Diffuse Color Altered by Metalness
