@@ -86,7 +86,8 @@ void main()
    bool emissive = getFlag(matInfo.r, 0);
    if (emissive)
    {
-      return float4(0.0, 0.0, 0.0, 0.0);
+      OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
+      return;
    }
    
    vec4 colorSample = texture( colorBuffer, uvScene );
