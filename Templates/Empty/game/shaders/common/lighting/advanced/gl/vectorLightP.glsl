@@ -193,15 +193,26 @@ vec4 AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
 out vec4 OUT_col;
 void main()             
 {
-   // Emissive.
-   float4 matInfo = texture( matInfoBuffer, uv0 );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
+   // Matinfo flags
+   float4 matInfo = texture( matInfoBuffer, uv0 );
+   //early out if emissive
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
    {
-       OUT_col = vec4(1.0, 1.0, 1.0, 0.0);
-       return;
+      return float4(0.0, 0.0, 0.0, 0.0);
    }
    
+   vec4 colorSample = texture( colorBuffer, uv0 );
+   vec3 subsurface = vec3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = vec3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = vec3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
    vec4 prepassSample = prepassUncondition( prePassBuffer, uv0 );
    vec3 normal = prepassSample.rgb;
@@ -312,6 +323,5 @@ void main()
       lightColorOut = debugColor;
    #endif
 
-   vec4 colorSample = texture( colorBuffer, uv0 );
-   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att); 
+   OUT_col = AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att); 
 }

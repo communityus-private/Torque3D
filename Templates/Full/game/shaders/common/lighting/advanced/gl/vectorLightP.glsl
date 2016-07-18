@@ -192,13 +192,13 @@ vec4 AL_VectorLightShadowCast( sampler2D _sourceshadowMap,
 out vec4 OUT_col;
 void main()             
 {
-   // Emissive.
-   float4 matInfo = texture( matInfoBuffer, uv0 );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
+   // Matinfo flags
+   float4 matInfo = texture( matInfoBuffer, uv0 );
+   //early out if emissive
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
    {
-       OUT_col = vec4(1.0, 1.0, 1.0, 0.0);
-       return;
+      return float4(0.0, 0.0, 0.0, 0.0);
    }
    
    vec4 colorSample = texture( colorBuffer, uv0 );

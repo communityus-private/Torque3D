@@ -80,13 +80,13 @@ void main()
    vec3 ssPos = IN_ssPos.xyz / IN_ssPos.w;
    vec2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
 
-   // Emissive.
-   vec4 matInfo = texture( matInfoBuffer, uvScene );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
+   // Matinfo flags
+   vec4 matInfo = texture( matInfoBuffer, uvScene );
+   //early out if emissive
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
    {
-       OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
-	   return;
+      return float4(0.0, 0.0, 0.0, 0.0);
    }
    
    vec4 colorSample = texture( colorBuffer, uvScene );
