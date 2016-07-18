@@ -47,7 +47,7 @@ void main()
    bool emissive = getFlag(matInfo.r, 0);
    if (emissive)
    {
-      OUT_col = hdrEncode(float4(colorBuffer, 1.0));
+      OUT_col = float4(colorBuffer, 1.0);
 	  return;
    }
    
