@@ -20,34 +20,32 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Structures                                                                  
-//-----------------------------------------------------------------------------
+#pragma once
 
-#include "shaderModel.hlsl"
+#include "gui/editor/guiMenuBar.h"
+#include "platformSDL/menus/PlatformSDLPopupMenuData.h"
+#include "platform/menus/popupMenu.h"
 
-struct Conn
+class GuiPlatformGenericMenuBar : public GuiMenuBar
 {
-   float4 position : TORQUE_POSITION;
-   float2 texCoord	: TEXCOORD0;
-   float4 color : COLOR0;
+   typedef GuiMenuBar Parent;
+public:
+   DECLARE_CONOBJECT(GuiPlatformGenericMenuBar);
+
+   virtual void menuItemSelected(Menu *menu, MenuItem *item)
+   {
+      AssertFatal(menu && item, "");
+
+      PopupMenu *popupMenu = PlatformPopupMenuData::mMenuMap[menu];
+      AssertFatal(popupMenu, "");
+
+      popupMenu->handleSelect(item->id);
+
+      Parent::menuItemSelected(menu, item);
+   }
+
+protected:
+   /// menu id / item id
+   Map<CompoundKey<U32, U32>, String> mCmds;
+
 };
-
-struct Frag
-{
-   float4 col : TORQUE_TARGET0;
-};
-
-TORQUE_UNIFORM_SAMPLER2D(diffuseMap, 0);
-
-//-----------------------------------------------------------------------------
-// Main                                                                        
-//-----------------------------------------------------------------------------
-Frag main( Conn In)
-{
-   Frag Out;
-
-   Out.col = TORQUE_TEX2D(diffuseMap, In.texCoord) * In.color;
-
-   return Out;
-}

@@ -33,10 +33,10 @@
 #include "gfx/D3D9/gfxD3D9OcclusionQuery.h"
 #include "gfx/D3D9/gfxD3D9Shader.h"
 #include "windowManager/platformWindow.h"
+#include "materials/shaderData.h"
 #ifndef TORQUE_OS_XENON
 #  include "windowManager/win32/win32Window.h"
 #endif
-#include "materials/shaderData.h"
 
 D3DXFNTable GFXD3D9Device::smD3DX;
 
@@ -84,9 +84,7 @@ GFXD3D9Device::GFXD3D9Device( LPDIRECT3D9 d3d, U32 index )
 
    mOcclusionQuerySupported = false;
 
-   mCurrentShader = NULL;
-
-   for (U32 i = 0; i < GS_COUNT; ++i)
+   for (U32 i = 0; i < GS_COUNT; ++i) 
       mModelViewProjSC[i] = NULL;
 
    // Set up the Enum translation tables
@@ -145,53 +143,59 @@ GFXD3D9Device::~GFXD3D9Device()
 }
 
 //------------------------------------------------------------------------------
-// setupGenericShaders - This function is totally not needed on PC because there
-// is fixed-function support in D3D9
+// setupGenericShaders 
 //------------------------------------------------------------------------------
 inline void GFXD3D9Device::setupGenericShaders( GenericShaderType type /* = GSColor */ )
 {
    AssertFatal(type != GSTargetRestore, ""); //not used
 
-   if(mGenericShader[GSColor] == NULL)
+   if (mGenericShader[GSColor] == NULL)
    {
       ShaderData *shaderData;
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/colorV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/colorP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "3.0");
       shaderData->registerObject();
-      mGenericShader[GSColor] =  shaderData->getShader();
+      mGenericShader[GSColor] = shaderData->getShader();
       mGenericShaderBuffer[GSColor] = mGenericShader[GSColor]->allocConstBuffer();
       mModelViewProjSC[GSColor] = mGenericShader[GSColor]->getShaderConstHandle("$modelView");
+      Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/modColorTextureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/modColorTextureP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "3.0");
       shaderData->registerObject();
       mGenericShader[GSModColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSModColorTexture] = mGenericShader[GSModColorTexture]->allocConstBuffer();
       mModelViewProjSC[GSModColorTexture] = mGenericShader[GSModColorTexture]->getShaderConstHandle("$modelView");
+      Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/addColorTextureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/addColorTextureP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "3.0");
       shaderData->registerObject();
       mGenericShader[GSAddColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSAddColorTexture] = mGenericShader[GSAddColorTexture]->allocConstBuffer();
       mModelViewProjSC[GSAddColorTexture] = mGenericShader[GSAddColorTexture]->getShaderConstHandle("$modelView");
+      Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/textureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/textureP.hlsl");
-      shaderData->setField("pixVersion", "2.0");
+      shaderData->setField("pixVersion", "3.0");
       shaderData->registerObject();
       mGenericShader[GSTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSTexture] = mGenericShader[GSTexture]->allocConstBuffer();
       mModelViewProjSC[GSTexture] = mGenericShader[GSTexture]->getShaderConstHandle("$modelView");
-}
+      Sim::getRootGroup()->addObject(shaderData);
+
+      //Force an update
+      mViewportDirty = true;
+   }
 
    MatrixF tempMatrix = mProjectionMatrix * mViewMatrix * mWorldMatrix[mWorldStackSize];
    mGenericShaderBuffer[type]->setSafe(mModelViewProjSC[type], tempMatrix);
@@ -720,6 +724,12 @@ GFXShader* GFXD3D9Device::createShader()
    return shader;
 }
 
+void GFXD3D9Device::disableShaders(bool force)
+{
+   setShader( NULL, force );
+   setShaderConstBuffer( NULL );
+}
+
 //-----------------------------------------------------------------------------
 // Set shader - this function exists to make sure this is done in one place,
 //              and to make sure redundant shader states are not being
@@ -727,31 +737,21 @@ GFXShader* GFXD3D9Device::createShader()
 //-----------------------------------------------------------------------------
 void GFXD3D9Device::setShader( GFXShader *shader, bool force )
 {
-   if (mCurrentShader == shader)
-      return;
+   GFXD3D9Shader *d3dShader = static_cast<GFXD3D9Shader*>( shader );
 
-   if (shader)
+   IDirect3DPixelShader9 *pixShader = ( d3dShader != NULL ? d3dShader->mPixShader : NULL );
+   IDirect3DVertexShader9 *vertShader = ( d3dShader ? d3dShader->mVertShader : NULL );
+
+   if( pixShader != mLastPixShader || force )
    {
-      GFXD3D9Shader *d3dShader = static_cast<GFXD3D9Shader*>(shader);
-
-      if (d3dShader->mPixShader != mLastPixShader)
-      {
-         mD3DDevice->SetPixelShader(d3dShader->mPixShader);
-         mLastPixShader = d3dShader->mPixShader;
-      }
-
-      if (d3dShader->mVertShader != mLastVertShader)
-      {
-         mD3DDevice->SetVertexShader(d3dShader->mVertShader);
-         mLastVertShader = d3dShader->mVertShader;
-      }
-
-      mCurrentShader = shader;
+      mD3DDevice->SetPixelShader( pixShader );
+      mLastPixShader = pixShader;
    }
 
-   else
+   if( vertShader != mLastVertShader || force )
    {
-      setupGenericShaders();
+      mD3DDevice->SetVertexShader( vertShader );
+      mLastVertShader = vertShader;
    }
 }
 

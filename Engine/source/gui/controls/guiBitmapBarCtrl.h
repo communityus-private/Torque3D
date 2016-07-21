@@ -20,34 +20,30 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-//-----------------------------------------------------------------------------
-// Structures                                                                  
-//-----------------------------------------------------------------------------
+#ifndef _GUIBITMAPBARCTRL_H_
+#define _GUIBITMAPBARCTRL_H_
 
-#include "shaderModel.hlsl"
+#ifndef _GUIBITMAPCTRL_H_
+#include "gui/controls/guiBitmapCtrl.h"
+#endif
 
-struct Conn
+class GuiBitmapBarCtrl : public GuiBitmapCtrl
 {
-   float4 position : TORQUE_POSITION;
-   float2 texCoord	: TEXCOORD0;
-   float4 color : COLOR0;
+public:
+   typedef GuiBitmapCtrl Parent;
+
+protected:
+   F32 mPercent;
+   bool mVertical;
+   bool mFlipClip;
+public:
+   GuiBitmapBarCtrl();
+   static void initPersistFields();
+   void onRender(Point2I offset, const RectI &updateRect);
+
+   DECLARE_CONOBJECT(GuiBitmapBarCtrl);
+   DECLARE_CATEGORY("Gui Images");
+   DECLARE_DESCRIPTION("A control that clips a bitmap based on %.");
 };
 
-struct Frag
-{
-   float4 col : TORQUE_TARGET0;
-};
-
-TORQUE_UNIFORM_SAMPLER2D(diffuseMap, 0);
-
-//-----------------------------------------------------------------------------
-// Main                                                                        
-//-----------------------------------------------------------------------------
-Frag main( Conn In)
-{
-   Frag Out;
-
-   Out.col = TORQUE_TEX2D(diffuseMap, In.texCoord) * In.color;
-
-   return Out;
-}
+#endif
