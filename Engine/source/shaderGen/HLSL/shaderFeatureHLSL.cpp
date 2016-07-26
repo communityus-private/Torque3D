@@ -2096,6 +2096,8 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       }
       else if (lerpVal)
          meta->addStatement(new GenOp("   @ *= float4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));
+      else if (fd.features[MFT_SkyBox])
+         meta->addStatement(new GenOp("   @.rgb *= toLinear(@).rgb;\r\n", targ, texCube));
       else
          meta->addStatement(new GenOp("   @.rgb *= @.rgb;\r\n", targ, texCube));
    }
