@@ -74,7 +74,7 @@ extern "C" {
 
 		LinkConsoleFunctions = true;
 
-#if !defined(TORQUE_OS_XENON) && !defined(TORQUE_OS_PS3) && defined(_MSC_VER)
+#if defined(_MSC_VER)
 		createFontInit();
 #endif
 
@@ -155,7 +155,7 @@ extern "C" {
 		// Clean everything up.
 		StandardMainLoop::shutdown();
 
-#if !defined(TORQUE_OS_XENON) && !defined(TORQUE_OS_PS3) && defined(_MSC_VER)
+#if defined(_MSC_VER)
 		createFontShutdown();
 #endif
 

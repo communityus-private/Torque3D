@@ -53,10 +53,6 @@
 
 #include "opcode/Opcode.h"
 
-#if defined(TORQUE_OS_XENON)
-#  include "platformXbox/platformXbox.h"
-#endif
-
 GFXPrimitiveType drawTypes[] = { GFXTriangleList, GFXTriangleStrip };
 #define getDrawType(a) (drawTypes[a])
 
@@ -2394,23 +2390,16 @@ void TSMesh::_createVBIB( TSVertexBufferHandle &vb, GFXPrimitiveBufferHandle &pb
       // Create the vertex buffer
       if( vertsChanged || vb == NULL )
          vb.set( GFX, mVertSize, mVertexFormat, mNumVerts, mDynamic ? 
-#if defined(TORQUE_OS_XENON)
-         // Skinned meshes still will occasionally re-skin more than once per frame.
-         // This cannot happen on the Xbox360. Until this issue is resolved, use
-         // type volatile instead. [1/27/2010 Pat]
-            GFXBufferTypeVolatile : GFXBufferTypeStatic );
-#else
+
             GFXBufferTypeDynamic : GFXBufferTypeStatic );
-#endif
+
 
       // Copy from aligned memory right into GPU memory
       U8 *vertData = (U8*)vb.lock();
       if(!vertData) return;
-#if defined(TORQUE_OS_XENON)
-      XMemCpyStreaming_WriteCombined( vertData, mVertexData.address(), mVertexData.mem_size() );
-#else
+
       dMemcpy( vertData, mVertexData.address(), mVertexData.mem_size() );
-#endif
+
       vb.unlock();
 #if defined(USE_MEM_VERTEX_BUFFERS)
    }
@@ -3062,11 +3051,8 @@ void TSMesh::_convertToAlignedMeshData( TSMeshVertexArray &vertexData, const Vec
       vertexData.set(aligned_mem, mVertSize, mNumVerts);
       vertexData.setReady(true);
 
-#if defined(TORQUE_OS_XENON)
-      XMemCpyStreaming(vertexData.address(), mVertexData.address(), vertexData.mem_size() );
-#else
       dMemcpy(vertexData.address(), mVertexData.address(), vertexData.mem_size());
-#endif
+
       return;
    }
 

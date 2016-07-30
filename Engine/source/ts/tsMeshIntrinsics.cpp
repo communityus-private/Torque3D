@@ -88,10 +88,6 @@ MODULE_BEGIN( TSMeshIntrinsics )
       zero_vert_normal_bulk = zero_vert_normal_bulk_C;
       m_matF_x_BatchedVertWeightList = m_matF_x_BatchedVertWeightList_C;
 
-   #if defined(TORQUE_OS_XENON)
-      zero_vert_normal_bulk = zero_vert_normal_bulk_X360;
-      m_matF_x_BatchedVertWeightList = m_matF_x_BatchedVertWeightList_X360;
-   #else
       // Find the best implementation for the current CPU
       if(Platform::SystemInfo.processor.properties & CPU_PROP_SSE)
       {
@@ -108,14 +104,8 @@ MODULE_BEGIN( TSMeshIntrinsics )
             */
    #endif
       }
-      else if(Platform::SystemInfo.processor.properties & CPU_PROP_ALTIVEC)
-      {
-   #if !defined(TORQUE_OS_XENON) && defined(TORQUE_CPU_PPC)
-         zero_vert_normal_bulk = zero_vert_normal_bulk_gccvec;
-         m_matF_x_BatchedVertWeightList = m_matF_x_BatchedVertWeightList_gccvec;
-   #endif
-      }
-   #endif
+
+
    }
 
 MODULE_END;

@@ -73,11 +73,6 @@ typedef unsigned long  U64;
 #  define TORQUE_SUPPORTS_GCC_INLINE_X86_ASM
 #  include "platform/types.win.h"
 
-#elif defined(SN_TARGET_PS3)
-#  define TORQUE_OS_STRING "PS3"
-#  define TORQUE_OS_PS3
-#  include "platform/types.posix.h"
-
 #elif defined(linux) || defined(LINUX)
 #  define TORQUE_OS_STRING "Linux"
 #  define TORQUE_OS_LINUX
@@ -124,16 +119,6 @@ typedef unsigned long  U64;
 #  define TORQUE_CPU_STRING "Intel x64"
 #  define TORQUE_CPU_X64
 #  define TORQUE_LITTLE_ENDIAN
-
-#elif defined(__ppc__)
-#  define TORQUE_CPU_STRING "PowerPC"
-#  define TORQUE_CPU_PPC
-#  define TORQUE_BIG_ENDIAN
-
-#elif defined(SN_TARGET_PS3)
-#  define TORQUE_CPU_STRING "PowerPC"
-#  define TORQUE_CPU_PPC
-#  define TORQUE_BIG_ENDIAN
 
 #else
 #  error "GCC: Unsupported Target CPU"
