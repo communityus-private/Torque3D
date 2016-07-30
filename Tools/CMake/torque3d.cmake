@@ -53,8 +53,8 @@ mark_as_advanced(TORQUE_ADVANCED_LIGHTING)
 option(TORQUE_BASIC_LIGHTING "Basic Lighting" ON)
 mark_as_advanced(TORQUE_BASIC_LIGHTING)
 if(WIN32)
-	option(TORQUE_SFX_DirectX "DirectX Sound" ON)
-	mark_as_advanced(TORQUE_SFX_DirectX)
+	option(TORQUE_D3D11 "Allow DirectX11 render" ON)
+	option(TORQUE_SFX_DirectX "DirectX Sound" OFF)
 else()
 	set(TORQUE_SFX_DirectX OFF)
 endif()
@@ -69,24 +69,11 @@ if(WIN32)
 else()
 	set(TORQUE_SDL ON) # we need sdl to work on Linux/Mac
 endif()
-if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
-	#mark_as_advanced(TORQUE_OPENGL)
-else()
-	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
-endif()
 
-if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
-	#mark_as_advanced(TORQUE_OPENGL)
-else()
-	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
-	option(TORQUE_DEDICATED "Torque dedicated" OFF)
-endif()
-
-if(WIN32)
-	option(TORQUE_D3D11 "Allow Direct3D 11 render" OFF)
-endif()
+# OpenGL
+option(TORQUE_OPENGL "Allow OpenGL render" ON)
+# Dedicated disabled by default
+option(TORQUE_DEDICATED "Torque dedicated" OFF)
 
 option(TORQUE_EXPERIMENTAL_EC "Experimental Entity/Component systems" OFF)
 mark_as_advanced(TORQUE_EXPERIMENTAL_EC)
@@ -149,11 +136,6 @@ if(WIN32)
     # warning C4244: 'initializing' : conversion from 'XXX' to 'XXX', possible loss of data
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd4244")
 
-    if( TORQUE_CPU_X64 )
-        link_directories($ENV{DXSDK_DIR}/Lib/x64)
-    else()
-        link_directories($ENV{DXSDK_DIR}/Lib/x86)
-    endif()
 endif()
 
 # build types
@@ -455,16 +437,12 @@ if(WIN32)
     addPath("${srcDir}/platformWin32/videoInfo")
     addPath("${srcDir}/platformWin32/minidump")
     addPath("${srcDir}/windowManager/win32")
-	if(TORQUE_D3D11)
+	if(TORQUE_D3D11 AND NOT TORQUE_DEDICATED)
 		addPath("${srcDir}/gfx/D3D11")
+		addPath("${srcDir}/shaderGen/HLSL")    
+		addPath("${srcDir}/terrain/hlsl")
+		addPath("${srcDir}/forest/hlsl")
 	endif()
-    addPath("${srcDir}/gfx/D3D9")
-    addPath("${srcDir}/gfx/D3D9/pc")
-    addPath("${srcDir}/gfx/D3D11")
-    addDef( "TORQUE_D3D11" )
-    addPath("${srcDir}/shaderGen/HLSL")    
-    addPath("${srcDir}/terrain/hlsl")
-    addPath("${srcDir}/forest/hlsl")
     # add windows rc file for the icon
     addFile("${projectSrcDir}/torque.rc")
 endif()
@@ -601,19 +579,12 @@ endif()
 
 if(WIN32)
     # copy pasted from T3D build system, some might not be needed
-    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WSOCK32.LIB;vfw32.lib;Imm32.lib;d3d9.lib;d3dx9.lib;DxErr.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
+    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WSOCK32.LIB;vfw32.lib;Imm32.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
     mark_as_advanced(TORQUE_EXTERNAL_LIBS)
     addLib("${TORQUE_EXTERNAL_LIBS}")
    
    if(TORQUE_OPENGL)
       addLib(OpenGL32.lib)
-   endif()
-		
-   # JTH: DXSDK is compiled with older runtime, and MSVC 2015+ is when __vsnprintf is undefined.
-   # This is a workaround by linking with the older legacy library functions.
-   # See this for more info: http://stackoverflow.com/a/34230122
-   if (MSVC14)
-      addLib(legacy_stdio_definitions.lib)
    endif()
 endif()
 
@@ -705,11 +676,6 @@ endif()
 if(UNIX)
 	addInclude("/usr/include/freetype2/freetype")
 	addInclude("/usr/include/freetype2")
-endif()
-
-# external things
-if(WIN32)
-    set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY INCLUDE_DIRECTORIES $ENV{DXSDK_DIR}/Include)
 endif()
 
 if(UNIX)
