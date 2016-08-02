@@ -35,7 +35,9 @@ TSRenderState::TSRenderState()
       mLightQuery( NULL ),
       mUseOriginSort( false ),
       mMaterialDamage(0.0f),
-      mAccuTex( NULL )
+      mAccuTex( NULL ),
+      mNodeTransforms( NULL ),
+      mNodeTransformCount( 0 )
 {
 }
 
@@ -49,6 +51,8 @@ TSRenderState::TSRenderState( const TSRenderState &state )
       mCuller( state.mCuller ),
       mLightQuery( state.mLightQuery ),
       mUseOriginSort( state.mUseOriginSort ),
-	  mMaterialDamage(state.mMaterialDamage)
+      mMaterialDamage(state.mMaterialDamage),
+      mNodeTransforms( state.mNodeTransforms ),
+      mNodeTransformCount( state.mNodeTransformCount )
 {
 }

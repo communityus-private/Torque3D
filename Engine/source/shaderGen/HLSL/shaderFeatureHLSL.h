@@ -663,6 +663,19 @@ public:
                                   MaterialFeatureData *outFeatureData );
 };
 
+/// Hardware Skinning
+class HardwareSkinningFeatureHLSL : public ShaderFeatureHLSL
+{
+protected:
+
+public:
+
+   virtual void processVert(  Vector<ShaderComponent*> &componentList,
+                              const MaterialFeatureData &fd );
+
+   virtual String getName() { return "Hardware Skinning"; }
+};
+
 
 class DeferredSkyHLSL : public ShaderFeatureHLSL
 {
