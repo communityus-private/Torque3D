@@ -304,6 +304,8 @@ GFXD3D11ShaderConstBuffer::GFXD3D11ShaderConstBuffer( GFXD3D11Shader* shader,
     mPixelConstBufferLayout = pixelLayout;
     mPixelConstBuffer = new GenericConstBuffer(pixelLayout);
 
+    mDeviceContext = D3D11DEVICECONTEXT;
+
     _createBuffers();
 	
 }
@@ -655,28 +657,25 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       }      
    }
 
-   ID3D11DeviceContext* devCtx = D3D11DEVICECONTEXT;
-
    D3D11_MAPPED_SUBRESOURCE pConstData;
    ZeroMemory(&pConstData, sizeof(D3D11_MAPPED_SUBRESOURCE));
    
    const U8* buf;
-   HRESULT hr;
    U32 nbBuffers = 0;
    if(mVertexConstBuffer->isDirty())
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mVertexConstBufferLayout->getSubBufferDesc();
-      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: This is not very efficient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
       // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mVertexConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
+         mDeviceContext->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
-      devCtx->VSSetConstantBuffers(0, nbBuffers, mConstantBuffersV);
+      mDeviceContext->VSSetConstantBuffers(0, nbBuffers, mConstantBuffersV);
    }
 
    nbBuffers = 0;
@@ -690,11 +689,11 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersP[i], 0, NULL, buf + desc.start, desc.size, 0);
+         mDeviceContext->UpdateSubresource(mConstantBuffersP[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
-      devCtx->PSSetConstantBuffers(0, nbBuffers, mConstantBuffersP);
+      mDeviceContext->PSSetConstantBuffers(0, nbBuffers, mConstantBuffersP);
    }
 
    #ifdef TORQUE_DEBUG
@@ -1054,20 +1053,20 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
 
    return result;
 }
-void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table, 
+void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *refTable,
                                          GenericConstBufferLayout *bufferLayoutIn,
                                          Vector<GFXShaderConstDesc> &samplerDescriptions )
 {
    PROFILE_SCOPE( GFXD3D11Shader_GetShaderConstants );
 
-   AssertFatal(table, "NULL constant table not allowed, is this an assembly shader?");
+   AssertFatal(refTable, "NULL constant table not allowed, is this an assembly shader?");
 
    GFXD3D11ConstBufferLayout *bufferLayout = (GFXD3D11ConstBufferLayout*)bufferLayoutIn;
    Vector<ConstSubBufferDesc> &subBuffers = bufferLayout->getSubBufferDesc();
    subBuffers.clear();
 
    D3D11_SHADER_DESC tableDesc;
-   HRESULT hr = table->GetDesc(&tableDesc);
+   HRESULT hr = refTable->GetDesc(&tableDesc);
    if (FAILED(hr))
    {
 	   AssertFatal(false, "Shader Reflection table unable to be created");
@@ -1077,7 +1076,7 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
    U32 bufferOffset = 0;
    for (U32 i = 0; i < tableDesc.ConstantBuffers; i++)
    {
-	   ID3D11ShaderReflectionConstantBuffer* constantBuffer = table->GetConstantBufferByIndex(i);
+	   ID3D11ShaderReflectionConstantBuffer* constantBuffer = refTable->GetConstantBufferByIndex(i);
 	   D3D11_SHADER_BUFFER_DESC constantBufferDesc;
 
       if (constantBuffer->GetDesc(&constantBufferDesc) == S_OK)
@@ -1086,8 +1085,8 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
    #ifdef TORQUE_DEBUG
          AssertFatal(constantBufferDesc.Type == D3D_CT_CBUFFER, "Only scalar cbuffers supported for now.");
 
-         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 && dStrcmp(constantBufferDesc.Name, "$Params") != 0)
-            AssertFatal(false, "Only $Global and $Params cbuffer supported for now.");
+         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 )
+            AssertFatal(false, "Only $Global cbuffer supported for now.");
    #endif
    #ifdef D3D11_DEBUG_SPEW
          Con::printf("Constant Buffer Name: %s", constantBufferDesc.Name);
@@ -1162,7 +1161,7 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *table,
    {
       GFXShaderConstDesc desc;
       D3D11_SHADER_INPUT_BIND_DESC bindDesc;
-      table->GetResourceBindingDesc(i, &bindDesc);
+      refTable->GetResourceBindingDesc(i, &bindDesc);
 
       switch (bindDesc.Type)
       {

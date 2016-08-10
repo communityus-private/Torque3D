@@ -118,7 +118,7 @@ void ImposterCaptureMaterialHook::init( BaseMatInstance *inMat )
    mDiffuseMatInst->getFeaturesDelegate().bind( &ImposterCaptureMaterialHook::_overrideFeatures );
    mDiffuseMatInst->init( features, inMat->getVertexFormat() );
    
-   features.addFeature( MFT_IsDXTnm );
+   features.addFeature( MFT_IsBC3nm );
    features.addFeature( MFT_NormalMap );
    features.addFeature( MFT_NormalsOut );
    features.addFeature( MFT_AccuMap );

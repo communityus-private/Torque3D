@@ -304,6 +304,9 @@ public:
    // Deferred Shading: Metalness
    bool mUseMetalness[MAX_STAGES];
 
+   // SRGB diffuse
+   bool mDiffuseMapSRGB[MAX_STAGES];
+
    bool mDoubleSided;
 
    String mCubemapName;
