@@ -42,10 +42,19 @@ void main()
       return;
    }
    
-   vec4 directLighting = texture( directLightingBuffer, uv0 ); //shadowmap*specular
    vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb; //albedo
+   vec4 matInfo = texture( matInfoTex, uv0 ); //flags|smoothness|ao|metallic
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
+   {
+      OUT_col = float4(colorBuffer, 1.0);
+	  return;
+   }
+   
+   vec4 directLighting = texture( directLightingBuffer, uv0 ); //shadowmap*specular
+   
    vec3 indirectLighting = texture( indirectLightingBuffer, uv0 ).rgb; //environment mapping*lightmaps
-   float metalness = texture( matInfoTex, uv0 ).a; //flags|smoothness|ao|metallic
+   float metalness = matInfo.a;
       
    float frez = max(0.04,directLighting.a);
    

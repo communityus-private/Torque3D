@@ -419,6 +419,12 @@ void RenderDeferredMgr::render( SceneRenderState *state )
             matrixSet.setProjection(*passRI->projection);
             mat->setTransforms(matrixSet, state);
 
+            // Setup HW skinning transforms if applicable
+            if (mat->usesHardwareSkinning())
+            {
+               mat->setNodeTransforms(passRI->mNodeTransforms, passRI->mNodeTransformCount);
+            }
+
             // If we're instanced then don't render yet.
             if ( mat->isInstanced() )
             {
@@ -663,7 +669,8 @@ void ProcessedDeferredMaterial::_determineFeatures( U32 stageNum,
       }
 
       // Always allow these.
-      else if (   type == MFT_IsDXTnm ||
+      else if (   type == MFT_IsBC3nm ||
+                  type == MFT_IsBC5nm ||
                   type == MFT_TexAnim ||
                   type == MFT_NormalMap ||
                   type == MFT_DetailNormalMap ||

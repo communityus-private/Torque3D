@@ -294,7 +294,7 @@ GFXAdapter *GFXInit::getBestAdapterChoice()
       }
    }
 
-   // Return best found in order DX11,DX9, GL
+   // Return best found in order DX11, GL
    if (foundAdapter11)
       return foundAdapter11;
 

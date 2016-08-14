@@ -216,8 +216,8 @@ inline const ConstantDesc* ConstantTable::GetConstantByName(const String& name) 
 
 /////////////////// Constant Buffers /////////////////////////////
 
-// Maximum number of CBuffers ($Globals & $Params)
-const U32 CBUFFER_MAX = 2;
+// Maximum number of CBuffers ($Globals)
+const U32 CBUFFER_MAX = 1;
 
 struct ConstSubBufferDesc
 {
@@ -297,6 +297,8 @@ public:
 class GFXD3D11ShaderConstBuffer : public GFXShaderConstBuffer
 {
    friend class GFXD3D11Shader;
+   // Cache device context
+   ID3D11DeviceContext* mDeviceContext;
 
 public:
 
@@ -434,7 +436,7 @@ protected:
                                 GenericConstBufferLayout *bufferLayout, 
                                 Vector<GFXShaderConstDesc> &samplerDescriptions );
 
-   void _getShaderConstants( ID3D11ShaderReflection* table, 
+   void _getShaderConstants( ID3D11ShaderReflection* refTable, 
 	                         GenericConstBufferLayout *bufferLayout,
                              Vector<GFXShaderConstDesc> &samplerDescriptions );
 

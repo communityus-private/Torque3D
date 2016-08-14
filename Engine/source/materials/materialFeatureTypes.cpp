@@ -74,7 +74,8 @@ ImplementFeatureType( MFT_Fog, MFG_PostProcess, 3.0f, true );
 
 ImplementFeatureType( MFT_HDROut, MFG_PostProcess, 999.0f, true );
 
-ImplementFeatureType( MFT_IsDXTnm, U32(-1), -1, true );
+ImplementFeatureType( MFT_IsBC3nm, U32(-1), -1, true );
+ImplementFeatureType( MFT_IsBC5nm, U32(-1), -1, true);
 ImplementFeatureType( MFT_IsTranslucent, U32(-1), -1, true );
 ImplementFeatureType( MFT_IsTranslucentZWrite, U32(-1), -1, true );
 ImplementFeatureType( MFT_IsEmissive, U32(-1), -1, true );
@@ -109,3 +110,6 @@ ImplementFeatureType( MFT_SkyBox, MFG_Transform, 1.0f, false );
 ImplementFeatureType( MFT_DeferredSpecMap, MFG_Texture, 8.2f, false );
 ImplementFeatureType( MFT_DeferredSpecVars, MFG_Texture, 8.5f, false );
 ImplementFeatureType( MFT_DeferredMatInfoFlags, MFG_Texture, 8.7f, false );
+
+ImplementFeatureType( MFT_HardwareSkinning, MFG_Transform,-2.0, false );
+

@@ -48,7 +48,8 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
 
    FEATUREMGR->registerFeature( MFT_VertTransform, new VertPositionGLSL );
    FEATUREMGR->registerFeature( MFT_RTLighting, new RTLightingFeatGLSL );
-   FEATUREMGR->registerFeature( MFT_IsDXTnm, new NamedFeatureGLSL( "DXTnm" ) );
+   FEATUREMGR->registerFeature( MFT_IsBC3nm, new NamedFeatureGLSL( "BC3nm" ) );
+   FEATUREMGR->registerFeature( MFT_IsBC5nm, new NamedFeatureGLSL( "BC5nm" ) );
    FEATUREMGR->registerFeature( MFT_TexAnim, new TexAnimGLSL );
    FEATUREMGR->registerFeature( MFT_DiffuseMap, new DiffuseMapFeatGLSL );
    FEATUREMGR->registerFeature( MFT_OverlayMap, new OverlayTexFeatGLSL );
@@ -114,6 +115,7 @@ void _initShaderGenGLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_DeferredSpecVars, new DeferredSpecVarsGLSL );
    FEATUREMGR->registerFeature( MFT_DeferredMatInfoFlags, new DeferredMatInfoFlagsGLSL );
    FEATUREMGR->registerFeature( MFT_SkyBox, new DeferredSkyGLSL );
+   FEATUREMGR->registerFeature( MFT_HardwareSkinning, new HardwareSkinningFeatureGLSL );
 }
 
 MODULE_BEGIN( ShaderGenGLSL )

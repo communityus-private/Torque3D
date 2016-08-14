@@ -294,9 +294,6 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *pDL)
 
 bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
 {
-   PROFILE_SCOPE(GFXGLTextureManager_loadTextureDDS);
-
-   AssertFatal(!(dds->mFormat == GFXFormatDXT2 || dds->mFormat == GFXFormatDXT4), "GFXGLTextureManager::_loadTexture - OpenGL does not support DXT2 or DXT4 compressed textures");
    GFXGLTextureObject* texture = static_cast<GFXGLTextureObject*>(aTexture);
    
    AssertFatal(texture->getBinding() == GL_TEXTURE_2D, 
@@ -321,10 +318,10 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
             U32 squishFlag = squish::kDxt1;
             switch (dds->mFormat)
             {
-               case GFXFormatDXT3:
+               case GFXFormatBC2:
                   squishFlag = squish::kDxt3;
                   break;
-               case GFXFormatDXT5:
+               case GFXFormatBC3:
                   squishFlag = squish::kDxt5;
                   break;
                default:

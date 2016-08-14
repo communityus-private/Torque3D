@@ -32,7 +32,20 @@ Var * ShaderConnectorHLSL::getElement( RegisterType type,
                                        U32 numElements, 
                                        U32 numRegisters )
 {
-   Var *ret = getIndexedElement( mCurTexElem, type, numElements, numRegisters );
+   Var *ret = NULL;
+   
+   if ( type == RT_BLENDINDICES )
+   {
+      ret = getIndexedElement( mCurBlendIndicesElem, type, numElements, numRegisters );
+   }
+   else if ( type == RT_BLENDWEIGHT )
+   {
+      ret = getIndexedElement( mCurBlendWeightsElem, type, numElements, numRegisters );
+   }
+   else
+   {
+      ret = getIndexedElement( mCurTexElem, type, numElements, numRegisters );
+   }
 
    // Adjust texture offset if this is a texcoord type
    if( type == RT_TEXCOORD )
@@ -41,6 +54,20 @@ Var * ShaderConnectorHLSL::getElement( RegisterType type,
          mCurTexElem += numRegisters;
       else
          mCurTexElem += numElements;
+   }
+   else if ( type == RT_BLENDINDICES )
+   {
+      if ( numRegisters != -1 )
+         mCurBlendIndicesElem += numRegisters;
+      else
+         mCurBlendIndicesElem += numElements;
+   }
+   else if ( type == RT_BLENDWEIGHT )
+   {
+      if ( numRegisters != -1 )
+         mCurBlendWeightsElem += numRegisters;
+      else
+         mCurBlendWeightsElem += numElements;
    }
 
    return ret;
@@ -133,6 +160,46 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          return newVar;
       }
 
+   case RT_BLENDINDICES:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+
+         // This was needed for hardware instancing, but
+         // i don't really remember why right now.
+         if ( index > mCurBlendIndicesElem )
+            mCurBlendIndicesElem = index + 1;
+
+         char out[32];
+         dSprintf( (char*)out, sizeof(out), "BLENDINDICES%d", index );
+         newVar->setConnectName( out );
+         newVar->constNum = index;
+         newVar->arraySize = numElements;
+
+         return newVar;
+      }
+
+   case RT_BLENDWEIGHT:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+
+         // This was needed for hardware instancing, but
+         // i don't really remember why right now.
+         if ( index > mCurBlendWeightsElem )
+            mCurBlendWeightsElem = index + 1;
+
+         char out[32];
+         dSprintf( (char*)out, sizeof(out), "BLENDWEIGHT%d", index );
+         newVar->setConnectName( out );
+         newVar->constNum = index;
+         newVar->arraySize = numElements;
+
+         return newVar;
+      }
+
+
+
    default:
       break;
    }
@@ -150,15 +217,7 @@ S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void
 
 void ShaderConnectorHLSL::sortVars()
 {
-
-   // If shader model 4+ than we gotta sort the vars to make sure the order is consistent
-   if (GFX->getPixelShaderVersion() >= 4.f)
-   {
-      dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
-      return;
-   }
-
-   return;
+   dQsort((void *)&mElementList[0], mElementList.size(), sizeof(Var *), _hlsl4VarSort);
 }
 
 void ShaderConnectorHLSL::setName( char *newName )
@@ -175,6 +234,8 @@ void ShaderConnectorHLSL::reset()
 
    mElementList.setSize( 0 );
    mCurTexElem = 0;
+   mCurBlendIndicesElem = 0;
+   mCurBlendWeightsElem = 0;
 }
 
 void ShaderConnectorHLSL::print( Stream &stream, bool isVertexShader )
@@ -229,12 +290,23 @@ void ParamsDefHLSL::assignConstantNumbers()
                if (dStrcmp((const char*)var->type, "float4x4") == 0)
                {
                   mCurrConst += (4 * var->arraySize);
-               } else {
+               }
+               else
+               {
                   if (dStrcmp((const char*)var->type, "float3x3") == 0)
                   {
                      mCurrConst += (3 * var->arraySize);
-                  } else {
-                     mCurrConst += var->arraySize;
+                  }
+                  else
+                  {
+                     if (dStrcmp((const char*)var->type, "float4x3") == 0)
+                     {
+                        mCurrConst += (3 * var->arraySize);
+                     }
+                     else
+                     {
+                        mCurrConst += var->arraySize;
+                     }
                   }
                }
             }
@@ -247,35 +319,29 @@ void VertexParamsDefHLSL::print( Stream &stream, bool isVerterShader )
 {
    assignConstantNumbers();
 
-   const char *opener = "ConnectData main( VertData IN";
-   stream.write( dStrlen(opener), opener );
-
    // find all the uniform variables and print them out
    for( U32 i=0; i<LangElement::elementList.size(); i++)
    {
       Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
       if( var )
       {
-         if( var->uniform )
+         if( var->uniform && !var->_uniformLocal)
          {
-            const char* nextVar = ",\r\n                  ";
-            stream.write( dStrlen(nextVar), nextVar );            
-
             U8 varNum[64];
             dSprintf( (char*)varNum, sizeof(varNum), "register(C%d)", var->constNum );
 
             U8 output[256];
             if (var->arraySize <= 1)
-               dSprintf( (char*)output, sizeof(output), "uniform %-8s %-15s : %s", var->type, var->name, varNum );
+               dSprintf( (char*)output, sizeof(output), "uniform %-8s %-15s : %s;\r\n", var->type, var->name, varNum );
             else
-               dSprintf( (char*)output, sizeof(output), "uniform %-8s %s[%d] : %s", var->type, var->name, var->arraySize, varNum );
+               dSprintf( (char*)output, sizeof(output), "uniform %-8s %s[%d] : %s;\r\n", var->type, var->name, var->arraySize, varNum );
 
             stream.write( dStrlen((char*)output), output );
          }
       }
    }
 
-   const char *closer = "\r\n)\r\n{\r\n   ConnectData OUT;\r\n\r\n";
+   const char *closer = "\r\nConnectData main(VertData IN)\r\n{\r\n   ConnectData OUT;\r\n\r\n";
    stream.write( dStrlen(closer), closer );
 }
 
@@ -283,19 +349,14 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
 {
    assignConstantNumbers();
 
-   const char * opener = "Fragout main( ConnectData IN";
-   stream.write( dStrlen(opener), opener );
-
    // find all the sampler & uniform variables and print them out
    for( U32 i=0; i<LangElement::elementList.size(); i++)
    {
       Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
       if( var )
       {
-         if( var->uniform )
+         if( var->uniform && !var->_uniformLocal)
          {
-            WRITESTR( ",\r\n              " );
-
             U8 varNum[32];
 
             if( var->sampler )
@@ -313,15 +374,35 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
 
             U8 output[256];
             if (var->arraySize <= 1)
-               dSprintf( (char*)output, sizeof(output), "uniform %-9s %-15s %s", var->type, var->name, varNum );
+               dSprintf((char*)output, sizeof(output), "uniform %-9s %-15s %s;\r\n", var->type, var->name, varNum);
             else
-               dSprintf( (char*)output, sizeof(output), "uniform %-9s %s[%d] %s", var->type, var->name, var->arraySize, varNum );
+               dSprintf( (char*)output, sizeof(output), "uniform %-9s %s[%d] %s;\r\n", var->type, var->name, var->arraySize, varNum );
 
             WRITESTR( (char*) output );
          }
       }
    }
 
-   const char *closer = "\r\n)\r\n{\r\n   Fragout OUT;\r\n\r\n";
+   const char *closer = "\r\nFragout main(ConnectData IN)\r\n{\r\n   Fragout OUT;\r\n\r\n";
    stream.write( dStrlen(closer), closer );
+
+   // Dump uniforms to temp variable so they can be modified, if the temp variables are not used they will
+   // be compiled out anyway and the uniform that they point to will be used directly
+   for (U32 i = 0; i<LangElement::elementList.size(); i++)
+   {
+      Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
+      if (var)
+      {
+         if (var->uniform && !var->sampler && !var->texture && !var->_uniformLocal)
+         {
+            U8 output[256];
+            if (var->arraySize <= 1)
+               dSprintf((char*)output, sizeof(output), "   %s _tmp_%s = %s;\r\n", var->type, var->name, var->name);
+            else
+               dSprintf((char*)output, sizeof(output), "   %s _tmp_%s[%d] = %s;\r\n", var->type, var->name, var->arraySize, var->name);
+
+            stream.write(dStrlen((char*)output), output);
+         }
+      }
+   }
 }

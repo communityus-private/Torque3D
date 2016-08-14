@@ -100,7 +100,7 @@ new SimGroup(MissionGroup) {
       flareScale = "1";
       attenuationRatio = "0 1 1";
       shadowType = "PSSM";
-      texSize = "512";
+      texSize = "1024";
       overDarkFactor = "2000 1000 500 100";
       shadowDistance = "400";
       shadowSoftness = "0.15";
