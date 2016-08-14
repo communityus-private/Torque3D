@@ -2441,7 +2441,16 @@ void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       visibility = getInTexCoord( "visibility", "float", componentList );
    else
    {
-      visibility = Var::findOrCreateUniform( "visibility","float", cspPotentialPrimitive);
+      visibility = (Var*)LangElement::find( "visibility" );
+
+      if ( !visibility )
+      {
+         visibility = new Var();
+         visibility->setType( "float" );
+         visibility->setName( "visibility" );
+         visibility->uniform = true;
+         visibility->constSortPos = cspPotentialPrimitive;  
+      }
    }
 
    MultiLine *meta = new MultiLine;
@@ -2638,7 +2647,15 @@ void FoliageFeatureHLSL::processPix( Vector<ShaderComponent*> &componentList,
    fade->setType( "float" );
       
    // Find / create visibility
-   Var *visibility = Var::findOrCreateUniform("visibility", "float", cspPotentialPrimitive);
+   Var *visibility = (Var*) LangElement::find( "visibility" );
+   if ( !visibility )
+   {
+      visibility = new Var();
+      visibility->setType( "float" );
+      visibility->setName( "visibility" );
+      visibility->uniform = true;
+      visibility->constSortPos = cspPotentialPrimitive;  
+   }      
 
    MultiLine *meta = new MultiLine;
 
@@ -2823,7 +2840,15 @@ void ImposterVertFeatureHLSL::processPix( Vector<ShaderComponent*> &componentLis
    fade->setType( "float" );
       
    // Find / create visibility
-   Var *visibility = Var::findOrCreateUniform("visibility", "float", cspPotentialPrimitive);
+   Var *visibility = (Var*) LangElement::find( "visibility" );
+   if ( !visibility )
+   {
+      visibility = new Var();
+      visibility->setType( "float" );
+      visibility->setName( "visibility" );
+      visibility->uniform = true;
+      visibility->constSortPos = cspPotentialPrimitive;  
+   }      
 
    MultiLine *meta = new MultiLine;
 
