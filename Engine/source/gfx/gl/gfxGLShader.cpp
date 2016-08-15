@@ -423,12 +423,9 @@ bool GFXGLShader::_init()
    macros.merge( mMacros );
    macros.merge( smGlobalMacros );
    
-   // Add the shader version to the macros.
-   const U32 mjVer = (U32)mFloor( mPixVersion );
-   const U32 mnVer = (U32)( ( mPixVersion - F32( mjVer ) ) * 10.01f );
    macros.increment();
    macros.last().name = "TORQUE_SM";
-   macros.last().value = String::ToString( mjVer * 10 + mnVer );
+   macros.last().value = 40;
    macros.increment();
    macros.last().name = "TORQUE_VERTEX_SHADER";
    macros.last().value = "";
