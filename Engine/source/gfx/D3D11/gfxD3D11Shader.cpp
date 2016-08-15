@@ -206,7 +206,6 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
    }
    else if (pd.constType == GFXSCT_Float4x3)
    {
-      F32 buffer[4 * 4];
       const U32 csize = 48;
 
       // Loop through and copy 
@@ -683,7 +682,7 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    if(mPixelConstBuffer->isDirty())    
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mPixelConstBufferLayout->getSubBufferDesc();
-      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: This is not very efficient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
       // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mPixelConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
