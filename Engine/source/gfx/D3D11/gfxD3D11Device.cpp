@@ -1458,15 +1458,12 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
    //make shader
    mainBodyData.append("VertOut main(VertIn IN){VertOut OUT;");
 
-   bool addedPadding = false;
    for (U32 i = 0; i < elemCount; i++)
    {
       const GFXVertexElement &element = vertexFormat->getElement(i);
       String semantic = element.getSemantic();
       String semanticOut = semantic;
       String type;
-
-      AssertFatal(!(addedPadding && !element.isSemantic(GFXSemantic::PADDING)), "Padding added before data");
 
       if (element.isSemantic(GFXSemantic::POSITION))
       {
@@ -1502,11 +1499,6 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
       {
          semantic = String::ToString("BLENDWEIGHT%d", element.getSemanticIndex());
          semanticOut = semantic;
-      }
-      else if (element.isSemantic(GFXSemantic::PADDING))
-      {
-         addedPadding = true;
-         continue;
       }
       else
       {
@@ -1669,12 +1661,6 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
       {
          vd[i].SemanticName = "BLENDINDICES";
          vd[i].SemanticIndex = element.getSemanticIndex();
-      }
-      else if (element.isSemantic(GFXSemantic::PADDING))
-      {
-         i--;
-         elemCount--;
-         continue;
       }
       else
       {

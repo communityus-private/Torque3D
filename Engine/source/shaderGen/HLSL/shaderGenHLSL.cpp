@@ -178,12 +178,6 @@ ShaderComponent* ShaderGenComponentFactoryHLSL::createVertexInputConnector( cons
          var = vertComp->getIndexedElement( element.getSemanticIndex(), RT_BLENDWEIGHT );
          var->setName( String::ToString( "blendWeight%d", element.getSemanticIndex() ) );
       }
-      else if ( element.isSemantic( GFXSemantic::PADDING ) )
-      {
-         var = NULL;
-         //var = vertComp->getIndexedElement( vertComp->getCurTexElem() + element.getSemanticIndex(), RT_TEXCOORD );
-         //var->setName( String::ToString( "pad%d", element.getSemanticIndex() + 1 ) );
-      }
       else
       {
          // Everything else is a texcoord!

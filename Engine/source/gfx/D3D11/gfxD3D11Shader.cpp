@@ -204,39 +204,6 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
 
       return false;
    }
-   else if (pd.constType == GFXSCT_Float4x3)
-   {
-      const U32 csize = 48;
-
-      // Loop through and copy 
-      bool ret = false;
-      U8* currDestPointer = basePointer + pd.offset;
-      const U8* currSourcePointer = static_cast<const U8*>(data);
-      const U8* endData = currSourcePointer + size;
-      while (currSourcePointer < endData)
-      {
-#ifdef TORQUE_DOUBLE_CHECK_43MATS
-         Point4F col;
-         ((MatrixF*)currSourcePointer)->getRow(3, &col);
-         AssertFatal(col.x == 0.0f && col.y == 0.0f && col.z == 0.0f && col.w == 1.0f, "3rd row used");
-#endif
-
-         if (dMemcmp(currDestPointer, currSourcePointer, csize) != 0)
-         {
-            dMemcpy(currDestPointer, currSourcePointer, csize);
-            ret = true;
-         }
-         else if (pd.constType == GFXSCT_Float4x3)
-         {
-            ret = true;
-         }
-
-         currDestPointer += csize;
-         currSourcePointer += sizeof(MatrixF);
-      }
-
-      return ret;
-   }
    else
    {
       PROFILE_SCOPE(GFXD3D11ConstBufferLayout_setMatrix_not4x4);
@@ -250,6 +217,9 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
          break;
       case GFXSCT_Float3x3 : 
          csize = 44; //This takes up 16+16+12
+         break;
+      case GFXSCT_Float4x3:
+         csize = 48;
          break;
       default:
          AssertFatal(false, "Unhandled case!");
@@ -267,6 +237,10 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
          if (dMemcmp(currDestPointer, currSourcePointer, csize) != 0)
          {
             dMemcpy(currDestPointer, currSourcePointer, csize);            
+            ret = true;
+         }
+         else if (pd.constType == GFXSCT_Float4x3)
+         {
             ret = true;
          }
 
