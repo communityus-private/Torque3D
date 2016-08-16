@@ -92,8 +92,10 @@ void GFXGLTextureManager::innerCreateTexture( GFXGLTextureObject *retTex,
                                                bool forceMips)
 {
    // No 24 bit formats.  They trigger various oddities because hardware (and Apple's drivers apparently...) don't natively support them.
-   if(format == GFXFormatR8G8B8)
+   if (format == GFXFormatR8G8B8)
       format = GFXFormatR8G8B8A8;
+   else if (format == GFXFormatR8G8B8_SRGB)
+      format = GFXFormatR8G8B8A8_SRGB;
       
    retTex->mFormat = format;
    retTex->mIsZombie = false;
@@ -232,7 +234,7 @@ static void _fastTextureLoad(GFXGLTextureObject* texture, GBitmap* pDL)
    U32 bufSize = pDL->getWidth(0) * pDL->getHeight(0) * pDL->getBytesPerPixel();
    glBufferData(GL_PIXEL_UNPACK_BUFFER, bufSize, NULL, GL_STREAM_DRAW);
    
-   if(pDL->getFormat() == GFXFormatR8G8B8A8 || pDL->getFormat() == GFXFormatR8G8B8X8)
+   if(pDL->getFormat() == GFXFormatR8G8B8A8 || pDL->getFormat() == GFXFormatR8G8B8X8 || pDL->getFormat() == GFXFormatR8G8B8A8_SRGB)
    {
       PROFILE_SCOPE(Swizzle32_Upload);
       U8* pboMemory = (U8*)dMalloc(bufSize);
@@ -276,12 +278,14 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *pDL)
    // No 24bit formats.
    if(pDL->getFormat() == GFXFormatR8G8B8)
       pDL->setFormat(GFXFormatR8G8B8A8);
+   else if (pDL->getFormat() == GFXFormatR8G8B8_SRGB)
+      pDL->setFormat(GFXFormatR8G8B8A8_SRGB);
    // Bind to edit
    PRESERVE_TEXTURE(texture->getBinding());
    glBindTexture(texture->getBinding(), texture->getHandle());
 
    texture->mFormat = pDL->getFormat();
-   if(pDL->getFormat() == GFXFormatR8G8B8A8 || pDL->getFormat() == GFXFormatR8G8B8X8)
+   if(pDL->getFormat() == GFXFormatR8G8B8A8 || pDL->getFormat() == GFXFormatR8G8B8X8 || pDL->getFormat() == GFXFormatR8G8B8A8_SRGB)
       _fastTextureLoad(texture, pDL);
    else
       _slowTextureLoad(texture, pDL);
@@ -319,9 +323,11 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
             switch (dds->mFormat)
             {
                case GFXFormatBC2:
+               case GFXFormatBC2_SRGB:
                   squishFlag = squish::kDxt3;
                   break;
                case GFXFormatBC3:
+               case GFXFormatBC3_SRGB:
                   squishFlag = squish::kDxt5;
                   break;
                default:

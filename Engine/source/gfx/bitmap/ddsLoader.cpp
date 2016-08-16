@@ -210,14 +210,14 @@ U32 DDSFile::getSizeInBytes() const
 
 U32 DDSFile::getSizeInBytes( GFXFormat format, U32 height, U32 width, U32 mipLevels )
 {
-   AssertFatal( format >= GFXFormatBC1 && format <= GFXFormatBC5, 
+   AssertFatal( format >= GFXFormatBC1 && format <= GFXFormatBC3_SRGB, 
       "DDSFile::getSizeInBytes - Must be a Block Compression format!" );
 
    // From the directX docs:
    // max(1, width ÷ 4) x max(1, height ÷ 4) x 8(DXT1) or 16(DXT2-5)
 
    U32 sizeMultiple = 0;
-   if ( format == GFXFormatBC1 || format == GFXFormatBC4)
+   if ( format == GFXFormatBC1 || format == GFXFormatBC1_SRGB || format == GFXFormatBC4)
       sizeMultiple = 8;
    else
       sizeMultiple = 16;

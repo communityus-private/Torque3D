@@ -92,14 +92,8 @@ void AlbedoDamageFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    albedoDamageTex->uniform = true;
    albedoDamageTex->texture = true;
    albedoDamageTex->constNum = albedoDamage->constNum;
-   if (fd.features[MFT_Imposter])
-   {
-      statement = new GenOp("@.Sample(@, @)", albedoDamageTex, albedoDamage, texCoord);
-   }
-   else
-   {
-      statement = new GenOp("toLinear(@.Sample(@, @))", albedoDamageTex, albedoDamage, texCoord);
-   }
+   statement = new GenOp("@.Sample(@, @)", albedoDamageTex, albedoDamage, texCoord);
+
 
    meta->addStatement(new GenOp("   @ = lerp(@,@,@);\r\n", targ, targ, statement, damageResult));
    output = meta;

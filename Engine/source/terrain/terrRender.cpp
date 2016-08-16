@@ -83,10 +83,15 @@ void TerrainBlock::_updateMaterials()
    {
       TerrainMaterial *mat = mFile->mMaterials[i];
 
-      if( !mat->getDiffuseMap().isEmpty() )
-         mBaseTextures[i].set( mat->getDiffuseMap(),  
-            &GFXDefaultStaticDiffuseProfile, 
-            "TerrainBlock::_updateMaterials() - DiffuseMap" );
+      if (!mat->getDiffuseMap().isEmpty())
+      {
+         GFXTextureProfile *profile = &GFXDefaultStaticDiffuseProfile;
+         if (mat->isBaseTextureSRGB())
+            profile = &GFXDefaultStaticDiffuseSRGBProfile;
+
+         mBaseTextures[i].set(mat->getDiffuseMap(), profile ,
+            "TerrainBlock::_updateMaterials() - DiffuseMap");
+      }
       else
          mBaseTextures[ i ] = GFXTexHandle();
 

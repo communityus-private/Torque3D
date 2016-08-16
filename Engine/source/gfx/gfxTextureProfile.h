@@ -86,6 +86,7 @@ public:
       NoPadding      = BIT(6),  ///< Do not pad this texture if it's non pow2.
       KeepBitmap     = BIT(7),  ///< Always keep a copy of this texture's bitmap. (Potentially in addition to the API managed copy?)
       ZTarget        = BIT(8),  ///< This texture will be used as a Z target.
+      SRGB           = BIT(9),  ///< sRGB texture
 
       /// Track and pool textures of this type for reuse.
       ///
@@ -94,13 +95,15 @@ public:
       /// the pool to contain unused textures which will remain
       /// in memory until a flush occurs.
       ///
-      Pooled = BIT(9), 
+      Pooled = BIT(10), 
 
       /// A hint that the device is not allowed to discard the content
       /// of a target texture after presentation or deactivated.
       ///
       /// This is mainly a depth buffer optimization.
-      NoDiscard = BIT(10)
+      NoDiscard = BIT(11),
+
+      
 
    };
 
@@ -164,6 +167,7 @@ public:
    inline bool noMip() const { return testFlag(NoMipmap); }
    inline bool isPooled() const { return testFlag(Pooled); }
    inline bool canDiscard() const { return !testFlag(NoDiscard); }
+   inline bool isSRGB() const { return testFlag(SRGB); }
 
 private:
    /// These constants control the packing for the profile; if you add flags, types, or
@@ -171,7 +175,7 @@ private:
    enum Constants
    {
       TypeBits = 2,
-      FlagBits = 11,
+      FlagBits = 12,
       CompressionBits = 3,
    };
 
@@ -207,6 +211,8 @@ GFX_DeclareTextureProfile(GFXDefaultRenderTargetProfile);
 GFX_DeclareTextureProfile(GFXDefaultPersistentProfile);
 // Generic diffusemap. This works in most cases.
 GFX_DeclareTextureProfile(GFXDefaultStaticDiffuseProfile);
+// sRGB diffusemap. This works in most cases.
+GFX_DeclareTextureProfile(GFXDefaultStaticDiffuseSRGBProfile);
 // Generic normal map.
 GFX_DeclareTextureProfile(GFXDefaultStaticNormalMapProfile);
 // DXT5 swizzled normal map

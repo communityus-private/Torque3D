@@ -65,7 +65,8 @@ TerrainMaterial::TerrainMaterial()
       mMacroSize( 200.0f ),
       mMacroStrength( 0.7f ),
       mMacroDistance( 500.0f ),
-      mParallaxScale( 0.0f )
+      mParallaxScale( 0.0f ),
+      mDiffuseMapSRGB(true)
 {
 }
 
@@ -76,6 +77,7 @@ TerrainMaterial::~TerrainMaterial()
 void TerrainMaterial::initPersistFields()
 {
    addField( "diffuseMap", TypeStringFilename, Offset( mDiffuseMap, TerrainMaterial ), "Base texture for the material" );
+   addField( "diffuseMapSRGB", TypeBool, Offset( mDiffuseMapSRGB, TerrainMaterial), "Enable sRGB for the base texture.");
    addField( "diffuseSize", TypeF32, Offset( mDiffuseSize, TerrainMaterial ), "Used to scale the diffuse map to the material square" );
 
    addField( "normalMap", TypeStringFilename, Offset( mNormalMap, TerrainMaterial ), "Bump map for the material" );
@@ -167,8 +169,8 @@ TerrainMaterial* TerrainMaterial::findOrCreate( const char *nameOrPath )
       mat->mDiffuseSize = 500;
       mat->mDetailMap = GFXTextureManager::getWarningTexturePath();
       mat->mDetailSize = 5;
-	  mat->mMacroMap = GFXTextureManager::getWarningTexturePath();
-	  mat->mMacroSize = 200;
+      mat->mMacroMap = GFXTextureManager::getWarningTexturePath();
+      mat->mMacroSize = 200;
       mat->registerObject();
       
       Sim::getRootGroup()->addObject( mat );

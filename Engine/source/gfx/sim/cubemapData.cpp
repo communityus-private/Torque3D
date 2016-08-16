@@ -39,6 +39,8 @@ IMPLEMENT_CONOBJECT( CubemapData );
 CubemapData::CubemapData()
 {
    mCubemap = NULL;
+   for (U32 i = 0; i < 6; i++)
+      mCubeFaceSRGB[i] = true;
 }
 
 CubemapData::~CubemapData()
@@ -76,6 +78,9 @@ void CubemapData::initPersistFields()
       "  - cubeFace[3] is +Z\n"
       "  - cubeFace[4] is -Y\n"
       "  - cubeFace[5] is +Y\n" );
+
+   addField("cubeFaceSRGB", TypeBool, Offset(mCubeFaceSRGB, CubemapData), 6,
+      "@Brief Set the cubemap face to be sRGB texture.\n\n");
    Parent::initPersistFields();
 }
 
@@ -100,7 +105,11 @@ void CubemapData::createMap()
        {
            if( !mCubeFaceFile[i].isEmpty() )
            {
-               if(!mCubeFace[i].set(mCubeFaceFile[i], &GFXDefaultStaticDiffuseProfile, avar("%s() - mCubeFace[%d] (line %d)", __FUNCTION__, i, __LINE__) ))
+              GFXTextureProfile *profile = &GFXDefaultStaticDiffuseProfile;
+              if(mCubeFaceSRGB[i])
+                 profile = &GFXDefaultStaticDiffuseSRGBProfile;
+
+              if(!mCubeFace[i].set(mCubeFaceFile[i], profile, avar("%s() - mCubeFace[%d] (line %d)", __FUNCTION__, i, __LINE__)))
                {
                    Con::errorf("CubemapData::createMap - Failed to load texture '%s'", mCubeFaceFile[i].c_str());
                    initSuccess = false;
@@ -123,7 +132,11 @@ void CubemapData::updateFaces()
    {
       if( !mCubeFaceFile[i].isEmpty() )
       {
-         if(!mCubeFace[i].set(mCubeFaceFile[i], &GFXDefaultStaticDiffuseProfile, avar("%s() - mCubeFace[%d] (line %d)", __FUNCTION__, i, __LINE__) ))
+         GFXTextureProfile *profile = &GFXDefaultStaticDiffuseProfile;
+         if(mCubeFaceSRGB[i])
+            profile = &GFXDefaultStaticDiffuseSRGBProfile;
+
+         if(!mCubeFace[i].set(mCubeFaceFile[i], profile, avar("%s() - mCubeFace[%d] (line %d)", __FUNCTION__, i, __LINE__) ))
          {
 				initSuccess = false;
             Con::errorf("CubemapData::createMap - Failed to load texture '%s'", mCubeFaceFile[i].c_str());

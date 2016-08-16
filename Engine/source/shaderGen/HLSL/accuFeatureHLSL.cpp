@@ -153,9 +153,6 @@ void AccuTexFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    accuMapTex->constNum = accuMap->constNum;
    meta->addStatement(new GenOp("   @ = @.Sample(@, @ * @);\r\n", colorAccuDecl, accuMapTex, accuMap, inTex, accuScale));
    
-   if (!fd.features[MFT_Imposter])
-      meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", accuColor, accuColor));
-
    // scale up normals
    meta->addStatement( new GenOp( "   @.xyz = @.xyz * 2.0 - 0.5;\r\n", bumpNorm, bumpNorm ) );
 
