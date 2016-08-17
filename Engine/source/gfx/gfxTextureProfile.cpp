@@ -39,6 +39,10 @@ GFX_ImplementTextureProfile(GFXDefaultStaticDiffuseProfile,
                             GFXTextureProfile::DiffuseMap, 
                             GFXTextureProfile::Static, 
                             GFXTextureProfile::NONE);
+GFX_ImplementTextureProfile(GFXDefaultStaticDiffuseSRGBProfile,
+                            GFXTextureProfile::DiffuseMap,
+                            GFXTextureProfile::Static | GFXTextureProfile::SRGB,
+                            GFXTextureProfile::NONE);
 GFX_ImplementTextureProfile(GFXDefaultStaticNormalMapProfile, 
                             GFXTextureProfile::NormalMap, 
                             GFXTextureProfile::Static, 

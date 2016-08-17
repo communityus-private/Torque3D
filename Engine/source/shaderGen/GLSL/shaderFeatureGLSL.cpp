@@ -885,8 +885,6 @@ void DiffuseMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
                            colorDecl, 
                            diffuseMap, 
                            inTex ) );
-      if (!fd.features[MFT_Imposter])
-         meta->addStatement( new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor) );
 
       meta->addStatement( new GenOp( "   @;\r\n", assignColor( diffColor, Material::Mul, NULL, targ) ) );
    }
@@ -914,23 +912,15 @@ void DiffuseMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
       tileParams->uniform = true;
       tileParams->constSortPos = cspPotentialPrimitive;
 
-      const bool is_sm3 = (GFX->getPixelShaderVersion() > 2.0f);
-      if(is_sm3)
-      {
-         // Figure out the mip level
-         meta->addStatement(new GenOp("   float2 _dx = ddx(@ * @.z);\r\n", inTex, atParams));
-         meta->addStatement(new GenOp("   float2 _dy = ddy(@ * @.z);\r\n", inTex, atParams));
-         meta->addStatement(new GenOp("   float mipLod = 0.5 * log2(max(dot(_dx, _dx), dot(_dy, _dy)));\r\n"));
-         meta->addStatement(new GenOp("   mipLod = clamp(mipLod, 0.0, @.w);\r\n", atParams));
+      // Figure out the mip level
+      meta->addStatement(new GenOp("   float2 _dx = ddx(@ * @.z);\r\n", inTex, atParams));
+      meta->addStatement(new GenOp("   float2 _dy = ddy(@ * @.z);\r\n", inTex, atParams));
+      meta->addStatement(new GenOp("   float mipLod = 0.5 * log2(max(dot(_dx, _dx), dot(_dy, _dy)));\r\n"));
+      meta->addStatement(new GenOp("   mipLod = clamp(mipLod, 0.0, @.w);\r\n", atParams));
 
-         // And the size of the mip level
-         meta->addStatement(new GenOp("   float mipPixSz = pow(2.0, @.w - mipLod);\r\n", atParams));
-         meta->addStatement(new GenOp("   float2 mipSz = mipPixSz / @.xy;\r\n", atParams));
-      }
-      else
-      {
-         meta->addStatement(new GenOp("   float2 mipSz = float2(1.0, 1.0);\r\n"));
-      }
+      // And the size of the mip level
+      meta->addStatement(new GenOp("   float mipPixSz = pow(2.0, @.w - mipLod);\r\n", atParams));
+      meta->addStatement(new GenOp("   float2 mipSz = mipPixSz / @.xy;\r\n", atParams));
 
       // Tiling mode
       // TODO: Select wrap or clamp somehow
@@ -960,28 +950,16 @@ void DiffuseMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentList,
       }
 #endif
 
-      if(is_sm3)
-      {
-         meta->addStatement(new GenOp( "   @ = tex2Dlod(@, float4(@, 0.0, mipLod));\r\n", 
-            new DecOp(diffColor), diffuseMap, inTex));
-         if (!fd.features[MFT_Imposter])
-            meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
-      }
-      else
-      {
-         meta->addStatement(new GenOp( "   @ = tex2D(@, @);\r\n",
-            new DecOp(diffColor), diffuseMap, inTex)); 
-          if (!fd.features[MFT_Imposter])
-             meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
-      }
+
+      meta->addStatement(new GenOp( "   @ = tex2Dlod(@, float4(@, 0.0, mipLod));\r\n", 
+         new DecOp(diffColor), diffuseMap, inTex));
+
 
       meta->addStatement(new GenOp( "   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ) ) );
    }
    else
    {
       meta->addStatement(new GenOp("@ = tex2D(@, @);\r\n", colorDecl, diffuseMap, inTex));
-      if (!fd.features[MFT_Imposter])
-         meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
       meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ)));
    }
 }
@@ -1899,7 +1877,6 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
          Var *envColor = new Var("envColor", "vec3");
          meta->addStatement(new GenOp("   @ = @.rgb - (@.rgb * @);\r\n", new DecOp(dColor), targ, targ, metalness));
          meta->addStatement(new GenOp("   @ = @.rgb*(@).rgb;\r\n", new DecOp(envColor), targ, texCube));
-         meta->addStatement(new GenOp("   @.rgb = toLinear(@)+@*@;\r\n", targ, dColor, envColor, metalness));
       }
       else if (lerpVal)
          meta->addStatement(new GenOp("   @ *= vec4(@.rgb*@.a, @.a);\r\n", targ, texCube, lerpVal, targ));

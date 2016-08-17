@@ -884,10 +884,6 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_CubeMap])
    {
       meta->addStatement(new GenOp("   @ = @.Sample(@, @);\r\n", colorDecl, diffuseMapTex, diffuseMap, inTex));
-
-      if (!fd.features[MFT_Imposter])
-         meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
-
       meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ)));
    }
    else if (fd.features[MFT_DiffuseMapAtlas])
@@ -955,16 +951,11 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       meta->addStatement(new GenOp("   @ = @.SampleLevel(@,@,mipLod);\r\n",
             new DecOp(diffColor), diffuseMapTex, diffuseMap, inTex));
 
-      if (!fd.features[MFT_Imposter])
-            meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
       meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ) ) );
    }
    else
    {
       meta->addStatement(new GenOp("@ = @.Sample(@, @);\r\n", colorDecl, diffuseMapTex, diffuseMap, inTex));
-
-      if (!fd.features[MFT_Imposter])
-         meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", diffColor, diffColor));
       meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ)));
    }
 }
@@ -2439,7 +2430,16 @@ void VisibilityFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       visibility = getInTexCoord( "visibility", "float", componentList );
    else
    {
-      visibility = Var::findOrCreateUniform( "visibility","float", cspPotentialPrimitive);
+      visibility = (Var*)LangElement::find( "visibility" );
+
+      if ( !visibility )
+      {
+         visibility = new Var();
+         visibility->setType( "float" );
+         visibility->setName( "visibility" );
+         visibility->uniform = true;
+         visibility->constSortPos = cspPotentialPrimitive;  
+      }
    }
 
    MultiLine *meta = new MultiLine;
@@ -2636,7 +2636,15 @@ void FoliageFeatureHLSL::processPix( Vector<ShaderComponent*> &componentList,
    fade->setType( "float" );
       
    // Find / create visibility
-   Var *visibility = Var::findOrCreateUniform("visibility", "float", cspPotentialPrimitive);
+   Var *visibility = (Var*) LangElement::find( "visibility" );
+   if ( !visibility )
+   {
+      visibility = new Var();
+      visibility->setType( "float" );
+      visibility->setName( "visibility" );
+      visibility->uniform = true;
+      visibility->constSortPos = cspPotentialPrimitive;  
+   }      
 
    MultiLine *meta = new MultiLine;
 
@@ -2821,7 +2829,15 @@ void ImposterVertFeatureHLSL::processPix( Vector<ShaderComponent*> &componentLis
    fade->setType( "float" );
       
    // Find / create visibility
-   Var *visibility = Var::findOrCreateUniform("visibility", "float", cspPotentialPrimitive);
+   Var *visibility = (Var*) LangElement::find( "visibility" );
+   if ( !visibility )
+   {
+      visibility = new Var();
+      visibility->setType( "float" );
+      visibility->setName( "visibility" );
+      visibility->uniform = true;
+      visibility->constSortPos = cspPotentialPrimitive;  
+   }      
 
    MultiLine *meta = new MultiLine;
 

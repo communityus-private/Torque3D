@@ -178,11 +178,12 @@ enum GFXFormat
 
    // 24 bit texture formats...
    GFXFormatR8G8B8,// first in group...
-
+   GFXFormatR8G8B8_SRGB,
    // 32 bit texture formats...
    GFXFormatR8G8B8A8,// first in group...
    GFXFormatR8G8B8X8,
    GFXFormatB8G8R8A8,
+   GFXFormatR8G8B8A8_SRGB,
    GFXFormatR32F,
    GFXFormatR16G16,
    GFXFormatR16G16F,
@@ -205,9 +206,7 @@ enum GFXFormat
    GFXFormatBC3,  //dxt4/5
    GFXFormatBC4,  //3dc+ / ati1
    GFXFormatBC5,  //3dc / ati2
-
-   // sRGB formats
-   GFXFormatR8G8B8A8_SRGB,
+   // compressed sRGB formats   
    GFXFormatBC1_SRGB,
    GFXFormatBC2_SRGB,
    GFXFormatBC3_SRGB,

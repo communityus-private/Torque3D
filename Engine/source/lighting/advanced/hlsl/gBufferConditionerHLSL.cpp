@@ -259,14 +259,9 @@ Var* GBufferConditionerHLSL::printMethodHeader( MethodType methodType, const Str
 
       meta->addStatement( new GenOp( "   // Sampler g-buffer\r\n" ) );
 
-#ifdef TORQUE_OS_XENON
-      meta->addStatement( new GenOp( "   @;\r\n", bufferSampleDecl ) );
-      meta->addStatement( new GenOp( "   asm { tfetch2D @, @, @, MagFilter = point, MinFilter = point, MipFilter = point };\r\n", bufferSample, screenUV, deferredSampler ) );
-#else
       // The gbuffer has no mipmaps, so use tex2dlod when 
       // possible so that the shader compiler can optimize.
       meta->addStatement(new GenOp("      @ = @.SampleLevel(@, @,0);\r\n", bufferSampleDecl, deferredTex, deferredSampler, screenUV));
-#endif
 
       // We don't use this way of passing var's around, so this should cause a crash
       // if something uses this improperly

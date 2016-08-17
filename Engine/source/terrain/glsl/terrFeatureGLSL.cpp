@@ -263,9 +263,8 @@ void TerrainBaseMapFeatGLSL::processPix(  Vector<ShaderComponent*> &componentLis
    baseColor->setType( "vec4" );
    baseColor->setName( "baseColor" );
    meta->addStatement( new GenOp( "   @ = tex2D( @, @.xy );\r\n", new DecOp( baseColor ), diffuseMap, texCoord ) );
-   meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", baseColor, baseColor));
 
-  ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
+   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
    if(fd.features.hasFeature(MFT_isDeferred))
    {

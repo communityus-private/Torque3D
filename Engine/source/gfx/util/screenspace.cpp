@@ -42,8 +42,6 @@ void ScreenSpace::RenderTargetParameters(const Point3I &targetSize, const RectI 
    Point2F targetScale( (F32)targetViewport.extent.x / (F32)targetSize.x,
                         (F32)targetViewport.extent.y / (F32)targetSize.y );
 
-   rtParams.set( targetOffset.x,
-                 targetOffset.y,
-                 targetScale.x,
-                 targetScale.y );
+
+   rtParams.set( targetOffset.x, targetOffset.y, targetScale.x, targetScale.y );
 }

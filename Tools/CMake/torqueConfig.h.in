@@ -55,7 +55,7 @@
 /// the root of the path.  Requires the virtual mount system to be active.
 #cmakedefine TORQUE_DISABLE_FIND_ROOT_WITHIN_ZIP
 
-//Uncomment this define if you want to use the alternative zip support where you can 
+//Uncomment this define if you want to use the alternative zip support where you can
 //define your directories and files inside the zip just like you would on disk
 //instead of the default zip support that treats the zip as an extra directory.
 #cmakedefine TORQUE_ZIP_DISK_LAYOUT
@@ -128,7 +128,7 @@
 //#define TORQUE_ENABLE_THREAD_STATIC_METRICS
 
 /// Define me if you want to enable debug guards on the FrameAllocator.
-/// 
+///
 /// This is similar to the above memory manager guards, but applies only to the
 /// fast FrameAllocator temporary pool memory allocations. The guards are only
 /// checked when the FrameAllocator frees memory (when it's water mark changes).
@@ -191,18 +191,4 @@
 #  define TORQUE_INSTANCE_EXCLUSION   "TorqueToolsTest"
 #else
 #  define TORQUE_INSTANCE_EXCLUSION   "TorqueTest"
-#endif
-
-// Someday, it might make sense to do some pragma magic here so we error
-// on inconsistent flags.
-
-// The Xbox360 has it's own profiling tools, the Torque Profiler should not be used
-#ifdef TORQUE_OS_XENON
-#  ifdef TORQUE_ENABLE_PROFILER
-#     undef TORQUE_ENABLE_PROFILER
-#  endif
-#
-#  ifdef TORQUE_ENABLE_PROFILE_PATH
-#     undef TORQUE_ENABLE_PROFILE_PATH
-#endif
 #endif

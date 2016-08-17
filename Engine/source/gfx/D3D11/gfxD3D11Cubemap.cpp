@@ -67,7 +67,7 @@ void GFXD3D11Cubemap::_onTextureEvent(GFXTexCallbackCode code)
 
 bool GFXD3D11Cubemap::isCompressed(GFXFormat format)
 {
-   if (format >= GFXFormatBC1 && format <= GFXFormatBC5)
+   if (format >= GFXFormatBC1 && format <= GFXFormatBC3_SRGB)
       return true;
 
    return false;

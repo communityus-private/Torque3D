@@ -20,12 +20,12 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "../../gl/hlslCompat.glsl"  
+#include "../../gl/hlslCompat.glsl"
 #include "shadergen:/autogenConditioners.h"
 #include "../../gl/torque.glsl"
 
 //-----------------------------------------------------------------------------
-// Defines                                                                  
+// Defines
 //-----------------------------------------------------------------------------
 
 #define PIXEL_DIST			IN_rippleTexCoord2.z
@@ -65,17 +65,17 @@
 #define SPEC_COLOR         specularParams.xyz
 
 //-----------------------------------------------------------------------------
-// Structures                                                                  
+// Structures
 //-----------------------------------------------------------------------------
 
 //ConnectData IN
 
-in vec4 hpos;   
+in vec4 hpos;
 
 // TexCoord 0 and 1 (xy,zw) for ripple texture lookup
 in vec4 rippleTexCoord01;
 
-// xy is TexCoord 2 for ripple texture lookup 
+// xy is TexCoord 2 for ripple texture lookup
 // z is the Worldspace unit distance/depth of this vertex/pixel
 // w is amount of the crestFoam ( more at crest of waves ).
 in vec4 rippleTexCoord2;
@@ -86,9 +86,9 @@ in vec4 posPreWave;
 // Screenspace vert position AFTER wave transformation
 in vec4 posPostWave;
 
-// Objectspace vert position BEFORE wave transformation	
+// Objectspace vert position BEFORE wave transformation
 // w coord is world space z position.
-in vec4 objPos;   
+in vec4 objPos;
 
 in vec4 foamTexCoords;
 
@@ -113,7 +113,7 @@ float fresnel(float NdotV, float bias, float power)
 }
 
 //-----------------------------------------------------------------------------
-// Uniforms                                                                  
+// Uniforms
 //-----------------------------------------------------------------------------
 uniform sampler2D      bumpMap;
 uniform sampler2D    deferredTex;
@@ -148,56 +148,56 @@ uniform float        reflectivity;
 out vec4 OUT_col;
 
 //-----------------------------------------------------------------------------
-// Main                                                                        
+// Main
 //-----------------------------------------------------------------------------
 void main()
-{ 
+{
    // Get the bumpNorm...
    vec3 bumpNorm = ( texture( bumpMap, IN_rippleTexCoord01.xy ).rgb * 2.0 - 1.0 ) * rippleMagnitude.x;
-   bumpNorm       += ( texture( bumpMap, IN_rippleTexCoord01.zw ).rgb * 2.0 - 1.0 ) * rippleMagnitude.y;      
-   bumpNorm       += ( texture( bumpMap, IN_rippleTexCoord2.xy ).rgb * 2.0 - 1.0 ) * rippleMagnitude.z;         
-                             
+   bumpNorm       += ( texture( bumpMap, IN_rippleTexCoord01.zw ).rgb * 2.0 - 1.0 ) * rippleMagnitude.y;
+   bumpNorm       += ( texture( bumpMap, IN_rippleTexCoord2.xy ).rgb * 2.0 - 1.0 ) * rippleMagnitude.z;
+
    bumpNorm = normalize( bumpNorm );
    bumpNorm = mix( bumpNorm, vec3(0,0,1), 1.0 - rippleMagnitude.w );
-   bumpNorm = tMul( bumpNorm, IN_tangentMat ); 
-   
+   bumpNorm = tMul( bumpNorm, IN_tangentMat );
+
    // Get depth of the water surface (this pixel).
    // Convert from WorldSpace to EyeSpace.
-   float pixelDepth = PIXEL_DIST / farPlaneDist; 
-   
+   float pixelDepth = PIXEL_DIST / farPlaneDist;
+
    vec2 deferredCoord = viewportCoordToRenderTarget( IN_posPostWave, rtParams1 );
 
-   float startDepth = deferredUncondition( deferredTex, deferredCoord ).w;  
-   
+   float startDepth = deferredUncondition( deferredTex, deferredCoord ).w;
+
    // The water depth in world units of the undistorted pixel.
    float startDelta = ( startDepth - pixelDepth );
    startDelta = max( startDelta, 0.0 );
    startDelta *= farPlaneDist;
-            
+
    // Calculate the distortion amount for the water surface.
-   // 
-   // We subtract a little from it so that we don't 
+   //
+   // We subtract a little from it so that we don't
    // distort where the water surface intersects the
    // camera near plane.
    float distortAmt = saturate( ( PIXEL_DIST - DISTORT_START_DIST ) / DISTORT_END_DIST );
-   
+
    // Scale down distortion in shallow water.
-   distortAmt *= saturate( startDelta / DISTORT_FULL_DEPTH );   
+   distortAmt *= saturate( startDelta / DISTORT_FULL_DEPTH );
 
    // Do the intial distortion... we might remove it below.
    vec2 distortDelta = bumpNorm.xy * distortAmt;
    vec4 distortPos = IN_posPostWave;
-   distortPos.xy += distortDelta;      
-      
-   deferredCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );   
+   distortPos.xy += distortDelta;
+
+   deferredCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );
 
    // Get deferred depth at the position of this distorted pixel.
-   float deferredDepth = deferredUncondition( deferredTex, deferredCoord ).w;      
+   float deferredDepth = deferredUncondition( deferredTex, deferredCoord ).w;
    if ( deferredDepth > 0.99 )
      deferredDepth = 5.0;
-    
+
    float delta = ( deferredDepth - pixelDepth ) * farPlaneDist;
-      
+
    if ( delta < 0.0 )
    {
       // If we got a negative delta then the distorted
@@ -206,21 +206,21 @@ void main()
       distortPos = IN_posPostWave;
       delta = startDelta;
       distortAmt = 0;
-   } 
+   }
    else
    {
       float diff = ( deferredDepth - startDepth ) * farPlaneDist;
-   
+
       if ( diff < 0 )
       {
          distortAmt = saturate( ( PIXEL_DIST - DISTORT_START_DIST ) / DISTORT_END_DIST );
          distortAmt *= saturate( delta / DISTORT_FULL_DEPTH );
 
          distortDelta = bumpNorm.xy * distortAmt;
-         
-         distortPos = IN_posPostWave;         
-         distortPos.xy += distortDelta;    
-        
+
+         distortPos = IN_posPostWave;
+         distortPos.xy += distortDelta;
+
          deferredCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );
 
          // Get deferred depth at the position of this distorted pixel.
@@ -229,7 +229,7 @@ void main()
             deferredDepth = 5.0;
          delta = ( deferredDepth - pixelDepth ) * farPlaneDist;
       }
-       
+
       if ( delta < 0.1 )
       {
          // If we got a negative delta then the distorted
@@ -238,52 +238,52 @@ void main()
          distortPos = IN_posPostWave;
          delta = startDelta;
          distortAmt = 0;
-      } 
+      }
    }
-   
+
    vec4 temp = IN_posPreWave;
-   temp.xy += bumpNorm.xy * distortAmt;   
-   vec2 reflectCoord = viewportCoordToRenderTarget( temp, rtParams1 );     
-   
+   temp.xy += bumpNorm.xy * distortAmt;
+   vec2 reflectCoord = viewportCoordToRenderTarget( temp, rtParams1 );
+
    vec2 refractCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );
-   
-   vec4 fakeColor = vec4(ambientColor,1);   
+
+   vec4 fakeColor = vec4(ambientColor,1);
    vec3 eyeVec = IN_objPos.xyz - eyePos;
    eyeVec = tMul( mat3(modelMat), eyeVec );
    eyeVec = tMul( IN_tangentMat, eyeVec );
-   vec3 reflectionVec = reflect( eyeVec, bumpNorm );   
-   
-   // Use fakeColor for ripple-normals that are angled towards the camera   
+   vec3 reflectionVec = reflect( eyeVec, bumpNorm );
+
+   // Use fakeColor for ripple-normals that are angled towards the camera
    eyeVec = -eyeVec;
    eyeVec = normalize( eyeVec );
-   float ang = saturate( dot( eyeVec, bumpNorm ) );   
-   float fakeColorAmt = ang; 
-   
+   float ang = saturate( dot( eyeVec, bumpNorm ) );
+   float fakeColorAmt = ang;
+
    // for verts far from the reflect plane z position
    float rplaneDist = abs( REFLECT_PLANE_Z - IN_objPos.w );
-   rplaneDist = saturate( ( rplaneDist - 1.0 ) / 2.0 );  
+   rplaneDist = saturate( ( rplaneDist - 1.0 ) / 2.0 );
    rplaneDist *= ISRIVER;
-   fakeColorAmt = max( fakeColorAmt, rplaneDist );        
- 
+   fakeColorAmt = max( fakeColorAmt, rplaneDist );
+
 #ifndef UNDERWATER
 
    // Get foam color and amount
    vec2 foamRippleOffset = bumpNorm.xy * FOAM_RIPPLE_INFLUENCE;
    vec4 IN_foamTexCoords = IN_foamTexCoords;
-   IN_foamTexCoords.xy += foamRippleOffset; 
+   IN_foamTexCoords.xy += foamRippleOffset;
    IN_foamTexCoords.zw += foamRippleOffset;
-   
-   vec4 foamColor = texture( foamMap, IN_foamTexCoords.xy );   
-   foamColor += texture( foamMap, IN_foamTexCoords.zw ); 
+
+   vec4 foamColor = texture( foamMap, IN_foamTexCoords.xy );
+   foamColor += texture( foamMap, IN_foamTexCoords.zw );
    foamColor = saturate( foamColor );
-   
+
    // Modulate foam color by ambient color
    // so we don't have glowing white foam at night.
    foamColor.rgb = mix( foamColor.rgb, ambientColor.rgb, FOAM_AMBIENT_LERP );
-   
-   float foamDelta = saturate( delta / FOAM_MAX_DEPTH );      
+
+   float foamDelta = saturate( delta / FOAM_MAX_DEPTH );
    float foamAmt = 1 - pow( foamDelta, 2 );
-   
+
    // Fade out the foam in very very low depth,
    // this improves the shoreline a lot.
    float diff = 0.8 - foamAmt;
@@ -291,107 +291,106 @@ void main()
       foamAmt -= foamAmt * abs( diff ) / 0.2;
 
    foamAmt *= FOAM_OPACITY * foamColor.a;
-   
+
    foamColor.rgb *= FOAM_OPACITY * foamAmt * foamColor.a;
-   
+
    // Get reflection map color.
-   vec4 refMapColor = texture( reflectMap, reflectCoord );  
-   
+   vec4 refMapColor = texture( reflectMap, reflectCoord );
+
    // If we do not have a reflection texture then we use the cubemap.
    refMapColor = mix( refMapColor, texture( skyMap, reflectionVec ), NO_REFLECT );
-   
+
    fakeColor = ( texture( skyMap, reflectionVec ) );
    fakeColor.a = 1;
    // Combine reflection color and fakeColor.
    vec4 reflectColor = mix( refMapColor, fakeColor, fakeColorAmt );
-   
+
    // Get refract color
-   vec4 refractColor = hdrDecode( texture( refractBuff, refractCoord ) );    
-   
-   // We darken the refraction color a bit to make underwater 
+   vec4 refractColor = hdrDecode( texture( refractBuff, refractCoord ) );
+
+   // We darken the refraction color a bit to make underwater
    // elements look wet.  We fade out this darkening near the
    // surface in order to not have hard water edges.
    // @param WET_DEPTH The depth in world units at which full darkening will be recieved.
    // @param WET_COLOR_FACTOR The refract color is scaled down by this amount when at WET_DEPTH
    refractColor.rgb *= 1.0f - ( saturate( delta / WET_DEPTH ) * WET_COLOR_FACTOR );
-   
+
    // Add Water fog/haze.
    float fogDelta = delta - FOG_DENSITY_OFFSET;
 
    if ( fogDelta < 0.0 )
-      fogDelta = 0.0;     
+      fogDelta = 0.0;
    float fogAmt = 1.0 - saturate( exp( -FOG_DENSITY * fogDelta )  );
-   
+
    // Calculate the water "base" color based on depth.
    vec4 waterBaseColor = baseColor * texture( depthGradMap, saturate( delta / depthGradMax ) );
-   waterBaseColor = toLinear(waterBaseColor);
       
    // Modulate baseColor by the ambientColor.
-   waterBaseColor *= vec4( ambientColor.rgb, 1 );     
-   
+   waterBaseColor *= vec4( ambientColor.rgb, 1 );
+
    // calc "diffuse" color by lerping from the water color
    // to refraction image based on the water clarity.
    vec4 diffuseColor = mix( refractColor, waterBaseColor, fogAmt );
-   
-   // fresnel calculation   
-   float fresnelTerm = fresnel( ang, FRESNEL_BIAS, FRESNEL_POWER );	
-   
+
+   // fresnel calculation
+   float fresnelTerm = fresnel( ang, FRESNEL_BIAS, FRESNEL_POWER );
+
    // Scale the frensel strength by fog amount
    // so that parts that are very clear get very little reflection.
-   fresnelTerm *= fogAmt;   
-   
+   fresnelTerm *= fogAmt;
+
    // Also scale the frensel by our distance to the
    // water surface.  This removes the hard reflection
    // when really close to the water surface.
    fresnelTerm *= saturate( PIXEL_DIST - 0.1 );
-   
+
    fresnelTerm *= reflectivity;
-   
+
    // Combine the diffuse color and reflection image via the
    // fresnel term and set out output color.
    vec4 OUT = mix( diffuseColor, reflectColor, fresnelTerm );
-   
+
    vec3 lightVec = inLightVec;
-   
+
    // Get some specular reflection.
    vec3 newbump = bumpNorm;
    newbump.xy *= 3.5;
    newbump = normalize( bumpNorm );
    vec3 halfAng = normalize( eyeVec + -lightVec );
    float specular = saturate( dot( newbump, halfAng ) );
-   specular = pow( specular, SPEC_POWER );   
-   
+   specular = pow( specular, SPEC_POWER );
+
    // Scale down specularity in very shallow water to improve the transparency of the shoreline.
    specular *= saturate( delta / 2 );
-   OUT.rgb = OUT.rgb + ( SPEC_COLOR * vec3(specular) );      
-   
+   OUT.rgb = OUT.rgb + ( SPEC_COLOR * vec3(specular) );
+
 #else
 
-   vec4 refractColor = hdrDecode( texture( refractBuff, refractCoord ) );   
-   vec4 OUT = refractColor;  
-   
+   vec4 refractColor = hdrDecode( texture( refractBuff, refractCoord ) );
+   vec4 OUT = refractColor;
+
 #endif
 
 #ifndef UNDERWATER
-   
+
    OUT.rgb = OUT.rgb + foamColor.rgb;
 
-   float factor = computeSceneFog( eyePos, 
-                                   IN_objPos.xyz, 
+   float factor = computeSceneFog( eyePos,
+                                   IN_objPos.xyz,
                                    IN_objPos.w,
                                    fogData.x,
                                    fogData.y,
                                    fogData.z );
 
-   OUT.rgb = mix( OUT.rgb, fogColor.rgb, 1.0 - saturate( factor ) );  
-   
+   OUT.rgb = mix( OUT.rgb, fogColor.rgb, 1.0 - saturate( factor ) );
+
    //OUT.rgb = fogColor.rgb;
-   
+
 #endif
 
    OUT.a = 1.0;
 
    //return OUT;
-   
+
    OUT_col = hdrEncode( OUT );
 }

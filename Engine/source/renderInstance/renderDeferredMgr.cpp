@@ -1088,22 +1088,15 @@ Var* LinearEyeDepthConditioner::printMethodHeader( MethodType methodType, const 
 
       // The linear depth target has no mipmaps, so use tex2dlod when
       // possible so that the shader compiler can optimize.
-      meta->addStatement(new GenOp("   #if TORQUE_SM >= 30\r\n"));
       if (GFX->getAdapterType() == OpenGL)
-         meta->addStatement(new GenOp("    @ = texture2DLod(@, @, 0); \r\n", bufferSampleDecl, deferredSampler, screenUV));
+         meta->addStatement(new GenOp("@ = texture2DLod(@, @, 0); \r\n", bufferSampleDecl, deferredSampler, screenUV));
       else
       {
          if (deferredTex)
-            meta->addStatement(new GenOp("      @ = @.SampleLevel(@, @, 0);\r\n", bufferSampleDecl, deferredTex, deferredSampler, screenUV));
+            meta->addStatement(new GenOp("@ = @.SampleLevel(@, @, 0);\r\n", bufferSampleDecl, deferredTex, deferredSampler, screenUV));
          else
-            meta->addStatement(new GenOp("      @ = tex2Dlod(@, float4(@,0,0));\r\n", bufferSampleDecl, deferredSampler, screenUV));
+            meta->addStatement(new GenOp("@ = tex2Dlod(@, float4(@,0,0));\r\n", bufferSampleDecl, deferredSampler, screenUV));
       }
-      meta->addStatement(new GenOp("   #else\r\n"));
-      if (GFX->getAdapterType() == OpenGL)
-         meta->addStatement( new GenOp( "    @ = texture(@, @);\r\n", bufferSampleDecl, deferredSampler, screenUV) );
-      else
-         meta->addStatement(new GenOp("      @ = tex2D(@, @);\r\n", bufferSampleDecl, deferredSampler, screenUV));
-      meta->addStatement(new GenOp("   #endif\r\n\r\n"));
 
       // We don't use this way of passing var's around, so this should cause a crash
       // if something uses this improperly

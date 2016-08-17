@@ -47,14 +47,6 @@
 
 #include "core/util/safeDelete.h"
 
-#if defined(TORQUE_OS_XENON)
-//#  define USE_MEM_VERTEX_BUFFERS
-#endif
-
-#if defined(USE_MEM_VERTEX_BUFFERS)
-#  include "gfx/D3D9/360/gfx360MemVertexBuffer.h"
-#endif
-
 namespace Opcode { class Model; class MeshInterface; }
 namespace IceMaths { class IndexedTriangle; class Point; }
 

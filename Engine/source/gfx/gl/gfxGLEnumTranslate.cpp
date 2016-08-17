@@ -147,6 +147,12 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureInternalFormat[GFXFormatBC3] = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
    GFXGLTextureInternalFormat[GFXFormatBC4] = GL_COMPRESSED_RED_RGTC1;
    GFXGLTextureInternalFormat[GFXFormatBC5] = GL_COMPRESSED_RG_RGTC2;
+   //sRGB
+   GFXGLTextureInternalFormat[GFXFormatR8G8B8_SRGB] = GL_SRGB8;
+   GFXGLTextureInternalFormat[GFXFormatR8G8B8A8_SRGB] = GL_SRGB8_ALPHA8;
+   GFXGLTextureInternalFormat[GFXFormatBC1_SRGB] = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+   GFXGLTextureInternalFormat[GFXFormatBC2_SRGB] = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+   GFXGLTextureInternalFormat[GFXFormatBC3_SRGB] = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
    
    GFXGLTextureFormat[GFXFormatA8] = GL_RED;
    GFXGLTextureFormat[GFXFormatL8] = GL_RED;
@@ -168,6 +174,12 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureFormat[GFXFormatBC3] = GL_RGBA;
    GFXGLTextureFormat[GFXFormatBC4] = GL_RED;
    GFXGLTextureFormat[GFXFormatBC5] = GL_RG;
+   //sRGB
+   GFXGLTextureFormat[GFXFormatR8G8B8_SRGB] = GL_RGB;
+   GFXGLTextureFormat[GFXFormatR8G8B8A8_SRGB] = GL_RGBA;
+   GFXGLTextureFormat[GFXFormatBC1_SRGB] = GL_RGBA;
+   GFXGLTextureFormat[GFXFormatBC2_SRGB] = GL_RGBA;
+   GFXGLTextureFormat[GFXFormatBC3_SRGB] = GL_RGBA;
    
    GFXGLTextureType[GFXFormatA8] = GL_UNSIGNED_BYTE;
    GFXGLTextureType[GFXFormatL8] = GL_UNSIGNED_BYTE;
@@ -190,10 +202,11 @@ void GFXGLEnumTranslate::init()
    GFXGLTextureType[GFXFormatBC4] = GL_UNSIGNED_BYTE;
    GFXGLTextureType[GFXFormatBC5] = GL_UNSIGNED_BYTE;
    // sRGB
-   GFXGLTextureType[GFXFormatR8G8B8A8_SRGB] = GL_SRGB8_ALPHA8;
-   GFXGLTextureType[GFXFormatBC1_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
-   GFXGLTextureType[GFXFormatBC2_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
-   GFXGLTextureType[GFXFormatBC3_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+   GFXGLTextureType[GFXFormatR8G8B8_SRGB] = GL_UNSIGNED_BYTE;
+   GFXGLTextureType[GFXFormatR8G8B8A8_SRGB] = GL_UNSIGNED_BYTE;
+   GFXGLTextureType[GFXFormatBC1_SRGB] = GL_UNSIGNED_BYTE;
+   GFXGLTextureType[GFXFormatBC2_SRGB] = GL_UNSIGNED_BYTE;
+   GFXGLTextureType[GFXFormatBC3_SRGB] = GL_UNSIGNED_BYTE;
 
 
    static GLint Swizzle_GFXFormatA8[] = { GL_NONE, GL_NONE, GL_NONE, GL_RED };

@@ -65,10 +65,7 @@ inline GLenum minificationFilter(U32 minFilter, U32 mipFilter, U32 /*mipLevels*/
 inline bool isCompressedFormat( GFXFormat format )
 {
    bool compressed = false;
-   if(format == GFXFormatBC1 || format == GFXFormatBC2
-         || format == GFXFormatBC3
-         || format == GFXFormatBC4
-         || format == GFXFormatBC5 )
+   if(format >= GFXFormatBC1 && format <= GFXFormatBC3_SRGB )
    {
       compressed = true;
    }

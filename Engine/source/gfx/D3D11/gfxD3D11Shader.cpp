@@ -204,40 +204,6 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
 
       return false;
    }
-   else if (pd.constType == GFXSCT_Float4x3)
-   {
-      F32 buffer[4 * 4];
-      const U32 csize = 48;
-
-      // Loop through and copy 
-      bool ret = false;
-      U8* currDestPointer = basePointer + pd.offset;
-      const U8* currSourcePointer = static_cast<const U8*>(data);
-      const U8* endData = currSourcePointer + size;
-      while (currSourcePointer < endData)
-      {
-#ifdef TORQUE_DOUBLE_CHECK_43MATS
-         Point4F col;
-         ((MatrixF*)currSourcePointer)->getRow(3, &col);
-         AssertFatal(col.x == 0.0f && col.y == 0.0f && col.z == 0.0f && col.w == 1.0f, "3rd row used");
-#endif
-
-         if (dMemcmp(currDestPointer, currSourcePointer, csize) != 0)
-         {
-            dMemcpy(currDestPointer, currSourcePointer, csize);
-            ret = true;
-         }
-         else if (pd.constType == GFXSCT_Float4x3)
-         {
-            ret = true;
-         }
-
-         currDestPointer += csize;
-         currSourcePointer += sizeof(MatrixF);
-      }
-
-      return ret;
-   }
    else
    {
       PROFILE_SCOPE(GFXD3D11ConstBufferLayout_setMatrix_not4x4);
@@ -251,6 +217,9 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
          break;
       case GFXSCT_Float3x3 : 
          csize = 44; //This takes up 16+16+12
+         break;
+      case GFXSCT_Float4x3:
+         csize = 48;
          break;
       default:
          AssertFatal(false, "Unhandled case!");
@@ -268,6 +237,10 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
          if (dMemcmp(currDestPointer, currSourcePointer, csize) != 0)
          {
             dMemcpy(currDestPointer, currSourcePointer, csize);            
+            ret = true;
+         }
+         else if (pd.constType == GFXSCT_Float4x3)
+         {
             ret = true;
          }
 
@@ -683,7 +656,7 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    if(mPixelConstBuffer->isDirty())    
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mPixelConstBufferLayout->getSubBufferDesc();
-      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: This is not very efficient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
       // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mPixelConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
@@ -1085,8 +1058,8 @@ void GFXD3D11Shader::_getShaderConstants( ID3D11ShaderReflection *refTable,
    #ifdef TORQUE_DEBUG
          AssertFatal(constantBufferDesc.Type == D3D_CT_CBUFFER, "Only scalar cbuffers supported for now.");
 
-         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 )
-            AssertFatal(false, "Only $Global cbuffer supported for now.");
+         if (dStrcmp(constantBufferDesc.Name, "$Globals") != 0 && dStrcmp(constantBufferDesc.Name, "$Params") != 0)
+            AssertFatal(false, "Only $Global and $Params cbuffer supported for now.");
    #endif
    #ifdef D3D11_DEBUG_SPEW
          Con::printf("Constant Buffer Name: %s", constantBufferDesc.Name);

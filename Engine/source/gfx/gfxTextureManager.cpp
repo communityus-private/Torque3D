@@ -370,9 +370,9 @@ GFXTextureObject *GFXTextureManager::_createTexture(  GBitmap *bmp,
    }
 
    // If _validateTexParams kicked back a different format, than there needs to be
-   // a conversion
+   // a conversion unless it's a sRGB format
    DDSFile *bmpDDS = NULL;
-   if( realBmp->getFormat() != realFmt )
+   if( realBmp->getFormat() != realFmt && !profile->isSRGB() )
    {
       const GFXFormat oldFmt = realBmp->getFormat();
 
@@ -532,7 +532,7 @@ GFXTextureObject *GFXTextureManager::_createTexture(  DDSFile *dds,
    GFXFormat fmt = dds->mFormat;
    _validateTexParams( dds->getHeight(), dds->getWidth(), profile, numMips, fmt );
 
-   if( fmt != dds->mFormat )
+   if( fmt != dds->mFormat && !profile->isSRGB())
    {
       Con::errorf( "GFXTextureManager - failed to validate texture parameters for DDS file '%s'", fileName );
       return NULL;
@@ -741,7 +741,7 @@ GFXTextureObject *GFXTextureManager::createTexture( U32 width, U32 height, GFXFo
    GFXFormat checkFmt = format;
    _validateTexParams( localWidth, localHeight, profile, numMips, checkFmt );
 
-   AssertFatal( checkFmt == format, "Anonymous texture didn't get the format it wanted." );
+//   AssertFatal( checkFmt == format, "Anonymous texture didn't get the format it wanted." );
 
    GFXTextureObject *outTex = NULL;
 
@@ -1298,6 +1298,26 @@ void GFXTextureManager::deleteTexture( GFXTextureObject *texture )
    freeTexture( texture );
 }
 
+GFXFormat GFXTextureManager::_toGammaFormat(GFXFormat fmt)
+{
+   switch (fmt)
+   {
+   case GFXFormatR8G8B8:
+      return GFXFormatR8G8B8_SRGB;
+   case GFXFormatR8G8B8X8:      
+   case GFXFormatR8G8B8A8:
+      return GFXFormatR8G8B8A8_SRGB;
+   case GFXFormatBC1:
+      return GFXFormatBC1_SRGB;
+   case GFXFormatBC2:
+      return GFXFormatBC2_SRGB;
+   case GFXFormatBC3:
+      return GFXFormatBC3_SRGB;
+   default:
+      return fmt;
+   };
+}
+
 void GFXTextureManager::_validateTexParams( const U32 width, const U32 height, 
                                           const GFXTextureProfile *profile, 
                                           U32 &inOutNumMips, GFXFormat &inOutFormat  )
@@ -1328,6 +1348,9 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
       // No auto-gen mips on compressed textures
       autoGenSupp = false;
    }
+
+   if (profile->isSRGB())
+      testingFormat = _toGammaFormat(testingFormat);
 
    // inOutFormat is not modified by this method
    GFXCardProfiler* cardProfiler = GFX->getCardProfiler();
@@ -1391,6 +1414,7 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
          } while ( currWidth != 1 && currHeight != 1 );
       }
    }
+
 }
 
 GFXCubemap* GFXTextureManager::createCubemap( const Torque::Path &path )

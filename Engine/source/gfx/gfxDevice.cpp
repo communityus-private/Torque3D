@@ -188,13 +188,7 @@ GFXDevice::GFXDevice()
    #elif defined TORQUE_OS_MAC
       GFXShader::addGlobalMacro( "TORQUE_OS_MAC" );
    #elif defined TORQUE_OS_LINUX
-      GFXShader::addGlobalMacro( "TORQUE_OS_LINUX" );      
-   #elif defined TORQUE_OS_XENON
-      GFXShader::addGlobalMacro( "TORQUE_OS_XENON" );
-   #elif defined TORQUE_OS_XBOX
-      GFXShader::addGlobalMacro( "TORQUE_OS_XBOX" );      
-   #elif defined TORQUE_OS_PS3
-      GFXShader::addGlobalMacro( "TORQUE_OS_PS3" );            
+      GFXShader::addGlobalMacro( "TORQUE_OS_LINUX" );        
    #endif
 
    mStereoTargets[0] = NULL;

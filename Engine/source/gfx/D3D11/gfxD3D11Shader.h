@@ -216,8 +216,8 @@ inline const ConstantDesc* ConstantTable::GetConstantByName(const String& name) 
 
 /////////////////// Constant Buffers /////////////////////////////
 
-// Maximum number of CBuffers ($Globals)
-const U32 CBUFFER_MAX = 1;
+// Maximum number of CBuffers ($Globals & $Params)
+const U32 CBUFFER_MAX = 2;
 
 struct ConstSubBufferDesc
 {

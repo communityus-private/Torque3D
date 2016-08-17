@@ -200,6 +200,7 @@ public:
    // Data
    //-----------------------------------------------------------------------
    FileName mDiffuseMapFilename[MAX_STAGES];
+   bool     mDiffuseMapSRGB[MAX_STAGES];   // SRGB diffuse
    bool     mAccuEnabled[MAX_STAGES];
    F32      mAccuScale[MAX_STAGES];
    F32      mAccuDirection[MAX_STAGES];
@@ -232,6 +233,7 @@ public:
 
    /// Damage blend maps (albedo)
    FileName mAlbedoDamageMapFilename[MAX_STAGES];
+   bool mAlbedoDamageMapSRGB[MAX_STAGES];
    /// Damage blend maps (normal)
    FileName mNormalDamageMapFilename[MAX_STAGES];
    /// Damage blend maps (Roughness, AO, Metalness)
@@ -303,9 +305,6 @@ public:
 
    // Deferred Shading: Metalness
    bool mUseMetalness[MAX_STAGES];
-
-   // SRGB diffuse
-   bool mDiffuseMapSRGB[MAX_STAGES];
 
    bool mDoubleSided;
 

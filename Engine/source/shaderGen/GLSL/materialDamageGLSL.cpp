@@ -86,14 +86,8 @@ void AlbedoDamageFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
 
 
    LangElement *statement = NULL;
-   if (fd.features[MFT_Imposter])
-   {
-      statement = new GenOp("texture(@, @)", albedoDamage, texCoord);
-   }
-   else
-   {
-      statement = new GenOp("toLinear(texture(@, @))", albedoDamage, texCoord);
-   }
+   statement = new GenOp("texture(@, @)", albedoDamage, texCoord);
+
 
    meta->addStatement(new GenOp("   @ = mix(@,@,@);\r\n", targ, targ, statement, damageResult));
    output = meta;
