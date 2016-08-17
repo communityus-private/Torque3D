@@ -49,6 +49,7 @@ TSRenderState::TSRenderState( const TSRenderState &state )
       mCuller( state.mCuller ),
       mLightQuery( state.mLightQuery ),
       mUseOriginSort( state.mUseOriginSort ),
-	  mMaterialDamage(state.mMaterialDamage)
+      mMaterialDamage(state.mMaterialDamage),
+      mAccuTex( state.mAccuTex )
 {
 }

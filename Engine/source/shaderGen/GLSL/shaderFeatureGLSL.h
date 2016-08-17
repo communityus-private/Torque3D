@@ -658,12 +658,4 @@ public:
 											const FeatureSet &features,
 											MaterialFeatureData *outFeatureData );
 };
-
-class DeferredSkyGLSL : public ShaderFeatureGLSL
-{
-public:
-   virtual String getName() { return "Deferred Shading: Sky"; }
-   virtual void processVert( Vector<ShaderComponent*> &componentList,
-                             const MaterialFeatureData &fd );
-};
 #endif // _SHADERGEN_GLSL_SHADERFEATUREGLSL_H_
