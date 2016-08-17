@@ -2842,7 +2842,6 @@ void ImposterVertFeatureHLSL::determineFeature( Material *material,
       outFeatureData->features.addFeature( MFT_ImposterVert );
 }
 
-
 //****************************************************************************
 // Vertex position
 //****************************************************************************

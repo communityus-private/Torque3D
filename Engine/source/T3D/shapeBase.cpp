@@ -1050,9 +1050,8 @@ bool ShapeBase::onAdd()
    // Accumulation and environment mapping
    if (isClientObject() && mShapeInstance)
    {
-      if (mShapeInstance->hasAccumulation())
-         AccumulationVolume::addObject(this);
       EnvVolume::addObject(this);
+      AccumulationVolume::addObject(this);
    }
    return true;
 }
