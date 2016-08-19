@@ -104,6 +104,8 @@ class ColorF
                                       (alpha >= 0.0f && alpha <= 1.0f); }
    void clamp();
 
+   ColorF toSRGB();
+
    static const ColorF ZERO;
    static const ColorF ONE;
    static const ColorF WHITE;
@@ -460,6 +462,16 @@ inline void ColorF::clamp()
       alpha = 1.0f;
    else if (alpha < 0.0f)
       alpha = 0.0f;
+}
+
+inline ColorF ColorF::toSRGB()
+{
+   ColorF sRGB;
+   sRGB.red = mFloatToSRGB(red);
+   sRGB.green = mFloatToSRGB(green);
+   sRGB.blue = mFloatToSRGB(blue);
+   sRGB.alpha = alpha;
+   return sRGB;
 }
 
 //------------------------------------------------------------------------------
