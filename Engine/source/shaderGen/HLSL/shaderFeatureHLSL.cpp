@@ -2859,18 +2859,6 @@ void ImposterVertFeatureHLSL::determineFeature( Material *material,
 }
 
 //****************************************************************************
-// Vertex position
-//****************************************************************************
-void DeferredSkyHLSL::processVert( Vector<ShaderComponent*> &componentList, 
-                                    const MaterialFeatureData &fd )
-{
-   Var *outPosition = (Var*)LangElement::find( "hpos" );
-   MultiLine *meta = new MultiLine;
-   //meta->addStatement( new GenOp( "   @.w = @.z;\r\n", outPosition, outPosition ) );
-   output = meta;
-}
-
-//****************************************************************************
 // HardwareSkinningFeatureHLSL
 //****************************************************************************
 

@@ -39,6 +39,7 @@ namespace GFXSemantic
    const String TEXCOORD = String( "TEXCOORD" ).intern();
    const String BLENDINDICES = String( "BLENDINDICES" ).intern();
    const String BLENDWEIGHT = String( "BLENDWEIGHT" ).intern();
+   const String PADDING = String( "PADDING" ).intern();
 }
 
 

@@ -115,8 +115,8 @@ void _initShaderGenHLSL( ShaderGen *shaderGen )
    FEATUREMGR->registerFeature( MFT_DeferredSpecMap, new DeferredSpecMapHLSL );
    FEATUREMGR->registerFeature( MFT_DeferredSpecVars, new DeferredSpecVarsHLSL );
    FEATUREMGR->registerFeature( MFT_DeferredMatInfoFlags, new DeferredMatInfoFlagsHLSL );
-   FEATUREMGR->registerFeature( MFT_HardwareSkinning, new HardwareSkinningFeatureHLSL );
    FEATUREMGR->registerFeature( MFT_SkyBox,  new NamedFeatureHLSL( "skybox" ) );
+   FEATUREMGR->registerFeature( MFT_HardwareSkinning, new HardwareSkinningFeatureHLSL );
 }
 
 MODULE_BEGIN( ShaderGenHLSL )

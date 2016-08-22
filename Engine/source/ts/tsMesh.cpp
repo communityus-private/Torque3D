@@ -3116,9 +3116,9 @@ void TSMesh::copySourceVertexDataFrom(const TSMesh* srcMesh)
       tverts.setSize(srcMesh->mNumVerts);
       norms.setSize(srcMesh->mNumVerts);
 
-      if (hasTVert2)
-         colors.setSize(mNumVerts);
       if (hasColor)
+         colors.setSize(mNumVerts);
+      if (hasTVert2)
          tverts2.setSize(mNumVerts);
 
       // Fill arrays
