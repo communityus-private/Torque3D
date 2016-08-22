@@ -198,48 +198,6 @@ Var * ShaderConnectorHLSL::getIndexedElement(U32 index, RegisterType type, U32 n
       return newVar;
    }
 
-
-
-   case RT_BLENDINDICES:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-
-         // This was needed for hardware instancing, but
-         // i don't really remember why right now.
-         if ( index > mCurBlendIndicesElem )
-            mCurBlendIndicesElem = index + 1;
-
-         char out[32];
-         dSprintf( (char*)out, sizeof(out), "BLENDINDICES%d", index );
-         newVar->setConnectName( out );
-         newVar->constNum = index;
-         newVar->arraySize = numElements;
-
-         return newVar;
-      }
-
-   case RT_BLENDWEIGHT:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-
-         // This was needed for hardware instancing, but
-         // i don't really remember why right now.
-         if ( index > mCurBlendWeightsElem )
-            mCurBlendWeightsElem = index + 1;
-
-         char out[32];
-         dSprintf( (char*)out, sizeof(out), "BLENDWEIGHT%d", index );
-         newVar->setConnectName( out );
-         newVar->constNum = index;
-         newVar->arraySize = numElements;
-
-         return newVar;
-      }
-
-
-
    default:
       break;
    }
