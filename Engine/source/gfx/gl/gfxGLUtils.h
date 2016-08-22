@@ -84,7 +84,7 @@ inline U32 getCompressedSurfaceSize(GFXFormat format,U32 width, U32 height, U32 
    width = getMax(U32(1), width >> mipLevel);
 
    U32 sizeMultiple = 0;
-   if(format == GFXFormatBC1)
+   if(format == GFXFormatBC1 || format == GFXFormatBC1_SRGB)
       sizeMultiple = 8;
    else
       sizeMultiple = 16;

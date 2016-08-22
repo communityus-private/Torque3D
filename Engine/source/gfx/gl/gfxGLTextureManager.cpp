@@ -308,19 +308,18 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
    
    PRESERVE_TEXTURE(texture->getBinding());
    glBindTexture(texture->getBinding(), texture->getHandle());
-   texture->mFormat = dds->mFormat;
    U32 numMips = dds->mSurfaces[0]->mMips.size();
 
    for(U32 i = 0; i < numMips; i++)
    {
       PROFILE_SCOPE(GFXGLTexMan_loadSurface);
 
-      if(isCompressedFormat(dds->mFormat))
+      if(isCompressedFormat(texture->mFormat))
       {
          if((!isPow2(dds->getWidth()) || !isPow2(dds->getHeight())) && GFX->getCardProfiler()->queryProfile("GL::Workaround::noCompressedNPoTTextures"))
          {
             U32 squishFlag = squish::kDxt1;
-            switch (dds->mFormat)
+            switch (texture->mFormat)
             {
                case GFXFormatBC2:
                case GFXFormatBC2_SRGB:
@@ -339,13 +338,13 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
             delete[] uncompressedTex;
          }
          else
-            glCompressedTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureInternalFormat[dds->mFormat], dds->getSurfaceSize(dds->getHeight(), dds->getWidth(), i), dds->mSurfaces[0]->mMips[i]);
+            glCompressedTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureInternalFormat[texture->mFormat], dds->getSurfaceSize(dds->getHeight(), dds->getWidth(), i), dds->mSurfaces[0]->mMips[i]);
       }
       else
-         glTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureFormat[dds->mFormat], GFXGLTextureType[dds->mFormat], dds->mSurfaces[0]->mMips[i]);
+         glTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureFormat[texture->mFormat], GFXGLTextureType[texture->mFormat], dds->mSurfaces[0]->mMips[i]);
    }
 
-   if(numMips !=1 && !isCompressedFormat(dds->mFormat))
+   if(numMips !=1 && !isCompressedFormat(texture->mFormat))
       glGenerateMipmap(texture->getBinding());
    
    return true;

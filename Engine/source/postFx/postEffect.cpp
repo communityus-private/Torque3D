@@ -144,6 +144,11 @@ GFX_ImplementTextureProfile( PostFxTextureProfile,
                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap,
                             GFXTextureProfile::NONE );
 
+GFX_ImplementTextureProfile( PostFxTextureSRGBProfile,
+                             GFXTextureProfile::DiffuseMap,
+                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap | GFXTextureProfile::SRGB,
+                             GFXTextureProfile::NONE);
+
 GFX_ImplementTextureProfile( VRTextureProfile,
                             GFXTextureProfile::DiffuseMap,
                             GFXTextureProfile::PreserveSize |
@@ -307,6 +312,7 @@ PostEffect::PostEffect()
       mDeltaTimeSC( NULL ),
       mInvCameraMatSC( NULL )
 {
+   dMemset( mTexSRGB, 0, sizeof(bool) * NumTextures);
    dMemset( mActiveTextures, 0, sizeof( GFXTextureObject* ) * NumTextures );
    dMemset( mActiveNamedTarget, 0, sizeof( NamedTexTarget* ) * NumTextures );
    dMemset( mActiveTextureViewport, 0, sizeof( RectI ) * NumTextures );
@@ -358,6 +364,9 @@ void PostEffect::initPersistFields()
    addField( "texture", TypeImageFilename, Offset( mTexFilename, PostEffect ), NumTextures,
       "Input textures to this effect ( samplers ).\n"
       "@see PFXTextureIdentifiers" );
+
+   addField("textureSRGB", TypeBool, Offset(mTexSRGB, PostEffect), NumTextures,
+      "Set input texture to be sRGB");
 
    addField( "renderTime", TYPEID< PFXRenderTime >(), Offset( mRenderTime, PostEffect ),
       "When to process this effect during the frame." );
@@ -416,8 +425,11 @@ bool PostEffect::onAdd()
       if ( texFilename[0] != '/' )
          texFilename = scriptPath.getFullPath() + '/' + texFilename;
 
+      GFXTextureProfile *profile = &PostFxTextureProfile;
+      if (mTexSRGB[i])
+         profile = &PostFxTextureSRGBProfile;
       // Try to load the texture.
-      bool success = mTextures[i].set( texFilename, &PostFxTextureProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
+      bool success = mTextures[i].set( texFilename, profile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
       if (!success)
          Con::errorf("Invalid Texture for PostEffect (%s), The Texture '%s' does not exist!", this->getName(), texFilename.c_str());
    }

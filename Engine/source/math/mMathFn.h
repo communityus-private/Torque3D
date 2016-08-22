@@ -479,5 +479,13 @@ inline F64 mSquared( F64 n )
    return n * n;
 }
 
-
+/// Convert float to sRGB
+inline F32 mFloatToSRGB( F32 n )
+{
+   if ( n < 0.0031308f )
+      n *= 12.92f;
+   else
+      n = 1.055f * mPow(n, 1.0f / 2.4f) - 0.055f;
+   return n;
+}
 #endif //_MMATHFN_H_

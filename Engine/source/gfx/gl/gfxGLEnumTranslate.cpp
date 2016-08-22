@@ -150,9 +150,9 @@ void GFXGLEnumTranslate::init()
    //sRGB
    GFXGLTextureInternalFormat[GFXFormatR8G8B8_SRGB] = GL_SRGB8;
    GFXGLTextureInternalFormat[GFXFormatR8G8B8A8_SRGB] = GL_SRGB8_ALPHA8;
-   GFXGLTextureInternalFormat[GFXFormatBC1_SRGB] = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
-   GFXGLTextureInternalFormat[GFXFormatBC2_SRGB] = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-   GFXGLTextureInternalFormat[GFXFormatBC3_SRGB] = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+   GFXGLTextureInternalFormat[GFXFormatBC1_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+   GFXGLTextureInternalFormat[GFXFormatBC2_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+   GFXGLTextureInternalFormat[GFXFormatBC3_SRGB] = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
    
    GFXGLTextureFormat[GFXFormatA8] = GL_RED;
    GFXGLTextureFormat[GFXFormatL8] = GL_RED;
