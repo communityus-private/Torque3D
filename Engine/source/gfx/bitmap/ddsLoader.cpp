@@ -504,8 +504,10 @@ bool DDSFile::readHeader(Stream &s)
          break;
       case FOURCC_BC4:
          mFormat = GFXFormatBC4;
+         break;
       case FOURCC_BC5:
          mFormat = GFXFormatBC5;
+         break;
       default:
          Con::errorf("DDSFile::readHeader - unknown fourcc = '%c%c%c%c'", ((U8*)&pfFourCC)[0], ((U8*)&pfFourCC)[1], ((U8*)&pfFourCC)[2], ((U8*)&pfFourCC)[3]);
          break;
