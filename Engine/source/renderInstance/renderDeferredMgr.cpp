@@ -1119,7 +1119,7 @@ void RenderDeferredMgr::_initShaders()
    // Create StateBlocks
    GFXStateBlockDesc desc;
    desc.setCullMode( GFXCullNone );
-   desc.setBlend( true );
+   desc.setBlend( false );
    desc.setZReadWrite( false, false );
    desc.samplersDefined = true;
    for (int i = 0; i < TEXTURE_STAGE_COUNT; i++)
