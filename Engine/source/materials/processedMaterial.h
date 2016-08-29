@@ -142,6 +142,9 @@ public:
    /// Sets the transformation matrix, i.e. Model * View * Projection
    virtual void setTransforms(const MatrixSet &matrixSet, SceneRenderState *state, const U32 pass) = 0;
    
+   /// Sets the node transforms for HW Skinning
+   virtual void setNodeTransforms(const MatrixF *address, const U32 numTransforms, const U32 pass) = 0;
+   
    /// Sets the scene info like lights for the given pass.
    virtual void setSceneInfo(SceneRenderState *, const SceneData& sgData, U32 pass) = 0;
 
@@ -282,6 +285,7 @@ protected:
 
    /// Loads the texture located at _getTexturePath(filename) and gives it the specified profile
    GFXTexHandle _createTexture( const char *filename, GFXTextureProfile *profile );
+   GFXTexHandle _createCompositeTexture(const char *filenameR, const char *filenameG, const char *filenameB, const char *filenameA, U32 inputKey[4], GFXTextureProfile *profile);
 
    /// @name State blocks
    ///

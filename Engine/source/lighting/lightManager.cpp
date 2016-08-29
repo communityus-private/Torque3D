@@ -36,7 +36,7 @@
 #include "T3D/gameBase/gameConnection.h"
 #include "gfx/gfxStringEnumTranslate.h"
 #include "console/engineAPI.h"
-#include "renderInstance/renderPrePassMgr.h"
+#include "renderInstance/renderDeferredMgr.h"
 
 
 Signal<void(const char*,bool)> LightManager::smActivateSignal;
@@ -227,6 +227,15 @@ void LightManager::registerGlobalLights( const Frustum *frustum, bool staticLigh
       // Cull the lights using the frustum.
       getSceneManager()->getContainer()->findObjectList( *frustum, lightMask, &activeLights );
 
+      for (U32 i = 0; i < activeLights.size(); ++i)
+      {
+         if (!getSceneManager()->mRenderedObjectsList.contains(activeLights[i]))
+         {
+            activeLights.erase(i);
+            --i;
+         }
+      }
+
       // Store the culling position for sun placement
       // later... see setSpecialLight.
       mCullPos = frustum->getPosition();
@@ -410,15 +419,15 @@ bool LightManager::lightScene( const char* callback, const char* param )
    return sl->lightScene( callback, flags );
 }
 
-RenderPrePassMgr* LightManager::_findPrePassRenderBin()
+RenderDeferredMgr* LightManager::_findDeferredRenderBin()
 {
    RenderPassManager* rpm = getSceneManager()->getDefaultRenderPass();
    for( U32 i = 0; i < rpm->getManagerCount(); i++ )
    {
       RenderBinManager *bin = rpm->getManager( i );
-      if( bin->getRenderInstType() == RenderPrePassMgr::RIT_PrePass )
+      if( bin->getRenderInstType() == RenderDeferredMgr::RIT_Deferred )
       {
-         return ( RenderPrePassMgr* ) bin;
+         return ( RenderDeferredMgr* ) bin;
       }
    }
 

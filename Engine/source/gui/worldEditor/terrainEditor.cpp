@@ -658,7 +658,7 @@ void SelectionBrush::rebuild()
    //... move the selection
 }
 
-void SelectionBrush::render(Vector<GFXVertexPC> & vertexBuffer, S32 & verts, S32 & elems, S32 & prims, const ColorF & inColorFull, const ColorF & inColorNone, const ColorF & outColorFull, const ColorF & outColorNone) const
+void SelectionBrush::render(Vector<GFXVertexPCT> & vertexBuffer, S32 & verts, S32 & elems, S32 & prims, const ColorF & inColorFull, const ColorF & inColorNone, const ColorF & outColorFull, const ColorF & outColorNone) const
 {
    //... render the selection
 }
@@ -1342,8 +1342,8 @@ void TerrainEditor::renderPoints( const Vector<GFXVertexPCT> &pointList )
       U32 vertsThisDrawCall = getMin( (U32)vertsLeft, (U32)MAX_DYNAMIC_VERTS );
       vertsLeft -= vertsThisDrawCall;
 
-      GFXVertexBufferHandle<GFXVertexPC> vbuff( GFX, vertsThisDrawCall, GFXBufferTypeVolatile );
-      GFXVertexPC *vert = vbuff.lock();
+      GFXVertexBufferHandle<GFXVertexPCT> vbuff( GFX, vertsThisDrawCall, GFXBufferTypeVolatile );
+      GFXVertexPCT *vert = vbuff.lock();
 
       const U32 loops = vertsThisDrawCall / 6;
 
@@ -1388,58 +1388,59 @@ void TerrainEditor::renderPoints( const Vector<GFXVertexPCT> &pointList )
 
 void TerrainEditor::renderSelection( const Selection & sel, const ColorF & inColorFull, const ColorF & inColorNone, const ColorF & outColorFull, const ColorF & outColorNone, bool renderFill, bool renderFrame )
 {
-   PROFILE_SCOPE( TerrainEditor_RenderSelection );
+   PROFILE_SCOPE(TerrainEditor_RenderSelection);
 
    // Draw nothing if nothing selected.
-   if(sel.size() == 0)
+   if (sel.size() == 0)
       return;
 
-   Vector<GFXVertexPC> vertexBuffer;
+   Vector<GFXVertexPCT> vertexBuffer;
    ColorF color;
    ColorI iColor;
 
    vertexBuffer.setSize(sel.size() * 5);
 
-   F32 squareSize = ( mActiveTerrain ) ? mActiveTerrain->getSquareSize() : 1;
+   F32 squareSize = (mActiveTerrain) ? mActiveTerrain->getSquareSize() : 1;
 
    // 'RenderVertexSelection' looks really bad so just always use the good one.
-   if( false && mRenderVertexSelection)
+   if (false && mRenderVertexSelection)
    {
 
-      for(U32 i = 0; i < sel.size(); i++)
+      for (U32 i = 0; i < sel.size(); i++)
       {
          Point3F wPos;
          bool center = gridToWorld(sel[i].mGridPoint, wPos);
 
          F32 weight = sel[i].mWeight;
 
-         if(center)
+         if (center)
          {
-            if ( weight < 0.f || weight > 1.f )
+            if (weight < 0.f || weight > 1.f)
                color = inColorFull;
             else
-               color.interpolate( inColorNone, inColorFull, weight );
+               color.interpolate(inColorNone, inColorFull, weight);
          }
          else
          {
-            if ( weight < 0.f || weight > 1.f)
+            if (weight < 0.f || weight > 1.f)
                color = outColorFull;
             else
-               color.interpolate( outColorFull, outColorNone, weight );
+               color.interpolate(outColorFull, outColorNone, weight);
          }
          //
          iColor = color;
 
-         GFXVertexPC *verts = &(vertexBuffer[i * 5]);
+         GFXVertexPCT *verts = &(vertexBuffer[i * 5]);
 
-         verts[0].point = wPos + Point3F(-squareSize, -squareSize, 0);
+         verts[0].point = wPos + Point3F(-squareSize, squareSize, 0);
          verts[0].color = iColor;
-         verts[1].point = wPos + Point3F( squareSize, -squareSize, 0);
+         verts[1].point = wPos + Point3F( squareSize, squareSize, 0);
          verts[1].color = iColor;
-         verts[2].point = wPos + Point3F( squareSize,  squareSize, 0);
+         verts[2].point = wPos + Point3F( -squareSize, -squareSize, 0);
          verts[2].color = iColor;
-         verts[3].point = wPos + Point3F(-squareSize,  squareSize, 0);
+         verts[3].point = wPos + Point3F( squareSize,  -squareSize, 0);
          verts[3].color = iColor;
+
          verts[4].point = verts[0].point;
          verts[4].color = iColor;
       }
@@ -1447,12 +1448,12 @@ void TerrainEditor::renderSelection( const Selection & sel, const ColorF & inCol
    else
    {
       // walk the points in the selection
-      for(U32 i = 0; i < sel.size(); i++)
+      for (U32 i = 0; i < sel.size(); i++)
       {
          GridPoint selectedGridPoint = sel[i].mGridPoint;
          Point2I gPos = selectedGridPoint.gridPos;
 
-         GFXVertexPC *verts = &(vertexBuffer[i * 5]);
+         GFXVertexPCT *verts = &(vertexBuffer[i * 5]);
 
          bool center = gridToWorld(selectedGridPoint, verts[0].point);
          gridToWorld(Point2I(gPos.x + 1, gPos.y), verts[1].point, selectedGridPoint.terrainBlock);
@@ -1462,28 +1463,28 @@ void TerrainEditor::renderSelection( const Selection & sel, const ColorF & inCol
 
          F32 weight = sel[i].mWeight;
 
-         if( !mRenderSolidBrush )
+         if (!mRenderSolidBrush)
          {
-            if ( center )
+            if (center)
             {
-               if ( weight < 0.f || weight > 1.f )
+               if (weight < 0.f || weight > 1.f)
                   color = inColorFull;
                else
-                  color.interpolate(inColorNone, inColorFull, weight );
+                  color.interpolate(inColorNone, inColorFull, weight);
             }
             else
             {
-               if( weight < 0.f || weight > 1.f )
+               if (weight < 0.f || weight > 1.f)
                   color = outColorFull;
                else
-                  color.interpolate(outColorFull, outColorNone, weight );
+                  color.interpolate(outColorFull, outColorNone, weight);
             }
 
             iColor = color;
          }
          else
          {
-            if ( center )
+            if (center)
             {
                iColor = inColorNone;
             }
@@ -1503,12 +1504,12 @@ void TerrainEditor::renderSelection( const Selection & sel, const ColorF & inCol
 
    // Render this bad boy, by stuffing everything into a volatile buffer
    // and rendering...
-   GFXVertexBufferHandle<GFXVertexPC> selectionVB(GFX, vertexBuffer.size(), GFXBufferTypeStatic);
+   GFXVertexBufferHandle<GFXVertexPCT> selectionVB(GFX, vertexBuffer.size(), GFXBufferTypeStatic);
 
    selectionVB.lock(0, vertexBuffer.size());
 
    // Copy stuff
-   dMemcpy((void*)&selectionVB[0], (void*)&vertexBuffer[0], sizeof(GFXVertexPC) * vertexBuffer.size());
+   dMemcpy((void*)&selectionVB[0], (void*)&vertexBuffer[0], sizeof(GFXVertexPCT) * vertexBuffer.size());
 
    selectionVB.unlock();
 
@@ -1518,7 +1519,7 @@ void TerrainEditor::renderSelection( const Selection & sel, const ColorF & inCol
 
    if(renderFill)
       for(U32 i=0; i < sel.size(); i++)
-         GFX->drawPrimitive( GFXTriangleFan, i*5, 4);
+         GFX->drawPrimitive( GFXTriangleStrip, i*5, 4);
 
    if(renderFrame)
       for(U32 i=0; i < sel.size(); i++)

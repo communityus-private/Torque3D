@@ -370,6 +370,18 @@ struct MeshRenderInst : public RenderInst
    GFXTextureObject *miscTex;
    GFXTextureObject *accuTex;
    GFXCubemap   *cubemap;
+   F32 mMaterialDamage;
+
+   /// @name Hardware Skinning
+   /// {
+   MatrixF *mNodeTransforms;
+   U32 mNodeTransformCount;
+   /// }
+
+#ifdef TORQUE_ENABLE_GFXDEBUGEVENTS
+   const char *meshName;
+   const char *objectName;
+#endif
 
    void clear();
 };

@@ -33,6 +33,8 @@ struct RenderPassData;
 
 class ShaderFeatureHLSL : public ShaderFeature
 {
+protected:
+   bool mIsDirect3D11;
 public:
    ShaderFeatureHLSL();
 
@@ -188,6 +190,9 @@ class VertPositionHLSL : public ShaderFeatureHLSL
 public:
    virtual void processVert( Vector<ShaderComponent*> &componentList,
                              const MaterialFeatureData &fd );
+
+   virtual void processPix( Vector<ShaderComponent*> &componentList,
+                            const MaterialFeatureData &fd);
                              
    virtual String getName()
    {
@@ -658,13 +663,17 @@ public:
                                   MaterialFeatureData *outFeatureData );
 };
 
-
-class DeferredSkyHLSL : public ShaderFeatureHLSL
+/// Hardware Skinning
+class HardwareSkinningFeatureHLSL : public ShaderFeatureHLSL
 {
+protected:
+
 public:
-   virtual String getName() { return "Deferred Shading: Sky"; }
-   virtual void processVert( Vector<ShaderComponent*> &componentList,
-                             const MaterialFeatureData &fd );
+
+   virtual void processVert(  Vector<ShaderComponent*> &componentList,
+                              const MaterialFeatureData &fd );
+
+   virtual String getName() { return "Hardware Skinning"; }
 };
 
 #endif // _SHADERGEN_HLSL_SHADERFEATUREHLSL_H_

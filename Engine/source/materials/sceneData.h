@@ -49,9 +49,9 @@ struct SceneData
       /// @see RenderGlowMgr
       GlowBin,
 
-      /// The prepass render bin.
-      /// @RenderPrePassMgr
-      PrePassBin,
+      /// The deferred render bin.
+      /// @RenderDeferredMgr
+      DeferredBin,
    };
 
    /// This defines when we're rendering a special bin 
@@ -83,6 +83,7 @@ struct SceneData
    const MatrixF *objTrans;
    GFXCubemap *cubemap;
    F32 visibility;
+   F32 mMaterialDamage;
 
    /// Enables wireframe rendering for the object.
    bool wireframe;
@@ -98,6 +99,7 @@ struct SceneData
       dMemset( this, 0, sizeof( SceneData ) );
       objTrans = &MatrixF::Identity;
       visibility = 1.0f;
+	  mMaterialDamage = 0.0f;
    }
 
    /// Initializes the data with the scene state setting
@@ -111,6 +113,7 @@ struct SceneData
       objTrans = &MatrixF::Identity;
       visibility = 1.0f;
       ambientLightColor = state->getAmbientLightColor();
+	  mMaterialDamage = 0.0f;
    }
 
    inline void setFogParams( const FogData &data )

@@ -26,7 +26,6 @@
 #include "shaderGen/featureMgr.h"
 #include "gfx/gl/tGL/tGL.h"
 
-
 void ShaderGenPrinterGLSL::printShaderHeader( Stream& stream )
 {
    const char *header1 = "//*****************************************************************************\r\n";
@@ -63,7 +62,7 @@ void ShaderGenPrinterGLSL::printVertexShaderCloser( Stream& stream )
    stream.write( dStrlen(closer), closer );
 }
 
-void ShaderGenPrinterGLSL::printPixelShaderOutputStruct( Stream& stream, const MaterialFeatureData &featureData )
+void ShaderGenPrinterGLSL::printPixelShaderOutputStruct(Stream& stream, const MaterialFeatureData &featureData)
 {
     // Determine the number of output targets we need
     U32 numMRTs = 0;
@@ -86,10 +85,10 @@ void ShaderGenPrinterGLSL::printPixelShaderOutputStruct( Stream& stream, const M
     WRITESTR("\r\n");
 }
 
-void ShaderGenPrinterGLSL::printPixelShaderCloser( Stream& stream )
+void ShaderGenPrinterGLSL::printPixelShaderCloser(Stream& stream)
 {
     const char *closer = "   \r\n}\r\n";
-    stream.write( dStrlen(closer), closer );
+    stream.write(dStrlen(closer), closer);
 }
 
 void ShaderGenPrinterGLSL::printLine(Stream& stream, const String& line)
@@ -112,6 +111,9 @@ const char* ShaderGenComponentFactoryGLSL::typeToString( GFXDeclType type )
 
       case GFXDeclType_Float3:
          return "vec3";
+
+      case GFXDeclType_UByte4:
+         return "vec4";
 
       case GFXDeclType_Float4:
       case GFXDeclType_Color:
@@ -159,6 +161,16 @@ ShaderComponent* ShaderGenComponentFactoryGLSL::createVertexInputConnector( cons
       {
          var = vertComp->getElement( RT_COLOR );
          var->setName( "diffuse" );
+      }
+      else if (element.isSemantic(GFXSemantic::BLENDINDICES))
+      {
+         var = vertComp->getElement(RT_BLENDINDICES);
+         var->setName(String::ToString("vBlendIndex%d", element.getSemanticIndex()));
+      }
+      else if (element.isSemantic(GFXSemantic::BLENDWEIGHT))
+      {
+         var = vertComp->getElement(RT_BLENDWEIGHT);
+         var->setName(String::ToString("vBlendWeight%d", element.getSemanticIndex()));
       }
       else if ( element.isSemantic( GFXSemantic::TEXCOORD ) )
       {

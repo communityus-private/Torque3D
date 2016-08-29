@@ -29,7 +29,7 @@
 #include "lighting/shadowMap/shadowMapPass.h"
 #include "lighting/shadowMap/lightShadowMap.h"
 #include "lighting/common/lightMapParams.h"
-#include "renderInstance/renderPrePassMgr.h"
+#include "renderInstance/renderDeferredMgr.h"
 #include "gfx/gfxTransformSaver.h"
 #include "scene/sceneManager.h"
 #include "scene/sceneRenderState.h"
@@ -41,8 +41,8 @@
 #include "math/util/matrixSet.h"
 #include "console/consoleTypes.h"
 
-const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "LightInfo" );
-const String AdvancedLightBinManager::smBufferName( "lightinfo" );
+const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "directLighting" );
+const String AdvancedLightBinManager::smBufferName( "directLighting" );
 
 ShadowFilterMode AdvancedLightBinManager::smShadowFilterMode = ShadowFilterMode_SoftShadowHighQuality;
 bool AdvancedLightBinManager::smPSSMDebugRender = false;
@@ -130,7 +130,7 @@ AdvancedLightBinManager::AdvancedLightBinManager( AdvancedLightManager *lm /* = 
    // We want a full-resolution buffer
    mTargetSizeType = RenderTexTargetBinManager::WindowSize;
 
-   mMRTLightmapsDuringPrePass = false;
+   mMRTLightmapsDuringDeferred = true;
 
    Con::NotifyDelegate callback( this, &AdvancedLightBinManager::_deleteLightMaterials );
    Con::addVariableNotify( "$pref::Shadows::filterMode", callback );
@@ -252,8 +252,6 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
    if ( !_onPreRender( state ) )
       return;
 
-   // Clear as long as there isn't MRT population of light buffer with lightmap data
-   if ( !MRTLightmapsDuringPrePass() )
       GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
 
    // Restore transforms
@@ -305,7 +303,7 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
       {
          vectorMatInfo->matInstance->setSceneInfo( state, sgData );
          vectorMatInfo->matInstance->setTransforms( matrixSet, state );
-         GFX->drawPrimitive( GFXTriangleFan, 0, 2 );
+         GFX->drawPrimitive( GFXTriangleStrip, 0, 2 );
       }
    }
 
@@ -482,24 +480,24 @@ void AdvancedLightBinManager::_setupPerFrameParameters( const SceneRenderState *
    // passes.... this is a volatile VB and updates every frame.
    FarFrustumQuadVert verts[4];
    {
-      verts[0].point.set( wsFrustumPoints[Frustum::FarBottomLeft] - cameraPos );
-      invCam.mulP( wsFrustumPoints[Frustum::FarBottomLeft], &verts[0].normal );
-      verts[0].texCoord.set( -1.0, -1.0 );
-      verts[0].tangent.set(wsFrustumPoints[Frustum::FarBottomLeft] - cameraOffsetPos);
+      verts[0].point.set(wsFrustumPoints[Frustum::FarTopLeft] - cameraPos);
+      invCam.mulP(wsFrustumPoints[Frustum::FarTopLeft], &verts[0].normal);
+      verts[0].texCoord.set(-1.0, 1.0);
+      verts[0].tangent.set(wsFrustumPoints[Frustum::FarTopLeft] - cameraOffsetPos);
 
-      verts[1].point.set( wsFrustumPoints[Frustum::FarTopLeft] - cameraPos );
-      invCam.mulP( wsFrustumPoints[Frustum::FarTopLeft], &verts[1].normal );
-      verts[1].texCoord.set( -1.0, 1.0 );
-      verts[1].tangent.set(wsFrustumPoints[Frustum::FarTopLeft] - cameraOffsetPos);
+      verts[1].point.set(wsFrustumPoints[Frustum::FarTopRight] - cameraPos);
+      invCam.mulP(wsFrustumPoints[Frustum::FarTopRight], &verts[1].normal);
+      verts[1].texCoord.set(1.0, 1.0);
+      verts[1].tangent.set(wsFrustumPoints[Frustum::FarTopRight] - cameraOffsetPos);
 
-      verts[2].point.set( wsFrustumPoints[Frustum::FarTopRight] - cameraPos );
-      invCam.mulP( wsFrustumPoints[Frustum::FarTopRight], &verts[2].normal );
-      verts[2].texCoord.set( 1.0, 1.0 );
-      verts[2].tangent.set(wsFrustumPoints[Frustum::FarTopRight] - cameraOffsetPos);
+      verts[2].point.set(wsFrustumPoints[Frustum::FarBottomLeft] - cameraPos);
+      invCam.mulP(wsFrustumPoints[Frustum::FarBottomLeft], &verts[2].normal);
+      verts[2].texCoord.set(-1.0, -1.0);
+      verts[2].tangent.set(wsFrustumPoints[Frustum::FarBottomLeft] - cameraOffsetPos);
 
-      verts[3].point.set( wsFrustumPoints[Frustum::FarBottomRight] - cameraPos );
-      invCam.mulP( wsFrustumPoints[Frustum::FarBottomRight], &verts[3].normal );
-      verts[3].texCoord.set( 1.0, -1.0 );
+      verts[3].point.set(wsFrustumPoints[Frustum::FarBottomRight] - cameraPos);
+      invCam.mulP(wsFrustumPoints[Frustum::FarBottomRight], &verts[3].normal);
+      verts[3].texCoord.set(1.0, -1.0);
       verts[3].tangent.set(wsFrustumPoints[Frustum::FarBottomRight] - cameraOffsetPos);
    }
    mFarFrustumQuadVerts.set( GFX, 4 );
@@ -573,23 +571,23 @@ void AdvancedLightBinManager::setupSGData( SceneData &data, const SceneRenderSta
    }
 }
 
-void AdvancedLightBinManager::MRTLightmapsDuringPrePass( bool val )
+void AdvancedLightBinManager::MRTLightmapsDuringDeferred( bool val )
 {
    // Do not enable if the GFX device can't do MRT's
    if ( GFX->getNumRenderTargets() < 2 )
       val = false;
 
-   if ( mMRTLightmapsDuringPrePass != val )
+   if ( mMRTLightmapsDuringDeferred != val )
    {
-      mMRTLightmapsDuringPrePass = val;
+      mMRTLightmapsDuringDeferred = val;
 
-      // Reload materials to cause a feature recalculation on prepass materials
+      // Reload materials to cause a feature recalculation on deferred materials
       if(mLightManager->isActive())
          MATMGR->flushAndReInitInstances();
 
-      RenderPrePassMgr *prepass;
-      if ( Sim::findObject( "AL_PrePassBin", prepass ) && prepass->getTargetTexture( 0 ) )
-         prepass->updateTargets();
+      RenderDeferredMgr *deferred;
+      if ( Sim::findObject( "AL_DeferredBin", deferred ) && deferred->getTargetTexture( 0 ) )
+         deferred->updateTargets();
    }
 }
 
@@ -706,7 +704,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          // in the light info!
          //
          //ColorF lightAlt = lightInfo->getAltColor();
-         ColorF lightAlt( ColorF::BLACK ); // = lightInfo->getAltColor();
+         ColorF lightAlt( ColorF::ZERO ); // = lightInfo->getAltColor();
          if ( lightAlt.red == 0.0f && lightAlt.green == 0.0f && lightAlt.blue == 0.0f )
             lightAlt = (lightInfo->getColor() + renderState->getAmbientLightColor()) / 2.0f;
 
@@ -857,21 +855,21 @@ bool LightMatInstance::init( const FeatureSet &features, const GFXVertexFormat *
    // in the same way.
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = false;
-   litState.stencilMask = RenderPrePassMgr::OpaqueDynamicLitMask | RenderPrePassMgr::OpaqueStaticLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
    mLitState[DynamicLight] = GFX->createStateBlock(litState);
 
    // StaticLightNonLMGeometry State: This will treat non-lightmapped geometry
    // in the usual way, but will not effect lightmapped geometry.
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = false;
-   litState.stencilMask = RenderPrePassMgr::OpaqueDynamicLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask;
    mLitState[StaticLightNonLMGeometry] = GFX->createStateBlock(litState);
 
    // StaticLightLMGeometry State: This will add specular information (alpha) but
    // multiply-darken color information. 
    litState.blendDest = GFXBlendSrcColor;
    litState.blendSrc = GFXBlendZero;
-   litState.stencilMask = RenderPrePassMgr::OpaqueStaticLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueStaticLitMask;
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = true;
    litState.separateAlphaBlendSrc = GFXBlendOne;

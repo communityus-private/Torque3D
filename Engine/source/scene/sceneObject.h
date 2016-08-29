@@ -371,6 +371,7 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
 
       SceneObject();
       virtual ~SceneObject();
+      bool mPathfindingIgnore;
 
       /// Triggered when a SceneObject onAdd is called.
       static Signal< void( SceneObject* ) > smSceneObjectAdd;
@@ -777,6 +778,7 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
    // Note: This was placed in SceneObject to both ShapeBase and TSStatic could support it.
    public:
       GFXTextureObject* mAccuTex;
+      GFXCubemap *mEnvMap;
 };
 
 #endif  // _SCENEOBJECT_H_

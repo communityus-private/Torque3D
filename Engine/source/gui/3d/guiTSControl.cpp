@@ -110,7 +110,7 @@ namespace
       start -= lineVec;
       end   += lineVec;
 
-      GFXVertexBufferHandle<GFXVertexPC> verts(GFX, 4, GFXBufferTypeVolatile);
+      GFXVertexBufferHandle<GFXVertexPCT> verts(GFX, 4, GFXBufferTypeVolatile);
       verts.lock();
 
       verts[0].point.set( start.x+perp.x, start.y+perp.y, z1 );
@@ -130,9 +130,9 @@ namespace
       desc.setCullMode(GFXCullNone);
       desc.setZReadWrite(false);
       desc.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
-      GFX->setStateBlockByDesc( desc );
 
       GFX->setupGenericShaders();
+      GFX->setStateBlockByDesc( desc );      
       GFX->drawPrimitive( GFXTriangleStrip, 0, 2 );
    }
 }

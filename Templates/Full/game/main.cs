@@ -47,7 +47,10 @@ function createCanvas(%windowTitle)
    
    // Set the window title
    if (isObject(Canvas))
-      Canvas.setWindowTitle(getEngineName() @ " - " @ $appName);
+   {
+      %renderer = GFXCardProfilerAPI::getRenderer();
+      Canvas.setWindowTitle(getEngineName() @ " - " @ $appName @ " - " @ %renderer);
+   }
    
    return true;
 }
@@ -254,6 +257,7 @@ else {
 
    //You can also explicitly decalre some modules here to be loaded by default if they are part of your game
    //Ex: ModuleDatabase.LoadExplicit( "AppCore" );
+   ModuleDatabase.LoadGroup( "Game" );
 
    if( !$isDedicated )
    {

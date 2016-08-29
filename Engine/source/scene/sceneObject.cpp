@@ -144,6 +144,8 @@ SceneObject::SceneObject()
    mIsScopeAlways = false;
 
    mAccuTex = NULL;
+   mEnvMap = NULL;
+   mPathfindingIgnore = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -302,7 +304,7 @@ bool SceneObject::onAdd()
    resolveMountPID();
 
    smSceneObjectAdd.trigger(this);
-
+   
    return true;
 }
 
@@ -314,7 +316,7 @@ void SceneObject::onRemove()
 
    unmount();
    plUnlink();
-
+   
    Parent::onRemove();
 }
 
@@ -944,7 +946,8 @@ void SceneObject::setProcessTick( bool t )
 
    if ( mProcessTick )
    {
-      plUnlink();
+      if ( !getMountedObjectCount() )
+         plUnlink(); // Only unlink if there is nothing mounted to us
       mProcessTick = false;
    }
    else

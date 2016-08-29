@@ -514,6 +514,8 @@ void GFXDevice::updateStates(bool forceSetAll /*=false*/)
       mStateBlockDirty = false;
    }
 
+   _updateRenderTargets();
+
    if( mTexturesDirty )
    {
       mTexturesDirty = false;
@@ -1328,4 +1330,9 @@ DefineEngineFunction( getBestHDRFormat, GFXFormat, (),,
                                                    true );
 
    return format;
+}
+
+DefineConsoleFunction(ResetGFX, void, (), , "forces the gbuffer to be reinitialized in cases of improper/lack of buffer clears.")
+{
+   GFX->beginReset();
 }

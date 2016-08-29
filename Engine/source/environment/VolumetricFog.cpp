@@ -100,7 +100,7 @@ VolumetricFog::VolumetricFog()
 
    mTypeMask |= EnvironmentObjectType | StaticObjectType;
 
-   mPrepassTarget = NULL;
+   mDeferredTarget = NULL;
    mDepthBufferTarget = NULL;
    mFrontBufferTarget = NULL;
 
@@ -317,8 +317,7 @@ void VolumetricFog::handleResize(VolumetricFogRTManager *RTM, bool resize)
    {
       F32 width = (F32)mPlatformWindow->getClientExtent().x;
       F32 height = (F32)mPlatformWindow->getClientExtent().y;
-      if (!mPlatformWindow->isFullscreen())
-         height -= 20;//subtract caption bar from rendertarget size.
+
       mTexScale.x = 2.0f - ((F32)mTexture.getWidth() / width);
       mTexScale.y = 2.0f - ((F32)mTexture.getHeight() / height);
    }
@@ -407,9 +406,10 @@ bool VolumetricFog::LoadShape()
                mIsVBDirty = true;
                for (U32 k = 0; k < numNrms; k++)
                   {
-                     Point3F norm = mesh->mVertexData[k].normal();
-                     Point3F vert = mesh->mVertexData[k].vert();
-                     Point2F uv = mesh->mVertexData[k].tvert();
+                     const TSMesh::__TSMeshVertexBase &vd = mesh->mVertexData.getBase(k);
+                     Point3F norm = vd.normal();
+                     Point3F vert = vd.vert();
+                     Point2F uv = vd.tvert();
                      tmpVerts[k].point = vert;
                      tmpVerts[k].texCoord = uv;
                      tmpVerts[k].normal = norm;
@@ -771,17 +771,17 @@ void VolumetricFog::_leaveFog(ShapeBase *control)
 
 bool VolumetricFog::setupRenderer()
 {
-   // Search for the prepass rendertarget and shadermacros.
-   mPrepassTarget = NamedTexTarget::find("prepass");
-   if (!mPrepassTarget.isValid())
+   // Search for the deferred rendertarget and shadermacros.
+   mDeferredTarget = NamedTexTarget::find("deferred");
+   if (!mDeferredTarget.isValid())
    {
-      Con::errorf("VolumetricFog::setupRenderer - could not find PrepassTarget");
+      Con::errorf("VolumetricFog::setupRenderer - could not find DeferredTarget");
       return false;
    }
 
    Vector<GFXShaderMacro> macros;
-   if (mPrepassTarget)
-      mPrepassTarget->getShaderMacros(&macros);
+   if (mDeferredTarget)
+      mDeferredTarget->getShaderMacros(&macros);
 
    // Search the depth and frontbuffers which are created by the VolumetricFogRTManager
 
@@ -799,27 +799,27 @@ bool VolumetricFog::setupRenderer()
       return false;
    }
 
-   // Find and setup the prepass Shader
+   // Find and setup the deferred Shader
 
    ShaderData *shaderData;
-   mPrePassShader = Sim::findObject("VolumetricFogPrePassShader", shaderData) ?
+   mDeferredShader = Sim::findObject("VolumetricFogDeferredShader", shaderData) ?
    shaderData->getShader() : NULL;
-   if (!mPrePassShader)
+   if (!mDeferredShader)
    {
-      Con::errorf("VolumetricFog::setupRenderer - could not find VolumetricFogPrePassShader");
+      Con::errorf("VolumetricFog::setupRenderer - could not find VolumetricFogDeferredShader");
       return false;
    }
 
    // Create ShaderConstBuffer and Handles
 
-   mPPShaderConsts = mPrePassShader->allocConstBuffer();
+   mPPShaderConsts = mDeferredShader->allocConstBuffer();
    if (mPPShaderConsts.isNull())
    {
       Con::errorf("VolumetricFog::setupRenderer - could not allocate ShaderConstants 1.");
       return false;
    }
 
-   mPPModelViewProjSC = mPrePassShader->getShaderConstHandle("$modelView");
+   mPPModelViewProjSC = mDeferredShader->getShaderConstHandle("$modelView");
 
    // Find and setup the VolumetricFog Shader
 
@@ -878,7 +878,7 @@ bool VolumetricFog::setupRenderer()
    mReflFogDensitySC = mReflectionShader->getShaderConstHandle("$fogDensity");
    mReflFogStrengthSC = mReflectionShader->getShaderConstHandle("$reflStrength");
 
-   // Create the prepass StateBlock
+   // Create the deferred StateBlock
 
    desc_preD.setCullMode(GFXCullCW);
    desc_preD.setBlend(true);
@@ -895,7 +895,7 @@ bool VolumetricFog::setupRenderer()
    descD.setBlend(true);
    descD.setZReadWrite(false, false);// desc.setZReadWrite(true, false);
 
-   // prepassBuffer sampler
+   // deferredBuffer sampler
    descD.samplersDefined = true;
    descD.samplers[0].addressModeU = GFXAddressClamp;
    descD.samplers[0].addressModeV = GFXAddressClamp;
@@ -1063,7 +1063,7 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
    mat.scale(mObjScale);
    GFX->multWorld(mat);
 
-   GFX->setShader(mPrePassShader);
+   GFX->setShader(mDeferredShader);
    GFX->setShaderConstBuffer(mPPShaderConsts);
    GFX->setStateBlock(mStateblock_preD);
 
@@ -1075,7 +1075,6 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
 
    mPPShaderConsts->setSafe(mPPModelViewProjSC, xform);
 
-   LightInfo *lightinfo = LIGHTMGR->getSpecialLight(LightManager::slSunLightType);
    const ColorF &sunlight = state->getAmbientLightColor();
 
    Point3F ambientColor(sunlight.red, sunlight.green, sunlight.blue);
@@ -1128,9 +1127,9 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
    mShaderConsts->setSafe(mTexScaleSC, mTexScale * mFOV);
    mShaderConsts->setSafe(mTexTilesSC, mTexTiles);
 
-   GFXTextureObject *prepasstex = mPrepassTarget ? mPrepassTarget->getTexture(0) : NULL;
+   GFXTextureObject *deferredtex = mDeferredTarget ? mDeferredTarget->getTexture(0) : NULL;
 
-   GFX->setTexture(0, prepasstex);
+   GFX->setTexture(0, deferredtex);
    GFX->setTexture(1, mDepthBuffer);
    GFX->setTexture(2, mFrontBuffer);
 
@@ -1160,6 +1159,11 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
       GFX->setStateBlock(mStateblockF);
 
    GFX->drawPrimitive(0);
+
+   // Ensure these two textures are bound to the pixel shader input on the second run as they are used as pixel shader outputs (render targets).
+   GFX->setTexture(1, NULL); //mDepthBuffer
+   GFX->setTexture(2, NULL); //mFrontBuffer
+   GFX->updateStates(); //update the dirty texture state we set above
 }
 
 void VolumetricFog::reflect_render(ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat)
@@ -1209,9 +1213,6 @@ void VolumetricFog::InitTexture()
 
       F32 width = (F32)mPlatformWindow->getClientExtent().x;
       F32 height = (F32)mPlatformWindow->getClientExtent().y;
-
-      if (!mPlatformWindow->isFullscreen())
-         height -= 20;//subtract caption bar from rendertarget size.
 
       mTexScale.x = 2.0f - ((F32)mTexture.getWidth() / width);
       mTexScale.y = 2.0f - ((F32)mTexture.getHeight() / height);

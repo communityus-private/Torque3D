@@ -20,15 +20,16 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-// Volumetric Fog prepass pixel shader V1.00
+// Volumetric Fog deferred pixel shader V1.00
+#include "../shaderModel.hlsl"
 
 struct ConnectData
 {
-   float4 hpos : POSITION;
+   float4 hpos : TORQUE_POSITION;
    float4 pos : TEXCOORD0;
 };
 
-float4 main( ConnectData IN ) : COLOR0
+float4 main( ConnectData IN ) : TORQUE_TARGET0
 {
    float OUT;
    

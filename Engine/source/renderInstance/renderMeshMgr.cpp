@@ -100,7 +100,6 @@ void RenderMeshMgr::render(SceneRenderState * state)
    if(!mElementList.size())
       return;
 
-
    GFXDEBUGEVENT_SCOPE( RenderMeshMgr_Render, ColorI::GREEN );
 
    // Automagically save & restore our viewport and transforms.
@@ -147,7 +146,7 @@ void RenderMeshMgr::render(SceneRenderState * state)
       // Check if bin is disabled in advanced lighting.
       // Allow forward rendering pass on custom materials.
 
-      if ( ( MATMGR->getPrePassEnabled() && mBasicOnly && !mat->isCustomMaterial() ) )
+      if ( ( MATMGR->getDeferredEnabled() && mBasicOnly && !mat->isCustomMaterial() ) )
       {
          j++;
          continue;
@@ -175,6 +174,12 @@ void RenderMeshMgr::render(SceneRenderState * state)
             matrixSet.setView(*passRI->worldToCamera);
             matrixSet.setProjection(*passRI->projection);
             mat->setTransforms(matrixSet, state);
+
+            // Setup HW skinning transforms if applicable
+            if (mat->usesHardwareSkinning())
+            {
+               mat->setNodeTransforms(passRI->mNodeTransforms, passRI->mNodeTransformCount);
+            }
 
             setupSGData( passRI, sgData );
             mat->setSceneInfo( state, sgData );

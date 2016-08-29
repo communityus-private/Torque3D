@@ -48,6 +48,7 @@ enum GFXBufferType
                    ///< allowed.
       GFXBufferTypeVolatile, ///< Volatile vertex or index buffers are meant for vertices or indices that are essentially
                    ///< only used once.  They can be resized without any performance penalty.
+
       GFXBufferTypeImmutable, ///< Immutable buffers must specify the data when creating the buffer. Cannot be modified.
 
       GFXBufferType_COUNT ///< Number of buffer types.
@@ -68,7 +69,6 @@ enum GFXPrimitiveType
    GFXLineStrip,
    GFXTriangleList,
    GFXTriangleStrip,
-   GFXTriangleFan,
    GFXPT_COUNT
 };
 
@@ -206,6 +206,9 @@ enum GFXFormat
    GFXFormatDXT4,
    GFXFormatDXT5,
 
+   // sRGB formats
+   GFXFormatR8G8B8A8_SRGB,
+
    GFXFormat_COUNT,
 
    GFXFormat_8BIT = GFXFormatA8,
@@ -277,8 +280,8 @@ enum GFXBlend
 enum GFXAdapterType 
 {
    OpenGL = 0,
+   Direct3D11,
    Direct3D9,
-   Direct3D8,
    NullDevice,
    Direct3D9_360,
    GFXAdapterType_Count
@@ -579,7 +582,9 @@ enum GFXShaderConstType
    GFXSCT_Float4, 
    // Matrices
    GFXSCT_Float2x2, 
-   GFXSCT_Float3x3, 
+   GFXSCT_Float3x3,
+   GFXSCT_Float3x4,
+   GFXSCT_Float4x3,
    GFXSCT_Float4x4, 
    // Scalar
    GFXSCT_Int, 
@@ -618,6 +623,9 @@ enum GFXDeclType
    /// A four-component, packed, unsigned bytes mapped to 0 to 1 range.
    /// @see GFXVertexColor
    GFXDeclType_Color,
+
+   /// Four-component, packed, unsigned bytes ranged 0-255
+   GFXDeclType_UByte4,
 
    /// The count of total GFXDeclTypes.
    GFXDeclType_COUNT,

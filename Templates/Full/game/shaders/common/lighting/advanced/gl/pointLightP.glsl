@@ -103,7 +103,7 @@ uniform samplerCube cookieMap ;
 
 #endif
 
-uniform sampler2D prePassBuffer;
+uniform sampler2D deferredBuffer;
 
 #ifdef SHADOW_CUBE
 	uniform samplerCube shadowMap;
@@ -138,19 +138,31 @@ void main()
    vec3 ssPos = ssPos.xyz / ssPos.w;
    vec2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
-   // Emissive.
-   vec4 matInfo = texture( matInfoBuffer, uvScene );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
+   // Matinfo flags
+   vec4 matInfo = texture( matInfoBuffer, uvScene );
+   //early out if emissive
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
    {
-       OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
-	   return;
+      OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
+      return;
    }
-
+   
+   vec4 colorSample = texture( colorBuffer, uvScene );
+   vec3 subsurface = vec3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = vec3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = vec3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
-   vec4 prepassSample = prepassUncondition( prePassBuffer, uvScene );
-   vec3 normal = prepassSample.rgb;
-   float depth = prepassSample.a;
+   vec4 deferredSample = deferredUncondition( deferredBuffer, uvScene );
+   vec3 normal = deferredSample.rgb;
+   float depth = deferredSample.a;
    
    // Eye ray - Eye -> Pixel
    vec3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, vsEyeDir.xyz, vsFarPlane );
@@ -234,12 +246,17 @@ void main()
    // cause the hardware occlusion query to disable the shadow.
 
    // Specular term
-   float specular = AL_CalcSpecular(   lightVec, 
-                                       normal, 
-                                       normalize( -eyeRay ) ) * lightBrightness * atten * shadowed;
+   float specular = 0;
+   vec4 real_specular = EvalBDRF( colorSample.rgb,
+                                    lightcol,
+                                    lightVec,
+                                    viewSpacePos,
+                                    normal,
+                                    1.05-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    matInfo.a );
+   vec3 lightColorOut = real_specular.rgb * lightBrightness * shadowed* atten;
 
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   vec3 lightColorOut = lightMapParams.rgb * lightcol;
    vec4 addToResult = vec4(0.0);
     
    // TODO: This needs to be removed when lightmapping is disabled
@@ -258,6 +275,5 @@ void main()
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   vec4 colorSample = texture( colorBuffer, uvScene );
-   OUT_col = AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   OUT_col = matInfo.g*(vec4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
 }

@@ -22,38 +22,47 @@
 
 #include "../../../gl/hlslCompat.glsl"
 #include "shadergen:/autogenConditioners.h"
-#include "../../../postfx/gl/postFx.glsl"
+#include "../../../postFx/gl/postFX.glsl"
 #include "../../../gl/torque.glsl"
 
 uniform sampler2D colorBufferTex;
-uniform sampler2D lightPrePassTex;
+uniform sampler2D directLightingBuffer;
 uniform sampler2D matInfoTex;
-uniform sampler2D prepassTex;
+uniform sampler2D indirectLightingBuffer;
+uniform sampler2D deferredTex;
 
 out vec4 OUT_col;
 
 void main()
 {
-   float depth = prepassUncondition( prepassTex, uv0 ).w;
+   float depth = deferredUncondition( deferredTex, uv0 ).w;
    if (depth>0.9999)
    {
       OUT_col = vec4(0.0);
       return;
    }
-   vec4 lightBuffer = texture( lightPrePassTex, uv0 );
-   vec4 colorBuffer = texture( colorBufferTex, uv0 );
-   vec4 matInfo = texture( matInfoTex, uv0 );
-   float specular = clamp(lightBuffer.a,0.0,1.0);
-
-   // Diffuse Color Altered by Metalness
-   bool metalness = getFlag(matInfo.r, 3);
-   if ( metalness )
+   
+   vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb; //albedo
+   vec4 matInfo = texture( matInfoTex, uv0 ); //flags|smoothness|ao|metallic
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
    {
-      colorBuffer *= (1.0 - colorBuffer.a);
+      OUT_col = float4(colorBuffer, 1.0);
+	  return;
    }
-
-   colorBuffer *= vec4(lightBuffer.rgb, 1.0);
-   colorBuffer += vec4(specular, specular, specular, 1.0);
-
-   OUT_col = hdrEncode( vec4(colorBuffer.rgb, 1.0) );
+   
+   vec4 directLighting = texture( directLightingBuffer, uv0 ); //shadowmap*specular
+   
+   vec3 indirectLighting = texture( indirectLightingBuffer, uv0 ).rgb; //environment mapping*lightmaps
+   float metalness = matInfo.a;
+      
+   float frez = max(0.04,directLighting.a);
+   
+   vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
+   vec3 fresnelColor = frez*(mix(vec3(0.04f), colorBuffer, metalness)+indirectLighting);
+   vec3 reflectColor = indirectLighting*colorBuffer*metalness;
+   colorBuffer = diffuseColor + reflectColor+fresnelColor;
+   colorBuffer *= directLighting.rgb;
+   
+   OUT_col =  hdrEncode(vec4(colorBuffer,1.0));
 }

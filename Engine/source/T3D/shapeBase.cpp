@@ -62,6 +62,8 @@
 #include "materials/materialFeatureTypes.h"
 #include "renderInstance/renderOcclusionMgr.h"
 #include "core/stream/fileStream.h"
+#include "T3D/accumulationVolume.h"
+#include "T3D/envVolume.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ShapeBaseData);
 
@@ -1045,6 +1047,12 @@ bool ShapeBase::onAdd()
         mCloakTexture = TextureHandle(mDataBlock->cloakTexName, MeshTexture, false);
 */         
 
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      EnvVolume::addObject(this);
+      AccumulationVolume::addObject(this);
+   }
    return true;
 }
 
@@ -1058,6 +1066,14 @@ void ShapeBase::onRemove()
    if (isGhost())
       for (S32 i = 0; i < MaxSoundThreads; i++)
          stopAudio(i);
+
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      if (mShapeInstance->hasAccumulation())
+         AccumulationVolume::removeObject(this);
+      EnvVolume::removeObject(this);
+   }
 
    if ( isClientObject() )   
    {
@@ -1095,7 +1111,10 @@ bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
       delete mShapeInstance;
       mShapeInstance = new TSShapeInstance(mDataBlock->mShape, isClientObject());
       if (isClientObject())
+      {
+         mShapeInstance->setUserObject( this );
          mShapeInstance->cloneMaterialList();
+      }
 
       mObjBox = mDataBlock->mShape->bounds;
       resetWorldBox();
@@ -1324,6 +1343,12 @@ void ShapeBase::processTick(const Move* move)
       if (mWhiteOut <= 0.0)
          mWhiteOut = 0.0;
    }
+
+   if (isMounted()) {
+      MatrixF mat;
+      mMount.object->getMountTransform( mMount.node, mMount.xfm, &mat );
+      Parent::setTransform(mat);
+   }
 }
 
 void ShapeBase::advanceTime(F32 dt)
@@ -1381,6 +1406,12 @@ void ShapeBase::advanceTime(F32 dt)
          if(mFadeOut)
             mFadeVal = 1 - mFadeVal;
       }
+   }
+
+   if (isMounted()) {
+      MatrixF mat;
+      mMount.object->getRenderMountTransform( 0.0f, mMount.node, mMount.xfm, &mat );
+      Parent::setRenderTransform(mat);
    }
 }
 
@@ -2572,9 +2603,16 @@ void ShapeBase::prepBatchRender(SceneRenderState* state, S32 mountedImageIndex )
    
    // Set up our TS render state. 
    TSRenderState rdata;
-   rdata.setSceneState( state );
-   if ( mCubeReflector.isEnabled() )
-      rdata.setCubemap( mCubeReflector.getCubemap() );
+   rdata.setSceneState(state);
+   
+   //area or per object cubemapping
+   if (mCubeReflector.isEnabled())
+      rdata.setCubemap(mCubeReflector.getCubemap());
+   else
+      if (mEnvMap)
+         rdata.setCubemap(mEnvMap);
+
+   rdata.setMaterialDamage(getDamageValue());
    rdata.setFadeOverride( (1.0f - mCloakLevel) * mFadeVal );
 
    // We might have some forward lit materials
@@ -3579,6 +3617,18 @@ void ShapeBase::setCurrentWaterObject( WaterObject *obj )
    mCurrentWaterObject = obj;
 }
 
+void ShapeBase::setTransform(const MatrixF & mat)
+{
+   Parent::setTransform(mat);
+
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      if (mShapeInstance->hasAccumulation())
+         AccumulationVolume::updateObject(this);
+      EnvVolume::updateObject(this);
+   }
+}
 //--------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 DefineEngineMethod( ShapeBase, setHidden, void, ( bool show ),,
@@ -4881,17 +4931,18 @@ DefineEngineMethod( ShapeBase, getTargetCount, S32, (),,
    
    "@see getTargetName()\n")
 {
-	ShapeBase *obj = dynamic_cast< ShapeBase* > ( object );
-	if(obj)
-	{
-		// Try to use the client object (so we get the reskinned targets in the Material Editor)
-		if ((ShapeBase*)obj->getClientObject())
-			obj = (ShapeBase*)obj->getClientObject();
+   ShapeBase *obj = dynamic_cast< ShapeBase* > ( object );
+   if(obj)
+   {
+      // Try to use the client object (so we get the reskinned targets in the Material Editor)
+      if ((ShapeBase*)obj->getClientObject())
+         obj = (ShapeBase*)obj->getClientObject();
 
-		return obj->getShapeInstance()->getTargetCount();
+      if (obj->getShapeInstance() != NULL)
+         return obj->getShapeInstance()->getTargetCount();
 	}
-
-	return -1;
+   
+   return -1;
 }
 
 DefineEngineMethod( ShapeBase, changeMaterial, void, ( const char* mapTo, Material* oldMat, Material* newMat ),,

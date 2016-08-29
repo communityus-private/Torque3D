@@ -27,7 +27,7 @@
 #include "shaderGen/langElement.h"
 #include "shaderGen/shaderOp.h"
 #include "shaderGen/conditionerFeature.h"
-#include "renderInstance/renderPrePassMgr.h"
+#include "renderInstance/renderDeferredMgr.h"
 #include "materials/processedMaterial.h"
 #include "materials/materialFeatureTypes.h"
 
@@ -57,17 +57,54 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
 
    // create texture var
    Var *specularMap = new Var;
-   specularMap->setType( "sampler2D" );
    specularMap->setName( "specularMap" );
    specularMap->uniform = true;
    specularMap->sampler = true;
    specularMap->constNum = Var::getTexUnitNum();
-   LangElement *texOp = new GenOp( "tex2D(@, @)", specularMap, texCoord );
 
-   //matinfo.g slot reserved for AO later
-   meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
-   meta->addStatement(new GenOp("   @.b = dot(tex2D(@, @).rgb, float3(0.3, 0.59, 0.11));\r\n", material, specularMap, texCoord));
-   meta->addStatement(new GenOp("   @.a = tex2D(@, @).a;\r\n", material, specularMap, texCoord));
+   Var *specularMapTex = NULL;
+   LangElement *texOp = NULL;
+   if (mIsDirect3D11)
+   {
+      specularMap->setType("SamplerState");
+      specularMapTex = new Var;
+      specularMapTex->setName("specularMapTex");
+      specularMapTex->setType("Texture2D");
+      specularMapTex->uniform = true;
+      specularMapTex->texture = true;
+      specularMapTex->constNum = specularMap->constNum;
+
+      texOp = new GenOp("   @.Sample(@, @)", specularMapTex, specularMap, texCoord);
+   }
+   else
+   {
+      specularMap->setType("sampler2D");
+      texOp = new GenOp("tex2D(@, @)", specularMap, texCoord);
+   }
+   
+   Var *specularColor = (Var*)LangElement::find("specularColor");
+   if (!specularColor) specularColor = new Var("specularColor", "float4");
+   Var *metalness = (Var*)LangElement::find("metalness");
+   if (!metalness) metalness = new Var("metalness", "float");
+   Var *smoothness = (Var*)LangElement::find("smoothness");
+   if (!smoothness) smoothness = new Var("smoothness", "float");
+
+   if (fd.features[MFT_FlipRB])
+   {
+      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(metalness), texOp));
+      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(smoothness), texOp));
+   }
+   else
+   {
+      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
+      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
+   }
+   if (fd.features[MFT_InvertSmoothness])
+      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
+
+   meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
+
+   meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
    output = meta;
 }
 
@@ -145,43 +182,20 @@ void DeferredSpecVarsHLSL::processPix( Vector<ShaderComponent*> &componentList, 
       material->setStructName( "OUT" );
    }
 
-   Var *specStrength = new Var;
-   specStrength->setType( "float" );
-   specStrength->setName( "specularStrength" );
-   specStrength->uniform = true;
-   specStrength->constSortPos = cspPotentialPrimitive;
+   Var *metalness = new Var("metalness", "float");
+   metalness->uniform = true;
+   metalness->constSortPos = cspPotentialPrimitive;
 
-   Var *specPower = new Var;
-   specPower->setType( "float" );
-   specPower->setName( "specularPower" );
-   specPower->uniform = true;
-   specPower->constSortPos = cspPotentialPrimitive;
+   Var *smoothness = new Var("smoothness", "float");
+   smoothness->uniform = true;
+   smoothness->constSortPos = cspPotentialPrimitive;
 
    MultiLine * meta = new MultiLine;
    //matinfo.g slot reserved for AO later
    meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
-   meta->addStatement(new GenOp("   @.b = @/128;\r\n", material, specStrength));
-   meta->addStatement(new GenOp("   @.a = @/5;\r\n", material, specPower));
-   output = meta;
-}
-
-// Black -> Blue and Alpha of matinfo Buffer (representing no specular), White->G (representing No AO)
-void DeferredEmptySpecHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
-{
-   // search for material var
-   Var *material = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget2));
-   if (!material)
-   {
-       // create color var
-      material = new Var;
-      material->setType("fragout");
-      material->setName(getOutputTargetVarName(ShaderFeature::RenderTarget2));
-      material->setStructName("OUT");
-   }
-
-   MultiLine * meta = new MultiLine;
-   //matinfo.g slot reserved for AO later
-   meta->addStatement(new GenOp("   @.g = 1.0;\r\n", material));
-   meta->addStatement(new GenOp("   @.ba = 0.0;\r\n", material));
+   meta->addStatement(new GenOp("   @.b = @;\r\n", material, smoothness));
+   if (fd.features[MFT_InvertSmoothness])
+      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
+   meta->addStatement(new GenOp("   @.a = @;\r\n", material, metalness));
    output = meta;
 }
