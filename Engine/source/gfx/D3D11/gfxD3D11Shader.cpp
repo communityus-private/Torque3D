@@ -849,13 +849,15 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
    ID3DBlob* errorBuff = NULL;
    ID3D11ShaderReflection* reflectionTable = NULL;
 
-#ifdef TORQUE_DEBUG
-	U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#else
-   U32 flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3; //TODO double check load times with D3DCOMPILE_OPTIMIZATION_LEVEL3
-   //recommended flags for NSight, uncomment to use. NSight should be used in release mode only. *Still works with above flags however
-   //flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PREFER_FLOW_CONTROL | D3DCOMPILE_SKIP_OPTIMIZATION;
+#ifdef TORQUE_GFX_VISUAL_DEBUG //for use with NSight, GPU Perf studio, VS graphics debugger
+	U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PREFER_FLOW_CONTROL | D3DCOMPILE_SKIP_OPTIMIZATION;
+#elif defined(TORQUE_DEBUG) //debug build
+   U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#else //release build
+   U32 flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
+
+
 
 #ifdef D3D11_DEBUG_SPEW
    Con::printf( "Compiling Shader: '%s'", filePath.getFullPath().c_str() );
