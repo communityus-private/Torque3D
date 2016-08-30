@@ -38,7 +38,7 @@ struct ConvexConnectP
    float4 vsEyeDir : TEXCOORD2;
 };
 
-TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
+TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,2);
 
@@ -79,12 +79,13 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
-   // Emissive.
-   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
+   // Matinfo flags
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );
+   //early out if emissive
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
    {
-       return float4(0.0, 0.0, 0.0, 0.0);
+      return float4(0.0, 0.0, 0.0, 0.0);
    }
 
    float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
@@ -99,9 +100,9 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 	}
 	
    // Sample/unpack the normal/z data
-   float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
-   float3 normal = prepassSample.rgb;
-   float depth = prepassSample.a;
+   float4 deferredSample = TORQUE_DEFERRED_UNCONDITION( deferredBuffer, uvScene );
+   float3 normal = deferredSample.rgb;
+   float depth = deferredSample.a;
    
    // Eye ray - Eye -> Pixel
    float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
@@ -181,12 +182,19 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
    // cause the hardware occlusion query to disable the shadow.
 
    // Specular term
-   float specular = AL_CalcSpecular(   -lightToPxlVec, 
-                                       normal, 
-                                       normalize( -eyeRay ) ) * lightBrightness * atten * shadowed;
+   float specular = 0;
 
+   float3 lightVec = lightPosition - viewSpacePos;
+   float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
+                                    lightcol,
+                                    lightVec,
+                                    viewSpacePos,
+                                    normal,
+                                    1.0-matInfo.b,
+                                    matInfo.a );
+   float3 lightColorOut = real_specular.rgb * lightBrightness * shadowed* atten;
+   
    float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   float3 lightColorOut = lightMapParams.rgb * lightcol;
    float4 addToResult = 0.0;
 
    // TODO: This needs to be removed when lightmapping is disabled
@@ -204,6 +212,5 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-
-   return AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   return matInfo.g*(float4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
 }

@@ -130,7 +130,7 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          newVar->rank = 3;
          return newVar;
       }
-
+      
    case RT_COLOR:
       {
          Var *newVar = new Var;
@@ -206,8 +206,6 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
 
    return NULL;
 }
-
-
 
 S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void* e2)
 {

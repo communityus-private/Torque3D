@@ -167,7 +167,6 @@ float2 parallaxOffsetDxtnm(TORQUE_SAMPLER2D(texMap), float2 texCoord, float3 neg
    return offset;
 }
 
-
 /// The maximum value for 16bit per component integer HDR encoding.
 static const float HDR_RGB16_MAX = 100.0;
 
@@ -285,6 +284,7 @@ bool getFlag(float flags, int num)
    int squareNum = pow(2, num);
    return (fmod(process, pow(2, squareNum)) >= squareNum); 
 }
+
 
 // #define TORQUE_STOCK_GAMMA
 #ifdef TORQUE_STOCK_GAMMA

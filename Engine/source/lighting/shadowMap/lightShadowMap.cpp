@@ -280,8 +280,8 @@ bool LightShadowMap::setTextureStage( U32 currTexFlag, LightingShaderConstants* 
    {
       S32 reg = lsc->mDynamicShadowMapSC->getSamplerRegister();
 
-      if ( reg != -1 )
-         GFX->setTexture( reg, mShadowMapTex);
+   	if ( reg != -1 )
+      	GFX->setTexture( reg, mShadowMapTex);
 
       return true;
    }
@@ -460,7 +460,7 @@ LightingShaderConstants::LightingShaderConstants()
       mLightInvRadiusSqSC(NULL),
       mLightSpotDirSC(NULL),
       mLightSpotAngleSC(NULL),
-      mLightSpotFalloffSC(NULL),
+	  mLightSpotFalloffSC(NULL),
       mShadowMapSC(NULL), 
       mDynamicShadowMapSC(NULL), 
       mShadowMapSizeSC(NULL), 
@@ -516,7 +516,7 @@ void LightingShaderConstants::init(GFXShader* shader)
    mLightSpotParamsSC = shader->getShaderConstHandle("$lightSpotParams");
 
    // NOTE: These are the shader constants used for doing lighting 
-   // during the forward pass.  Do not confuse these for the prepass
+   // during the forward pass.  Do not confuse these for the deferred
    // lighting constants which are used from AdvancedLightBinManager.
    mLightPositionSC = shader->getShaderConstHandle( ShaderGenVars::lightPosition );
    mLightDiffuseSC = shader->getShaderConstHandle( ShaderGenVars::lightDiffuse );
@@ -705,8 +705,8 @@ LightShadowMap* ShadowMapParams::getOrCreateShadowMap(bool _isDynamic)
    {
       newShadowMap->setDynamic(false);
       mShadowMap = newShadowMap;
-      return mShadowMap;
-   }
+   return mShadowMap;
+}
 }
 
 GFXTextureObject* ShadowMapParams::getCookieTex()

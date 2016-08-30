@@ -29,7 +29,7 @@
 #include "materials/materialManager.h"
 #include "terrain/terrFeatureTypes.h"
 #include "terrain/terrMaterial.h"
-#include "renderInstance/renderPrePassMgr.h"
+#include "renderInstance/renderDeferredMgr.h"
 #include "shaderGen/shaderGen.h"
 #include "shaderGen/featureMgr.h"
 #include "scene/sceneRenderState.h"
@@ -71,7 +71,7 @@ const Vector<String> TerrainCellMaterial::mSamplerNames = _initSamplerNames();
 TerrainCellMaterial::TerrainCellMaterial()
    :  mCurrPass( 0 ),
       mTerrain( NULL ),
-      mPrePassMat( NULL ),
+      mDeferredMat( NULL ),
       mReflectMat( NULL )
 {
    smAllMaterials.push_back( this );
@@ -79,7 +79,7 @@ TerrainCellMaterial::TerrainCellMaterial()
 
 TerrainCellMaterial::~TerrainCellMaterial()
 {
-   SAFE_DELETE( mPrePassMat );
+   SAFE_DELETE( mDeferredMat );
    SAFE_DELETE( mReflectMat );   
    smAllMaterials.remove( this );
 }
@@ -213,15 +213,15 @@ void TerrainCellMaterial::setTransformAndEye(   const MatrixF &modelXfm,
    }
 }
 
-TerrainCellMaterial* TerrainCellMaterial::getPrePassMat()
+TerrainCellMaterial* TerrainCellMaterial::getDeferredMat()
 {
-   if ( !mPrePassMat )
+   if ( !mDeferredMat )
    {
-      mPrePassMat = new TerrainCellMaterial();
-      mPrePassMat->init( mTerrain, mMaterials, true, false, mMaterials == 0 );
+      mDeferredMat = new TerrainCellMaterial();
+      mDeferredMat->init( mTerrain, mMaterials, true, false, mMaterials == 0 );
    }
 
-   return mPrePassMat;
+   return mDeferredMat;
 }
 
 TerrainCellMaterial* TerrainCellMaterial::getReflectMat()
@@ -237,12 +237,12 @@ TerrainCellMaterial* TerrainCellMaterial::getReflectMat()
 
 void TerrainCellMaterial::init(  TerrainBlock *block,
                                  U64 activeMaterials, 
-                                 bool prePassMat,
+                                 bool deferredMat,
                                  bool reflectMat,
                                  bool baseOnly )
 {
    // This isn't allowed for now.
-   AssertFatal( !( prePassMat && reflectMat ), "TerrainCellMaterial::init - We shouldn't get prepass and reflection in the same material!" );
+   AssertFatal( !( deferredMat && reflectMat ), "TerrainCellMaterial::init - We shouldn't get deferred and reflection in the same material!" );
 
    mTerrain = block;
    mMaterials = activeMaterials;
@@ -274,7 +274,7 @@ void TerrainCellMaterial::init(  TerrainBlock *block,
       if ( !_createPass(   &materials, 
                            &mPasses.last(), 
                            mPasses.size() == 1, 
-                           prePassMat,
+                           deferredMat,
                            reflectMat,
                            baseOnly ) )
       {
@@ -295,8 +295,8 @@ void TerrainCellMaterial::init(  TerrainBlock *block,
    for_each( materials.begin(), materials.end(), delete_pointer() );
 
    // If we have attached mats then update them too.
-   if ( mPrePassMat )
-      mPrePassMat->init( mTerrain, mMaterials, true, false, baseOnly );
+   if ( mDeferredMat )
+      mDeferredMat->init( mTerrain, mMaterials, true, false, baseOnly );
    if ( mReflectMat )
       mReflectMat->init( mTerrain, mMaterials, false, true, baseOnly );
 }
@@ -304,7 +304,7 @@ void TerrainCellMaterial::init(  TerrainBlock *block,
 bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials, 
                                        Pass *pass, 
                                        bool firstPass,
-                                       bool prePassMat,
+                                       bool deferredMat,
                                        bool reflectMat,
                                        bool baseOnly )
 {
@@ -335,14 +335,14 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    const bool disableParallaxMaps = GFX->getPixelShaderVersion() < 3.0f || 
                                     MATMGR->getExclusionFeatures().hasFeature( MFT_Parallax );
 
-   // Has advanced lightmap support been enabled for prepass.
+   // Has advanced lightmap support been enabled for deferred.
    bool advancedLightmapSupport = false;
-   if ( prePassMat )
+   if ( deferredMat )
    {
       // This sucks... but it works.
       AdvancedLightBinManager *lightBin;
       if ( Sim::findObject( "AL_LightBinMgr", lightBin ) )
-         advancedLightmapSupport = lightBin->MRTLightmapsDuringPrePass();
+         advancedLightmapSupport = lightBin->MRTLightmapsDuringDeferred();
    }
 
    // Loop till we create a valid shader!
@@ -350,12 +350,12 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    {
       FeatureSet features;
       features.addFeature( MFT_VertTransform );
+      features.addFeature( MFT_TerrainBaseMap );
 
-      if ( prePassMat )
+      if ( deferredMat )
       {
          features.addFeature( MFT_EyeSpaceDepthOut );
-         features.addFeature( MFT_PrePassConditioner );
-         features.addFeature( MFT_DeferredTerrainBaseMap );
+         features.addFeature( MFT_DeferredConditioner );
          features.addFeature(MFT_isDeferred);
 
          if ( advancedLightmapSupport )
@@ -363,9 +363,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       }
       else
       {
-         features.addFeature( MFT_TerrainBaseMap );
          features.addFeature( MFT_RTLighting );
-
          // The HDR feature is always added... it will compile out
          // if HDR is not enabled in the engine.
          features.addFeature( MFT_HDROut );
@@ -383,7 +381,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
 
       // The additional passes need to be lerp blended into the
       // target to maintain the results of the previous passes.
-      if ( !firstPass )
+      if (!firstPass && deferredMat)
          features.addFeature( MFT_TerrainAdditive );
 
       normalMaps.clear();
@@ -410,15 +408,13 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
 		 // check for macro detail texture
          if (  !(mat->getMacroSize() <= 0 || mat->getMacroDistance() <= 0 || mat->getMacroMap().isEmpty() ) )
          {
-            if(prePassMat)
-               features.addFeature( MFT_DeferredTerrainMacroMap, featureIndex );
-            else
+            if(deferredMat)
+               features.addFeature(MFT_isDeferred, featureIndex);
 	         features.addFeature( MFT_TerrainMacroMap, featureIndex );
          }
 
-         if(prePassMat)
-             features.addFeature( MFT_DeferredTerrainDetailMap, featureIndex );
-         else
+         if(deferredMat)
+            features.addFeature(MFT_isDeferred, featureIndex);
          features.addFeature( MFT_TerrainDetailMap, featureIndex );
 
          pass->materials.push_back( (*materials)[i] );
@@ -531,7 +527,6 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    pass->lightMapTexConst = pass->shader->getShaderConstHandle( "$lightMapTex" );
    pass->oneOverTerrainSize = pass->shader->getShaderConstHandle( "$oneOverTerrainSize" );
    pass->squareSize = pass->shader->getShaderConstHandle( "$squareSize" );
-
    pass->lightParamsConst = pass->shader->getShaderConstHandle( "$rtParamslightInfoBuffer" );
 
    // Now prepare the basic stateblock.
@@ -540,7 +535,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    {
       desc.setBlend( true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha );
 
-      // If this is the prepass then we don't want to
+      // If this is the deferred then we don't want to
       // write to the last two color channels (where
       // depth is usually encoded).
       //
@@ -548,14 +543,14 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       // MFT_TerrainAdditive feature to lerp the
       // output normal with the previous pass.
       //
-      //if ( prePassMat )
+      //if ( deferredMat )
          //desc.setColorWrites( true, true, false, false );
    }
 
-   // We write to the zbuffer if this is a prepass
-   // material or if the prepass is disabled.
-   desc.setZReadWrite( true,  !MATMGR->getPrePassEnabled() || 
-                              prePassMat ||
+   // We write to the zbuffer if this is a deferred
+   // material or if the deferred is disabled.
+   desc.setZReadWrite( true,  !MATMGR->getDeferredEnabled() || 
+                              deferredMat ||
                               reflectMat );
 
    desc.samplersDefined = true;
@@ -663,13 +658,13 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       materials->pop_front();
    }
 
-   // If we're doing prepass it requires some 
+   // If we're doing deferred it requires some 
    // special stencil settings for it to work.
-   if ( prePassMat )
-      desc.addDesc( RenderPrePassMgr::getOpaqueStenciWriteDesc( false ) );
+   if ( deferredMat )
+      desc.addDesc( RenderDeferredMgr::getOpaqueStenciWriteDesc( false ) );
 
-   // Shut off culling for prepass materials (reflection support).
-   if ( prePassMat )
+   // Shut off culling for deferred materials (reflection support).
+   if ( deferredMat )
       desc.setCullMode( GFXCullNone );
 
    pass->stateBlock = GFX->createStateBlock( desc );
@@ -827,7 +822,7 @@ bool TerrainCellMaterial::setupPass(   const SceneRenderState *state,
          pass.lightParamsConst->isValid() )
    {
       if ( !mLightInfoTarget )
-         mLightInfoTarget = NamedTexTarget::find( "lightinfo" );
+         mLightInfoTarget = NamedTexTarget::find( "directLighting" );
 
       GFXTextureObject *texObject = mLightInfoTarget->getTexture();
       
@@ -869,4 +864,3 @@ BaseMatInstance* TerrainCellMaterial::getShadowMat()
 
    return matInst;
 }
-

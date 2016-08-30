@@ -32,6 +32,7 @@ struct Fragout
    float4 col : TORQUE_TARGET0;
    float4 col1 : TORQUE_TARGET1;
    float4 col2 : TORQUE_TARGET2;
+   float4 col3 : TORQUE_TARGET3;
 };
 
 //-----------------------------------------------------------------------------
@@ -41,14 +42,17 @@ Fragout main( Conn IN )
 {
    Fragout OUT;
    
-   // Clear Prepass Buffer ( Normals/Depth );
+   // Clear Deferred Buffer ( Normals/Depth );
    OUT.col =  float4(1.0, 1.0, 1.0, 1.0);
 
    // Clear Color Buffer.
-   OUT.col1 = float4(0.0, 0.0, 0.0, 1.0);
+   OUT.col1 = float4(0.0, 0.0, 0.0, 0.0001);
 
    // Clear Material Info Buffer.
-   OUT.col2 = float4(0.0, 0.0, 0.0, 1.0);
+   OUT.col2 = float4(0.0, 0.0, 0.0, 0.0);
+   
+   // Clear Light Info Buffer.
+   OUT.col3 = float4(0.0, 0.0, 0.0, 0.0);
 
    return OUT;
 }

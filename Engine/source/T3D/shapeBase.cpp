@@ -63,6 +63,7 @@
 #include "renderInstance/renderOcclusionMgr.h"
 #include "core/stream/fileStream.h"
 #include "T3D/accumulationVolume.h"
+#include "T3D/envVolume.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ShapeBaseData);
 
@@ -1045,9 +1046,11 @@ bool ShapeBase::onAdd()
       if(mDataBlock->cloakTexName != StringTable->insert(""))
         mCloakTexture = TextureHandle(mDataBlock->cloakTexName, MeshTexture, false);
 */         
+
    // Accumulation and environment mapping
    if (isClientObject() && mShapeInstance)
    {
+      EnvVolume::addObject(this);
       AccumulationVolume::addObject(this);
    }
    return true;
@@ -1063,6 +1066,14 @@ void ShapeBase::onRemove()
    if (isGhost())
       for (S32 i = 0; i < MaxSoundThreads; i++)
          stopAudio(i);
+
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      if (mShapeInstance->hasAccumulation())
+         AccumulationVolume::removeObject(this);
+      EnvVolume::removeObject(this);
+   }
 
    if ( isClientObject() )   
    {
@@ -1100,7 +1111,10 @@ bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
       delete mShapeInstance;
       mShapeInstance = new TSShapeInstance(mDataBlock->mShape, isClientObject());
       if (isClientObject())
+      {
+         mShapeInstance->setUserObject( this );
          mShapeInstance->cloneMaterialList();
+      }
 
       mObjBox = mDataBlock->mShape->bounds;
       resetWorldBox();
@@ -2589,9 +2603,16 @@ void ShapeBase::prepBatchRender(SceneRenderState* state, S32 mountedImageIndex )
    
    // Set up our TS render state. 
    TSRenderState rdata;
-   rdata.setSceneState( state );
-   if ( mCubeReflector.isEnabled() )
-      rdata.setCubemap( mCubeReflector.getCubemap() );
+   rdata.setSceneState(state);
+   
+   //area or per object cubemapping
+   if (mCubeReflector.isEnabled())
+      rdata.setCubemap(mCubeReflector.getCubemap());
+   else
+      if (mEnvMap)
+         rdata.setCubemap(mEnvMap);
+
+   rdata.setMaterialDamage(getDamageValue());
    rdata.setFadeOverride( (1.0f - mCloakLevel) * mFadeVal );
 
    // We might have some forward lit materials
@@ -3596,6 +3617,18 @@ void ShapeBase::setCurrentWaterObject( WaterObject *obj )
    mCurrentWaterObject = obj;
 }
 
+void ShapeBase::setTransform(const MatrixF & mat)
+{
+   Parent::setTransform(mat);
+
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      if (mShapeInstance->hasAccumulation())
+         AccumulationVolume::updateObject(this);
+      EnvVolume::updateObject(this);
+   }
+}
 //--------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 DefineEngineMethod( ShapeBase, setHidden, void, ( bool show ),,

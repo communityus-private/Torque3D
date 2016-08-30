@@ -23,18 +23,22 @@
 out vec4 OUT_col;
 out vec4 OUT_col1;
 out vec4 OUT_col2;
+out vec4 OUT_col3;
 
 //-----------------------------------------------------------------------------
 // Main                                                                        
 //-----------------------------------------------------------------------------
 void main()
 {    
-   // Clear Prepass Buffer ( Normals/Depth );
+   // Clear Deferred Buffer ( Normals/Depth );
    OUT_col =  vec4(1.0, 1.0, 1.0, 1.0);
 
    // Clear Color Buffer.
-   OUT_col1 = vec4(0.0, 0.0, 0.0, 1.0);
+   OUT_col1 = vec4(0.0, 0.0, 0.0, 0.0001);
 
    // Clear Material Info Buffer.
-   OUT_col2 = vec4(0.0, 0.0, 0.0, 1.0);
+   OUT_col2 = vec4(0.0, 0.0, 0.0, 0.0);
+   
+   // Clear Light Info Buffer.
+   OUT_col3 = vec4(0.0, 0.0, 0.0, 0.0);
 }

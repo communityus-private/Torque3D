@@ -36,7 +36,7 @@ new GFXStateBlockData( AL_VectorLightState )
 
    samplersDefined = true;
    samplerStates[0] = SamplerClampPoint;  // G-buffer
-   mSamplerNames[0] = "prePassBuffer";
+   mSamplerNames[0] = "deferredBuffer";
    samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not change this to linear, as all cards can not filter equally.)
    mSamplerNames[1] = "shadowMap";
    samplerStates[2] = SamplerClampPoint;  // Shadow Map (Do not change this to linear, as all cards can not filter equally.)
@@ -66,14 +66,12 @@ new ShaderData( AL_VectorLightShader )
    OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/farFrustumQuadV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/vectorLightP.glsl";
    
-   samplerNames[0] = "$prePassBuffer";
+   samplerNames[0] = "$deferredBuffer";
    samplerNames[1] = "$shadowMap";
    samplerNames[2] = "$dynamicShadowMap";
    samplerNames[3] = "$ssaoMask";
    samplerNames[4] = "$gTapRotationTex";
-   samplerNames[5] = "$lightBuffer";
-   samplerNames[6] = "$colorBuffer";
-   samplerNames[7] = "$matInfoBuffer";  
+   
    pixVersion = 3.0;
 };
 
@@ -82,15 +80,19 @@ new CustomMaterial( AL_VectorLightMaterial )
    shader = AL_VectorLightShader;
    stateBlock = AL_VectorLightState;
    
-   sampler["prePassBuffer"] = "#prepass";
+   sampler["deferredBuffer"] = "#deferred";
    sampler["shadowMap"] = "$dynamiclight";
    sampler["dynamicShadowMap"] = "$dynamicShadowMap";
+<<<<<<< HEAD
+   sampler["ssaoMask"] = "#ssaoMask";
+=======
    sampler["ssaoMask"] = "#ssaoMask";  
-   sampler["lightBuffer"] = "#lightinfo";
+   sampler["lightBuffer"] = "#indirectLighting";
    sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
+>>>>>>> PBR
    
-   target = "lightinfo";
+   target = "directLighting";
    
    pixVersion = 3.0;
 };
@@ -113,13 +115,19 @@ new GFXStateBlockData( AL_ConvexLightState )
 
    samplersDefined = true;
    samplerStates[0] = SamplerClampPoint;  // G-buffer
-   mSamplerNames[0] = "prePassBuffer";
+<<<<<<< HEAD
+   samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not use linear, these are perspective projections)
+   samplerStates[2] = SamplerClampLinear; // Cookie Map   
+   samplerStates[3] = SamplerWrapPoint;   // Random Direction Map
+=======
+   mSamplerNames[0] = "deferredBuffer";
    samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not use linear, these are perspective projections)
    mSamplerNames[1] = "shadowMap";
    samplerStates[2] = SamplerClampPoint;  // Shadow Map (Do not use linear, these are perspective projections)
    mSamplerNames[2] = "dynamicShadowMap";
    samplerStates[3] = SamplerClampLinear; // Cookie Map   
    samplerStates[4] = SamplerWrapPoint;   // Random Direction Map
+>>>>>>> PBR
    
    cullDefined = true;
    cullMode = GFXCullCW;
@@ -142,14 +150,11 @@ new ShaderData( AL_PointLightShader )
    OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
 
-   samplerNames[0] = "$prePassBuffer";
+   samplerNames[0] = "$deferredBuffer";
    samplerNames[1] = "$shadowMap";
    samplerNames[2] = "$dynamicShadowMap";
    samplerNames[3] = "$cookieMap";
    samplerNames[4] = "$gTapRotationTex";
-   samplerNames[5] = "$lightBuffer";
-   samplerNames[6] = "$colorBuffer";
-   samplerNames[7] = "$matInfoBuffer";
    
    pixVersion = 3.0;
 };
@@ -159,15 +164,18 @@ new CustomMaterial( AL_PointLightMaterial )
    shader = AL_PointLightShader;
    stateBlock = AL_ConvexLightState;
    
-   sampler["prePassBuffer"] = "#prepass";
+   sampler["deferredBuffer"] = "#deferred";
    sampler["shadowMap"] = "$dynamiclight";
    sampler["dynamicShadowMap"] = "$dynamicShadowMap";
    sampler["cookieMap"] = "$dynamiclightmask";
-   sampler["lightBuffer"] = "#lightinfo";
+<<<<<<< HEAD
+=======
+   sampler["lightBuffer"] = "#indirectLighting";
    sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
+>>>>>>> PBR
    
-   target = "lightinfo";
+   target = "directLighting";
    
    pixVersion = 3.0;
 };
@@ -181,14 +189,11 @@ new ShaderData( AL_SpotLightShader )
    OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/spotLightP.glsl";
    
-   samplerNames[0] = "$prePassBuffer";
+   samplerNames[0] = "$deferredBuffer";
    samplerNames[1] = "$shadowMap";
    samplerNames[2] = "$dynamicShadowMap";
    samplerNames[3] = "$cookieMap";
    samplerNames[4] = "$gTapRotationTex";
-   samplerNames[5] = "$lightBuffer";
-   samplerNames[6] = "$colorBuffer";
-   samplerNames[7] = "$matInfoBuffer";
    
    pixVersion = 3.0;
 };
@@ -198,22 +203,25 @@ new CustomMaterial( AL_SpotLightMaterial )
    shader = AL_SpotLightShader;
    stateBlock = AL_ConvexLightState;
    
-   sampler["prePassBuffer"] = "#prepass";
+   sampler["deferredBuffer"] = "#deferred";
    sampler["shadowMap"] = "$dynamiclight";
    sampler["dynamicShadowMap"] = "$dynamicShadowMap";
    sampler["cookieMap"] = "$dynamiclightmask";
-   sampler["lightBuffer"] = "#lightinfo";
+<<<<<<< HEAD
+=======
+   sampler["lightBuffer"] = "#indirectLighting";
    sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
+>>>>>>> PBR
    
-   target = "lightinfo";
+   target = "directLighting";
    
    pixVersion = 3.0;
 };
 
-/// This material is used for generating prepass 
+/// This material is used for generating deferred 
 /// materials for objects that do not have materials.
-new Material( AL_DefaultPrePassMaterial )
+new Material( AL_DefaultDeferredMaterial )
 {
    // We need something in the first pass else it 
    // won't create a proper material instance.  
@@ -258,7 +266,7 @@ new ShaderData( AL_ParticlePointLightShader )
    OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
    
-   samplerNames[0] = "$prePassBuffer";   
+   samplerNames[0] = "$deferredBuffer";   
       
    pixVersion = 3.0;
 };
@@ -268,8 +276,19 @@ new CustomMaterial( AL_ParticlePointLightMaterial )
    shader = AL_ParticlePointLightShader;
    stateBlock = AL_ConvexLightState;
    
-   sampler["prePassBuffer"] = "#prepass";
-   target = "lightinfo";
+   sampler["deferredBuffer"] = "#deferred";
+   target = "directLighting";
+   
+   pixVersion = 3.0;
+};
+
+singleton ShaderData( AmbientLightProbeShaderData )
+{
+   DXVertexShaderFile     = "shaders/common/ambientLightProbeV.hlsl";
+   DXPixelShaderFile      = "shaders/common/ambientLightProbeP.hlsl";  
+   
+   samplerNames[0] = "$prePassBuffer"; 
+   samplerNames[1] = "$cubeMap";
    
    pixVersion = 3.0;
 };

@@ -96,6 +96,11 @@ DeclareFeatureType( MFT_DiffuseColor );
 DeclareFeatureType( MFT_DetailNormalMap );
 DeclareFeatureType( MFT_Imposter );
 
+DeclareFeatureType(MFT_Damage);
+DeclareFeatureType(MFT_AlbedoDamage);
+DeclareFeatureType(MFT_NormalDamage);
+DeclareFeatureType(MFT_CompositeDamage);
+
 DeclareFeatureType( MFT_AccuMap );
 DeclareFeatureType( MFT_AccuScale );
 DeclareFeatureType( MFT_AccuDirection );
@@ -121,8 +126,11 @@ DeclareFeatureType( MFT_ToneMap );
 DeclareFeatureType( MFT_VertLit );
 DeclareFeatureType( MFT_VertLitTone );
 
+DeclareFeatureType( MFT_StaticCubemap );
 DeclareFeatureType( MFT_CubeMap );
 DeclareFeatureType( MFT_PixSpecular );
+DeclareFeatureType( MFT_FlipRB );
+DeclareFeatureType( MFT_InvertSmoothness );
 DeclareFeatureType( MFT_SpecularMap );
 DeclareFeatureType( MFT_GlossMap );
 
@@ -150,8 +158,8 @@ DeclareFeatureType( MFT_Fog );
 DeclareFeatureType( MFT_HDROut );
 
 ///
-DeclareFeatureType( MFT_PrePassConditioner );
-DeclareFeatureType( MFT_InterlacedPrePass );
+DeclareFeatureType( MFT_DeferredConditioner );
+DeclareFeatureType( MFT_InterlacedDeferred );
 
 /// This feature causes MFT_ToneMap and MFT_LightMap to output their light color
 /// to the second render-target
@@ -181,12 +189,10 @@ DeclareFeatureType( MFT_ImposterVert );
 
 DeclareFeatureType( MFT_HardwareSkinning );
 
-
 // Deferred Shading
 DeclareFeatureType( MFT_isDeferred );
 DeclareFeatureType( MFT_SkyBox );
 DeclareFeatureType( MFT_DeferredSpecMap );
 DeclareFeatureType( MFT_DeferredSpecVars );
 DeclareFeatureType( MFT_DeferredMatInfoFlags );
-DeclareFeatureType( MFT_DeferredEmptySpec );
 #endif // _MATERIALFEATURETYPES_H_

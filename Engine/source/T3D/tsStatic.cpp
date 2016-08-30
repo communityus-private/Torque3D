@@ -49,7 +49,7 @@
 #include "materials/materialFeatureTypes.h"
 #include "console/engineAPI.h"
 #include "T3D/accumulationVolume.h"
-
+#include "T3D/envVolume.h"
 using namespace Torque;
 
 extern bool gEditingMission;
@@ -311,8 +311,9 @@ bool TSStatic::onAdd()
    _updateShouldTick();
 
    // Accumulation and environment mapping
-   if (isClientObject() && mShapeInstance)
+   if ( isClientObject() && mShapeInstance )
    {
+      EnvVolume::addObject(this);
       AccumulationVolume::addObject(this);
    }
 
@@ -353,6 +354,11 @@ bool TSStatic::_createShape()
    resetWorldBox();
 
    mShapeInstance = new TSShapeInstance( mShape, isClientObject() );
+   if (isClientObject())
+   {
+      mShapeInstance->setUserObject( this );
+      mShapeInstance->cloneMaterialList();
+   }
 
    if( isGhost() )
    {
@@ -435,12 +441,13 @@ void TSStatic::_updatePhysics()
 void TSStatic::onRemove()
 {
    SAFE_DELETE( mPhysicsRep );
-
-   // Accumulation
-   if ( isClientObject() && mShapeInstance )
+   
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
    {
-      if ( mShapeInstance->hasAccumulation() ) 
+      if (mShapeInstance->hasAccumulation())
          AccumulationVolume::removeObject(this);
+      EnvVolume::removeObject(this);
    }
 
    mConvexList->nukeList();
@@ -621,8 +628,12 @@ void TSStatic::prepRenderImage( SceneRenderState* state )
    rdata.setFadeOverride( 1.0f );
    rdata.setOriginSort( mUseOriginSort );
 
+   //area or per object cubemapping
    if ( mCubeReflector.isEnabled() )
       rdata.setCubemap( mCubeReflector.getCubemap() );
+   else 
+      if (mEnvMap)
+         rdata.setCubemap(mEnvMap);
 
    // Acculumation
    rdata.setAccuTex(mAccuTex);
@@ -730,12 +741,13 @@ void TSStatic::setTransform(const MatrixF & mat)
 
    if ( mPhysicsRep )
       mPhysicsRep->setTransform( mat );
-
-   // Accumulation
-   if ( isClientObject() && mShapeInstance )
+   
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
    {
-      if ( mShapeInstance->hasAccumulation() ) 
+      if (mShapeInstance->hasAccumulation())
          AccumulationVolume::updateObject(this);
+      EnvVolume::updateObject(this);
    }
 
    // Since this is a static it's render transform changes 1

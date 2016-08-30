@@ -142,13 +142,25 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
-   // Emissive.
-   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );   
-   bool emissive = getFlag( matInfo.r, 0 );
-   if ( emissive )
+   // Matinfo flags
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene ); 
+   //early out if emissive
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
    {
-       return float4(0.0, 0.0, 0.0, 0.0);
+      return float4(0.0, 0.0, 0.0, 0.0);
    }
+
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
+   float3 subsurface = float3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = float3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = float3(0.337255, 0.772549, 0.262745);
+	}
    
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
@@ -263,6 +275,5 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
-   return AL_DeferredOutput(lightColorOut, colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
+   return AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }
