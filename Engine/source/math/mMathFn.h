@@ -488,4 +488,14 @@ inline F32 mFloatToSRGB( F32 n )
       n = 1.055f * mPow(n, 1.0f / 2.4f) - 0.055f;
    return n;
 }
+
+/// Convert sRGB to float
+inline F32 mSRGBToFloat(F32 n)
+{
+   if (n < 0.04045f)
+      n /= 12.92f;
+   else
+      n = pow((n + 0.055f) / 1.055f, 2.4f);
+   return n;
+}
 #endif //_MMATHFN_H_

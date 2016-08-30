@@ -104,7 +104,10 @@ class ColorF
                                       (alpha >= 0.0f && alpha <= 1.0f); }
    void clamp();
 
-   ColorF toSRGB();
+   ColorF toLinear();
+   ColorF toGamma();
+   //calculate luminance, make sure color is linear first
+   F32 luminance();
 
    static const ColorF ZERO;
    static const ColorF ONE;
@@ -207,6 +210,9 @@ class ColorI
    operator ColorF() const;
 
    operator const U8*() const { return &red; }
+
+   ColorI toLinear();
+   ColorI toGamma();
 
    static const ColorI ZERO;
    static const ColorI ONE;
@@ -464,14 +470,32 @@ inline void ColorF::clamp()
       alpha = 0.0f;
 }
 
-inline ColorF ColorF::toSRGB()
+inline ColorF ColorF::toGamma()
 {
-   ColorF sRGB;
-   sRGB.red = mFloatToSRGB(red);
-   sRGB.green = mFloatToSRGB(green);
-   sRGB.blue = mFloatToSRGB(blue);
-   sRGB.alpha = alpha;
-   return sRGB;
+   ColorF color;
+   color.red = mFloatToSRGB(red);
+   color.green = mFloatToSRGB(green);
+   color.blue = mFloatToSRGB(blue);
+   color.alpha = alpha;
+   return color;
+}
+
+inline ColorF ColorF::toLinear()
+{
+   ColorF color;
+   color.red = mSRGBToFloat(red);
+   color.green = mSRGBToFloat(green);
+   color.blue = mSRGBToFloat(blue);
+   color.alpha = alpha;
+   return color;
+}
+
+inline F32 ColorF::luminance()
+{
+   // ITU BT.709
+   //return red * 0.2126f + green * 0.7152f + blue * 0.0722f;
+   // ITU BT.601
+   return red * 0.3f + green * 0.59f + blue * 0.11f;
 }
 
 //------------------------------------------------------------------------------
@@ -944,6 +968,18 @@ inline String ColorI::getHex() const
 	return result;
 }
 
+inline ColorI ColorI::toGamma()
+{
+   ColorF color = (ColorF)*this;
+   return (ColorI)color.toGamma();
+}
+
+inline ColorI ColorI::toLinear()
+{
+   ColorF color = (ColorF)*this;
+   return (ColorI)color.toLinear();
+}
+
 //-------------------------------------- INLINE CONVERSION OPERATORS
 inline ColorF::operator ColorI() const
 {
@@ -964,3 +1000,4 @@ inline ColorI::operator ColorF() const
 }
 
 #endif //_COLOR_H_
+
