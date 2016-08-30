@@ -83,8 +83,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 
    // Add the bloom effect.
    float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
-   if (depth>0.9999)
-      sample += g_fBloomScale * bloom;
+   sample += g_fBloomScale * bloom;
 
    // Apply the color correction.
    sample.r = TORQUE_TEX1D( colorCorrectionTex, sample.r ).r;
