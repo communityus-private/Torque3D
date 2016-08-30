@@ -770,6 +770,15 @@ function ObjectBuilderGui::buildLightning(%this)
    %this.process();
 }
 
+function ObjectBuilderGui::buildWayPoint(%this)
+{
+   %this.objectClassName = "WayPoint";
+
+   %this.addField("dataBlock", "TypeDataBlock", "Data block", "MissionMarkerData WayPointMarker");
+
+   %this.process();
+}
+
 function ObjectBuilderGui::addWaterObjectFields(%this)
 {
    %this.addField("rippleDir[0]", "TypePoint2", "Ripple Direction", "0.000000 1.000000");

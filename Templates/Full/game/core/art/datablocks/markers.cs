@@ -23,7 +23,7 @@
 datablock MissionMarkerData(WayPointMarker)
 {
    category = "Misc";
-   shapeFile = "core/art/shapes/octahedron.dts";
+   shapeFile = "core/art/shapes/simplecone.dts";
 };
 
 datablock MissionMarkerData(SpawnSphereMarker)

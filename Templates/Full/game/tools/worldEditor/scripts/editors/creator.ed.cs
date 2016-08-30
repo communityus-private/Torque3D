@@ -89,6 +89,12 @@ function EWCreatorWindow::init( %this )
       
    %this.endGroup();
    
+   %this.beginGroup( "Navigation" );
+      %this.registerMissionObject("NavMesh", "Navigation mesh");
+      %this.registerMissionObject("NavPath", "Path");
+      %this.registerMissionObject("WayPoint", "WayPoint");
+   %this.endGroup();
+   
    %this.beginGroup( "System" );
    
       %this.registerMissionObject( "SimGroup" );
