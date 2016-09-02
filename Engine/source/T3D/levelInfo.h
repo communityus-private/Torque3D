@@ -35,9 +35,11 @@
 #ifndef _SFXCOMMON_H_
    #include "sfx/sfxCommon.h"
 #endif
-
 #ifndef _CUBEMAPDATA_H_
 #include "gfx/sim/cubemapData.h"
+#endif
+#ifndef _GFXTEXTUREHANDLE_H_
+#include "gfx/gfxTextureHandle.h"
 #endif
 
 class SFXAmbience;
@@ -100,6 +102,9 @@ class LevelInfo : public NetObject
       void _updateSceneGraph();
 
       void _onLMActivate(const char *lm, bool enable);
+   protected:
+      // Name (path) of the accumulation texture.
+      String mAccuTextureName;
 
       // Name (path) of the area environment cube map.
       String mLevelEnvMapName;
@@ -139,9 +144,13 @@ class LevelInfo : public NetObject
          UpdateMask = BIT(0)
       };
 
+      GFXTexHandle mAccuTexture;
+
       virtual U32 packUpdate( NetConnection *conn, U32 mask, BitStream *stream );
       virtual void unpackUpdate( NetConnection *conn, BitStream *stream );
       void setLevelEnvMap(const String& name);
+      static bool _setLevelAccuTexture(void *object, const char *index, const char *data);
+      void setLevelAccuTexture(const String& name);
       /// @}
 };
 

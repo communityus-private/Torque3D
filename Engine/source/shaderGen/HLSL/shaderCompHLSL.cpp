@@ -33,18 +33,18 @@ Var * ShaderConnectorHLSL::getElement(RegisterType type,
    U32 numRegisters)
 {
    Var *ret = NULL;
-
-   if (type == RT_BLENDINDICES)
+   
+   if ( type == RT_BLENDINDICES )
    {
-      ret = getIndexedElement(mCurBlendIndicesElem, type, numElements, numRegisters);
+      ret = getIndexedElement( mCurBlendIndicesElem, type, numElements, numRegisters );
    }
-   else if (type == RT_BLENDWEIGHT)
+   else if ( type == RT_BLENDWEIGHT )
    {
-      ret = getIndexedElement(mCurBlendWeightsElem, type, numElements, numRegisters);
+      ret = getIndexedElement( mCurBlendWeightsElem, type, numElements, numRegisters );
    }
    else
    {
-      ret = getIndexedElement(mCurTexElem, type, numElements, numRegisters);
+      ret = getIndexedElement( mCurTexElem, type, numElements, numRegisters );
    }
 
    // Adjust texture offset if this is a texcoord type
@@ -55,16 +55,16 @@ Var * ShaderConnectorHLSL::getElement(RegisterType type,
       else
          mCurTexElem += numElements;
    }
-   else if (type == RT_BLENDINDICES)
+   else if ( type == RT_BLENDINDICES )
    {
-      if (numRegisters != -1)
+      if ( numRegisters != -1 )
          mCurBlendIndicesElem += numRegisters;
       else
          mCurBlendIndicesElem += numElements;
    }
-   else if (type == RT_BLENDWEIGHT)
+   else if ( type == RT_BLENDWEIGHT )
    {
-      if (numRegisters != -1)
+      if ( numRegisters != -1 )
          mCurBlendWeightsElem += numRegisters;
       else
          mCurBlendWeightsElem += numElements;
@@ -197,8 +197,6 @@ Var * ShaderConnectorHLSL::getIndexedElement(U32 index, RegisterType type, U32 n
 
       return newVar;
    }
-
-
 
    default:
       break;

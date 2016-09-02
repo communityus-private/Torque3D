@@ -168,7 +168,7 @@ float4 EvalBDRF( float3 baseColor, float3 lightColor, float3 toLight, float3 pos
    
    float3 ret = ( diffuse + specular + lightColor) * NdotL;
 	
-	float FR = saturate(D);
+	float FR = saturate(length(specular));
 	return float4(ret,FR);
 }
 
