@@ -22,6 +22,10 @@
 
 project(${TORQUE_APP_NAME})
 
+if(NOT TORQUE_CPU_X64)
+   message(WARNING "32 bit builds are deprecated and may be removed in future versions")
+endif()
+
 if(UNIX)
     if(NOT CXX_FLAG32)
         set(CXX_FLAG32 "")
@@ -411,13 +415,19 @@ if(TORQUE_SDL)
  	else()
  	   set(BLACKLIST "nfd_gtk.c" "nfd_cocoa.m" )
  	   addLib(nativeFileDialogs)
-     set(BLACKLIST ""  )
+      set(BLACKLIST ""  )
  	   addLib(comctl32)
   endif()
 
-    #override and hide SDL2 cache variables
-    set(SDL_SHARED OFF CACHE BOOL "Build a shared version of the library" FORCE)
-    set(SDL_STATIC ON CACHE BOOL "Build a static version of the library" FORCE)
+    #override and hide SDL2 cache variables - Set windows to use shared lib
+    if(WIN32)
+      set(SDL_SHARED ON CACHE BOOL "Build a shared version of the library" FORCE)
+      set(SDL_STATIC OFF CACHE BOOL "Build a static version of the library" FORCE)
+    else()
+      set(SDL_SHARED OFF CACHE BOOL "Build a shared version of the library" FORCE)
+      set(SDL_STATIC ON CACHE BOOL "Build a static version of the library" FORCE)
+    endif()
+
     add_subdirectory( ${libDir}/sdl ${CMAKE_CURRENT_BINARY_DIR}/sdl2)
     link_directories( ${libDir}/sdl ${CMAKE_CURRENT_BINARY_DIR}/sdl2)
 endif()
