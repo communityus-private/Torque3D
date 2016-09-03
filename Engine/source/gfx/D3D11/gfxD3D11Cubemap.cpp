@@ -161,21 +161,25 @@ void GFXD3D11Cubemap::initStatic(DDSFile *dds)
 	desc.SampleDesc.Quality = 0;
 	desc.Usage = D3D11_USAGE_IMMUTABLE;
 	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE | D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	desc.CPUAccessFlags = 0;
+	desc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
 	D3D11_SUBRESOURCE_DATA* pData = new D3D11_SUBRESOURCE_DATA[6 + levels];
 
    for (U32 i = 0; i<CubeFaces; i++)
 	{
+
 		if (!dds->mSurfaces[i])
 			continue;
 
+      // convert to Z up
+      const U32 faceIndex = _zUpFaceIndex(i);
+
 		for(U32 j = 0; j < levels; j++)
 		{
-			pData[i + j].pSysMem = dds->mSurfaces[i]->mMips[j];
-			pData[i + j].SysMemPitch = dds->getSurfacePitch(j);
-			pData[i + j].SysMemSlicePitch = dds->getSurfaceSize(j);
+			pData[faceIndex + j].pSysMem = dds->mSurfaces[i]->mMips[j];
+			pData[faceIndex + j].SysMemPitch = dds->getSurfacePitch(j);
+			pData[faceIndex + j].SysMemSlicePitch = dds->getSurfaceSize(j);
 		}
 	}
 

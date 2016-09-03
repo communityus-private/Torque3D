@@ -47,6 +47,9 @@ protected:
    /// Sets the cubemap file path.
    void _setPath( const String &path ) { mPath = path; }
 
+   /// Get Z up face index of the cubemap. DDS files will be stored Y up
+   U32 _zUpFaceIndex(const U32 index);
+
 public:
 
    /// Create a static cubemap from a list of 6 face textures.

@@ -440,7 +440,7 @@ bool DDSFile::readHeader(Stream &s)
          // GFXFormatA8
 
          if(pfBitCount == 32)
-            mFormat = GFXFormatR8G8B8A8;
+            mFormat = GFXFormatB8G8R8A8;
          else if(pfBitCount == 16)
             mFormat = GFXFormatR5G5B5A1;
          else if(pfBitCount == 8)

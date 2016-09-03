@@ -136,21 +136,11 @@ void GFXGLCubemap::initStatic( DDSFile *dds )
    AssertFatal( dds->isCubemap(), "GFXGLCubemap::initStatic - Got non-cubemap DDS file!" );
    AssertFatal( dds->mSurfaces.size() == 6, "GFXGLCubemap::initStatic - DDS has less than 6 surfaces!" );
 
-   // HACK: I cannot put the genie back in the bottle and assign a
-   // DDSFile pointer back to a Resource<>.  
-   //
-   // So we do a second lookup which works out ok for now, but shows
-   // the weakness in the ResourceManager not having a common base 
-   // reference type.
-   //
-   mDDSFile = ResourceManager::get().load( dds->getSourcePath() );
-   AssertFatal( mDDSFile == dds, "GFXGLCubemap::initStatic - Couldn't find DDSFile resource!" );
-
    mWidth = dds->getWidth();
    mHeight = dds->getHeight();
    mFaceFormat = dds->getFormat();
    mMipLevels = dds->getMipLevels();
-
+   const bool isCompressed = isCompressedFormat(mFaceFormat);
    glGenTextures(1, &mCubemap);
 
    PRESERVE_CUBEMAP_TEXTURE();
@@ -173,12 +163,19 @@ void GFXGLCubemap::initStatic( DDSFile *dds )
          continue;
       }
 
+      // convert to Z up
+      const U32 faceIndex = _zUpFaceIndex(i);
+
       // Now loop thru the mip levels!
       for (U32 mip = 0; mip < mMipLevels; ++mip)
       {
          const U32 mipWidth  = getMax( U32(1), mWidth >> mip );
          const U32 mipHeight = getMax( U32(1), mHeight >> mip );
-         glCompressedTexImage2D(faceList[i], mip, GFXGLTextureInternalFormat[mFaceFormat], mipWidth, mipHeight, 0, dds->getSurfaceSize(mip), dds->mSurfaces[i]->mMips[mip]);
+         if (isCompressed)
+            glCompressedTexImage2D(faceList[faceIndex], mip, GFXGLTextureInternalFormat[mFaceFormat], mipWidth, mipHeight, 0, dds->getSurfaceSize(mip), dds->mSurfaces[i]->mMips[mip]);
+         else
+            glTexImage2D(faceList[faceIndex], mip, GFXGLTextureInternalFormat[mFaceFormat], mipWidth, mipHeight, 0,
+               GFXGLTextureFormat[mFaceFormat], GFXGLTextureType[mFaceFormat], dds->mSurfaces[i]->mMips[mip]);
       }
    }
 }
