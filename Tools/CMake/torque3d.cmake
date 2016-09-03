@@ -23,7 +23,7 @@
 project(${TORQUE_APP_NAME})
 
 if(NOT TORQUE_CPU_X64)
-   message(WARNING "32 bit builds are deprecated on dekstop builds")
+   message(WARNING "32 bit builds are deprecated on desktop builds")
 endif()
 
 if(UNIX)
