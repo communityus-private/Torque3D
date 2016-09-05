@@ -36,7 +36,7 @@
 #pragma warning( disable:4324)
 #include "glm/glm.hpp"
 #include "glm/ext.hpp"
-#include "glm/vec4.hpp"
+
 
 //------------------------------------------------------------------------------
 /// 4D integer point

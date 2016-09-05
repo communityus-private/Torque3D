@@ -32,6 +32,9 @@
 #include "core/strings/unicode.h"
 #include "windowManager/platformWindowMgr.h"
 
+#include "glm/glm.hpp"
+#include "glm/ext.hpp"
+
 // Static class data:
 LPDIRECTINPUT8 DInputDevice::smDInputInterface;
 U8    DInputDevice::smDeviceCount[ NUM_INPUT_DEVICE_TYPES ];
@@ -1089,8 +1092,8 @@ void DInputDevice::rumble(F32 x, F32 y)
    }
 
    // Clamp the input floats to [0 - 1]
-   x = max(0, min(1, x));
-   y = max(0, min(1, y));
+   x = glm::max(0, glm::min(1, (int)x));
+   y = glm::max(0, glm::min(1, (int)y));
 
    if ( 1 == mNumForceFeedbackAxes )
    {
