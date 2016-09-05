@@ -51,6 +51,7 @@ class ShaderConstHandles;
 class SceneRenderState;
 class RenderDeferredMgr;
 class Frustum;
+class BaseMatInstance;
 
 ///
 typedef Map<String,LightManager*> LightManagerMap;
@@ -154,6 +155,8 @@ public:
                                  const U32 textureSlot, 
                                  GFXShaderConstBuffer *shaderConsts, 
                                  ShaderConstHandles *handles ) = 0;
+
+   virtual void addSphereReflectProbe(ReflectProbeInfo* probeInfo){};
 
    /// Called when the static scene lighting (aka lightmaps) should be computed.
    virtual bool lightScene( const char* callback, const char* param );

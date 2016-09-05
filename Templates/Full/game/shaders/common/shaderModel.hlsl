@@ -45,6 +45,7 @@
    #define TORQUE_TEX2DPROJ(tex,coords) tex2Dproj(tex,coords) //this really is sm 2 or later
    #define TORQUE_TEX3D(tex,coords) tex3D(tex,coords)
    #define TORQUE_TEXCUBE(tex,coords) texCUBE(tex,coords)
+   #define TORQUE_TEXCUBELOD(tex,coords) texCUBElod(tex,coords)
    
    //Shader model 3.0 only
    #if TORQUE_SM == 30

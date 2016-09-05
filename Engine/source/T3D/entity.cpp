@@ -225,6 +225,8 @@ bool Entity::onAdd()
    //Make sure we get positioned
    setMaskBits(TransformMask);
 
+   setMaskBits(NamespaceMask);
+
    return true;
 }
 
@@ -363,8 +365,20 @@ void Entity::processTick(const Move* move)
          }
       }
 
-      if (isMethod("processTick"))
+      // Save current rigid state interpolation
+      mDelta.posVec = getPosition();
+      mDelta.rot[0] = mRot.asQuatF();
+
+      //Handle any script updates, which can include physics stuff
+      if (isServerObject() && isMethod("processTick"))
          Con::executef(this, "processTick");
+
+      // Wrap up interpolation info
+      mDelta.pos = getPosition();
+      mDelta.posVec -= getPosition();
+      mDelta.rot[1] = mRot.asQuatF();
+
+      setTransform(getPosition(), mRot);
    }
 }
 
@@ -402,11 +416,6 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
    if (stream->writeFlag(mask & TransformMask))
    {
-      //mathWrite( *stream, getScale() );
-      //stream->writeAffineTransform(mObjToWorld);
-      //mathWrite(*stream, getPosition());
-      //mathWrite(*stream, mPos);
-
       stream->writeCompressedPoint(mPos);
       mathWrite(*stream, getRotation());
 
@@ -414,12 +423,6 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
       stream->writeFlag(!(mask & NoWarpMask));
    }
-
-   /*if (stream->writeFlag(mask & MountedMask))
-   {
-      mathWrite(*stream, mMount.xfm.getPosition());
-      mathWrite(*stream, mMount.xfm.toEuler());
-   }*/
 
    if (stream->writeFlag(mask & BoundsMask))
    {
@@ -483,6 +486,19 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
    else
       stream->writeFlag(false);
 
+   /*if (stream->writeFlag(mask & NamespaceMask))
+   {
+      const char* name = getName();
+      if (stream->writeFlag(name && name[0]))
+         stream->writeString(String(name));
+
+      if (stream->writeFlag(mSuperClassName && mSuperClassName[0]))
+         stream->writeString(String(mSuperClassName));
+
+      if (stream->writeFlag(mClassName && mClassName[0]))
+         stream->writeString(String(mClassName));
+   }*/
+
    return retMask;
 }
 
@@ -492,20 +508,10 @@ void Entity::unpackUpdate(NetConnection *con, BitStream *stream)
 
    if (stream->readFlag())
    {
-      /*Point3F scale;
-      mathRead( *stream, &scale );
-      setScale( scale);*/
-
-      //MatrixF objToWorld;
-      //stream->readAffineTransform(&objToWorld);
-
       Point3F pos;
-
       stream->readCompressedPoint(&pos);
-      //mathRead(*stream, &pos);
 
       RotationF rot;
-
       mathRead(*stream, &rot);
 
       mDelta.move.unpack(stream);
@@ -514,73 +520,7 @@ void Entity::unpackUpdate(NetConnection *con, BitStream *stream)
       {
          // Determine number of ticks to warp based on the average
          // of the client and server velocities.
-         /*mDelta.warpOffset = pos - mDelta.pos;
-
-         F32 dt = mDelta.warpOffset.len() / (0.5f * TickSec);
-
-         mDelta.warpTicks = (S32)((dt > sMinWarpTicks) ? getMax(mFloor(dt + 0.5f), 1.0f) : 0.0f);
-
-         //F32 as = (speed + mVelocity.len()) * 0.5f * TickSec;
-         //F32 dt = (as > 0.00001f) ? mDelta.warpOffset.len() / as : sMaxWarpTicks;
-         //mDelta.warpTicks = (S32)((dt > sMinWarpTicks) ? getMax(mFloor(dt + 0.5f), 1.0f) : 0.0f);
-
-         //mDelta.warpTicks = (S32)((dt > sMinWarpTicks) ? getMax(mFloor(dt + 0.5f), 1.0f) : 0.0f);
-
-         //mDelta.warpTicks = sMaxWarpTicks;
-
-         mDelta.warpTicks = 0;
-
-         if (mDelta.warpTicks)
-         {
-            // Setup the warp to start on the next tick.
-            if (mDelta.warpTicks > sMaxWarpTicks)
-               mDelta.warpTicks = sMaxWarpTicks;
-            mDelta.warpOffset /= (F32)mDelta.warpTicks;
-
-            mDelta.rot[0] = rot.asQuatF();
-            mDelta.rot[1] = rot.asQuatF();
-
-            mDelta.rotOffset = rot.asEulerF() - mDelta.rot.asEulerF();
-
-            // Ignore small rotation differences
-            if (mFabs(mDelta.rotOffset.x) < 0.001f)
-               mDelta.rotOffset.x = 0;
-
-            if (mFabs(mDelta.rotOffset.y) < 0.001f)
-               mDelta.rotOffset.y = 0;
-
-            if (mFabs(mDelta.rotOffset.z) < 0.001f)
-               mDelta.rotOffset.z = 0;
-
-            mDelta.rotOffset /= (F32)mDelta.warpTicks;
-         }
-         else
-         {
-            // Going to skip the warp, server and client are real close.
-            // Adjust the frame interpolation to move smoothly to the
-            // new position within the current tick.
-            Point3F cp = mDelta.pos + mDelta.posVec * mDelta.dt;
-            if (mDelta.dt == 0)
-            {
-               mDelta.posVec.set(0.0f, 0.0f, 0.0f);
-               mDelta.rotVec.set(0.0f, 0.0f, 0.0f);
-            }
-            else
-            {
-               F32 dti = 1.0f / mDelta.dt;
-               mDelta.posVec = (cp - pos) * dti;
-               mDelta.rotVec.z = mRot.z - rot.z;
-
-               mDelta.rotVec.z *= dti;
-            }
-
-            mDelta.pos = pos;
-            mDelta.rot = rot;
-
-            setTransform(pos, rot);
-         }*/
-
-         Point3F cp = mDelta.pos + mDelta.posVec * mDelta.dt;
+          Point3F cp = mDelta.pos + mDelta.posVec * mDelta.dt;
          mDelta.warpOffset = pos - cp;
 
          // Calc the distance covered in one tick as the average of
@@ -631,20 +571,6 @@ void Entity::unpackUpdate(NetConnection *con, BitStream *stream)
       }
    }
 
-   /*if (stream->readFlag())
-   {
-      Point3F mountOffset;
-      EulerF mountRot;
-      mathRead(*stream, &mountOffset);
-      mathRead(*stream, &mountRot);
-
-      RotationF rot = RotationF(mountRot);
-      mountRot = rot.asEulerF(RotationF::Degrees);
-
-      setMountOffset(mountOffset);
-      setMountRotation(mountRot);
-   }*/
-
    if (stream->readFlag())
    {
       mathRead(*stream, &mObjBox);
@@ -669,13 +595,38 @@ void Entity::unpackUpdate(NetConnection *con, BitStream *stream)
          }
       }
    }
+
+   /*if (stream->readFlag())
+   {
+      if (stream->readFlag())
+      {
+         char name[256];
+         stream->readString(name);
+         assignName(name);
+      }
+      if (stream->readFlag())
+      {
+         char superClassname[256];
+         stream->readString(superClassname);
+         mSuperClassName = superClassname;
+      }
+      if (stream->readFlag())
+      {
+         char classname[256];
+         stream->readString(classname);
+         mClassName = classname;
+      }
+
+      linkNamespaces();
+   }*/
 }
 
 //Manipulation
 void Entity::setTransform(const MatrixF &mat)
 {
    //setMaskBits(TransformMask);
-   setMaskBits(TransformMask | NoWarpMask);
+   //setMaskBits(TransformMask | NoWarpMask);
+   MatrixF oldTransform = getTransform();
 
    if (isMounted())
    {
@@ -714,6 +665,9 @@ void Entity::setTransform(const MatrixF &mat)
       transf.setPosition(mPos + mMount.object->getPosition());
 
       Parent::setTransform(transf);
+
+      if (transf != oldTransform)
+         setMaskBits(TransformMask);
    }
    else
    {
@@ -744,6 +698,8 @@ void Entity::setTransform(const MatrixF &mat)
 
 void Entity::setTransform(Point3F position, RotationF rotation)
 {
+   MatrixF oldTransform = getTransform();
+
    if (isMounted())
    {
       mPos = position;
@@ -755,7 +711,8 @@ void Entity::setTransform(Point3F position, RotationF rotation)
 
       Parent::setTransform(transf);
 
-      setMaskBits(TransformMask);
+      if (transf != oldTransform)
+         setMaskBits(TransformMask);
    }
    else
    {
@@ -774,7 +731,6 @@ void Entity::setTransform(Point3F position, RotationF rotation)
       mPos = position;
       mRot = rotation;
 
-      setMaskBits(TransformMask);
       //if (isServerObject())
       //   setMaskBits(TransformMask);
 
@@ -792,6 +748,15 @@ void Entity::setTransform(Point3F position, RotationF rotation)
       Parent::setTransform(newMat);
 
       onTransformSet.trigger(&newMat);
+
+      Point3F newPos = newMat.getPosition();
+      RotationF newRot = newMat;
+
+      Point3F oldPos = oldTransform.getPosition();
+      RotationF oldRot = oldTransform;
+
+      if (newPos != oldPos || newRot != oldRot)
+         setMaskBits(TransformMask);
 
       /*mObjToWorld = mWorldToObj = newMat;
       mWorldToObj.affineInverse();
@@ -887,7 +852,6 @@ void Entity::setMountRotation(EulerF rotOffset)
       temp.setColumn(3, mMount.xfm.getPosition());
 
       mMount.xfm = temp;
-      //mRot = RotationF(temp);
       setMaskBits(MountedMask);
    }
 }
@@ -1365,7 +1329,7 @@ void Entity::onInspect()
       (*it)->onInspect();
    }
 
-   GuiTreeViewCtrl *editorTree = dynamic_cast<GuiTreeViewCtrl*>(Sim::findObject("EditorTree"));
+   /*GuiTreeViewCtrl *editorTree = dynamic_cast<GuiTreeViewCtrl*>(Sim::findObject("EditorTree"));
    if (!editorTree)
       return;
 
@@ -1429,7 +1393,7 @@ void Entity::onInspect()
       newItem->mState.set(GuiTreeViewCtrl::Item::InspectorData);
    }
 
-   editorTree->buildVisibleTree(true);
+   editorTree->buildVisibleTree(true);*/
 }
 
 void Entity::onEndInspect()
@@ -1614,6 +1578,21 @@ void Entity::updateContainer()
    mGravityMod = info.gravityScale;*/
 }
 //
+
+void Entity::notifyComponents(String signalFunction, String argA, String argB, String argC, String argD, String argE)
+{
+   for (U32 i = 0; i < mComponents.size(); i++)
+   {
+      // We can do this because both are in the string table
+      Component *comp = mComponents[i];
+
+      if (comp->isActive())
+      {
+         if (comp->isMethod(signalFunction))
+            Con::executef(comp, signalFunction, argA, argB, argC, argD, argE);
+      }
+   }
+}
 
 void Entity::setComponentsDirty()
 {
@@ -1833,7 +1812,6 @@ DefineConsoleMethod(Entity, getComponent, S32, (String componentName), (""),
    Component *comp = object->getComponent(componentName);
 
    return (comp != NULL) ? comp->getId() : 0;
-   return 0;
 }
 
 /*ConsoleMethod(Entity, getBehaviorByType, S32, 3, 3, "(string BehaviorTemplateName) - gets a behavior\n"
@@ -1917,6 +1895,15 @@ DefineConsoleMethod(Entity, getMoveTrigger, bool, (S32 triggerNum), (0),
    return false;
 }
 
+DefineEngineMethod(Entity, getForwardVector, VectorF, (), ,
+   "Get the direction this object is facing.\n"
+   "@return a vector indicating the direction this object is facing.\n"
+   "@note This is the object's y axis.")
+{
+   VectorF forVec = object->getTransform().getForwardVector();
+   return forVec;
+}
+
 DefineConsoleMethod(Entity, setForwardVector, void, (VectorF newForward), (VectorF(0,0,0)),
    "Get the number of static fields on the object.\n"
    "@return The number of static fields defined on the object.")
@@ -1936,4 +1923,14 @@ DefineConsoleMethod(Entity, rotateTo, void, (Point3F lookPosition, F32 degreePer
    "@return The number of static fields defined on the object.")
 {
    //object->setForwardVector(newForward);
+}
+
+DefineConsoleMethod(Entity, notify, void, (String signalFunction, String argA, String argB, String argC, String argD, String argE), 
+   ("","","","","",""),
+   "Triggers a signal call to all components for a certain function.")
+{
+   if (signalFunction == String(""))
+      return;
+
+   object->notifyComponents(signalFunction, argA, argB, argC, argD, argE);
 }

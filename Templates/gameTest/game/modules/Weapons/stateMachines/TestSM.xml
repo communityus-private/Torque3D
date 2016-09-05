@@ -1,0 +1,15 @@
+<StateMachine>
+    <Fields />
+    <States>
+        <State name="NewState" scriptFunction="" pos="-47 -52" />
+        <State name="Idle" scriptFunction="" pos="27 58" />
+    </States>
+    <Transitions>
+        <Transition ownerState="0" stateTarget="1">
+            <Rule fieldId="stateTime" comparitor="GreaterThan" value="1000" />
+        </Transition>
+        <Transition ownerState="1" stateTarget="0">
+            <Rule fieldId="stateTime" comparitor="GreaterThan" value="1000" />
+        </Transition>
+    </Transitions>
+</StateMachine>

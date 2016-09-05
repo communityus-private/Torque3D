@@ -72,6 +72,13 @@ class MeshComponent : public Component,
    public EditorInspectInterface
 {
    typedef Component Parent;
+public:
+   enum RenderMode
+   {
+      Ad_Hoc = 0,
+      StaticBatch,
+      Instanced
+   };
 
 protected:
    enum
@@ -164,9 +171,12 @@ public:
    virtual void onDynamicModified(const char* slotName, const char* newValue);
 
    void changeMaterial(U32 slot, const char* newMat);
+   bool setMatInstField(U32 slot, const char* field, const char* value);
 
    virtual void onInspect();
    virtual void onEndInspect();
+
+   virtual bool buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F &box, const SphereF &);
 
    virtual Vector<MatrixF> getNodeTransforms()
    {
@@ -179,5 +189,8 @@ public:
       return;
    }
 };
+
+typedef MeshComponent::RenderMode BatchingMode;
+DefineEnumType(BatchingMode);
 
 #endif

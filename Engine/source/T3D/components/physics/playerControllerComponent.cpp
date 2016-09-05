@@ -121,6 +121,8 @@ PlayerControllerComponent::PlayerControllerComponent() : Component()
 
    mPhysicsRep = NULL;
    mPhysicsWorld = NULL;
+
+   mOwnerCollisionInterface = NULL;
 }
 
 PlayerControllerComponent::~PlayerControllerComponent()
@@ -156,6 +158,13 @@ void PlayerControllerComponent::onRemove()
 void PlayerControllerComponent::onComponentAdd()
 {
    Parent::onComponentAdd();
+
+   CollisionInterface *collisionInterface = mOwner->getComponent<CollisionInterface>();
+   if (collisionInterface)
+   {
+      collisionInterface->onCollisionChanged.notify(this, &PlayerControllerComponent::updatePhysics);
+      mOwnerCollisionInterface = collisionInterface;
+   }
 
    updatePhysics();
 }
@@ -215,8 +224,9 @@ void PlayerControllerComponent::initPersistFields()
 {
    Parent::initPersistFields();
 
+   addField("velocity", TypePoint3F, Offset(mVelocity, PlayerControllerComponent), "");
    addField("inputVelocity", TypePoint3F, Offset(mInputVelocity, PlayerControllerComponent), "");
-   addField("useDirectMoveInput", TypePoint3F, Offset(mUseDirectMoveInput, PlayerControllerComponent), "");
+   addField("useDirectMoveInput", TypeBool, Offset(mUseDirectMoveInput, PlayerControllerComponent), "");
 }
 
 U32 PlayerControllerComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
@@ -435,13 +445,18 @@ void PlayerControllerComponent::updateMove()
 
    // Determine ground contact normal. Only look for contacts if
    // we can move and aren't mounted.
-   mContactInfo.contactNormal = VectorF::Zero;
+   if (!mOwnerCollisionInterface)
+      return;
+
+   mOwnerCollisionInterface->getContactInfo()->contactNormal = VectorF::Zero;
    mContactInfo.jump = false;
    mContactInfo.run = false;
+   mContactInfo.overlapObjects.clear();
 
    bool jumpSurface = false, runSurface = false;
    if (!mOwner->isMounted())
-      findContact(&mContactInfo.run, &mContactInfo.jump, &mContactInfo.contactNormal);
+      findContact(&mContactInfo.run, &mContactInfo.jump, &mContactInfo.contactNormal, mContactInfo.overlapObjects);
+
    if (mContactInfo.jump)
       mJumpSurfaceNormal = mContactInfo.contactNormal;
 
@@ -457,6 +472,7 @@ void PlayerControllerComponent::updateMove()
    if (mContactInfo.run && !mSwimming)
    {
       mContactTimer = 0;
+      mOwnerCollisionInterface->getContactInfo()->contactTimer = 0;
 
       VectorF pv = moveVec;
 
@@ -507,6 +523,7 @@ void PlayerControllerComponent::updateMove()
       // There are no special air control animations 
       // so... increment this unless you really want to 
       // play the run anims in the air.
+      mOwnerCollisionInterface->getContactInfo()->contactTimer++;
       mContactTimer++;
    }
    else if (mSwimming)
@@ -514,10 +531,11 @@ void PlayerControllerComponent::updateMove()
       // Remove acc into contact surface (should only be gravity)
       // Clear out floating point acc errors, this will allow
       // the player to "rest" on the ground.
-      F32 vd = -mDot(acc, mContactInfo.contactNormal);
+      Point3F contactNormal = mOwnerCollisionInterface->getContactInfo()->contactNormal;
+      F32 vd = -mDot(acc, contactNormal);
       if (vd > 0.0f) 
       {
-         VectorF dv = mContactInfo.contactNormal * (vd + 0.002f);
+         VectorF dv = contactNormal * (vd + 0.002f);
          acc += dv;
          if (acc.len() < 0.0001f)
             acc.set(0.0f, 0.0f, 0.0f);
@@ -548,9 +566,9 @@ void PlayerControllerComponent::updateMove()
       // velocity to the normal to make getting out of water easier.
 
       moveVec.normalize();
-      F32 isSwimUp = mDot(moveVec, mContactInfo.contactNormal);
+      F32 isSwimUp = mDot(moveVec, contactNormal);
 
-      if (!mContactInfo.contactNormal.isZero() && isSwimUp < 0.1f)
+      if (!contactNormal.isZero() && isSwimUp < 0.1f)
       {
          F32 pvl = swimVec.len();
 
@@ -559,7 +577,7 @@ void PlayerControllerComponent::updateMove()
             VectorF nn;
             mCross(swimVec, VectorF(0.0f, 0.0f, 1.0f), &nn);
             nn *= 1.0f / pvl;
-            VectorF cv = mContactInfo.contactNormal;
+            VectorF cv = contactNormal;
             cv -= nn * mDot(nn, cv);
             swimVec -= cv * mDot(swimVec, cv);
          }
@@ -581,9 +599,13 @@ void PlayerControllerComponent::updateMove()
       acc += swimAcc;
 
       mContactTimer++;
+      mOwnerCollisionInterface->getContactInfo()->contactTimer++;
    }
    else
+   {
       mContactTimer++;
+      mOwnerCollisionInterface->getContactInfo()->contactTimer++;
+   }
 
    // Add in force from physical zones...
    acc += (mOwner->getContainerInfo().appliedForce / mMass) * TickSec;
@@ -665,6 +687,9 @@ void PlayerControllerComponent::updatePos(const F32 travelTime)
    bool wasFalling = mFalling;
    if (collisionList.getCount() > 0)
    {
+      if (collisionList.getCount() > 1)
+         bool trmp = 0;
+
       mFalling = false;
       haveCollisions = true;
 
@@ -673,6 +698,8 @@ void PlayerControllerComponent::updatePos(const F32 travelTime)
       if (colInterface)
       {
          colInterface->handleCollisionList(collisionList, mVelocity);
+
+         //also, handle any collision events for our contacted objects, if appropriate
       }
    }
 
@@ -746,11 +773,9 @@ void PlayerControllerComponent::setVelocity(const VectorF& vel)
    setMaskBits(VelocityMask);
 }
 
-void PlayerControllerComponent::findContact(bool *run, bool *jump, VectorF *contactNormal)
+void PlayerControllerComponent::findContact(bool *run, bool *jump, VectorF *contactNormal, Vector<SceneObject*> &overlapObjects)
 {
    SceneObject *contactObject = NULL;
-
-   Vector<SceneObject*> overlapObjects;
 
    mPhysicsRep->findContact(&contactObject, contactNormal, &overlapObjects);
 
@@ -784,13 +809,38 @@ void PlayerControllerComponent::findContact(bool *run, bool *jump, VectorF *cont
                pTriggerEx->potentialEnterObject(mOwner);
          }*/
       }
+      else if (objectMask & EntityObjectType)
+      {
+         if (Entity* pEntity = dynamic_cast<Entity*>(obj))
+         {
+            if (pEntity)
+            {
+               //find relevent components and trigger some callbacks!
+               CollisionInterface* colI = pEntity->getComponent<CollisionInterface>();
+               if (colI)
+               {
+                  colI->onCollisionSignal.trigger(mOwner);
+
+                  Collision col;
+                  col.object = mOwner;
+                  col.normal = *contactNormal;
+                  colI->handleCollision(col, mVelocity);
+               }
+            }
+         }
+      }
    }
 
-   mContactInfo.contacted = contactObject != NULL;
-   mContactInfo.contactObject = contactObject;
+   //Update our collision component's data as we have it
+   mOwnerCollisionInterface->getContactInfo()->contactObject = contactObject;
+   mOwnerCollisionInterface->getContactInfo()->contacted = contactObject != NULL;
 
-   if (mContactInfo.contacted)
-      mContactInfo.contactNormal = *contactNormal;
+   //mContactInfo.contacted = contactObject != NULL;
+   //mContactInfo.contactObject = contactObject;
+
+   if (contactObject)
+      mOwnerCollisionInterface->getContactInfo()->contactNormal = *contactNormal;
+      //mContactInfo.contactNormal = *contactNormal;
 }
 
 void PlayerControllerComponent::applyImpulse(const Point3F &pos, const VectorF &vec)

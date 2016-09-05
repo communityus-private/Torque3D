@@ -119,6 +119,7 @@ ImplementEnumType(CollisionMeshMeshType,
 { CollisionComponent::None, "None", "No mesh data." },
 { CollisionComponent::Bounds, "Bounds", "Bounding box of the shape." },
 { CollisionComponent::CollisionMesh, "Collision Mesh", "Specifically desingated \"collision\" meshes." },
+{ CollisionComponent::ArticulatedMesh, "Atriculated Mesh", "Specifically desingated \"collision\" meshes." },
 { CollisionComponent::VisibleMesh, "Visible Mesh", "Rendered mesh polygons." },
 EndImplementEnumType;
 
@@ -135,7 +136,7 @@ CollisionComponent::CollisionComponent() : Component()
    mBlockColliding = true;
 
    mCollisionType = CollisionMesh;
-   mLOSType = CollisionMesh;
+   
    mDecalType = CollisionMesh;
 
    colisionMeshPrefix = StringTable->insert("Collision");
@@ -144,7 +145,16 @@ CollisionComponent::CollisionComponent() : Component()
       StaticShapeObjectType | VehicleObjectType |
       VehicleBlockerObjectType | DynamicShapeObjectType | StaticObjectType | EntityObjectType | TriggerObjectType);
 
-   mPhysicsRep = NULL;
+   mLOSType = CollisionMesh;
+   mLOSDetails.clear();
+   mLOSBody =  nullptr;
+   mArticulatedLOSBody.clear();
+
+   mCollisionType = CollisionMesh;
+   mCollisionDetails.clear();
+   mCollisionBody = nullptr;
+   mArticulatedColBody.clear();
+
    mPhysicsWorld = NULL;
 
    mTimeoutList = NULL;
@@ -178,7 +188,10 @@ void CollisionComponent::onComponentAdd()
    PhysicsComponentInterface *physicsInterface = mOwner->getComponent<PhysicsComponentInterface>();
    if (!physicsInterface)
    {
-      mPhysicsRep = PHYSICSMGR->createBody();
+      if (mCollisionType == Bounds || mCollisionType == CollisionMesh || mCollisionType == VisibleMesh)
+         mCollisionBody = PHYSICSMGR->createBody();
+      //else if (mCollisionType == ArticulatedMesh)
+      //   mCollisionBody = NULL;
    }
 
    prepCollision();
@@ -186,7 +199,10 @@ void CollisionComponent::onComponentAdd()
 
 void CollisionComponent::onComponentRemove()
 {
-   SAFE_DELETE(mPhysicsRep);
+   SAFE_DELETE(mCollisionBody);
+   SAFE_DELETE(mLOSBody);
+   mArticulatedColBody.clear();
+   mArticulatedLOSBody.clear();
 
    Parent::onComponentRemove();
 }
@@ -208,8 +224,10 @@ void CollisionComponent::componentAddedToOwner(Component *comp)
    PhysicsComponentInterface *physicsInterface = dynamic_cast<PhysicsComponentInterface*>(comp);
    if (physicsInterface)
    {
-      if (mPhysicsRep)
-         SAFE_DELETE(mPhysicsRep);
+      if (mCollisionBody)
+         SAFE_DELETE(mCollisionBody);
+      if (mLOSBody)
+         SAFE_DELETE(mLOSBody);
 
       prepCollision();
    }
@@ -233,7 +251,10 @@ void CollisionComponent::componentRemovedFromOwner(Component *comp)
    PhysicsComponentInterface *physicsInterface = dynamic_cast<PhysicsComponentInterface*>(comp);
    if (physicsInterface)
    {
-      mPhysicsRep = PHYSICSMGR->createBody();
+      if (mCollisionType == Bounds || mCollisionType == CollisionMesh || mCollisionType == VisibleMesh)
+         mCollisionBody = PHYSICSMGR->createBody();
+      //else if (mCollisionType == ArticulatedMesh)
+      //   mCollisionBody = NULL;
 
       prepCollision();
    }
@@ -318,8 +339,19 @@ void CollisionComponent::unpackUpdate(NetConnection *con, BitStream *stream)
 
 void CollisionComponent::ownerTransformSet(MatrixF *mat)
 {
-   if (mPhysicsRep)
-      mPhysicsRep->setTransform(mOwner->getTransform());
+   if (mCollisionBody)
+      mCollisionBody->setTransform(*mat);
+   if (mLOSBody)
+      mLOSBody->setTransform(*mat);
+
+   /*if (mPhysicsBodies.size() > 0)
+   {
+      for (U32 i = 0; i < mPhysicsBodies.size(); ++i)
+      {
+         //mPhysicsBodies[i]->getTransform()
+         mPhysicsBodies[i]->setTransform(mOwner->getTransform());
+      }
+   }*/
 }
 
 void CollisionComponent::targetShapeChanged(RenderComponentInterface* instanceInterface)
@@ -338,7 +370,8 @@ void CollisionComponent::prepCollision()
    mOwner->disableCollision();
 
    if ((!PHYSICSMGR || mCollisionType == None) ||
-      (mOwnerRenderInterface == NULL && (mCollisionType == CollisionMesh || mCollisionType == VisibleMesh)))
+      (mOwnerRenderInterface == NULL && 
+      (mCollisionType == CollisionMesh || mCollisionType == ArticulatedMesh || mCollisionType == VisibleMesh)))
       return;
 
    PhysicsCollision *colShape = NULL;
@@ -357,21 +390,65 @@ void CollisionComponent::prepCollision()
    {
       colShape = buildColShapes();
    }
-
-   if (colShape)
+   else if (mCollisionType == ArticulatedMesh)
    {
-      mPhysicsWorld = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
+      mArticulatedColBody.clear();
 
-      if (mPhysicsRep)
+      buildArticulatedCollisions();
+   }
+
+   if (mCollisionType == Bounds || mCollisionType == CollisionMesh || mCollisionType == VisibleMesh)
+   {
+      if (colShape)
       {
-         if (mBlockColliding)
-            mPhysicsRep->init(colShape, 0, 0, mOwner, mPhysicsWorld);
-         else
-            mPhysicsRep->init(colShape, 0, PhysicsBody::BF_TRIGGER, mOwner, mPhysicsWorld);
+         mPhysicsWorld = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
 
-         mPhysicsRep->setTransform(mOwner->getTransform());
+         if (mCollisionBody)
+         {
+            if (mBlockColliding)
+               mCollisionBody->init(colShape, 0, 0, mOwner, mPhysicsWorld);
+            else
+               mCollisionBody->init(colShape, 0, PhysicsBody::BF_TRIGGER, mOwner, mPhysicsWorld);
+
+            mCollisionBody->setTransform(mOwner->getTransform());
+         }
+      }
+      else
+      {
+         //We have no collision or physics data, so... delete the physics rep
+         SAFE_DELETE(mCollisionBody);
       }
    }
+   else
+   {
+      //articulated mesh needs specific handling
+      if (mArticulatedColBody.collisionShapes.size() != 0)
+      {
+         for (U32 i = 0; i < mArticulatedColBody.collisionShapes.size(); ++i)
+         {
+            mPhysicsWorld = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
+
+            mArticulatedColBody.physicsBodies.increment();
+
+            PhysicsBody* body = mArticulatedColBody.physicsBodies.last();
+            body = PHYSICSMGR->createBody();
+
+            if (mBlockColliding)
+               body->init(mArticulatedColBody.collisionShapes[i], 0, 0, mOwner, mPhysicsWorld);
+            else
+               body->init(mArticulatedColBody.collisionShapes[i], 0, PhysicsBody::BF_TRIGGER, mOwner, mPhysicsWorld);
+
+            //get node transform
+            body->setTransform(mOwner->getTransform());
+         }
+      }
+      else
+      {
+         //We have no collision or physics data, so... delete the physics rep
+         mArticulatedColBody.clear();
+      }
+   }
+
 
    mOwner->enableCollision();
 
@@ -446,7 +523,7 @@ bool CollisionComponent::castRay(const Point3F &start, const Point3F &end, RayIn
    {
       if (mPhysicsWorld)
       {
-         return mPhysicsWorld->castRay(start, end, info, Point3F::Zero);
+         return mPhysicsWorld->castRay(start, end, info, -1, Point3F::Zero);
       }
    }
 
@@ -461,6 +538,10 @@ PhysicsCollision* CollisionComponent::buildColShapes()
    U32 surfaceKey = 0;
 
    TSShape* shape = mOwnerRenderInterface->getShape();
+
+   //if we, by happenstance, don't have a shape yet
+   if (!shape)
+      return NULL;
 
    if (mCollisionType == VisibleMesh)
    {
@@ -579,4 +660,86 @@ PhysicsCollision* CollisionComponent::buildColShapes()
    }
 
    return colShape;
+}
+
+void CollisionComponent::buildArticulatedCollisions()
+{
+   PROFILE_SCOPE(CollisionComponent_buildArticulatedCollisions);
+
+   PhysicsCollision *colShape = NULL;
+   U32 surfaceKey = 0;
+
+   mArticulatedColBody.clear();
+
+   TSShape* shape = mOwnerRenderInterface->getShape();
+
+   //if we, by happenstance, don't have a shape yet
+   if (!shape || mCollisionType != ArticulatedMesh)
+      return;
+
+   // Scan out the collision hulls...
+   //
+   // TODO: We need to support LOS collision for physics.
+   //
+   for (U32 i = 0; i < shape->details.size(); i++)
+   {
+      const TSShape::Detail &detail = shape->details[i];
+      const String &name = shape->names[detail.nameIndex];
+
+      // Is this a valid collision detail.
+      if (!dStrStartsWith(name, colisionMeshPrefix) || detail.subShapeNum < 0)
+         continue;
+
+      // Now go thru the meshes for this detail.
+      S32 start = shape->subShapeFirstObject[detail.subShapeNum];
+      S32 end = start + shape->subShapeNumObjects[detail.subShapeNum];
+      if (start >= end)
+         continue;
+
+      for (S32 o = start; o < end; o++)
+      {
+         const TSShape::Object &object = shape->objects[o];
+         const String &meshName = shape->names[object.nameIndex];
+
+         if (object.numMeshes <= detail.objectDetailNum)
+            continue;
+
+         // No mesh, a flat bounds, or no verts.... nothing to do.
+         TSMesh *mesh = shape->meshes[object.startMeshIndex + detail.objectDetailNum];
+         if (!mesh || mesh->getBounds().isEmpty() || mesh->mNumVerts == 0)
+            continue;
+
+         // We need the default mesh transform.
+         MatrixF localXfm;
+         shape->getNodeWorldTransform(object.nodeIndex, &localXfm);
+
+         mArticulatedColBody.nodeIds.push_back(object.nodeIndex); //register the node id
+
+         mArticulatedColBody.collisionShapes.increment(); //make the col shape
+
+         colShape = mArticulatedColBody.collisionShapes.last();
+         // We have some sort of collision shape... so allocate it.
+         //if (!colShape)
+         colShape = PHYSICSMGR->createCollision();
+
+         // Any other mesh name we assume as a generic convex hull.
+         //
+         // Collect the verts using the vertex polylist which will 
+         // filter out duplicates.  This is importaint as the convex
+         // generators can sometimes fail with duplicate verts.
+         //
+         VertexPolyList polyList;
+         MatrixF meshMat(localXfm);
+
+         Point3F t = meshMat.getPosition();
+         t.convolve(mOwner->getScale());
+         meshMat.setPosition(t);
+
+         polyList.setTransform(&MatrixF::Identity, mOwner->getScale());
+         mesh->buildPolyList(0, &polyList, surfaceKey, NULL);
+         colShape->addConvex(polyList.getVertexList().address(),
+            polyList.getVertexList().size(),
+            meshMat);
+      } // objects
+   } // details
 }

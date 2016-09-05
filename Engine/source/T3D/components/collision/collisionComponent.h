@@ -68,37 +68,53 @@ class CollisionComponent : public Component,
    public CastRayInterface
 {
    typedef Component Parent;
+
 public:
    enum MeshType
    {
       None = 0,            ///< No mesh
       Bounds = 1,          ///< Bounding box of the shape
       CollisionMesh = 2,   ///< Specifically designated collision meshes
-      VisibleMesh = 3      ///< Rendered mesh polygons
+      ArticulatedMesh = 3, ///< Collision meshes, but are designed to be moved/animated with the shape
+      VisibleMesh = 4      ///< Rendered mesh polygons
    };
 
    PhysicsWorld* mPhysicsWorld;
-   PhysicsBody* mPhysicsRep;
+
+   struct ArticulatedPhysicsBody
+   {
+      Vector<S32> nodeIds;
+      Vector<PhysicsBody*> physicsBodies; //col meshes support
+      Vector<PhysicsCollision*> collisionShapes;
+      Vector<MatrixF> lastTransform;
+
+      void clear()
+      {
+         nodeIds.clear();
+         physicsBodies.clear();
+         lastTransform.clear();
+      }
+   };
 
 protected:
-   MeshType mCollisionType;
    MeshType mDecalType;
-   MeshType mLOSType;
-
-   Vector<S32> mCollisionDetails;
-   Vector<S32> mLOSDetails;
-
+   
    StringTableEntry colisionMeshPrefix;
 
    RenderComponentInterface* mOwnerRenderInterface;
-
    PhysicsComponentInterface* mOwnerPhysicsInterface;
 
-   //only really relevent for the collision mesh type
-   //if we note an animation component is added, we flag as being animated.
-   //This way, if we're using collision meshes, we can set it up to update their transforms
-   //as needed
-   bool mAnimated;
+   //LOS collision bits
+   MeshType mLOSType;
+   Vector<S32> mLOSDetails;
+   PhysicsBody* mLOSBody;
+   ArticulatedPhysicsBody mArticulatedLOSBody;
+
+   //Object collision bits
+   MeshType mCollisionType;
+   Vector<S32> mCollisionDetails;
+   PhysicsBody* mCollisionBody;
+   ArticulatedPhysicsBody mArticulatedColBody;
 
    enum
    {
@@ -132,6 +148,7 @@ public:
    void prepCollision();
 
    PhysicsCollision* buildColShapes();
+   void buildArticulatedCollisions();
 
    void updatePhysics();
 

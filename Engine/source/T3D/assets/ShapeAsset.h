@@ -45,6 +45,8 @@
 #include "core/resource.h"
 #endif
 
+#include "gui/editor/guiInspectorTypes.h"
+
 //-----------------------------------------------------------------------------
 class ShapeAsset : public AssetBase
 {
@@ -82,7 +84,24 @@ protected:
    virtual void            onAssetRefresh(void);
 };
 
-DefineConsoleType(TypeShapeAssetPtr, ShapeAsset)
+DefineConsoleType(TypeShapeAssetPtr, S32)
+
+//-----------------------------------------------------------------------------
+// TypeAssetId GuiInspectorField Class
+//-----------------------------------------------------------------------------
+class GuiInspectorTypeShapeAssetPtr : public GuiInspectorTypeFileName
+{
+   typedef GuiInspectorTypeFileName Parent;
+public:
+
+   GuiBitmapButtonCtrl  *mShapeEdButton;
+
+   DECLARE_CONOBJECT(GuiInspectorTypeShapeAssetPtr);
+   static void consoleInit();
+
+   virtual GuiControl* constructEditControl();
+   virtual bool updateRects();
+};
 
 #endif
 

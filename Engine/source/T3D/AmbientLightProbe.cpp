@@ -354,7 +354,7 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
       if (!mRenderTarget) return;
 
       if (!mLightInfoTarget)
-         mLightInfoTarget = NamedTexTarget::find("lightinfo");
+         mLightInfoTarget = NamedTexTarget::find("indirectLighting");
 
       GFXTextureObject *texObject = mLightInfoTarget->getTexture();
       if (!texObject) return;
@@ -363,7 +363,7 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
 
       // We also need to sample from the depth buffer.
       if (!mPrepassTarget)
-         mPrepassTarget = NamedTexTarget::find("prepass");
+         mPrepassTarget = NamedTexTarget::find("deferred");
 
       GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
       if (!prepassTexObject) return;
@@ -448,7 +448,7 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
       GFX->setTexture(0, prepassTexObject);
 
       // Draw the screenspace quad.
-      GFX->drawPrimitive(GFXTriangleFan, 0, 2);
+      GFX->drawPrimitive(GFXTriangleStrip, 0, 2);
 
       // Clean Up
       mRenderTarget->resolve();
@@ -459,13 +459,6 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
 void AmbientLightProbe::_updateScreenGeometry(const Frustum &frustum,
    GFXVertexBufferHandle<PFXVertex> *outVB)
 {
-
-   // NOTE: GFXTransformSaver does not save/restore the frustum
-   // so we must save it here before we modify it.
-   F32 l, r, b, t, n, f;
-   bool ortho;
-   GFX->getFrustum(&l, &r, &b, &t, &n, &f, &ortho);
-
    outVB->set(GFX, 4, GFXBufferTypeVolatile);
 
    const Point3F *frustumPoints = frustum.getPoints();
@@ -500,11 +493,6 @@ void AmbientLightProbe::_updateScreenGeometry(const Frustum &frustum,
 
    PFXVertex *vert = outVB->lock();
 
-   vert->point.set(-1.0, -1.0, 0.0);
-   vert->texCoord.set(0.0f, 1.0f);
-   vert->wsEyeRay = frustumPoints[Frustum::FarBottomLeft] - cameraOffsetPos;
-   vert++;
-
    vert->point.set(-1.0, 1.0, 0.0);
    vert->texCoord.set(0.0f, 0.0f);
    vert->wsEyeRay = frustumPoints[Frustum::FarTopLeft] - cameraOffsetPos;
@@ -515,16 +503,15 @@ void AmbientLightProbe::_updateScreenGeometry(const Frustum &frustum,
    vert->wsEyeRay = frustumPoints[Frustum::FarTopRight] - cameraOffsetPos;
    vert++;
 
+   vert->point.set(-1.0, -1.0, 0.0);
+   vert->texCoord.set(0.0f, 1.0f);
+   vert->wsEyeRay = frustumPoints[Frustum::FarBottomLeft] - cameraOffsetPos;
+   vert++;
+
    vert->point.set(1.0, -1.0, 0.0);
    vert->texCoord.set(1.0f, 1.0f);
    vert->wsEyeRay = frustumPoints[Frustum::FarBottomRight] - cameraOffsetPos;
    vert++;
 
    outVB->unlock();
-
-   // Restore frustum
-   if (!ortho)
-      GFX->setFrustum(l, r, b, t, n, f);
-   else
-      GFX->setOrtho(l, r, b, t, n, f);
 }
