@@ -684,6 +684,7 @@ endif()
 ###############################################################################
 addInclude("${projectSrcDir}")
 addInclude("${srcDir}/")
+addInclude( "${libDir}/glm/glm" )
 addInclude("${libDir}/lmpg")
 addInclude("${libDir}/lpng")
 addInclude("${libDir}/ljpeg")
