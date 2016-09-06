@@ -170,6 +170,7 @@ void TSShapeInstance::buildInstanceData(TSShape * _shape, bool loadMaterials)
    // material list...
    mMaterialList = NULL;
    mOwnMaterialList = false;
+   mUseOwnBuffer = false;
 
    //
    mData = 0;
@@ -537,7 +538,7 @@ void TSShapeInstance::render( const TSRenderState &rdata, S32 dl, F32 intraDL )
    S32 end = rdata.isNoRenderTranslucent() ? mShape->subShapeFirstTranslucentObject[ss] : mShape->subShapeFirstObject[ss] + mShape->subShapeNumObjects[ss];
    TSVertexBufferHandle *realBuffer;
 
-   if (TSShape::smUseHardwareSkinning)
+   if (TSShape::smUseHardwareSkinning && !mUseOwnBuffer)
    {
       // For hardware skinning, just using the buffer associated with the shape will work fine
       realBuffer = &mShape->mShapeVertexBuffer;
@@ -898,3 +899,7 @@ bool TSShapeInstance::hasAccumulation()
    return result;
 }
 
+void TSShapeInstance::setUseOwnBuffer()
+{
+   mUseOwnBuffer = true;
+}
