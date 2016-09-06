@@ -256,13 +256,15 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
                                     lightcol,
                                     lightVec,
-                                    viewSpacePos,
+                                    eyeRay,
                                     normal,
                                     1.0-matInfo.b,
-                                    matInfo.a*0.5 );
+                                    matInfo.a );
+                                    
+   float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
+   
    float3 lightColorOut = real_specular.rgb * lightBrightness * shadowed* atten;
    //lightColorOut /= colorSample.rgb;
-   float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
    float4 addToResult = 0.0;
     
    // TODO: This needs to be removed when lightmapping is disabled
@@ -279,6 +281,10 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       lightColorOut = shadowed;
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
-   }     
-   return matInfo.g*(float4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
+   }
+   
+   float3 envColor = TORQUE_TEX2D( lightBuffer, uvScene ).rgb;
+   lightColorOut = lerp(lightColorOut, envColor, max(real_specular.a,matInfo.a));  
+   
+   return float4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a);
 }
