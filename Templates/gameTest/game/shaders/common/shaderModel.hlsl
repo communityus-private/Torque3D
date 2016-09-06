@@ -82,9 +82,9 @@
    #define TORQUE_TEX2DPROJ(tex,coords) texture_##tex.Sample(tex,coords.xy / coords.w)
    #define TORQUE_TEX3D(tex,coords) texture_##tex.Sample(tex,coords)
    #define TORQUE_TEXCUBE(tex,coords) texture_##tex.Sample(tex,coords)
-   #define TORQUE_TEXCUBELOD(tex,coords) texture_##tex.Sample(tex,coords)
    // The mipmap LOD is specified in coord.w
    #define TORQUE_TEX2DLOD(tex,coords) texture_##tex.SampleLevel(tex,coords.xy,coords.w)
+   #define TORQUE_TEXCUBELOD(tex,coords) texture_##tex.SampleLevel(tex,coords.xyz,coords.w)
 
    //helper if you want to pass sampler/texture in a function
    //2D

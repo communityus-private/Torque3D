@@ -306,18 +306,54 @@ new ShaderData( ReflectionProbeShader )
    pixVersion = 3.0;
 };
 
+// Convex-geometry light states
+new GFXStateBlockData( AL_ProbeState )
+{
+   blendDefined = true;
+   blendEnable = true;
+   blendSrc = GFXBlendOne;
+   blendDest = GFXBlendOne;
+   blendOp = GFXBlendOpAdd;
+   
+   zDefined = true;
+   zEnable = true;
+   zWriteEnable = false;
+   zFunc = GFXCmpGreaterEqual;
+
+   samplersDefined = true;
+   samplerStates[0] = SamplerClampPoint;  // G-buffer
+   mSamplerNames[0] = "deferredBuffer";
+   samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not use linear, these are perspective projections)
+   mSamplerNames[1] = "shadowMap";
+   samplerStates[2] = SamplerClampLinear;  // Shadow Map (Do not use linear, these are perspective projections)
+   mSamplerNames[2] = "colorBuffer";
+   samplerStates[3] = SamplerClampLinear; // matInfo
+   mSamplerNames[3] = "matInfoBuffer";   
+   samplerStates[4] = SamplerClampLinear;   // cubemap
+   
+   cullDefined = true;
+   cullMode = GFXCullCW;
+   
+   stencilDefined = true;
+   stencilEnable = true;
+   stencilFailOp = GFXStencilOpKeep;
+   stencilZFailOp = GFXStencilOpKeep;
+   stencilPassOp = GFXStencilOpKeep;
+   stencilFunc = GFXCmpLess;
+   stencilRef = 0;
+};
+
 new CustomMaterial( ReflectionProbeMaterial )
 {
    shader = ReflectionProbeShader;
-   stateBlock = AL_ConvexLightState;
+   stateBlock = AL_ProbeState;
    
    sampler["deferredBuffer"] = "#deferred";
    //sampler["shadowMap"] = "$dynamiclight";
    //sampler["dynamicShadowMap"] = "$dynamicShadowMap";
    //sampler["cookieMap"] = "$dynamiclightmask";
-   //sampler["lightBuffer"] = "#indirectLighting";
-   //sampler["colorBuffer"] = "#color";
-   //sampler["matInfoBuffer"] = "#matinfo";
+   sampler["lightBuffer"] = "#indirectLighting";
+   sampler["matInfoBuffer"] = "#matinfo";
    
    target = "indirectLighting";
    //target = "directLighting";

@@ -67,7 +67,9 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    float4 deferredSample = TORQUE_DEFERRED_UNCONDITION( deferredBuffer, uvScene );
    float3 normal = deferredSample.rgb;
    float depth = deferredSample.a;
-   
+   if (depth>0.9999)
+      return float4(0,0,0,0);
+      
    // Eye ray - Eye -> Pixel
    float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
    float3 viewSpacePos = eyeRay * depth;
@@ -109,15 +111,14 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    }
    else
    {
-      float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,1)).rgb;
-
-      //color = TORQUE_TEXCUBELOD(cubeMap, float4(reflectionVec, 0.1)).rgb;
-      color = TORQUE_TEXCUBE(cubeMap, reflectionVec);
+      float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),1)).rgb;
+      float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 1.0);//bump up to 8 for finalization
+      float4 ref = float4(reflectionVec, smoothness);
+      color = TORQUE_TEXCUBELOD(cubeMap, ref);
+      //color = TORQUE_TEXCUBE(cubeMap, reflectionVec);
       color.a = 1;
-
-      color *= Intensity;
    }
-   
    //return hdrEncode(float4(color.rgb, 0.0));
-   return color;
+
+   return saturate(toLinear(color));
 }
