@@ -34,8 +34,10 @@
 #include "console/engineAPI.h"
 #endif
 
-class ColorI;
+const F32 gGamma = 2.2f;
+const F32 gOneOverGamma = 1.f / 2.2f;
 
+class ColorI;
 
 class ColorF
 {
@@ -473,9 +475,9 @@ inline void ColorF::clamp()
 inline ColorF ColorF::toGamma()
 {
    ColorF color;
-   color.red = mFloatToSRGB(red);
-   color.green = mFloatToSRGB(green);
-   color.blue = mFloatToSRGB(blue);
+   color.red = mPow(red,gOneOverGamma);
+   color.green = mPow(green, gOneOverGamma);
+   color.blue = mPow(blue, gOneOverGamma);
    color.alpha = alpha;
    return color;
 }
@@ -483,9 +485,9 @@ inline ColorF ColorF::toGamma()
 inline ColorF ColorF::toLinear()
 {
    ColorF color;
-   color.red = mSRGBToFloat(red);
-   color.green = mSRGBToFloat(green);
-   color.blue = mSRGBToFloat(blue);
+   color.red = mPow(red,gGamma);
+   color.green = mPow(green, gGamma);
+   color.blue = mPow(blue, gGamma);
    color.alpha = alpha;
    return color;
 }
