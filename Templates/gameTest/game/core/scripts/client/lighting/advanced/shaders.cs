@@ -349,14 +349,10 @@ new CustomMaterial( ReflectionProbeMaterial )
    stateBlock = AL_ProbeState;
    
    sampler["deferredBuffer"] = "#deferred";
-   //sampler["shadowMap"] = "$dynamiclight";
-   //sampler["dynamicShadowMap"] = "$dynamicShadowMap";
-   //sampler["cookieMap"] = "$dynamiclightmask";
    sampler["lightBuffer"] = "#indirectLighting";
    sampler["matInfoBuffer"] = "#matinfo";
    
    target = "indirectLighting";
-   //target = "directLighting";
    
    pixVersion = 3.0;
 };

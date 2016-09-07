@@ -112,6 +112,19 @@ ConsoleDocClass( AdvancedLightBinManager,
    "@ingroup Lighting"
 );
 
+S32 QSORT_CALLBACK AscendingReflectProbeInfluence(const void* a, const void* b)
+{
+   // Debug Profiling.
+   PROFILE_SCOPE(AdvancedLightBinManager_AscendingReflectProbeInfluence);
+
+   // Fetch asset definitions.
+   const AdvancedLightBinManager::ReflectProbeBinEntry* pReflectProbeA = (AdvancedLightBinManager::ReflectProbeBinEntry*)a;
+   const AdvancedLightBinManager::ReflectProbeBinEntry* pReflectProbeB = (AdvancedLightBinManager::ReflectProbeBinEntry*)b;
+
+   // Sort.
+   return pReflectProbeB->probeInfo->mRadius - pReflectProbeA->probeInfo->mRadius;
+}
+
 AdvancedLightBinManager::AdvancedLightBinManager( AdvancedLightManager *lm /* = NULL */, 
                                                  ShadowMapManager *sm /* = NULL */, 
                                                  GFXFormat lightBufferFormat /* = GFXFormatR8G8B8A8 */ )
@@ -422,6 +435,9 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
    GFX->setActiveRenderTarget(indirectLightingTarget);*/
    //GFX->setViewport(mNamedTarget.getViewport());
 
+   //Order the probes by size, biggest to smallest
+   dQsort(mReflectProbeBin.address(), mReflectProbeBin.size(), sizeof(const ReflectProbeBinEntry), AscendingReflectProbeInfluence);
+
    NamedTexTarget* lightInfoTarget = NamedTexTarget::find("indirectLighting");
 
    GFXTextureObject *indirectLightTexObject = lightInfoTarget->getTexture();
@@ -452,7 +468,7 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
 
       if (mReflectProbeMaterial && mReflectProbeMaterial->matInstance)
       {
-         mReflectProbeMaterial->setLightParameters(curEntry.probeInfo, state, worldToCameraXfm);
+         mReflectProbeMaterial->setProbeParameters(curEntry.probeInfo, state, worldToCameraXfm);
 
          while (mReflectProbeMaterial->matInstance->setupPass(state, sgData))
          {
@@ -832,7 +848,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
    F32 lumiance = mDot(*((const Point3F *)&lightInfo->getColor()), colorToLumiance );
    col.alpha *= lumiance;
 
-   matParams->setSafe( lightColor, col.toLinear() );
+   matParams->setSafe( lightColor, col );
    matParams->setSafe( lightBrightness, lightInfo->getBrightness() );
 
    switch( lightInfo->getType() )
@@ -848,7 +864,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          // the vector light. This prevents a divide by zero.
          ColorF ambientColor = renderState->getAmbientLightColor();
          ambientColor.alpha = 0.00001f;
-         matParams->setSafe( lightAmbient, ambientColor.toLinear() );
+         matParams->setSafe( lightAmbient, ambientColor );
 
          // If no alt color is specified, set it to the average of
          // the ambient and main color to avoid artifacts.
@@ -862,7 +878,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
             lightAlt = (lightInfo->getColor() + renderState->getAmbientLightColor()) / 2.0f;
 
          ColorF trilightColor = lightAlt;
-         matParams->setSafe(lightTrilight, trilightColor.toLinear());
+         matParams->setSafe(lightTrilight, trilightColor);
       }
       break;
 
@@ -1119,7 +1135,7 @@ void AdvancedLightBinManager::ReflectProbeMaterialInfo::setViewParameters(const 
    matParams->setSafe(invViewMat, _inverseViewMatrix);
 }
 
-void AdvancedLightBinManager::ReflectProbeMaterialInfo::setLightParameters(const ReflectProbeInfo *probeInfo, const SceneRenderState* renderState, const MatrixF &worldViewOnly)
+void AdvancedLightBinManager::ReflectProbeMaterialInfo::setProbeParameters(const ReflectProbeInfo *probeInfo, const SceneRenderState* renderState, const MatrixF &worldViewOnly)
 {
    //Set up the params
    MaterialParameters *matParams = matInstance->getMaterialParameters();
@@ -1147,6 +1163,20 @@ void AdvancedLightBinManager::ReflectProbeMaterialInfo::setLightParameters(const
       (1.0f / (radius * radius)) * attenRatio.z);
 
    matParams->setSafe(lightAttenuation, attenParams);
+
+   NamedTexTarget* deferredTexTarget = NamedTexTarget::find("deferred");
+
+   GFXTextureObject *deferredTexObject = deferredTexTarget->getTexture();
+   if (!deferredTexObject) return;
+
+   GFX->setTexture(0, deferredTexObject);
+
+   NamedTexTarget* matInfoTexTarget = NamedTexTarget::find("matinfo");
+
+   GFXTextureObject *matInfoTexObject = matInfoTexTarget->getTexture();
+   if (!matInfoTexObject) return;
+
+   GFX->setTexture(3, matInfoTexObject);
 
    if (probeInfo->mUseCubemap && probeInfo->mCubemap)
    {

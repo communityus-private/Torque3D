@@ -246,7 +246,7 @@ protected:
          const PlaneF &_vsFarPlane,
          const MatrixF &_inverseViewMatrix);
 
-      void setLightParameters(const ReflectProbeInfo *probe, const SceneRenderState* renderState, const MatrixF &worldViewOnly);
+      void setProbeParameters(const ReflectProbeInfo *probe, const SceneRenderState* renderState, const MatrixF &worldViewOnly);
    };
 
 protected:
@@ -300,6 +300,7 @@ protected:
    typedef GFXVertexPNTT FarFrustumQuadVert; 
    GFXVertexBufferHandle<FarFrustumQuadVert> mFarFrustumQuadVerts;
 
+public:
    //Reflection Probes
    struct ReflectProbeBinEntry
    {
@@ -313,6 +314,7 @@ protected:
       U32 numPrims;
    };
 
+protected:
    Vector<ReflectProbeBinEntry> mReflectProbeBin;
    typedef Vector<ReflectProbeBinEntry>::iterator ReflectProbeBinIterator;
 

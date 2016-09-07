@@ -37,7 +37,20 @@
 
 #include "lighting/advanced/advancedLightBinManager.h"
 
+#include "gfx/gfxDebugEvent.h"
+#include "gfx/gfxTransformSaver.h"
+#include "math/mathUtils.h"
+#include "math/util/frustum.h"
+#include "gfx/bitmap/gBitmap.h"
+#include "gfx/gfxTextureHandle.h"
+#include "core/stream/fileStream.h"
+#include "core/fileObject.h"
+#include "scene/reflectionManager.h"
+#include "lighting/advanced/advancedLightManager.h"
+#include "core/resourceManager.h"
+
 extern bool gEditingMission;
+extern ColorI gCanvasClearColor;
 
 /*#include "platform/platform.h"
 #include "lighting/lightInfo.h"
@@ -128,6 +141,8 @@ ReflectionProbe::ReflectionProbe()
 
    mProbeShapeType = Sphere;
 
+   mEnabled = true;
+
    mProbeInfo = new ReflectProbeInfo();
 
    mRadius = 10;
@@ -139,12 +154,18 @@ ReflectionProbe::ReflectionProbe()
 
    mUseCubemap = false;
    mCubemap = NULL;
+
+   mEditorShapeInst = NULL;
+   mEditorShape = NULL;
 }
 
 ReflectionProbe::~ReflectionProbe()
 {
    if (mMaterialInst)
       SAFE_DELETE(mMaterialInst);
+
+   if (mEditorShapeInst)
+      SAFE_DELETE(mEditorShapeInst);
 }
 
 //-----------------------------------------------------------------------------
@@ -153,6 +174,9 @@ ReflectionProbe::~ReflectionProbe()
 void ReflectionProbe::initPersistFields()
 {
    addGroup("Rendering");
+   addProtectedField("enabled", TypeBool, Offset(mEnabled, ReflectionProbe),
+      &_setEnabled, &defaultProtectedGetFn, "Regenerate Voxel Grid");
+
    addField("ProbeShape", TypeReflectProbeType, Offset(mProbeShapeType, ReflectionProbe),
       "The type of mesh data to use for collision queries.");
    addField("radius", TypeF32, Offset(mRadius, ReflectionProbe), "The name of the material used to render the mesh.");
@@ -166,6 +190,11 @@ void ReflectionProbe::initPersistFields()
    addField("Intensity", TypeF32, Offset(mIntensity, ReflectionProbe), "Path of file to save and load results.");
    endGroup("Rendering");
 
+   addGroup("Baking");
+   addProtectedField("Bake", TypeBool, Offset(mBake, ReflectionProbe),
+      &_doBake, &defaultProtectedGetFn, "Regenerate Voxel Grid");
+   endGroup("Baking");
+
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
 }
@@ -177,6 +206,25 @@ void ReflectionProbe::inspectPostApply()
    // Flag the network mask to send the updates
    // to the client object
    setMaskBits(-1);
+}
+
+bool ReflectionProbe::_setEnabled(void *object, const char *index, const char *data)
+{
+   ReflectionProbe* probe = reinterpret_cast< ReflectionProbe* >(object);
+
+   probe->mEnabled = dAtob(data);
+   probe->setMaskBits(-1);
+
+   return true;
+}
+
+bool ReflectionProbe::_doBake(void *object, const char *index, const char *data)
+{
+   ReflectionProbe* probe = reinterpret_cast< ReflectionProbe* >(object);
+
+   probe->bake();
+
+   return false;
 }
 
 bool ReflectionProbe::onAdd()
@@ -248,6 +296,8 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
    stream->writeFloat(mIntensity, 7);
    stream->write(mRadius);
 
+   stream->writeFlag(mEnabled);
+
    stream->writeFlag(mUseCubemap);
    stream->write(mCubemapName);
 
@@ -281,12 +331,15 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
    mIntensity = stream->readFloat(7);
    stream->read(&mRadius);
 
+   mEnabled = stream->readFlag();
+
    mUseCubemap = stream->readFlag();
    stream->read(&mCubemapName);
 
    if (mCubemapName.isNotEmpty())
       Sim::findObject(mCubemapName, mCubemap);
 
+   createGeometry();
    updateMaterial();
 }
 
@@ -295,97 +348,38 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
 //-----------------------------------------------------------------------------
 void ReflectionProbe::createGeometry()
 {
-   static const Point3F cubePoints[8] =
+   // Clean up our previous shape
+   if (mEditorShapeInst)
+      SAFE_DELETE(mEditorShapeInst);
+
+   mEditorShape = NULL;
+
+   String shapeFile = "tools/resources/ReflectProbeSphere.dae";
+
+   // Attempt to get the resource from the ResourceManager
+   mEditorShape = ResourceManager::get().load(shapeFile);
+
+   if (!mEditorShape)
    {
-      Point3F(1, -1, -1), Point3F(1, -1,  1), Point3F(1,  1, -1), Point3F(1,  1,  1),
-      Point3F(-1, -1, -1), Point3F(-1,  1, -1), Point3F(-1, -1,  1), Point3F(-1,  1,  1)
-   };
-
-   static const Point3F cubeNormals[6] =
-   {
-      Point3F(1,  0,  0), Point3F(-1,  0,  0), Point3F(0,  1,  0),
-      Point3F(0, -1,  0), Point3F(0,  0,  1), Point3F(0,  0, -1)
-   };
-
-   static const Point2F cubeTexCoords[4] =
-   {
-      Point2F(0,  0), Point2F(0, -1),
-      Point2F(1,  0), Point2F(1, -1)
-   };
-
-   static const U32 cubeFaces[36][3] =
-   {
-      { 3, 0, 3 },{ 0, 0, 0 },{ 1, 0, 1 },
-      { 2, 0, 2 },{ 0, 0, 0 },{ 3, 0, 3 },
-      { 7, 1, 1 },{ 4, 1, 2 },{ 5, 1, 0 },
-      { 6, 1, 3 },{ 4, 1, 2 },{ 7, 1, 1 },
-      { 3, 2, 1 },{ 5, 2, 2 },{ 2, 2, 0 },
-      { 7, 2, 3 },{ 5, 2, 2 },{ 3, 2, 1 },
-      { 1, 3, 3 },{ 4, 3, 0 },{ 6, 3, 1 },
-      { 0, 3, 2 },{ 4, 3, 0 },{ 1, 3, 3 },
-      { 3, 4, 3 },{ 6, 4, 0 },{ 7, 4, 1 },
-      { 1, 4, 2 },{ 6, 4, 0 },{ 3, 4, 3 },
-      { 2, 5, 1 },{ 4, 5, 2 },{ 0, 5, 0 },
-      { 5, 5, 3 },{ 4, 5, 2 },{ 2, 5, 1 }
-   };
-
-   // Fill the vertex buffer
-   VertexType *pVert = NULL;
-
-   mVertexBuffer.set(GFX, 36, GFXBufferTypeStatic);
-   pVert = mVertexBuffer.lock();
-
-   Point3F halfSize = getObjBox().getExtents() * 0.5f;
-
-   for (U32 i = 0; i < 36; i++)
-   {
-      const U32& vdx = cubeFaces[i][0];
-      const U32& ndx = cubeFaces[i][1];
-      const U32& tdx = cubeFaces[i][2];
-
-      pVert[i].point = cubePoints[vdx] * halfSize;
-      pVert[i].normal = cubeNormals[ndx];
-      pVert[i].texCoord = cubeTexCoords[tdx];
+      Con::errorf("RenderShapeExample::createShape() - Unable to load shape: %s", shapeFile.c_str());
+      return;
    }
 
-   mVertexBuffer.unlock();
+   // Attempt to preload the Materials for this shape
+   /*if (isClientObject() &&
+      !mShape->preloadMaterialList(mShape.getPath()) &&
+      NetConnection::filesWereDownloaded())
+   {
+      mShape = NULL;
+      return;
+   }*/
 
-   // Fill the primitive buffer
-   U16 *pIdx = NULL;
-
-   mPrimitiveBuffer.set(GFX, 36, 12, GFXBufferTypeStatic);
-
-   mPrimitiveBuffer.lock(&pIdx);
-
-   for (U16 i = 0; i < 36; i++)
-      pIdx[i] = i;
-
-   mPrimitiveBuffer.unlock();
+   // Create the TSShapeInstance
+   mEditorShapeInst = new TSShapeInstance(mEditorShape, isClientObject());
 }
 
 void ReflectionProbe::updateMaterial()
 {
-   /*if (mMaterialName.isEmpty())
-      return;
-
-   // If the material name matches then don't bother updating it.
-   if (mMaterialInst && mMaterialName.equal(mMaterialInst->getMaterial()->getName(), String::NoCase))
-      return;
-
-   SAFE_DELETE(mMaterialInst);
-
-   mMaterialInst = MATMGR->createMatInstance(mMaterialName, getGFXVertexFormat< VertexType >());
-   if (!mMaterialInst)
-      Con::errorf("ReflectionProbe::updateMaterial - no Material called '%s'", mMaterialName.c_str());*/
-
-   /*SAFE_DELETE(mMaterialInst);
-
-   Material* reflMat;
-   if (!Sim::findObject("ReflectionProbeMaterial", reflMat))
-      return;
-
-   mMaterialInst = reflMat->createMatInstance();*/
-
    mProbeInfo->setPosition(getPosition());
 
    mProbeInfo->mCubemap = mCubemap;
@@ -398,19 +392,8 @@ void ReflectionProbe::updateMaterial()
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
 {
-   // Do a little prep work if needed
-   //if (mVertexBuffer.isNull())
-   //   createGeometry();
-
-   // If we have no material then skip out.
-   //if (!mMaterialInst || !state)
-  //    return;
-
-   // If we don't have a material instance after the override then 
-   // we can skip rendering all together.
-   //BaseMatInstance *matInst = state->getOverrideMaterial(mMaterialInst);
-   //if (!matInst)
-   //   return;
+   if (!mEnabled)
+      return;
 
    // If the light is selected or light visualization
    // is enabled then register the callback.
@@ -423,81 +406,61 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       state->getRenderPass()->addInst(ri);
    }
 
-   // Get a handy pointer to our RenderPassmanager
-   /*RenderPassManager *renderPass = state->getRenderPass();
-
-   // Allocate an MeshRenderInst so that we can submit it to the RenderPassManager
-   ProbeRenderInst *ri = renderPass->allocInst<ProbeRenderInst>();
-
-   // Set our RenderInst as a standard mesh render
-   ri->type = RenderPassManager::RIT_ReflectProbe;
-
-   //If our material has transparency set on this will redirect it to proper render bin
-   if (matInst->getMaterial()->isTranslucent())
+   if (gEditingMission)
    {
-      ri->type = RenderPassManager::RIT_Translucent;
-      ri->translucentSort = true;
-   }
+      if (!mEditorShapeInst)
+         return;
 
-   // Calculate our sorting point
-   if (state)
-   {
-      // Calculate our sort point manually.
-      const Box3F& rBox = getRenderWorldBox();
-      ri->sortDistSq = rBox.getSqDistanceToPoint(state->getCameraPosition());
-   }
-   else
-      ri->sortDistSq = 0.0f;
+      // Calculate the distance of this object from the camera
+      Point3F cameraOffset;
+      getRenderTransform().getColumn(3, &cameraOffset);
+      cameraOffset -= state->getDiffuseCameraPosition();
+      F32 dist = cameraOffset.len();
+      if (dist < 0.01f)
+         dist = 0.01f;
 
-   // Set up our transforms
-   MatrixF objectToWorld = getRenderTransform();
-   objectToWorld.scale(getScale());
+      // Set up the LOD for the shape
+      F32 invScale = (1.0f / getMax(getMax(mObjScale.x, mObjScale.y), mObjScale.z));
 
-   ri->objectToWorld = renderPass->allocUniqueXform(objectToWorld);
-   ri->worldToCamera = renderPass->allocSharedXform(RenderPassManager::View);
-   ri->projection = renderPass->allocSharedXform(RenderPassManager::Projection);
+      mEditorShapeInst->setDetailFromDistance(state, dist * invScale);
 
-   // If our material needs lights then fill the RIs 
-   // light vector with the best lights.
-   if (matInst->isForwardLit())
-   {
+      // Make sure we have a valid level of detail
+      if (mEditorShapeInst->getCurrentDetail() < 0)
+         return;
+
+      // GFXTransformSaver is a handy helper class that restores
+      // the current GFX matrices to their original values when
+      // it goes out of scope at the end of the function
+      GFXTransformSaver saver;
+
+      // Set up our TS render state      
+      TSRenderState rdata;
+      rdata.setSceneState(state);
+      rdata.setFadeOverride(1.0f);
+
+      // We might have some forward lit materials
+      // so pass down a query to gather lights.
       LightQuery query;
       query.init(getWorldSphere());
-      query.getLights(ri->lights, 8);
+      rdata.setLightQuery(&query);
+
+      // Set the world matrix to the objects render transform
+      MatrixF mat = getRenderTransform();
+      mat.scale(Point3F(1,1,1));
+      GFX->setWorldMatrix(mat);
+
+      // Animate the the shape
+      mEditorShapeInst->animate();
+
+      // Allow the shape to submit the RenderInst(s) for itself
+      mEditorShapeInst->render(rdata);
    }
-
-   // Make sure we have an up-to-date backbuffer in case
-   // our Material would like to make use of it
-   // NOTICE: SFXBB is removed and refraction is disabled!
-   //ri->backBuffTex = GFX->getSfxBackBuffer();
-
-   // Set our Material
-   ri->matInst = matInst;
-
-   // Set up our vertex buffer and primitive buffer
-   ri->vertBuff = &mVertexBuffer;
-   ri->primBuff = &mPrimitiveBuffer;
-
-   ri->prim = renderPass->allocPrim();
-   ri->prim->type = GFXTriangleList;
-   ri->prim->minIndex = 0;
-   ri->prim->startIndex = 0;
-   ri->prim->numPrimitives = 12;
-   ri->prim->startVertex = 0;
-   ri->prim->numVertices = 36;
-
-   // We sort by the material then vertex buffer
-   ri->defaultKey = matInst->getStateHint();
-   ri->defaultKey2 = (uintptr_t)ri->vertBuff; // Not 64bit safe!
-
-                                              // Submit our RenderInst to the RenderPassManager
-   state->getRenderPass()->addInst(ri);*/
 }
 
 void ReflectionProbe::submitLights(LightManager *lm, bool staticLighting)
 {
-   //if (!mIsEnabled)
-   //   return;
+   if (!mEnabled)
+      return;
 
    lm->addSphereReflectProbe(mProbeInfo);
 }
@@ -527,4 +490,119 @@ DefineEngineMethod(ReflectionProbe, postApply, void, (), ,
    "A utility method for forcing a network update.\n")
 {
    object->inspectPostApply();
+}
+
+void ReflectionProbe::bake()
+{
+   GFXDEBUGEVENT_SCOPE(ReflectionProbe_Bake, ColorI::WHITE);
+
+   // store current matrices
+   GFXTransformSaver saver;
+
+   // set projection to 90 degrees vertical and horizontal
+   F32 left, right, top, bottom;
+   F32 nearPlane = 0.1;
+   F32 farDist = 1000;
+
+   MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
+   GFX->setFrustum(left, right, bottom, top, nearPlane, farDist);
+
+   // We don't use a special clipping projection, but still need to initialize 
+   // this for objects like SkyBox which will use it during a reflect pass.
+   gClientSceneGraph->setNonClipProjection(GFX->getProjectionMatrix());
+
+   // Standard view that will be overridden below.
+   VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
+
+   for (U32 i = 0; i < 6; ++i)
+   {
+      switch (i)
+      {
+      case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
+         vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
+      case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
+         vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
+      case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
+         vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 0.0f, -1.0f);
+         break;
+      case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
+         vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 0.0f, 1.0f);
+         break;
+      case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
+         vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
+      case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
+         vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
+      }
+
+      // create camera matrix
+      VectorF cross = mCross(vUpVec, vLookatPt);
+      cross.normalizeSafe();
+
+      MatrixF matView(true);
+      matView.setColumn(0, cross);
+      matView.setColumn(1, vLookatPt);
+      matView.setColumn(2, vUpVec);
+      matView.setPosition(getPosition());
+      matView.inverse();
+
+      GFX->setWorldMatrix(matView);
+
+      Point2I destSize = Point2I(1024, 1024);
+      GFXTexHandle blendTex;
+      blendTex.set(destSize.x, destSize.y, GFXFormatR8G8B8A8, &GFXDefaultRenderTargetProfile, "");
+
+      GFXTextureTargetRef mBaseTarget = GFX->allocRenderToTextureTarget();
+      mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
+      GFX->setActiveRenderTarget(mBaseTarget);
+
+      GFX->clear(GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 1.0f, 0);
+
+      SceneRenderState reflectRenderState
+         (
+         gClientSceneGraph,
+         SPT_Reflect,
+         SceneCameraState::fromGFX()
+         );
+
+      reflectRenderState.getMaterialDelegate().bind(REFLECTMGR, &ReflectionManager::getReflectionMaterial);
+      reflectRenderState.setDiffuseCameraTransform(matView);
+
+      // render scene
+      LIGHTMGR->registerGlobalLights(&reflectRenderState.getCullingFrustum(), false);
+      gClientSceneGraph->renderScene(&reflectRenderState, -1);
+      LIGHTMGR->unregisterAllLights();
+
+      mBaseTarget->resolve();
+
+      GFXTextureObject *faceTexture;
+
+      char fileName[256];
+      dSprintf(fileName, 256, "bakeTest%i.png", i);
+
+      FileStream stream;
+      if (!stream.open(fileName, Torque::FS::File::Write))
+      {
+         return;
+      }
+
+      GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
+      blendTex->copyToBmp(&bitmap);
+      bitmap.writeBitmap("png", stream);
+   }
+}
+
+DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath), (""),
+   "@brief returns true if control object is inside the fog\n\n.")
+{
+   object->bake();
 }

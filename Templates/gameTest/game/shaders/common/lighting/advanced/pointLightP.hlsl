@@ -281,7 +281,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       lightColorOut = shadowed;
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
-   }
+   }     
    
    float3 envColor = TORQUE_TEX2D( lightBuffer, uvScene ).rgb;
    lightColorOut = lerp(lightColorOut, envColor, max(real_specular.a,matInfo.a));  

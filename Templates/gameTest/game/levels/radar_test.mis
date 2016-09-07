@@ -51,13 +51,13 @@ new SimGroup(MissionGroup) {
       canSaveDynamicFields = "1";
    };
    new ScatterSky() {
-      skyBrightness = "35";
+      skyBrightness = "25";
       sunSize = "1";
       colorizeAmount = "0";
       colorize = "0.996078 0.988235 0.988235 1";
       rayleighScattering = "0.0035";
       sunScale = "0.996078 0.988235 0.988235 1";
-      ambientScale = "0 0 0 1";
+      ambientScale = "0.996078 0.65098 0.65098 1";
       fogScale = "1 1 1 1";
       exposure = "1";
       zOffset = "0";
@@ -161,9 +161,9 @@ new SimGroup(MissionGroup) {
       alphaFadeInverse = "0";
       renderNormals = "0";
       forceDetail = "-1";
-      position = "0 0 0.685656";
+      position = "7.4069 4.88623 4.62358";
       rotation = "1 0 0 0";
-      scale = "0.015 0.015 0.015";
+      scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
          wall43_001 = "wall43_001_mat";

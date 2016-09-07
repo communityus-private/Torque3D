@@ -32,6 +32,9 @@
 #ifndef _GFXPRIMITIVEBUFFER_H_
 #include "gfx/gfxPrimitiveBuffer.h"
 #endif
+#ifndef _TSSHAPEINSTANCE_H_
+#include "ts/tsShapeInstance.h"
+#endif
 #include "lighting/lightInfo.h"
 
 class BaseMatInstance;
@@ -71,6 +74,12 @@ private:
       UpdateMask = Parent::NextFreeMask << 1,
       NextFreeMask = Parent::NextFreeMask << 2
    };
+
+   bool mBake;
+   bool mEnabled;
+
+   Resource<TSShape> mEditorShape;
+   TSShapeInstance* mEditorShapeInst;
 
    //--------------------------------------------------------------------------
    // Rendering variables
@@ -123,6 +132,9 @@ public:
    // from the server object to the client
    virtual void inspectPostApply();
 
+   static bool _setEnabled(void *object, const char *index, const char *data);
+   static bool _doBake(void *object, const char *index, const char *data);
+
    // Handle when we are added to the scene and removed from the scene
    bool onAdd();
    void onRemove();
@@ -165,6 +177,9 @@ public:
    virtual LightInfo* getLight() {
       return NULL;
    }
+
+   //Baking
+   void bake();
 };
 
 typedef ReflectionProbe::ProbeShapeType ReflectProbeType;

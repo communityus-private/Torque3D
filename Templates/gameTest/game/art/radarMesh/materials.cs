@@ -3,13 +3,9 @@ singleton Material(DefaultMaterial_two_sided_translucent)
    mapTo = "DefaultMaterial.two-sided.translucent";
    diffuseColor[0] = "0.64 0.64 0.64 1";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
-   translucentBlendOp = "LerpAlpha";
-   pixelSpecular0 = "0";
-   diffuseColor[3] = "White";
-   doubleSided = "1";
-   translucent = "1";
+   translucentBlendOp = "None";
 };
 
 singleton Material(win13)
@@ -17,7 +13,7 @@ singleton Material(win13)
    mapTo = "win13";
    diffuseMap[0] = "art/radarMesh/win13";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    translucentBlendOp = "None";
    specularMap[0] = "art/radarMesh/materialLib/concrete/concreteAluminumComposite.dds";
@@ -29,7 +25,7 @@ singleton Material(roof7)
    mapTo = "roof7";
    diffuseMap[0] = "art/radarMesh/roof7.tga";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.dds";
@@ -51,7 +47,7 @@ singleton Material(met19)
    mapTo = "met19";
    diffuseColor[0] = "1 1 1 1";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    translucentBlendOp = "None";
    diffuseMap[0] = "art/radarMesh/met19";
@@ -68,7 +64,7 @@ singleton Material(wall138)
    mapTo = "wall138";
    diffuseMap[0] = "art/radarMesh/wall138";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    translucentBlendOp = "None";
    specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.png";
@@ -94,7 +90,7 @@ singleton Material(wall93)
    mapTo = "wall93";
    diffuseMap[0] = "art/radarMesh/wall93";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.png";
@@ -111,7 +107,7 @@ singleton Material(wall134)
    diffuseColor[0] = "White";
    diffuseMap[0] = "art/radarMesh/wall134";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    translucentBlendOp = "None";
    specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.png";
@@ -138,15 +134,11 @@ singleton Material(wall90)
    mapTo = "wall90";
    diffuseMap[0] = "art/radarMesh/wall90.tga";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    specularMap[0] = "art/radarMesh/materialLib/concrete/concreteAluminumComposite.dds";
    pixelSpecular0 = "0";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(win24)
@@ -154,15 +146,11 @@ singleton Material(win24)
    mapTo = "win24";
    diffuseMap[0] = "art/radarMesh/win24";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    specularMap[0] = "art/radarMesh/materialLib/concrete/concreteAluminumComposite.dds";
    pixelSpecular0 = "0";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(win24)
@@ -180,7 +168,7 @@ singleton Material(SMPlaBas57)
    mapTo = "SMPlaBas57";
    diffuseColor[0] = "1 1 1 1";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    translucentBlendOp = "None";
    diffuseMap[0] = "art/radarMesh/SMPlaBas57";
@@ -225,7 +213,7 @@ singleton Material(wall81)
    mapTo = "wall81";
    diffuseMap[0] = "art/radarMesh/wall81.tga";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    specularMap[0] = "art/radarMesh/materialLib/asphalt/asphaltComposite.dds";
@@ -241,16 +229,12 @@ singleton Material(wall135)
    mapTo = "wall135";
    diffuseColor[0] = "1 1 1 1";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    translucentBlendOp = "None";
    diffuseMap[0] = "art/radarMesh/wall135";
    specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.png";
    pixelSpecular0 = "0";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(wall135)
@@ -268,15 +252,11 @@ singleton Material(roof11)
    mapTo = "roof11";
    diffuseMap[0] = "art/radarMesh/roof11.tga";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.dds";
    pixelSpecular0 = "0";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(gr46)
@@ -284,15 +264,11 @@ singleton Material(gr46)
    mapTo = "gr46";
    diffuseMap[0] = "art/radarMesh/gr46.tga";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
    normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
    specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.png";
    pixelSpecular0 = "0";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(roof12)
@@ -1069,72 +1045,58 @@ singleton Material(CorrugatedWall6)
    invertSmoothness[0] = "1";
 };
 
+singleton Material(roof6)
+{
+   mapTo = "roof6";
+   diffuseMap[0] = "art/radarMesh/roof6";
+   normalMap[0] = "art/radarMesh/materialLib/flatNormal.dds";
+   specularMap[0] = "art/radarMesh/materialLib/brick/brickComposite.png";
+   pixelSpecular0 = "0";
+};
+
+singleton Material(Radar_wall137_001)
+{
+   mapTo = "wall137.001";
+   diffuseColor[0] = "0.64 0.64 0.64 1";
+   smoothness[0] = "1";
+   metalness[0] = "50";
+   translucentBlendOp = "None";
+};
+
 singleton Material(Radar_win49_mask_two_sided_001)
 {
    mapTo = "win49.mask.two-sided.001";
    diffuseColor[0] = "0.64 0.64 0.64 1";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
-   pixelSpecular0 = "0";
-   doubleSided = "1";
 };
 
 singleton Material(Radar_roof10)
 {
    mapTo = "roof10";
-   diffuseColor[0] = "1 1 1 1";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR Levels Converted/TTR_Textures/TTR_Roof/Texture/roof10";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
-   diffuseMap[0] = "art/radarMesh/roof10.tga";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   pixelSpecular0 = "0";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(Radar_wall80)
 {
    mapTo = "wall80";
-   diffuseMap[0] = "art/radarMesh/wall80.tga";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR Levels Converted/TTR_Textures/TTR_Wall/Texture/wall80";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   pixelSpecular0 = "0";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(Radar_SMFloorGrate)
 {
    mapTo = "SMFloorGrate";
-   smoothness[0] = "1";
-   metalness[0] = "1";
-   translucentBlendOp = "None";
-   diffuseColor[0] = "0.64 0.64 0.64 1";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   pixelSpecular0 = "0";
-   materialTag0 = "Miscellaneous";
-};
-
-singleton Material(Radar_win21_001)
-{
-   mapTo = "win21.001";
    diffuseColor[0] = "0.64 0.64 0.64 1";
    smoothness[0] = "1";
-   metalness[0] = "1";
+   metalness[0] = "50";
    translucentBlendOp = "None";
-   specular0 = "0.9 0.9 0.9 1";
-   specularPower0 = "0.415939";
-   roughness0 = "1";
-   pixelSpecular0 = "0";
-   materialTag0 = "Miscellaneous";
 };
 
 singleton Material(Radar_win21_001)
@@ -1158,16 +1120,7 @@ singleton Material(Radar_sndbgs2)
 singleton Material(Radar_Grass)
 {
    mapTo = "Grass";
-   diffuseMap[0] = "art/radarMesh/images/gr25";
-   smoothness[0] = "1";
-   metalness[0] = "50";
-   translucentBlendOp = "None";
-};
-
-singleton Material(Radar_roof6)
-{
-   mapTo = "roof6";
-   diffuseMap[0] = "art/radarMesh/images/roof6";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR/TTR_Textures/TTR_Ground/Texture/gr25";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
@@ -1176,7 +1129,7 @@ singleton Material(Radar_roof6)
 singleton Material(Radar_gr51)
 {
    mapTo = "gr51";
-   diffuseMap[0] = "art/radarMesh/images/gr51";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/ttr99/Textures/TTR_Ground/gr51";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
@@ -1200,20 +1153,10 @@ singleton Material(Radar_post8_two_sided_001)
    translucentBlendOp = "None";
 };
 
-singleton Material(Radar_sky21_001)
-{
-   mapTo = "sky21.001";
-   diffuseColor[0] = "0.64 0.64 0.64 1";
-   smoothness[0] = "1";
-   metalness[0] = "50";
-   translucentBlendOp = "None";
-};
-
 singleton Material(Radar_gr42)
 {
    mapTo = "gr42";
-   diffuseColor[3] = "White";
-   diffuseMap[0] = "art/radarMesh/images/gr42";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR/TTR_Textures/TTR_Ground/Texture/gr42";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
@@ -1222,7 +1165,7 @@ singleton Material(Radar_gr42)
 singleton Material(Radar_gr45)
 {
    mapTo = "gr45";
-   diffuseMap[0] = "art/radarMesh/images/gr45";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR Levels Converted/TTR_Textures/TTR_Ground/Texture/gr45";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
@@ -1249,7 +1192,7 @@ singleton Material(Radar_wall17_001)
 singleton Material(Radar_roof8)
 {
    mapTo = "roof8";
-   diffuseMap[0] = "art/radarMesh/images/roof8";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR Levels Converted/TTR_Textures/TTR_Roof/Texture/roof8";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
@@ -1262,6 +1205,7 @@ singleton Material(Radar_wall43_001)
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
+   effectColor[1] = "InvisibleBlack";
 };
 
 singleton Material(Radar_fol3_two_sided)
@@ -1276,7 +1220,7 @@ singleton Material(Radar_fol3_two_sided)
 singleton Material(Radar_door10)
 {
    mapTo = "door10";
-   diffuseMap[0] = "art/radarMesh/images/door10";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR Levels Converted/TTR_Textures/TTR_Door/Texture/door10";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
@@ -1286,7 +1230,6 @@ singleton Material(Radar_wood1_001)
 {
    mapTo = "wood1.001";
    diffuseColor[0] = "0.64 0.64 0.64 1";
-   diffuseColor[2] = "1 1 1 1";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
@@ -1304,7 +1247,7 @@ singleton Material(Radar_ShpWood8_two_sided_001)
 singleton Material(Radar_gr55)
 {
    mapTo = "gr55";
-   diffuseMap[0] = "art/radarMesh/images/gr55";
+   diffuseMap[0] = "art/radarMesh/../.ShareDrive/TTR_Extracted/TTR/TTR_Textures/TTR_Ground/Texture/gr55";
    smoothness[0] = "1";
    metalness[0] = "50";
    translucentBlendOp = "None";
