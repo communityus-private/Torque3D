@@ -60,6 +60,15 @@ public:
       Convex = 1,          ///< Convex-based shape
    };
 
+   enum ProbeModeType
+   {
+      HorizonColor = 0,            
+      StaticCubemap = 1, 
+      BakedCubemap = 2,
+      SkyLight = 3,
+      //DynamicCubemap = 3,
+   };
+
 private:
 
    // Networking masks
@@ -77,6 +86,7 @@ private:
 
    bool mBake;
    bool mEnabled;
+   bool mDirty;
 
    Resource<TSShape> mEditorShape;
    TSShapeInstance* mEditorShapeInst;
@@ -91,6 +101,8 @@ private:
 
    ProbeShapeType mProbeShapeType;
 
+   ProbeModeType mProbeModeType;
+
    ReflectProbeInfo* mProbeInfo;
 
    F32 mRadius;
@@ -102,6 +114,8 @@ private:
    String mCubemapName;
    CubemapData *mCubemap;
    bool mUseCubemap;
+
+   String mReflectionPath;
 
    // Define our vertex format here so we don't have to
    // change it in multiple spots later
@@ -179,10 +193,13 @@ public:
    }
 
    //Baking
-   void bake();
+   void bake(String outputPath, S32 resolution);
 };
 
 typedef ReflectionProbe::ProbeShapeType ReflectProbeType;
 DefineEnumType(ReflectProbeType);
+
+typedef ReflectionProbe::ProbeModeType ReflectProbeMode;
+DefineEnumType(ReflectProbeMode);
 
 #endif // _ReflectionProbe_H_

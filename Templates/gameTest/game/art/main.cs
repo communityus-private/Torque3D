@@ -19,3 +19,13 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+
+new CubemapData(Potates)
+{
+   cubeFace[0] = "63009_0.png";
+   cubeFace[1] = "63009_1.png";
+   cubeFace[2] = "63009_2.png";
+   cubeFace[3] = "63009_3.png";   
+   cubeFace[4] = "63009_4.png";
+   cubeFace[5] = "63009_5.png";
+};

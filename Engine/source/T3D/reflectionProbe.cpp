@@ -117,11 +117,18 @@ ConsoleDocClass(ReflectionProbe,
 ImplementEnumType(ReflectProbeType,
    "Type of mesh data available in a shape.\n"
    "@ingroup gameObjects")
-{
-   ReflectionProbe::Sphere, "Sphere", "Sphere shaped"
-},
+{ ReflectionProbe::Sphere, "Sphere", "Sphere shaped" },
 { ReflectionProbe::Convex, "Convex", "Convex-based shape" }
 EndImplementEnumType;
+
+ImplementEnumType(ReflectProbeMode,
+   "Type of mesh data available in a shape.\n"
+   "@ingroup gameObjects")
+{ ReflectionProbe::HorizonColor, "Horizon Colors", "Uses sky and ground flat colors for ambient light" },
+{ ReflectionProbe::StaticCubemap, "Static Cubemap", "Uses a static CubemapData" },
+{ ReflectionProbe::BakedCubemap, "Baked Cubemap", "Uses a cubemap baked from the probe's current position" },
+{ ReflectionProbe::SkyLight, "Skylight", "Captures a cubemap of the sky and far terrain, designed to influence the whole level" }
+   EndImplementEnumType;
 
 //-----------------------------------------------------------------------------
 // Object setup and teardown
@@ -140,8 +147,11 @@ ReflectionProbe::ReflectionProbe()
    mMaterialInst = NULL;
 
    mProbeShapeType = Sphere;
+   mProbeModeType = BakedCubemap;
 
    mEnabled = true;
+   mBake = false;
+   mDirty = false;
 
    mProbeInfo = new ReflectProbeInfo();
 
@@ -154,6 +164,7 @@ ReflectionProbe::ReflectionProbe()
 
    mUseCubemap = false;
    mCubemap = NULL;
+   mReflectionPath = "";
 
    mEditorShapeInst = NULL;
    mEditorShape = NULL;
@@ -181,18 +192,28 @@ void ReflectionProbe::initPersistFields()
       "The type of mesh data to use for collision queries.");
    addField("radius", TypeF32, Offset(mRadius, ReflectionProbe), "The name of the material used to render the mesh.");
 
-   addField("useCubemap", TypeBool, Offset(mUseCubemap, ReflectionProbe), "Cubemap used instead of reflection texture if fullReflect is off.");
-   addField("cubemap", TypeCubemapName, Offset(mCubemapName, ReflectionProbe), "Cubemap used instead of reflection texture if fullReflect is off.");
+   addField("ProbeMode", TypeReflectProbeMode, Offset(mProbeModeType, ReflectionProbe),
+      "The type of mesh data to use for collision queries.");
 
-   addField("OverrideColor", TypeBool, Offset(mOverrideColor, ReflectionProbe), "Path of file to save and load results.");
-   addField("SkyColor", TypeColorF, Offset(mSkyColor, ReflectionProbe), "Path of file to save and load results.");
-   addField("GroundColor", TypeColorF, Offset(mGroundColor, ReflectionProbe), "Path of file to save and load results.");
    addField("Intensity", TypeF32, Offset(mIntensity, ReflectionProbe), "Path of file to save and load results.");
    endGroup("Rendering");
 
+   addGroup("CubemapMode");
+   addField("reflectionPath", TypeImageFilename, Offset(mReflectionPath, ReflectionProbe),
+      "The type of mesh data to use for collision queries.");
+
+   //addField("useCubemap", TypeBool, Offset(mUseCubemap, ReflectionProbe), "Cubemap used instead of reflection texture if fullReflect is off.");
+   addField("StaticCubemap", TypeCubemapName, Offset(mCubemapName, ReflectionProbe), "Cubemap used instead of reflection texture if fullReflect is off.");
+   endGroup("CubemapMode");
+
+   addGroup("ColorMode");
+   addField("SkyColor", TypeColorF, Offset(mSkyColor, ReflectionProbe), "Path of file to save and load results.");
+   addField("GroundColor", TypeColorF, Offset(mGroundColor, ReflectionProbe), "Path of file to save and load results.");
+   endGroup("ColorMode");
+
    addGroup("Baking");
    addProtectedField("Bake", TypeBool, Offset(mBake, ReflectionProbe),
-      &_doBake, &defaultProtectedGetFn, "Regenerate Voxel Grid");
+      &_doBake, &defaultProtectedGetFn, "Regenerate Voxel Grid", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors);
    endGroup("Baking");
 
    // SceneObject already handles exposing the transform
@@ -202,6 +223,8 @@ void ReflectionProbe::initPersistFields()
 void ReflectionProbe::inspectPostApply()
 {
    Parent::inspectPostApply();
+
+   mDirty = true;
 
    // Flag the network mask to send the updates
    // to the client object
@@ -222,7 +245,8 @@ bool ReflectionProbe::_doBake(void *object, const char *index, const char *data)
 {
    ReflectionProbe* probe = reinterpret_cast< ReflectionProbe* >(object);
 
-   probe->bake();
+   if (probe->mDirty)
+      probe->bake(probe->mReflectionPath, 256);
 
    return false;
 }
@@ -249,7 +273,22 @@ bool ReflectionProbe::onAdd()
 
    if (isClientObject())
    {
-      if (mCubemapName.isNotEmpty())
+      if ((mProbeModeType == BakedCubemap || mProbeModeType == SkyLight ) && !mReflectionPath.isEmpty())
+      {
+         //load the baked cubemap if possible
+         mCubemap = new CubemapData();
+      
+         for (U32 i = 0; i < 6; ++i)
+         {
+            char faceFile[256];
+            dSprintf(faceFile, sizeof(faceFile), "%s_%i", mReflectionPath.c_str(), i);
+
+            mCubemap->mCubeFaceFile[i] = faceFile;
+         }
+
+         mCubemap->createMap();
+      }
+      else if (mCubemapName.isNotEmpty())
          Sim::findObject(mCubemapName, mCubemap);
    }
 
@@ -268,6 +307,8 @@ void ReflectionProbe::setTransform(const MatrixF & mat)
 {
    // Let SceneObject handle all of the matrix manipulation
    Parent::setTransform(mat);
+
+   mDirty = true;
 
    // Dirty our network mask so that the new transform gets
    // transmitted to the client object
@@ -290,11 +331,16 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
    if (stream->writeFlag(mask & UpdateMask))
       stream->write(mMaterialName);
 
+   stream->write((U32)mProbeShapeType);
+   stream->write((U32)mProbeModeType);
+
    stream->writeFlag(mOverrideColor);
    stream->write(mSkyColor);
    stream->write(mGroundColor);
    stream->writeFloat(mIntensity, 7);
    stream->write(mRadius);
+
+   stream->write(mReflectionPath);
 
    stream->writeFlag(mEnabled);
 
@@ -325,11 +371,27 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
          updateMaterial();
    }
 
+   U32 shapeType = Sphere;
+   stream->read(&shapeType);
+   if ((ProbeShapeType)shapeType != Sphere)
+   {
+      mProbeShapeType = (ProbeShapeType)shapeType;
+   }
+
+   U32 modeType = BakedCubemap;
+   stream->read(&modeType);
+   if ((ProbeModeType)modeType != BakedCubemap)
+   {
+      mProbeModeType = (ProbeModeType)modeType;
+   }
+
    mOverrideColor = stream->readFlag();
    stream->read(&mSkyColor);
    stream->read(&mGroundColor);
    mIntensity = stream->readFloat(7);
    stream->read(&mRadius);
+
+   stream->read(&mReflectionPath);
 
    mEnabled = stream->readFlag();
 
@@ -382,11 +444,35 @@ void ReflectionProbe::updateMaterial()
 {
    mProbeInfo->setPosition(getPosition());
 
-   mProbeInfo->mCubemap = mCubemap;
+   if (mProbeModeType == BakedCubemap || mProbeModeType == StaticCubemap || mProbeModeType == SkyLight)
+   { 
+      if (!mCubemap)
+      {
+         mCubemap = new CubemapData();
+         mCubemap->registerObject();
+      }
+
+      for (U32 i = 0; i < 6; ++i)
+      {
+         char faceFile[256];
+         dSprintf(faceFile, sizeof(faceFile), "%s_%i", mReflectionPath.c_str(), i);
+
+         mCubemap->mCubeFaceFile[i] = faceFile;
+      }
+
+      mCubemap->createMap();
+
+      mProbeInfo->mUseCubemap = true;
+      mProbeInfo->mCubemap = mCubemap;
+   }
+   else
+   {
+      mProbeInfo->mUseCubemap = false;
+      mProbeInfo->mSkyColor = mSkyColor;
+      mProbeInfo->mGroundColor = mGroundColor;
+   }
+   
    mProbeInfo->mIntensity = mIntensity;
-   mProbeInfo->mUseCubemap = mUseCubemap;
-   mProbeInfo->mSkyColor = mSkyColor;
-   mProbeInfo->mGroundColor = mGroundColor;
    mProbeInfo->mRadius = mRadius;
 }
 
@@ -492,9 +578,18 @@ DefineEngineMethod(ReflectionProbe, postApply, void, (), ,
    object->inspectPostApply();
 }
 
-void ReflectionProbe::bake()
+void ReflectionProbe::bake(String outputPath, S32 resolution)
 {
    GFXDEBUGEVENT_SCOPE(ReflectionProbe_Bake, ColorI::WHITE);
+
+   if (mReflectionPath.isEmpty())
+   {
+      U32 uniqueID = mRandI(0, 100000);
+      char reflPath[256];
+      dSprintf(reflPath, 256, "%s%i", outputPath.c_str(), uniqueID);
+
+      mReflectionPath = reflPath;
+   }
 
    // store current matrices
    GFXTransformSaver saver;
@@ -503,6 +598,12 @@ void ReflectionProbe::bake()
    F32 left, right, top, bottom;
    F32 nearPlane = 0.1;
    F32 farDist = 1000;
+
+   if (mProbeModeType == SkyLight)
+   {
+      nearPlane = 1000;
+      farDist = 10000;
+   }
 
    MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
    GFX->setFrustum(left, right, bottom, top, nearPlane, farDist);
@@ -557,7 +658,7 @@ void ReflectionProbe::bake()
 
       GFX->setWorldMatrix(matView);
 
-      Point2I destSize = Point2I(1024, 1024);
+      Point2I destSize = Point2I(resolution, resolution);
       GFXTexHandle blendTex;
       blendTex.set(destSize.x, destSize.y, GFXFormatR8G8B8A8, &GFXDefaultRenderTargetProfile, "");
 
@@ -578,16 +679,17 @@ void ReflectionProbe::bake()
       reflectRenderState.setDiffuseCameraTransform(matView);
 
       // render scene
-      LIGHTMGR->registerGlobalLights(&reflectRenderState.getCullingFrustum(), false);
+      //LIGHTMGR->unregisterAllLights();
+      //LIGHTMGR->registerGlobalLights(&reflectRenderState.getCullingFrustum(), false);
       gClientSceneGraph->renderScene(&reflectRenderState, -1);
-      LIGHTMGR->unregisterAllLights();
+      //LIGHTMGR->unregisterAllLights();
 
       mBaseTarget->resolve();
 
       GFXTextureObject *faceTexture;
 
       char fileName[256];
-      dSprintf(fileName, 256, "bakeTest%i.png", i);
+      dSprintf(fileName, 256, "%s_%i.png", mReflectionPath.c_str(), i);
 
       FileStream stream;
       if (!stream.open(fileName, Torque::FS::File::Write))
@@ -599,10 +701,31 @@ void ReflectionProbe::bake()
       blendTex->copyToBmp(&bitmap);
       bitmap.writeBitmap("png", stream);
    }
+
+   //load the baked cubemap if possible
+   if (!mCubemap)
+      mCubemap = new CubemapData();
+
+   for (U32 i = 0; i < 6; ++i)
+   {
+      char faceFile[256];
+      dSprintf(faceFile, sizeof(faceFile), "%s_%i", mReflectionPath.c_str(), i);
+
+      mCubemap->mCubeFaceFile[i] = faceFile;
+   }
+
+   if (mCubemap->mCubemap)
+      mCubemap->updateFaces();
+   else
+      mCubemap->createMap();
+
+   mDirty = false;
+
+   setMaskBits(-1);
 }
 
-DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath), (""),
+DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath, S32 resolution), ("", 256),
    "@brief returns true if control object is inside the fog\n\n.")
 {
-   object->bake();
+   object->bake(outputPath, resolution);
 }

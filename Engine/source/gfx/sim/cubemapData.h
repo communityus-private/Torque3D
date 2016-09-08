@@ -49,6 +49,8 @@ public:
 
    GFXCubemapHandle  mCubemap;
 
+   FileName mCubeFaceFile[6];
+
    CubemapData();
    ~CubemapData();
 
@@ -64,8 +66,6 @@ public:
 	void updateFaces();
 
 protected:
-
-   FileName mCubeFaceFile[6];
    GFXTexHandle mCubeFace[6];
 
    GFXTexHandle mDepthBuff;
