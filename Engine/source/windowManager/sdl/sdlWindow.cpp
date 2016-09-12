@@ -71,6 +71,31 @@ namespace
 
       return ret;
    }
+
+   U32 getTorqueModFromSDLScancodes(U16 mod)
+   {
+      U32 ret = 0;
+
+      if (mod == SDL_SCANCODE_LSHIFT)
+         ret |= IM_LSHIFT;
+
+      if (mod == SDL_SCANCODE_RSHIFT)
+         ret |= IM_RSHIFT;
+
+      if (mod == SDL_SCANCODE_LCTRL)
+         ret |= IM_LCTRL;
+
+      if (mod == SDL_SCANCODE_RCTRL)
+         ret |= IM_RCTRL;
+
+      if (mod == SDL_SCANCODE_LALT)
+         ret |= IM_LALT;
+
+      if (mod == SDL_SCANCODE_RALT)
+         ret |= IM_RALT;
+
+      return ret;
+   }
 }
 
 PlatformWindowSDL::PlatformWindowSDL():
@@ -84,7 +109,8 @@ mTarget(NULL),
 mDevice(NULL),
 mSuppressReset(false),
 mMenuHandle(NULL),
-mPosition(0,0)
+mPosition(0,0),
+mStoredModifiers(0)
 {
 	mCursorController = new PlatformCursorControllerSDL( this );
 
@@ -427,15 +453,15 @@ void PlatformWindowSDL::defaultRender()
 void PlatformWindowSDL::_triggerMouseLocationNotify(const SDL_Event& evt)
 {
    if(!mMouseLocked)
-      mouseEvent.trigger(getWindowId(), 0, evt.motion.x, evt.motion.y, false);
+      mouseEvent.trigger(getWindowId(), mStoredModifiers, evt.motion.x, evt.motion.y, false);
    else
-      mouseEvent.trigger(getWindowId(), 0, evt.motion.xrel, evt.motion.yrel, true);
+      mouseEvent.trigger(getWindowId(), mStoredModifiers, evt.motion.xrel, evt.motion.yrel, true);
 }
 
 void PlatformWindowSDL::_triggerMouseWheelNotify(const SDL_Event& evt)
 {
    S32 wheelDelta = Con::getIntVariable("$pref::Input::MouseWheelSpeed", 120);
-   wheelEvent.trigger(getWindowId(), 0, evt.wheel.x * wheelDelta, evt.wheel.y * wheelDelta);
+   wheelEvent.trigger(getWindowId(), mStoredModifiers, evt.wheel.x * wheelDelta, evt.wheel.y * wheelDelta);
 }
 
 void PlatformWindowSDL::_triggerMouseButtonNotify(const SDL_Event& event)
@@ -466,6 +492,13 @@ void PlatformWindowSDL::_triggerKeyNotify(const SDL_Event& evt)
 {
    U32 inputAction = IA_MAKE;
    SDL_Keysym tKey = evt.key.keysym;
+
+   //Store the modifier keys in case we need them for mouse modifiers, 
+   //as SDL tracks key modifiers weirdly when doing mouse inputs
+   if (evt.type == SDL_KEYDOWN)
+      mStoredModifiers |= getTorqueModFromSDLScancodes(tKey.scancode);
+   else
+      mStoredModifiers &= getTorqueModFromSDLScancodes(tKey.scancode);
 
    if(evt.type == SDL_KEYUP)
    {

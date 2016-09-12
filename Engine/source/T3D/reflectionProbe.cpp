@@ -49,6 +49,9 @@
 #include "lighting/advanced/advancedLightManager.h"
 #include "core/resourceManager.h"
 
+#include "console/simPersistId.h"
+#include <string>
+
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 
@@ -165,6 +168,7 @@ ReflectionProbe::ReflectionProbe()
    mUseCubemap = false;
    mCubemap = NULL;
    mReflectionPath = "";
+   mProbeUniqueID = "";
 
    mEditorShapeInst = NULL;
    mEditorShape = NULL;
@@ -268,29 +272,21 @@ bool ReflectionProbe::onAdd()
    // Add this object to the scene
    addToScene();
 
-   // Refresh this object's material (if any)
-   updateMaterial();
-
-   if (isClientObject())
+   if (isServerObject())
    {
-      if ((mProbeModeType == BakedCubemap || mProbeModeType == SkyLight ) && !mReflectionPath.isEmpty())
-      {
-         //load the baked cubemap if possible
-         mCubemap = new CubemapData();
-      
-         for (U32 i = 0; i < 6; ++i)
-         {
-            char faceFile[256];
-            dSprintf(faceFile, sizeof(faceFile), "%s_%i", mReflectionPath.c_str(), i);
+      if (!mPersistentId)
+         mPersistentId = getOrCreatePersistentId();
 
-            mCubemap->mCubeFaceFile[i] = faceFile;
-         }
-
-         mCubemap->createMap();
-      }
-      else if (mCubemapName.isNotEmpty())
-         Sim::findObject(mCubemapName, mCubemap);
+      mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
    }
+
+   //Store the hash as our probeID string
+
+   // Refresh this object's material (if any)
+   if (isClientObject())
+      updateMaterial();
+
+   setMaskBits(-1);
 
    return true;
 }
@@ -341,6 +337,7 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
    stream->write(mRadius);
 
    stream->write(mReflectionPath);
+   stream->write(mProbeUniqueID);
 
    stream->writeFlag(mEnabled);
 
@@ -392,6 +389,7 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
    stream->read(&mRadius);
 
    stream->read(&mReflectionPath);
+   stream->read(&mProbeUniqueID);
 
    mEnabled = stream->readFlag();
 
@@ -452,15 +450,25 @@ void ReflectionProbe::updateMaterial()
          mCubemap->registerObject();
       }
 
-      for (U32 i = 0; i < 6; ++i)
+      if (!mProbeUniqueID.isEmpty())
       {
-         char faceFile[256];
-         dSprintf(faceFile, sizeof(faceFile), "%s_%i", mReflectionPath.c_str(), i);
+         bool validCubemap = true;
 
-         mCubemap->mCubeFaceFile[i] = faceFile;
+         for (U32 i = 0; i < 6; ++i)
+         {
+            char faceFile[256];
+            dSprintf(faceFile, sizeof(faceFile), "%s%s_%i.png", mReflectionPath.c_str(),
+               mProbeUniqueID.c_str(), i);
+
+            if (Platform::isFile(faceFile))
+               mCubemap->mCubeFaceFile[i] = faceFile;
+            else
+               validCubemap = false;
+         }
+
+         if (validCubemap)
+            mCubemap->createMap();
       }
-
-      mCubemap->createMap();
 
       mProbeInfo->mUseCubemap = true;
       mProbeInfo->mCubemap = mCubemap;
@@ -548,6 +556,11 @@ void ReflectionProbe::submitLights(LightManager *lm, bool staticLighting)
    if (!mEnabled)
       return;
 
+   if ((mProbeModeType == SkyLight || mProbeModeType == BakedCubemap || mProbeModeType == StaticCubemap) && !mProbeInfo->mCubemap->mCubemap.isValid())
+   {
+      mProbeInfo->mCubemap->mCubemap = NULL;
+   }
+
    lm->addSphereReflectProbe(mProbeInfo);
 }
 
@@ -582,13 +595,23 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 {
    GFXDEBUGEVENT_SCOPE(ReflectionProbe_Bake, ColorI::WHITE);
 
-   if (mReflectionPath.isEmpty())
+   if (mProbeModeType == StaticCubemap || mProbeModeType == BakedCubemap || mProbeModeType == SkyLight)
    {
-      U32 uniqueID = mRandI(0, 100000);
-      char reflPath[256];
-      dSprintf(reflPath, 256, "%s%i", outputPath.c_str(), uniqueID);
+      if (!mCubemap)
+      {
+         mCubemap = new CubemapData();
+         mCubemap->registerObject();
+      }
+   }
 
-      mReflectionPath = reflPath;
+   if (mReflectionPath.isEmpty() || !mPersistentId)
+   {
+      if (!mPersistentId)
+         mPersistentId = getOrCreatePersistentId();
+
+      mReflectionPath = outputPath.c_str();
+
+      mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
    }
 
    // store current matrices
@@ -611,6 +634,8 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    // We don't use a special clipping projection, but still need to initialize 
    // this for objects like SkyBox which will use it during a reflect pass.
    gClientSceneGraph->setNonClipProjection(GFX->getProjectionMatrix());
+
+   bool validCubemap = true;
 
    // Standard view that will be overridden below.
    VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
@@ -686,40 +711,36 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
       mBaseTarget->resolve();
 
-      GFXTextureObject *faceTexture;
-
       char fileName[256];
-      dSprintf(fileName, 256, "%s_%i.png", mReflectionPath.c_str(), i);
+      dSprintf(fileName, 256, "%s%s_%i.png", mReflectionPath.c_str(),
+         mProbeUniqueID.c_str(), i);
 
       FileStream stream;
       if (!stream.open(fileName, Torque::FS::File::Write))
       {
+         Con::errorf("ReflectionProbe::bake(): Couldn't open cubemap face file fo writing " + String(fileName));
          return;
       }
 
       GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
       blendTex->copyToBmp(&bitmap);
       bitmap.writeBitmap("png", stream);
+
+      if (Platform::isFile(fileName) && mCubemap)
+         mCubemap->mCubeFaceFile[i] = fileName;
+      else
+         validCubemap = false;
    }
 
-   //load the baked cubemap if possible
-   if (!mCubemap)
-      mCubemap = new CubemapData();
-
-   for (U32 i = 0; i < 6; ++i)
+   if (validCubemap)
    {
-      char faceFile[256];
-      dSprintf(faceFile, sizeof(faceFile), "%s_%i", mReflectionPath.c_str(), i);
+      if (mCubemap->mCubemap)
+         mCubemap->updateFaces();
+      else
+         mCubemap->createMap();
 
-      mCubemap->mCubeFaceFile[i] = faceFile;
+      mDirty = false;
    }
-
-   if (mCubemap->mCubemap)
-      mCubemap->updateFaces();
-   else
-      mCubemap->createMap();
-
-   mDirty = false;
 
    setMaskBits(-1);
 }

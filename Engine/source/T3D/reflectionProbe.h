@@ -116,6 +116,7 @@ private:
    bool mUseCubemap;
 
    String mReflectionPath;
+   String mProbeUniqueID;
 
    // Define our vertex format here so we don't have to
    // change it in multiple spots later

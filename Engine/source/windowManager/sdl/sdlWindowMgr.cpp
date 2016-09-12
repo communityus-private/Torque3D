@@ -193,6 +193,8 @@ void* PlatformWindowManagerSDL::getParentWindow()
 void PlatformWindowManagerSDL::_process()
 {
    SDL_Event evt;
+
+   evt.key.keysym.mod = 0;
    while( SDL_PollEvent(&evt) )
    {      
       switch(evt.type)

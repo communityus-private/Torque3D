@@ -53,10 +53,9 @@
 ImplementEnumType(BatchingMode,
    "Type of mesh data available in a shape.\n"
    "@ingroup gameObjects")
-{
-   MeshComponent::Ad_Hoc, "Ad-Hoc", "This mesh is rendered indivudally, wthout batching or instancing."
-},
+{ MeshComponent::Individual, "Individual", "This mesh is rendered indivudally, wthout batching or instancing."},
 { MeshComponent::StaticBatch, "Static Batching", "Statically batches this mesh together with others to reduce drawcalls." },
+{ MeshComponent::DynamicBatch, "Dynamic Batching", "Dynamical batches this mesh together with others to reduce drawcalls each frame." },
 { MeshComponent::Instanced, "Instanced", "This mesh is rendered as an instance, reducing draw overhead with others that share the same mesh and material." },
 EndImplementEnumType;
 
@@ -80,6 +79,8 @@ MeshComponent::MeshComponent() : Component()
 
    mNetworked = true;
    mNetFlags.set(Ghostable | ScopeAlways);
+
+   mRenderMode = Individual;
 }
 
 MeshComponent::~MeshComponent(){}
@@ -158,6 +159,9 @@ void MeshComponent::onComponentRemove()
 void MeshComponent::initPersistFields()
 {
    Parent::initPersistFields();
+
+   addField("BatchingMode", TypeBatchingMode, Offset(mRenderMode, MeshComponent),
+      "The mode of batching this shape should be rendered with.");
 
    //create a hook to our internal variables
    addGroup("Model");
@@ -393,8 +397,7 @@ void MeshComponent::updateShape()
       }
       else
       {
-         bool staticBatch = false;
-         if (/*mRenderMode == StaticBatch*/staticBatch)
+         if (mRenderMode == StaticBatch)
          {
             /*RenderMeshMgr *MeshBinManager;
             Sim::findObject("MeshBin", MeshBinManager);

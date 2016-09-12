@@ -41,6 +41,9 @@
 #include "math/util/matrixSet.h"
 #include "console/engineAPI.h"
 
+//MaskedOcclusionCulling
+#include <maskedOcclusionCulling/MaskedOcclusionCulling.h>
+
 
 const RenderInstType RenderInstType::Invalid( "" );
 
@@ -243,6 +246,11 @@ void RenderPassManager::render(SceneRenderState * state)
    GFX->pushWorldMatrix();
    MatrixF proj = GFX->getProjectionMatrix();
 
+   MaskedOcclusionCulling *moc = MaskedOcclusionCulling::Create();
+
+   moc->SetResolution(state->getViewport().len_x(), state->getViewport().len_y());
+   moc->ClearBuffer();
+   moc->SetNearClipPlane(state->getCullingFrustum().getNearDist());
    
    for (Vector<RenderBinManager *>::iterator itr = mRenderBins.begin();
       itr != mRenderBins.end(); itr++)
@@ -253,6 +261,8 @@ void RenderPassManager::render(SceneRenderState * state)
       curBin->render(state);
       getRenderBinSignal().trigger(curBin, state, false);
    }
+
+   MaskedOcclusionCulling::Destroy(moc);
 
    GFX->popWorldMatrix();
    GFX->setProjectionMatrix( proj );

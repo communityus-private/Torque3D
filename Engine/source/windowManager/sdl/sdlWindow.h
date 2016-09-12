@@ -87,6 +87,8 @@ private:
    /// Menu associated with this window.  This is a passive property of the window and is not required to be used at all.
    void* mMenuHandle;
 
+   U32 mStoredModifiers;
+
    /// @}
 
    void _processSDLEvent(SDL_Event &evt);

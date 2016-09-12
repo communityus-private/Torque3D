@@ -37,6 +37,9 @@
 #include "math/util/matrixSet.h"
 #include "materials/materialManager.h"
 
+//MaskedOcclusionCulling
+#include <maskedOcclusionCulling/MaskedOcclusionCulling.h>
+
 bool RenderTerrainMgr::smRenderWireframe = false;
 
 S32 RenderTerrainMgr::smCellsRendered = 0;

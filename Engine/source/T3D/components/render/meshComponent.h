@@ -75,7 +75,8 @@ class MeshComponent : public Component,
 public:
    enum RenderMode
    {
-      Ad_Hoc = 0,
+      Individual = 0,
+      DynamicBatch,
       StaticBatch,
       Instanced
    };
@@ -93,6 +94,8 @@ protected:
    TSShape*		         mShape;
    Box3F						mShapeBounds;
    Point3F					mCenterOffset;
+
+   RenderMode           mRenderMode;
 
    struct matMap
    {

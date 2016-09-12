@@ -682,11 +682,14 @@ void AdvancedLightBinManager::_setupPerFrameParameters( const SceneRenderState *
 
    //MatrixF inverseViewMatrix = MatrixF::Identity;
 
-   mReflectProbeMaterial->setViewParameters(frustum.getNearDist(),
-      frustum.getFarDist(),
-      frustum.getPosition(),
-      farPlane,
-      vsFarPlane, inverseViewMatrix);
+   if (mReflectProbeMaterial)
+   {
+      mReflectProbeMaterial->setViewParameters(frustum.getNearDist(),
+         frustum.getFarDist(),
+         frustum.getPosition(),
+         farPlane,
+         vsFarPlane, inverseViewMatrix);
+   }
 }
 
 void AdvancedLightBinManager::setupSGData( SceneData &data, const SceneRenderState* state, LightInfo *light )
@@ -1181,9 +1184,6 @@ void AdvancedLightBinManager::ReflectProbeMaterialInfo::setProbeParameters(const
    if (probeInfo->mUseCubemap && probeInfo->mCubemap)
    {
       matParams->setSafe(useCubemap, 1.0f);
-
-      if (!probeInfo->mCubemap->mCubemap)
-         probeInfo->mCubemap->createMap();
 
       GFX->setCubeTexture(4, probeInfo->mCubemap->mCubemap);
    }
