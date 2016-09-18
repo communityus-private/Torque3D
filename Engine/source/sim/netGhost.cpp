@@ -562,6 +562,7 @@ void NetConnection::ghostReadPacket(BitStream *bstream)
                return;
             }
 
+            //Add ObjectPooling here as well, for ghosts management on the client
             NetObject *obj = (NetObject *) ConsoleObject::create(getNetClassGroup(), NetClassTypeObject, classId);
             if(!obj)
             {

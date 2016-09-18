@@ -163,6 +163,9 @@ PlatformWindow *PlatformWindowManagerSDL::createWindow(GFXDevice *device, const 
    window->mOwningManager = this;
    mWindowMap[ window->mWindowId ] = window;
 
+   //SDL_Surface *IMG_Load(const char *file);
+   //SDL_SetWindowIcon(window->mWindowHandle, SDL_Surface* icon)
+
    if(device)
    {
       window->mDevice = device;

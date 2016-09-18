@@ -654,7 +654,18 @@ void SimObject::unregisterObject()
 
 void SimObject::deleteObject()
 {
-   Parent::destroySelf();
+   //In the event we have an active Object Pool and are set to use it, don't delete the object
+   //but instead add it to the object pool group.
+   if (Con::getBoolVariable("$pref::useObjectPooling", false) && Sim::getObjectPool())
+   {
+      this->setHidden(true);
+      Sim::getObjectPool()->addObject(this);
+   }
+   else
+   {
+      //We either have no object pool, or have set our prefs to not utilize it, so just delete the object
+      Parent::destroySelf();
+   }
 }
 
 //-----------------------------------------------------------------------------
