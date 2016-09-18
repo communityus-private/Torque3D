@@ -539,10 +539,31 @@ void GuiConvexEditorCtrl::on3DMouseDragged(const Gui3DMouseEvent & event)
          submitUndo( ModifyShape, mConvexSEL );
       }      
 
-      if ( mGizmo->getMode() == ScaleMode )
+      if ( mGizmo->getMode() == ScaleMode &&  !(event.modifier & SI_CTRL) )
       {
          scaleFace( mConvexSEL, mFaceSEL, mGizmo->getScale() );
       }
+
+	   else if ( mGizmo->getMode() == ScaleMode &&  (event.modifier & SI_CTRL) )
+      {
+          Point3F scale = mGizmo->getDeltaScale();
+
+	      F32 scalar = 1;
+		  mConvexSEL->mSurfaceTextures[mFaceSEL].scale += (Point2F(scale.x, scale.y) * scalar);
+		  Point2F test = mConvexSEL->mSurfaceTextures[mFaceSEL].scale;
+		  mConvexSEL->setMaskBits( ConvexShape::UpdateMask );
+
+		  updateShape( mConvexSEL, mFaceSEL );
+      }
+	  else if ( mGizmo->getMode() == MoveMode && event.modifier & SI_CTRL ) {
+		  Point3F scale = mGizmo->getOffset();
+
+          F32 scalar = 0.8;
+		  mConvexSEL->mSurfaceTextures[mFaceSEL].offset += (Point2F(-scale.x, scale.z) * scalar);
+		  mConvexSEL->setMaskBits( ConvexShape::UpdateMask );
+
+		  updateShape( mConvexSEL, mFaceSEL );
+	  }
       else
       {
          // Why does this have to be so ugly.
@@ -754,8 +775,10 @@ void GuiConvexEditorCtrl::updateGizmo()
 
    if ( mFaceSEL != -1 && mode == MoveMode )
    {
-      if ( mCtrlDown )      
-         flags &= ~( GizmoProfile::CanTranslateX | GizmoProfile::CanTranslateY | GizmoProfile::PlanarHandlesOn );      
+      if ( mCtrlDown )  
+         //hijacking the CTRL modifier for texture offsetting control
+         //flags &= ~( GizmoProfile::CanTranslateX | GizmoProfile::CanTranslateY | GizmoProfile::PlanarHandlesOn ); 
+         flags &= ~GizmoProfile::CanScaleZ;
       else      
          flags |= ( GizmoProfile::CanTranslateX | GizmoProfile::CanTranslateY | GizmoProfile::PlanarHandlesOn );      
    }
