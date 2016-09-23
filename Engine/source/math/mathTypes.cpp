@@ -36,7 +36,7 @@
 #include "math/mRandom.h"
 #include "math/mEase.h"
 #include "math/mathUtils.h"
-
+#include "math/mRotation.h"
 #include "core/strings/stringUnit.h"
 
 IMPLEMENT_SCOPE( MathTypes, Math,, "" );
@@ -113,7 +113,14 @@ IMPLEMENT_STRUCT( EaseF,
    EaseF, MathTypes,
    "" )
 END_IMPLEMENT_STRUCT;
-
+IMPLEMENT_STRUCT(RotationF,
+   RotationF, MathTypes,
+   "")
+   FIELD(x, x, 1, "X coordinate.")
+   FIELD(y, y, 1, "Y coordinate.")
+   FIELD(z, z, 1, "Z coordinate.")
+   FIELD(w, w, 1, "W coordinate.")
+END_IMPLEMENT_STRUCT;
 
 //-----------------------------------------------------------------------------
 // TypePoint2I
@@ -572,6 +579,55 @@ ConsoleSetType( TypeEaseF )
    }
 }
 
+//-----------------------------------------------------------------------------
+// TypeRotationF
+//-----------------------------------------------------------------------------
+ConsoleType(RotationF, TypeRotationF, RotationF, "")
+ImplementConsoleTypeCasters( TypeRotationF, RotationF )
+
+ConsoleGetType(TypeRotationF)
+{
+   RotationF *pt = (RotationF *)dptr;
+   static const U32 bufSize = 256;
+   char* returnBuffer = Con::getReturnBuffer(bufSize);
+
+   EulerF out = pt->asEulerF(RotationF::Degrees);
+   dSprintf(returnBuffer, bufSize, "%g %g %g", out.x, out.y, out.z);
+
+   return returnBuffer;
+}
+
+ConsoleSetType(TypeRotationF)
+{
+   if (argc == 1)
+   {
+      U32 elements = StringUnit::getUnitCount(argv[0], " \t\n");
+      if (elements == 3)
+      {
+         EulerF in;
+         dSscanf(argv[0], "%g %g %g", &in.x, &in.y, &in.z);
+         ((RotationF *)dptr)->set(in, RotationF::Degrees);
+      }
+      else
+      {
+         AngAxisF in;
+         dSscanf(argv[0], "%g %g %g %g", &in.axis.x, &in.axis.y, &in.axis.z, &in.angle);
+         ((RotationF *)dptr)->set(in, RotationF::Degrees);
+      }
+   }
+   else if (argc == 3)
+   {
+      EulerF in(dAtof(argv[0]), dAtof(argv[1]), dAtof(argv[2]));
+      ((RotationF *)dptr)->set(in, RotationF::Degrees);
+   }
+   else if (argc == 4)
+   {
+      AngAxisF in(Point3F(dAtof(argv[0]), dAtof(argv[1]), dAtof(argv[2])), dAtof(argv[3]));
+      ((RotationF *)dptr)->set(in, RotationF::Degrees);
+   }
+   else
+      Con::printf("RotationF must be set as { x, y, z, w } or \"x y z w\"");
+}
 
 //-----------------------------------------------------------------------------
 
@@ -659,6 +715,66 @@ DefineConsoleFunction( VectorScale, VectorF, ( VectorF a, F32 scalar ),,
    "@ingroup Vectors" )
 {
    return a * scalar;
+}
+DefineConsoleFunction( VectorMul, VectorF, ( VectorF a, VectorF b ),,
+   "Multiplies two vectors.\n"
+   "@param a The first vector.\n"
+   "@param b The second vector.\n"
+   "@return The vector @a a * @a b.\n\n"
+   "@tsexample\n"
+	"//-----------------------------------------------------------------------------\n"
+	"//\n"
+	"// VectorMul( %a, %b );\n"
+	"//\n"
+	"// The multiplication of vector a, (ax, ay, az), and vector b, (bx, by, bz) is:\n"
+	"//\n"
+	"//     a * b = ( ax * bx, ay * by, az * bz )\n"
+	"//\n"
+	"//-----------------------------------------------------------------------------\n\n"
+
+	"%a = \"1 0 0\";\n"
+	"%b = \"0 1 0\";\n\n"
+
+	"// %r = \"( 1 * 0, 0 * 1, 0 * 0 )\";\n"
+	"// %r = \"0 0 0\";\n"
+	"%r = VectorMul( %a, %b );\n"
+   "@endtsexample\n\n"
+   "@ingroup Vectors" )
+{
+   return a * b;
+}
+
+DefineConsoleFunction( VectorDiv, VectorF, ( VectorF a, VectorF b ),,
+   "Divide two vectors.\n"
+   "@param a The first vector.\n"
+   "@param b The second vector.\n"
+   "@return The vector @a a / @a b.\n\n"
+   "@tsexample\n"
+	"//-----------------------------------------------------------------------------\n"
+	"//\n"
+	"// VectorDiv( %a, %b );\n"
+	"//\n"
+	"// The division of vector a, (ax, ay, az), and vector b, (bx, by, bz) is:\n"
+	"//\n"
+	"//     a * b = ( ax / bx, ay / by, az / bz )\n"
+	"//\n"
+	"//-----------------------------------------------------------------------------\n\n"
+
+	"%a = \"1 1 1\";\n"
+	"%b = \"2 2 2\";\n\n"
+
+	"// %r = \"( 1 / 2, 1 / 2, 1 / 2 )\";\n"
+	"// %r = \"0.5 0.5 0.5\";\n"
+	"%r = VectorDiv( %a, %b );\n"
+   "@endtsexample\n\n"
+   "@ingroup Vectors" )
+{
+   //this is kind of bad, but so is dividing by 0
+   if(b.x == 0) b.x = 0.000001f;
+   if(b.y == 0) b.y = 0.000001f;
+   if(b.z == 0) b.z = 0.000001f;
+   
+   return a / b;
 }
 
 //-----------------------------------------------------------------------------
@@ -786,6 +902,34 @@ DefineConsoleFunction( VectorDist, F32, ( VectorF a, VectorF b ),,
 {
    VectorF v = b - a;
    return v.len();
+}
+
+//-----------------------------------------------------------------------------
+
+DefineConsoleFunction( VectorMidPoint, VectorF, ( VectorF a, VectorF b ),,
+   "Gets the midpoint between the two vectors.\n"
+   "@param a The first vector.\n"
+   "@param b The second vector.\n"
+   "@return The vector (@a a + @a b) / 2.\n\n"
+   "@tsexample\n"
+      "//-----------------------------------------------------------------------------\n"
+      "//\n"
+      "// VectorMidPoint( %a, %b );\n"
+      "//\n"
+      "// The midpoint of vector a, (ax, ay, az), and vector b, (bx, by, bz) is:\n"
+      "//\n"
+	  "//     (a + b)/2 = ( (ax + bx) /2, ay + by) /2, (az + bz) /2 )\n"
+      "//\n"
+      "//-----------------------------------------------------------------------------\n"
+//      "%a = \"1 0 0\";\n"
+//      "%b = \"0 1 0\";\n\n"
+//      "// %r = \"( 1 + 0, 0 + 1, 0 + 0 )\";\n"
+//      "// %r = \"1 1 0\";\n"
+//      "%r = VectorAdd( %a, %b );\n"
+   "@endtsexample\n\n"
+   "@ingroup Vectors")
+{
+   return (a + b)/2.0f;
 }
 
 //-----------------------------------------------------------------------------

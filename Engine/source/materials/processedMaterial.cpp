@@ -392,7 +392,10 @@ void ProcessedMaterial::_setStageData()
          mStages[i].setTex( MFT_DiffuseMap, _createTexture( mMaterial->mDiffuseMapFilename[i], &GFXDefaultStaticDiffuseProfile ) );
          if (!mStages[i].getTex( MFT_DiffuseMap ))
          {
-            mMaterial->logError("Failed to load diffuse map %s for stage %i", _getTexturePath(mMaterial->mDiffuseMapFilename[i]).c_str(), i);
+            //If we start with a #, we're probably actually attempting to hit a named target and it may not get a hit on the first pass. So we'll
+            //pass on the error rather than spamming the console
+            if (!mMaterial->mDiffuseMapFilename[i].startsWith("#"))
+               mMaterial->logError("Failed to load diffuse map %s for stage %i", _getTexturePath(mMaterial->mDiffuseMapFilename[i]).c_str(), i);
             
             // Load a debug texture to make it clear to the user 
             // that the texture for this stage was missing.
@@ -454,14 +457,6 @@ void ProcessedMaterial::_setStageData()
          mStages[i].setTex( MFT_SpecularMap, _createTexture( mMaterial->mSpecularMapFilename[i], &GFXDefaultStaticDiffuseProfile ) );
          if(!mStages[i].getTex( MFT_SpecularMap ))
             mMaterial->logError("Failed to load specular map %s for stage %i", _getTexturePath(mMaterial->mSpecularMapFilename[i]).c_str(), i);
-      }
-
-      // EnironmentMap
-      if( mMaterial->mEnvMapFilename[i].isNotEmpty() )
-      {
-         mStages[i].setTex( MFT_EnvMap, _createTexture( mMaterial->mEnvMapFilename[i], &GFXDefaultStaticDiffuseProfile ) );
-         if(!mStages[i].getTex( MFT_EnvMap ))
-            mMaterial->logError("Failed to load environment map %s for stage %i", _getTexturePath(mMaterial->mEnvMapFilename[i]).c_str(), i);
       }
    }
 

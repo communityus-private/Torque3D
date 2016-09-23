@@ -32,7 +32,20 @@ Var * ShaderConnectorHLSL::getElement( RegisterType type,
                                        U32 numElements, 
                                        U32 numRegisters )
 {
-   Var *ret = getIndexedElement( mCurTexElem, type, numElements, numRegisters );
+   Var *ret = NULL;
+   
+   if ( type == RT_BLENDINDICES )
+   {
+      ret = getIndexedElement( mCurBlendIndicesElem, type, numElements, numRegisters );
+   }
+   else if ( type == RT_BLENDWEIGHT )
+   {
+      ret = getIndexedElement( mCurBlendWeightsElem, type, numElements, numRegisters );
+   }
+   else
+   {
+      ret = getIndexedElement( mCurTexElem, type, numElements, numRegisters );
+   }
 
    // Adjust texture offset if this is a texcoord type
    if( type == RT_TEXCOORD )
@@ -41,6 +54,20 @@ Var * ShaderConnectorHLSL::getElement( RegisterType type,
          mCurTexElem += numRegisters;
       else
          mCurTexElem += numElements;
+   }
+   else if ( type == RT_BLENDINDICES )
+   {
+      if ( numRegisters != -1 )
+         mCurBlendIndicesElem += numRegisters;
+      else
+         mCurBlendIndicesElem += numElements;
+   }
+   else if ( type == RT_BLENDWEIGHT )
+   {
+      if ( numRegisters != -1 )
+         mCurBlendWeightsElem += numRegisters;
+      else
+         mCurBlendWeightsElem += numElements;
    }
 
    return ret;
@@ -104,21 +131,12 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          return newVar;
       }
 
-   case RT_TANGENTW:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back(newVar);
-         newVar->setConnectName("TANGENTW");
-         newVar->rank = 4;
-         return newVar;
-      }
-
    case RT_COLOR:
       {
          Var *newVar = new Var;
          mElementList.push_back( newVar );
          newVar->setConnectName( "COLOR" );
-         newVar->rank = 5;
+         newVar->rank = 4;
          return newVar;
       }
 
@@ -137,10 +155,50 @@ Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 
          newVar->setConnectName( out );
          newVar->constNum = index;
          newVar->arraySize = numElements;
-         newVar->rank = 6 + index;
+         newVar->rank = 5 + index;
 
          return newVar;
       }
+
+   case RT_BLENDINDICES:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+
+         // This was needed for hardware instancing, but
+         // i don't really remember why right now.
+         if ( index > mCurBlendIndicesElem )
+            mCurBlendIndicesElem = index + 1;
+
+         char out[32];
+         dSprintf( (char*)out, sizeof(out), "BLENDINDICES%d", index );
+         newVar->setConnectName( out );
+         newVar->constNum = index;
+         newVar->arraySize = numElements;
+
+         return newVar;
+      }
+
+   case RT_BLENDWEIGHT:
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+
+         // This was needed for hardware instancing, but
+         // i don't really remember why right now.
+         if ( index > mCurBlendWeightsElem )
+            mCurBlendWeightsElem = index + 1;
+
+         char out[32];
+         dSprintf( (char*)out, sizeof(out), "BLENDWEIGHT%d", index );
+         newVar->setConnectName( out );
+         newVar->constNum = index;
+         newVar->arraySize = numElements;
+
+         return newVar;
+      }
+
+
 
    default:
       break;
@@ -161,6 +219,7 @@ S32 QSORT_CALLBACK ShaderConnectorHLSL::_hlsl4VarSort(const void* e1, const void
 
 void ShaderConnectorHLSL::sortVars()
 {
+
    // If shader model 4+ than we gotta sort the vars to make sure the order is consistent
    if (GFX->getPixelShaderVersion() >= 4.f)
    {
@@ -185,6 +244,8 @@ void ShaderConnectorHLSL::reset()
 
    mElementList.setSize( 0 );
    mCurTexElem = 0;
+   mCurBlendIndicesElem = 0;
+   mCurBlendWeightsElem = 0;
 }
 
 void ShaderConnectorHLSL::print( Stream &stream, bool isVertexShader )
@@ -239,12 +300,23 @@ void ParamsDefHLSL::assignConstantNumbers()
                if (dStrcmp((const char*)var->type, "float4x4") == 0)
                {
                   mCurrConst += (4 * var->arraySize);
-               } else {
+               }
+               else
+               {
                   if (dStrcmp((const char*)var->type, "float3x3") == 0)
                   {
                      mCurrConst += (3 * var->arraySize);
-                  } else {
-                     mCurrConst += var->arraySize;
+                  }
+                  else
+                  {
+                     if (dStrcmp((const char*)var->type, "float4x3") == 0)
+                     {
+                        mCurrConst += (3 * var->arraySize);
+                     }
+                     else
+                     {
+                        mCurrConst += var->arraySize;
+                     }
                   }
                }
             }

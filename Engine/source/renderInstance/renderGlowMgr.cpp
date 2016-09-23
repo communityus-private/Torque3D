@@ -78,7 +78,7 @@ void RenderGlowMgr::GlowMaterialHook::_overrideFeatures( ProcessedMaterial *mat,
    // Don't allow fog or HDR encoding on 
    // the glow materials.
    fd.features.removeFeature( MFT_Fog );
-   fd.features.removeFeature( MFT_HDROut );
+   fd.features.addFeature( MFT_Imposter );
 }
 
 RenderGlowMgr::RenderGlowMgr()
@@ -89,9 +89,7 @@ RenderGlowMgr::RenderGlowMgr()
                                  Point2I( 512, 512 ) )
 {
    notifyType( RenderPassManager::RIT_Decal );
-   // AFX CODE BLOCK <<
-   notifyType( RenderPassManager::RIT_DecalAlt );
-   // AFX CODE BLOCK >>
+   notifyType( RenderPassManager::RIT_DecalRoad );
    notifyType( RenderPassManager::RIT_Translucent );
    notifyType( RenderPassManager::RIT_Particle );
 
@@ -246,6 +244,12 @@ void RenderGlowMgr::render( SceneRenderState *state )
             matrixSet.setView(*passRI->worldToCamera);
             matrixSet.setProjection(*passRI->projection);
             glowMat->setTransforms(matrixSet, state);
+
+            // Setup HW skinning transforms if applicable
+            if (glowMat->usesHardwareSkinning())
+            {
+               glowMat->setNodeTransforms(passRI->mNodeTransforms, passRI->mNodeTransformCount);
+            }
 
             glowMat->setSceneInfo(state, sgData);
             glowMat->setBuffers(passRI->vertBuff, passRI->primBuff);

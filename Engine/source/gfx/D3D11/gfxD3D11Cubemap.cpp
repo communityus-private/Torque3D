@@ -44,7 +44,7 @@ GFXD3D11Cubemap::~GFXD3D11Cubemap()
 
 void GFXD3D11Cubemap::releaseSurfaces()
 {
-	if (mDynamic)
+   if (mDynamic)
 		GFXTextureManager::removeEventDelegate(this, &GFXD3D11Cubemap::_onTextureEvent);
 
    for (U32 i = 0; i < CubeFaces; i++)
@@ -59,10 +59,10 @@ void GFXD3D11Cubemap::releaseSurfaces()
 
 void GFXD3D11Cubemap::_onTextureEvent(GFXTexCallbackCode code)
 {
-    if (code == GFXZombify)
-		releaseSurfaces();
-    else if (code == GFXResurrect)
-		initDynamic(mTexSize);
+   if (code == GFXZombify)
+      releaseSurfaces();
+   else if (code == GFXResurrect)
+      initDynamic(mTexSize);
 }
 
 bool GFXD3D11Cubemap::isCompressed(GFXFormat format)
@@ -92,7 +92,7 @@ void GFXD3D11Cubemap::initStatic(GFXTexHandle *faces)
    }
 
    U32 mipLevels = faces->getPointer()->getMipLevels();
-   if (mipLevels > 1)
+   if (mipLevels > 1 && !compressed)
       mAutoGenMips = true;
 
 	D3D11_TEXTURE2D_DESC desc;
@@ -115,12 +115,15 @@ void GFXD3D11Cubemap::initStatic(GFXTexHandle *faces)
 	{
 		AssertFatal(false, "GFXD3D11Cubemap:initStatic(GFXTexhandle *faces) - failed to create texcube texture");
 	}
-
+   
    for (U32 i = 0; i < CubeFaces; i++)
    {
       GFXD3D11TextureObject *texObj = static_cast<GFXD3D11TextureObject*>((GFXTextureObject*)faces[i]);
-      U32 subResource = D3D11CalcSubresource(0, i, mipLevels);
-      D3D11DEVICECONTEXT->CopySubresourceRegion(mTexture, subResource, 0, 0, 0, texObj->get2DTex(), 0, NULL);
+      for (U32 currentMip = 0; currentMip < mipLevels; currentMip++)
+      {
+         U32 subResource = D3D11CalcSubresource(currentMip, i, mipLevels);
+         D3D11DEVICECONTEXT->CopySubresourceRegion(mTexture, subResource, 0, 0, 0, texObj->get2DTex(), currentMip, NULL);
+      }
    }
    
 	D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
@@ -295,7 +298,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 
 	if(FAILED(hr)) 
 	{
-		AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateDepthStencilView call failure");
+      AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateDepthStencilView call failure");
 	}
 
    SAFE_RELEASE(depthTex);

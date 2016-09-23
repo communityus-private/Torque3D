@@ -23,7 +23,11 @@
 #ifndef _TORQUE_HLSL_
 #define _TORQUE_HLSL_
 
+<<<<<<< HEAD
 #include "shaderModel.hlsl"
+=======
+#include "./shaderModel.hlsl"
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 
 static float M_HALFPI_F   = 1.57079632679489661923f;
 static float M_PI_F       = 3.14159265358979323846f;
@@ -141,12 +145,20 @@ float3x3 quatToMat( float4 quat )
 float2 parallaxOffset(TORQUE_SAMPLER2D(texMap), float2 texCoord, float3 negViewTS, float depthScale)
 {
    float depth = TORQUE_TEX2D(texMap, texCoord).a;
+<<<<<<< HEAD
    float2 offset = negViewTS.xy * ( depth * depthScale );
+=======
+   float2 offset = negViewTS.xy * (depth * depthScale);
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 
-   for ( int i=0; i < PARALLAX_REFINE_STEPS; i++ )
+   for (int i = 0; i < PARALLAX_REFINE_STEPS; i++)
    {
       depth = (depth + TORQUE_TEX2D(texMap, texCoord + offset).a) * 0.5;
+<<<<<<< HEAD
       offset = negViewTS.xy * ( depth * depthScale );
+=======
+      offset = negViewTS.xy * (depth * depthScale);
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
    }
 
    return offset;
@@ -278,5 +290,65 @@ void fizzle(float2 vpos, float visibility)
    clip( visibility - frac( determinant( m ) ) );
 }
 
+// Deferred Shading: Material Info Flag Check
+bool getFlag(float flags, int num)
+{
+   int process = round(flags * 255);
+   int squareNum = pow(2, num);
+   return (fmod(process, pow(2, squareNum)) >= squareNum); 
+}
+
+// #define TORQUE_STOCK_GAMMA
+#ifdef TORQUE_STOCK_GAMMA
+// Sample in linear space. Decodes gamma.
+float4 toLinear(float4 tex)
+{
+   return tex;
+}
+// Encodes gamma.
+float4 toGamma(float4 tex)
+{
+   return tex;
+}
+float3 toLinear(float3 tex)
+{
+   return tex;
+}
+// Encodes gamma.
+float3 toGamma(float3 tex)
+{
+   return tex;
+}
+float3 toLinear(float3 tex)
+{
+   return tex;
+}
+// Encodes gamma.
+float3 toLinear(float3 tex)
+{
+   return tex;
+}
+#else
+// Sample in linear space. Decodes gamma.
+float4 toLinear(float4 tex)
+{
+   return float4(pow(abs(tex.rgb), 2.2), tex.a);
+}
+// Encodes gamma.
+float4 toGamma(float4 tex)
+{
+   return float4(pow(abs(tex.rgb), 1.0/2.2), tex.a);
+}
+// Sample in linear space. Decodes gamma.
+float3 toLinear(float3 tex)
+{
+   return pow(abs(tex.rgb), 2.2);
+}
+// Encodes gamma.
+float3 toGamma(float3 tex)
+{
+   return pow(abs(tex.rgb), 1.0/2.2);
+}
+#endif //
 
 #endif // _TORQUE_HLSL_

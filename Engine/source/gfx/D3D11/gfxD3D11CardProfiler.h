@@ -24,7 +24,6 @@
 #define _GFXD3D11CARDPROFILER_H_
 
 #include "gfx/gfxCardProfile.h"
-#include "gfx/D3D11/gfxD3D11Device.h"
 
 class GFXD3D11CardProfiler : public GFXCardProfiler
 {

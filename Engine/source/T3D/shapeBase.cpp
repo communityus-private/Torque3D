@@ -80,6 +80,7 @@
 #include "materials/materialFeatureTypes.h"
 #include "renderInstance/renderOcclusionMgr.h"
 #include "core/stream/fileStream.h"
+#include "T3D/accumulationVolume.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ShapeBaseData);
 
@@ -1026,6 +1027,7 @@ IMPLEMENT_CALLBACK( ShapeBase, validateCameraFov, F32, (F32 fov), (fov),
 ShapeBase::ShapeBase()
  : mDataBlock( NULL ),
    mIsAiControlled( false ),
+   mAiPose( 0 ),
    mControllingObject( NULL ),
    mMoveMotion( false ),
    mShapeBaseMount( NULL ),
@@ -1200,7 +1202,11 @@ bool ShapeBase::onAdd()
       if(mDataBlock->cloakTexName != StringTable->insert(""))
         mCloakTexture = TextureHandle(mDataBlock->cloakTexName, MeshTexture, false);
 */         
-
+   // Accumulation and environment mapping
+   if (isClientObject() && mShapeInstance)
+   {
+      AccumulationVolume::addObject(this);
+   }
    return true;
 }
 
@@ -1555,6 +1561,12 @@ void ShapeBase::processTick(const Move* move)
       if (mWhiteOut <= 0.0)
          mWhiteOut = 0.0;
    }
+
+   if (isMounted()) {
+      MatrixF mat;
+      mMount.object->getMountTransform( mMount.node, mMount.xfm, &mat );
+      Parent::setTransform(mat);
+   }
 }
 
 void ShapeBase::advanceTime(F32 dt)
@@ -1612,6 +1624,12 @@ void ShapeBase::advanceTime(F32 dt)
          if(mFadeOut)
             mFadeVal = 1 - mFadeVal;
       }
+   }
+
+   if (isMounted()) {
+      MatrixF mat;
+      mMount.object->getRenderMountTransform( 0.0f, mMount.node, mMount.xfm, &mat );
+      Parent::setRenderTransform(mat);
    }
 }
 
@@ -2206,67 +2224,21 @@ void ShapeBase::getEyeCameraTransform(IDisplayDevice *displayDevice, U32 eyeId, 
    Point3F eyePos;
    Point3F rotEyePos;
 
-   DisplayPose inPose;
-   displayDevice->getFrameEyePose(&inPose, eyeId);
-   DisplayPose newPose = calcCameraDeltaPose(displayDevice->getCurrentConnection(), inPose);
+   DisplayPose newPose;
+   displayDevice->getFrameEyePose(&newPose, eyeId);
 
    // Ok, basically we just need to add on newPose to the camera transform
    // NOTE: currently we dont support third-person camera in this mode
    MatrixF cameraTransform(1);
    F32 fakePos = 0;
+   //cameraTransform = getRenderTransform(); // use this for controllers TODO
    getCameraTransform(&fakePos, &cameraTransform);
 
-   QuatF baserot = cameraTransform;
-   QuatF qrot = QuatF(newPose.orientation);
-   QuatF concatRot;
-   concatRot.mul(baserot, qrot);
-   concatRot.setMatrix(&temp);
-   temp.setPosition(cameraTransform.getPosition() + concatRot.mulP(newPose.position, &rotEyePos));
+   temp = MatrixF(1);
+   newPose.orientation.setMatrix(&temp);
+   temp.setPosition(newPose.position);
 
-   *outMat = temp;
-}
-
-DisplayPose ShapeBase::calcCameraDeltaPose(GameConnection *con, const DisplayPose& inPose)
-{
-   // NOTE: this is intended to be similar to updateMove
-   // WARNING: does not take into account any move values
-
-   DisplayPose outPose;
-   outPose.orientation = getRenderTransform().toEuler();
-   outPose.position = inPose.position;
-
-   if (con && con->getControlSchemeAbsoluteRotation())
-   {
-      // Pitch
-      outPose.orientation.x = inPose.orientation.x;
-
-      // Constrain the range of mRot.x
-      while (outPose.orientation.x < -M_PI_F) 
-         outPose.orientation.x += M_2PI_F;
-      while (outPose.orientation.x > M_PI_F) 
-         outPose.orientation.x -= M_2PI_F;
-
-      // Yaw
-      outPose.orientation.z = inPose.orientation.z;
-
-      // Constrain the range of mRot.z
-      while (outPose.orientation.z < -M_PI_F) 
-         outPose.orientation.z += M_2PI_F;
-      while (outPose.orientation.z > M_PI_F) 
-         outPose.orientation.z -= M_2PI_F;
-
-      // Bank
-      if (mDataBlock->cameraCanBank)
-      {
-         outPose.orientation.y = inPose.orientation.y;
-      }
-
-      // Constrain the range of mRot.y
-      while (outPose.orientation.y > M_PI_F) 
-         outPose.orientation.y -= M_2PI_F;
-   }
-
-   return outPose;
+   *outMat = cameraTransform * temp;
 }
 
 void ShapeBase::getCameraParameters(F32 *min,F32* max,Point3F* off,MatrixF* rot)
@@ -5140,17 +5112,18 @@ DefineEngineMethod( ShapeBase, getTargetCount, S32, (),,
    
    "@see getTargetName()\n")
 {
-	ShapeBase *obj = dynamic_cast< ShapeBase* > ( object );
-	if(obj)
-	{
-		// Try to use the client object (so we get the reskinned targets in the Material Editor)
-		if ((ShapeBase*)obj->getClientObject())
-			obj = (ShapeBase*)obj->getClientObject();
+   ShapeBase *obj = dynamic_cast< ShapeBase* > ( object );
+   if(obj)
+   {
+      // Try to use the client object (so we get the reskinned targets in the Material Editor)
+      if ((ShapeBase*)obj->getClientObject())
+         obj = (ShapeBase*)obj->getClientObject();
 
-		return obj->getShapeInstance()->getTargetCount();
+      if (obj->getShapeInstance() != NULL)
+         return obj->getShapeInstance()->getTargetCount();
 	}
-
-	return -1;
+   
+   return -1;
 }
 
 DefineEngineMethod( ShapeBase, changeMaterial, void, ( const char* mapTo, Material* oldMat, Material* newMat ),,

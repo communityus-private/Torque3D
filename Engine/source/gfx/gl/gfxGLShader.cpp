@@ -23,6 +23,7 @@
 #include "platform/platform.h"
 #include "gfx/gl/gfxGLShader.h"
 #include "gfx/gl/gfxGLVertexAttribLocation.h"
+#include "gfx/gl/gfxGLDevice.h"
 
 #include "core/frameAllocator.h"
 #include "core/stream/fileStream.h"
@@ -91,6 +92,8 @@ static U32 shaderConstTypeSize(GFXShaderConstType type)
       return 16;
    case GFXSCT_Float3x3:
       return 36;
+   case GFXSCT_Float4x3:
+      return 48;
    case GFXSCT_Float4x4:
       return 64;
    default:
@@ -304,6 +307,9 @@ void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const MatrixF& ma
       reinterpret_cast<F32*>(mBuffer + _glHandle->mOffset)[7] = mat[9];
       reinterpret_cast<F32*>(mBuffer + _glHandle->mOffset)[8] = mat[10];
       break;
+   case GFXSCT_Float4x3:
+      dMemcpy(mBuffer + _glHandle->mOffset, (const F32*)mat, (sizeof(F32) * 12));// matrix with end row chopped off
+      break;
    case GFXSCT_Float4x4:
    {      
       if(_glHandle->mInstancingConstant)
@@ -333,6 +339,13 @@ void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const MatrixF* ma
    AssertFatal(!_glHandle->mInstancingConstant, "GFXGLShaderConstBuffer::set - Instancing not supported for matrix arrays");
 
    switch (matrixType) {
+      case GFXSCT_Float4x3:
+         // Copy each item with the last row chopped off
+         for (int i = 0; i<arraySize; i++)
+         {
+            dMemcpy(mBuffer + _glHandle->mOffset + (i*(sizeof(F32) * 12)), (F32*)(mat + i), sizeof(F32) * 12);
+         }
+      break;
       case GFXSCT_Float4x4:
          dMemcpy(mBuffer + _glHandle->mOffset, (F32*)mat, _glHandle->getSize());
          break;
@@ -344,6 +357,7 @@ void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const MatrixF* ma
 
 void GFXGLShaderConstBuffer::activate()
 {
+   PROFILE_SCOPE(GFXGLShaderConstBuffer_activate);
    mShader->setConstantsFromBuffer(this);
    mWasLost = false;
 }
@@ -394,6 +408,7 @@ void GFXGLShader::clearShaders()
 
 bool GFXGLShader::_init()
 {
+   PROFILE_SCOPE(GFXGLShader_Init);
    // Don't initialize empty shaders.
    if ( mVertexFile.isEmpty() && mPixelFile.isEmpty() )
       return false;
@@ -569,6 +584,9 @@ void GFXGLShader::initConstantDescs()
          case GL_FLOAT_MAT4:
             desc.constType = GFXSCT_Float4x4;
             break;
+         case GL_FLOAT_MAT4x3: // jamesu - columns, rows
+            desc.constType = GFXSCT_Float4x3;
+            break;
          case GL_SAMPLER_1D:
          case GL_SAMPLER_2D:
          case GL_SAMPLER_3D:
@@ -664,10 +682,14 @@ void GFXGLShader::initHandles()
    glUseProgram(0);
 
    //instancing
+   if (!mInstancingFormat)
+      return;
+
    U32 offset = 0;
-   for ( U32 i=0; i < mInstancingFormat.getElementCount(); i++ )
+
+   for ( U32 i=0; i < mInstancingFormat->getElementCount(); i++ )
    {
-      const GFXVertexElement &element = mInstancingFormat.getElement( i );
+      const GFXVertexElement &element = mInstancingFormat->getElement( i );
       
       String constName = String::ToString( "$%s", element.getSemantic().c_str() );
 
@@ -702,9 +724,9 @@ void GFXGLShader::initHandles()
 
          // If this is a matrix we will have 2 or 3 more of these
          // semantics with the same name after it.
-         for ( ; i < mInstancingFormat.getElementCount(); i++ )
+         for ( ; i < mInstancingFormat->getElementCount(); i++ )
          {
-            const GFXVertexElement &nextElement = mInstancingFormat.getElement( i );
+            const GFXVertexElement &nextElement = mInstancingFormat->getElement( i );
             if ( nextElement.getSemantic() != element.getSemantic() )
             {
                i--;
@@ -797,6 +819,11 @@ void GFXGLShader::setConstantsFromBuffer(GFXGLShaderConstBuffer* buffer)
             break;
          case GFXSCT_Float3x3:
             glUniformMatrix3fv(handle->mLocation, handle->mDesc.arraySize, true, (GLfloat*)(mConstBuffer + handle->mOffset));
+            break;
+         case GFXSCT_Float4x3:
+            // NOTE: To save a transpose here we could store the matrix transposed (i.e. column major) in the constant buffer.
+            // See _mesa_uniform_matrix in the mesa source for the correct transpose algorithm for a 4x3 matrix. 
+            glUniformMatrix4x3fv(handle->mLocation, handle->mDesc.arraySize, true, (GLfloat*)(mConstBuffer + handle->mOffset));
             break;
          case GFXSCT_Float4x4:
             glUniformMatrix4fv(handle->mLocation, handle->mDesc.arraySize, true, (GLfloat*)(mConstBuffer + handle->mOffset));
@@ -952,7 +979,7 @@ bool GFXGLShader::_loadShaderFromStream(  GLuint shader,
    buffers.push_back( dStrdup( versionDecl ) );
    lengths.push_back( dStrlen( versionDecl ) );
 
-   if(gglHasExtension(ARB_gpu_shader5))
+   if(GFXGL->mCapabilities.shaderModel5)
    {
       const char *extension = "#extension GL_ARB_gpu_shader5 : enable\r\n";
       buffers.push_back( dStrdup( extension ) );
@@ -1009,6 +1036,7 @@ bool GFXGLShader::initShader( const Torque::Path &file,
                               bool isVertex, 
                               const Vector<GFXShaderMacro> &macros )
 {
+   PROFILE_SCOPE(GFXGLShader_CompileShader);
    GLuint activeShader = glCreateShader(isVertex ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
    if(isVertex)
       mVertexShader = activeShader;
@@ -1068,6 +1096,7 @@ bool GFXGLShader::initShader( const Torque::Path &file,
 /// Returns our list of shader constants, the material can get this and just set the constants it knows about
 const Vector<GFXShaderConstDesc>& GFXGLShader::getShaderConstDesc() const
 {
+   PROFILE_SCOPE(GFXGLShader_GetShaderConstants);
    return mConstants;
 }
 

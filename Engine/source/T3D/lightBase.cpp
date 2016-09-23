@@ -76,7 +76,7 @@ LightBase::LightBase()
       mFlareScale( 1.0f )
 {
    mNetFlags.set( Ghostable | ScopeAlways );
-   mTypeMask = EnvironmentObjectType | LightObjectType;
+   mTypeMask = LightObjectType;
 
    mLight = LightManager::createLightInfo();
 

@@ -180,7 +180,11 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    prepassCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );   
 
    // Get prepass depth at the position of this distorted pixel.
+<<<<<<< HEAD
    float prepassDepth = TORQUE_PREPASS_UNCONDITION(prepassTex, prepassCoord).w;
+=======
+   float prepassDepth = TORQUE_PREPASS_UNCONDITION( prepassTex, prepassCoord ).w;      
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
    if ( prepassDepth > 0.99 )
      prepassDepth = 5.0;
     
@@ -212,7 +216,11 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
          prepassCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );
 
          // Get prepass depth at the position of this distorted pixel.
+<<<<<<< HEAD
          prepassDepth = TORQUE_PREPASS_UNCONDITION(prepassTex, prepassCoord).w;
+=======
+         prepassDepth = TORQUE_PREPASS_UNCONDITION( prepassTex, prepassCoord ).w;
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 	 if ( prepassDepth > 0.99 )
             prepassDepth = 5.0;
          delta = ( prepassDepth - pixelDepth ) * farPlaneDist;
@@ -282,7 +290,11 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    foamColor.rgb *= FOAM_OPACITY * foamAmt * foamColor.a;
 
    // Get reflection map color.
+<<<<<<< HEAD
    float4 refMapColor = hdrDecode( TORQUE_TEX2D( reflectMap, reflectCoord ) );  
+=======
+   float4 refMapColor = TORQUE_TEX2D( reflectMap, reflectCoord );  
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
    
    // If we do not have a reflection texture then we use the cubemap.
    refMapColor = lerp( refMapColor, TORQUE_TEXCUBE( skyMap, reflectionVec ), NO_REFLECT );
@@ -311,6 +323,10 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    
    // Calculate the water "base" color based on depth.
    float4 waterBaseColor = baseColor * TORQUE_TEX1D( depthGradMap, saturate( delta / depthGradMax ) );
+<<<<<<< HEAD
+=======
+   waterBaseColor = toLinear(waterBaseColor);
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
       
    // Modulate baseColor by the ambientColor.
    waterBaseColor *= float4( ambientColor.rgb, 1 );     

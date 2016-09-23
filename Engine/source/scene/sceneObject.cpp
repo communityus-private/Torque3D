@@ -155,6 +155,7 @@ SceneObject::SceneObject()
    // AFX CODE BLOCK (obj-select) <<
    mSelectionFlags = 0;
    // AFX CODE BLOCK (obj-select) >>
+   mPathfindingIgnore = false;
 }
 
 //-----------------------------------------------------------------------------
@@ -955,7 +956,8 @@ void SceneObject::setProcessTick( bool t )
 
    if ( mProcessTick )
    {
-      plUnlink();
+      if ( !getMountedObjectCount() )
+         plUnlink(); // Only unlink if there is nothing mounted to us
       mProcessTick = false;
    }
    else

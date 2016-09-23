@@ -37,7 +37,6 @@ public:
    /// @param oldState  The current state, used to make sure we don't set redundant states on the device.  Pass NULL to reset all states.
    void activate(GFXD3D11StateBlock* oldState);
 
-
    // 
    // GFXStateBlock interface
    //
@@ -59,12 +58,12 @@ private:
    D3D11_BLEND_DESC mBlendDesc;
    D3D11_RASTERIZER_DESC mRasterizerDesc;
    D3D11_DEPTH_STENCIL_DESC mDepthStencilDesc; 
-   D3D11_SAMPLER_DESC mSamplerDesc[16];
+   D3D11_SAMPLER_DESC mSamplerDesc[TEXTURE_STAGE_COUNT];
 
    ID3D11BlendState* mBlendState;
    ID3D11DepthStencilState* mDepthStencilState;
    ID3D11RasterizerState* mRasterizerState;
-   ID3D11SamplerState* mSamplerStates[16];
+   ID3D11SamplerState* mSamplerStates[TEXTURE_STAGE_COUNT];
 
    GFXStateBlockDesc mDesc;
    U32 mCachedHashValue;

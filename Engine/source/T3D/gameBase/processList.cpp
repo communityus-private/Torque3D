@@ -35,6 +35,10 @@
 #include "platform/profiler.h"
 #include "console/consoleTypes.h"
 
+#ifdef TORQUE_EXPERIMENTAL_EC
+#include "T3D/components/coreInterfaces.h"
+#include "T3D/components/component.h"
+#endif
 //----------------------------------------------------------------------------
 
 ProcessObject::ProcessObject()
@@ -275,6 +279,13 @@ void ProcessList::advanceObjects()
       
       onTickObject(pobj);
    }
+
+#ifdef TORQUE_EXPERIMENTAL_EC
+   for (U32 i = 0; i < UpdateInterface::all.size(); i++)
+   {
+      UpdateInterface::all[i]->processTick();
+   }
+#endif
 
    mTotalTicks++;
 

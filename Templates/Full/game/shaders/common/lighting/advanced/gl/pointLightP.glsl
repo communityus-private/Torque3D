@@ -33,6 +33,7 @@
 in vec4 wsEyeDir;
 in vec4 ssPos;
 in vec4 vsEyeDir;
+in vec4 color;
 
 #ifdef USE_COOKIE_TEX
 
@@ -111,6 +112,10 @@ uniform sampler2D prePassBuffer;
 	uniform sampler2D dynamicShadowMap;
 #endif
 
+uniform sampler2D lightBuffer;
+uniform sampler2D colorBuffer;
+uniform sampler2D matInfoBuffer;
+
 uniform vec4 rtParams0;
 
 uniform vec3 lightPosition;
@@ -133,6 +138,26 @@ void main()
    vec3 ssPos = ssPos.xyz / ssPos.w;
    vec2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
+   // Emissive.
+   vec4 matInfo = texture( matInfoBuffer, uvScene );   
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
+   {
+       OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
+	   return;
+   }
+
+   vec4 colorSample = texture( colorBuffer, uvScene );
+   vec3 subsurface = vec3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = vec3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = vec3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
    vec4 prepassSample = prepassUncondition( prePassBuffer, uvScene );
    vec3 normal = prepassSample.rgb;
@@ -244,5 +269,5 @@ void main()
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   OUT_col = lightinfoCondition( lightColorOut, Sat_NL_Att, specular, addToResult );
+   OUT_col = AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }

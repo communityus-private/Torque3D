@@ -826,7 +826,7 @@ void WaterObject::drawUnderwaterFilter( SceneRenderState *state )
    // draw quad
    
 
-   GFXVertexBufferHandle<GFXVertexPC> verts( GFX, 4, GFXBufferTypeVolatile );
+   GFXVertexBufferHandle<GFXVertexPCT> verts( GFX, 4, GFXBufferTypeVolatile );
    verts.lock();
 
    verts[0].point.set(1.0 - copyOffsetX, -1.0 + copyOffsetY, 0.0);
@@ -1141,7 +1141,7 @@ bool WaterObject::initMaterial( S32 idx )
       else
          mat = MATMGR->createMatInstance( mSurfMatName[idx] );
 
-      const GFXVertexFormat *flags = getGFXVertexFormat<GFXVertexPC>();
+      const GFXVertexFormat *flags = getGFXVertexFormat<GFXVertexPCT>();
 
       if ( mat && mat->init( MATMGR->getDefaultFeatures(), flags ) )
       {      

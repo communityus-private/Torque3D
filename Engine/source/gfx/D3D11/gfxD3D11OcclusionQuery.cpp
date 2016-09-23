@@ -59,16 +59,16 @@ bool GFXD3D11OcclusionQuery::begin()
 
    if (mQuery == NULL)
    {
-	  D3D11_QUERY_DESC queryDesc;
+      D3D11_QUERY_DESC queryDesc;
       queryDesc.Query = D3D11_QUERY_OCCLUSION;
       queryDesc.MiscFlags = 0;
 
       HRESULT hRes = D3D11DEVICE->CreateQuery(&queryDesc, &mQuery);
 
-	  if(FAILED(hRes))
-	  {
-		 AssertFatal(false, "GFXD3D11OcclusionQuery::begin - Hardware does not support D3D11 Occlusion-Queries, this should be caught before this type is created");
-	  }
+      if(FAILED(hRes))
+      {
+         AssertFatal(false, "GFXD3D11OcclusionQuery::begin - Hardware does not support D3D11 Occlusion-Queries, this should be caught before this type is created");
+      }
 
       AssertISV(hRes != E_OUTOFMEMORY, "GFXD3D11OcclusionQuery::begin - Out of memory");
    }
@@ -160,14 +160,14 @@ void GFXD3D11OcclusionQuery::resurrect()
 	// Recreate the query 
 	if( mQuery == NULL ) 
 	{ 
-	   D3D11_QUERY_DESC queryDesc;
-       queryDesc.Query = D3D11_QUERY_OCCLUSION;
-       queryDesc.MiscFlags = 0;
+      D3D11_QUERY_DESC queryDesc;
+      queryDesc.Query = D3D11_QUERY_OCCLUSION;
+      queryDesc.MiscFlags = 0;
 
-	   HRESULT hRes = D3D11DEVICE->CreateQuery(&queryDesc, &mQuery); 
+      HRESULT hRes = D3D11DEVICE->CreateQuery(&queryDesc, &mQuery); 
 	
-	   AssertISV( hRes != E_OUTOFMEMORY, "GFXD3D9QueryFence::resurrect - Out of memory" ); 
-	} 
+      AssertISV( hRes != E_OUTOFMEMORY, "GFXD3D9QueryFence::resurrect - Out of memory" ); 
+   } 
 }
 
 const String GFXD3D11OcclusionQuery::describeSelf() const

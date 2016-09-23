@@ -97,9 +97,9 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
    if( tex == GFXTextureTarget::sDefaultDepthStencil )
    {
       mTargets[slot] = D3D11->mDeviceDepthStencil;
-	   mTargetViews[slot] = D3D11->mDeviceDepthStencilView;
-	   mTargets[slot]->AddRef();
-	   mTargetViews[slot]->AddRef();
+      mTargetViews[slot] = D3D11->mDeviceDepthStencilView;
+      mTargets[slot]->AddRef();
+      mTargetViews[slot]->AddRef();
    }
    else
    {
@@ -110,31 +110,28 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
 
       // Grab the surface level.
       if( slot == DepthStencil )
-      {
-		 
+      {       
          mTargets[slot] = d3dto->getSurface();
          if ( mTargets[slot] )
             mTargets[slot]->AddRef();
 
-		   mTargetViews[slot] = d3dto->getDSView();
-		   if( mTargetViews[slot])
-			   mTargetViews[slot]->AddRef();         
+         mTargetViews[slot] = d3dto->getDSView();
+         if( mTargetViews[slot])
+            mTargetViews[slot]->AddRef();         
 
       }
       else
-      {
-         
+      {         
          // getSurface will almost always return NULL. It will only return non-NULL
          // if the surface that it needs to render to is different than the mip level
          // in the actual texture. This will happen with MSAA.
          if( d3dto->getSurface() == NULL )
-		   {
+         {
             
-			   mTargets[slot] = d3dto->get2DTex();
-			   mTargets[slot]->AddRef();
-			   mTargetViews[slot] = d3dto->getRTView();
-			   mTargetViews[slot]->AddRef();
-			
+            mTargets[slot] = d3dto->get2DTex();
+            mTargets[slot]->AddRef();
+            mTargetViews[slot] = d3dto->getRTView();
+            mTargetViews[slot]->AddRef();         
          } 
          else 
          {
@@ -161,11 +158,18 @@ void GFXD3D11TextureTarget::attachTexture( RenderSlot slot, GFXTextureObject *te
          ID3D11Texture2D *surface = mTargets[Color0];
          if ( surface )
          {
-			D3D11_TEXTURE2D_DESC sd;
+            D3D11_TEXTURE2D_DESC sd;
             surface->GetDesc(&sd);
             mTargetSize = Point2I(sd.Width, sd.Height);
 
             S32 format = sd.Format;
+
+            if (format == DXGI_FORMAT_R8G8B8A8_TYPELESS || format == DXGI_FORMAT_B8G8R8A8_TYPELESS)
+            {
+               mTargetFormat = GFXFormatR8G8B8A8;
+               return;
+            }
+
             GFXREVERSE_LOOKUP( GFXD3D11TextureFormat, GFXFormat, format );
             mTargetFormat = (GFXFormat)format;
          }
@@ -244,8 +248,7 @@ void GFXD3D11TextureTarget::activate()
    stateApplied();
    
    // Now set all the new surfaces into the appropriate slots.
-   ID3D11RenderTargetView* rtViews[8] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-   D3D11DEVICECONTEXT->OMSetRenderTargets(8, rtViews, NULL);
+   ID3D11RenderTargetView* rtViews[MaxRenderSlotId] = { NULL, NULL, NULL, NULL, NULL, NULL};
 
    ID3D11DepthStencilView* dsView = (ID3D11DepthStencilView*)(mTargetViews[GFXTextureTarget::DepthStencil]);
    for (U32 i = 0; i < 4; i++)
@@ -280,7 +283,7 @@ void GFXD3D11TextureTarget::resolve()
       if (mResolveTargets[i])
       {
          D3D11_TEXTURE2D_DESC desc;
-		   mTargets[i]->GetDesc(&desc);
+         mTargets[i]->GetDesc(&desc);
          D3D11DEVICECONTEXT->CopySubresourceRegion(mResolveTargets[i]->get2DTex(), 0, 0, 0, 0, mTargets[i], 0, NULL);
       }
    }
@@ -301,13 +304,12 @@ void GFXD3D11TextureTarget::resolveTo( GFXTextureObject *tex )
 
 void GFXD3D11TextureTarget::zombify()
 {
-   for(int i = 0; i < MaxRenderSlotId; i++)
+   for(U32 i = 0; i < MaxRenderSlotId; i++)
       attachTexture(RenderSlot(i), NULL);
 }
 
 void GFXD3D11TextureTarget::resurrect()
 {
-
 }
 
 GFXD3D11WindowTarget::GFXD3D11WindowTarget()
@@ -356,18 +358,19 @@ void GFXD3D11WindowTarget::setImplicitSwapChain()
 
 void GFXD3D11WindowTarget::resetMode()
 {
-    mWindow->setSuppressReset(true);
+   mWindow->setSuppressReset(true);
 
-    // Setup our presentation params.
-    initPresentationParams();
+   // Setup our presentation params.
+   initPresentationParams();
 
-    // Otherwise, we have to reset the device, if we're the implicit swapchain.
-    D3D11->reset(mPresentationParams);
+   // Otherwise, we have to reset the device, if we're the implicit swapchain.
+   D3D11->reset(mPresentationParams);
 
-    // Update our size, too.
-    mSize = Point2I(mPresentationParams.BufferDesc.Width, mPresentationParams.BufferDesc.Height);
+   // Update our size, too.
+   mSize = Point2I(mPresentationParams.BufferDesc.Width, mPresentationParams.BufferDesc.Height);
 
-    mWindow->setSuppressReset(false);
+   mWindow->setSuppressReset(false);
+   GFX->beginReset();
 }
 
 void GFXD3D11WindowTarget::zombify()
@@ -404,10 +407,10 @@ void GFXD3D11WindowTarget::activate()
 
 void GFXD3D11WindowTarget::resolveTo(GFXTextureObject *tex)
 {
-	GFXDEBUGEVENT_SCOPE(GFXPCD3D11WindowTarget_resolveTo, ColorI::RED);
+   GFXDEBUGEVENT_SCOPE(GFXPCD3D11WindowTarget_resolveTo, ColorI::RED);
 
-	D3D11_TEXTURE2D_DESC desc;
-	ID3D11Texture2D* surf = ((GFXD3D11TextureObject*)(tex))->get2DTex();
-	surf->GetDesc(&desc);
-	D3D11DEVICECONTEXT->ResolveSubresource(surf, 0, D3D11->mDeviceBackbuffer, 0, desc.Format);
+   D3D11_TEXTURE2D_DESC desc;
+   ID3D11Texture2D* surf = ((GFXD3D11TextureObject*)(tex))->get2DTex();
+   surf->GetDesc(&desc);
+   D3D11DEVICECONTEXT->ResolveSubresource(surf, 0, D3D11->mDeviceBackbuffer, 0, desc.Format);
 }

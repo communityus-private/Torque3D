@@ -100,6 +100,7 @@ Var::Var()
    mapsToSampler = false;
    arraySize = 1;
    texture = false;
+   rank = 0;
 }
 
 Var::Var( const char *inName, const char *inType )

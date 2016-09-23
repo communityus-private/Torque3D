@@ -30,10 +30,10 @@
 class GFXD3D11TextureObject : public GFXTextureObject
 {
 protected:
-   static U32		mTexCount;
-   GFXTexHandle		mLockTex;
+   static U32 mTexCount;
+   GFXTexHandle mLockTex;
    DXGI_MAPPED_RECT mLockRect;
-   bool				mLocked;
+   bool mLocked;
 
    U32 mLockedSubresource;
    ID3D11Resource *mD3DTexture;

@@ -94,8 +94,13 @@ float fresnel(float NdotV, float bias, float power)
 //-----------------------------------------------------------------------------
 TORQUE_UNIFORM_SAMPLER2D(bumpMap,0);
 //uniform sampler2D    prepassTex  : register( S1 );
+<<<<<<< HEAD
 TORQUE_UNIFORM_SAMPLER2D(reflectMap,1);
 TORQUE_UNIFORM_SAMPLER2D(refractBuff,3;
+=======
+TORQUE_UNIFORM_SAMPLER2D(reflectMap,2);
+TORQUE_UNIFORM_SAMPLER2D(refractBuff,3);
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 TORQUE_UNIFORM_SAMPLERCUBE(skyMap,4);
 //uniform sampler      foamMap     : register( S5 );
 uniform float4       baseColor;
@@ -117,6 +122,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
 { 
    // Modulate baseColor by the ambientColor.
    float4 waterBaseColor = baseColor * float4( ambientColor.rgb, 1 );
+   waterBaseColor = toLinear(waterBaseColor);
    
    // Get the bumpNorm...
    float3 bumpNorm = ( TORQUE_TEX2D( bumpMap, IN.rippleTexCoord01.xy ).rgb * 2.0 - 1.0 ) * rippleMagnitude.x;
@@ -197,7 +203,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    
       // Fog it.   
       float factor = computeSceneFog( eyePos, 
-                                      IN.objPos, 
+                                      IN.objPos.xyz, 
                                       WORLD_Z,
                                       fogData.x,
                                       fogData.y,

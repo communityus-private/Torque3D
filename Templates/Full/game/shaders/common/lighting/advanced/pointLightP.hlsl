@@ -20,6 +20,11 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+<<<<<<< HEAD
+=======
+#include "../../shaderModelAutoGen.hlsl"
+
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
 #include "../../lighting.hlsl"
@@ -52,7 +57,7 @@ TORQUE_UNIFORM_SAMPLERCUBE(cookieMap, 3);
       return shadowCoord;
    }
 
-   float4 shadowSample( samplerCUBE shadowMap, float3 shadowCoord )
+   float4 shadowSample( TORQUE_SAMPLERCUBE(shadowMap), float3 shadowCoord )
    {
       return TORQUE_TEXCUBE( shadowMap, shadowCoord );
    }
@@ -109,12 +114,16 @@ TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
 
 #ifdef SHADOW_CUBE
 TORQUE_UNIFORM_SAMPLERCUBE(shadowMap, 1);
+<<<<<<< HEAD
 TORQUE_UNIFORM_SAMPLERCUBE(dynamicShadowMap, 2);
+=======
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 #else
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 #endif
 
+<<<<<<< HEAD
 uniform float4 rtParams0;
 uniform float4 lightColor;
 
@@ -133,11 +142,53 @@ uniform float3x3 viewToLightProj;
 uniform float3x3 dynamicViewToLightProj;
 
 float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
+=======
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
+
+uniform float4 rtParams0;
+uniform float4 lightColor;
+
+uniform float  lightBrightness;
+uniform float3 lightPosition;
+
+uniform float4 lightMapParams;
+uniform float4 vsFarPlane;
+uniform float4 lightParams;
+
+uniform float  lightRange;
+uniform float shadowSoftness;
+uniform float2 lightAttenuation;
+
+uniform float3x3 viewToLightProj;
+uniform float3x3 dynamicViewToLightProj;
+
+float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 {   
    // Compute scene UV
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
-      
+   
+   // Emissive.
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );   
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
+   {
+       return float4(0.0, 0.0, 0.0, 0.0);
+   }
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
+   float3 subsurface = float3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = float3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = float3(0.337255, 0.772549, 0.262745);
+	}
+   
    // Sample/unpack the normal/z data
    float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
    float3 normal = prepassSample.rgb;
@@ -183,7 +234,10 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
 
          // Static
          float2 shadowCoord = decodeShadowCoord( mul( viewToLightProj, -lightVec ) ).xy;
+<<<<<<< HEAD
          
+=======
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
          float static_shadowed = softShadow_filter( TORQUE_SAMPLER2D_MAKEARG(shadowMap),
                                              ssPos.xy,
                                              shadowCoord,
@@ -252,5 +306,5 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   return lightinfoCondition( lightColorOut, Sat_NL_Att, specular, addToResult );
+   return AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }

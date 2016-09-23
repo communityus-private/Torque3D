@@ -29,9 +29,9 @@ GFXD3D11VertexBuffer::~GFXD3D11VertexBuffer()
    if(getOwningDevice() != NULL)
    {
       if(mBufferType != GFXBufferTypeVolatile)
-	  {
+      {
          SAFE_RELEASE(vb);
-	  }
+      }
    }
 }
 
@@ -89,13 +89,12 @@ void GFXD3D11VertexBuffer::lock(U32 vertexStart, U32 vertexEnd, void **vertexPtr
    lockedVertexStart = vertexStart;
    lockedVertexEnd   = vertexEnd;
 
-   /* Anis -> uncomment it for debugging purpose. called many times per frame... spammy! */
+   // uncomment it for debugging purpose. called many times per frame... spammy! 
    //Con::printf("%x: Locking %s range (%d, %d)", this, (mBufferType == GFXBufferTypeVolatile ? "volatile" : "static"), lockedVertexStart, lockedVertexEnd);
 
    U32 sizeToLock = (vertexEnd - vertexStart) * mVertexSize;
    if(mBufferType == GFXBufferTypeStatic)
-   {
-	   
+   {	   
 	   *vertexPtr = new U8[sizeToLock];
 	   mLockedBuffer = *vertexPtr;
    }
@@ -140,29 +139,30 @@ void GFXD3D11VertexBuffer::unlock()
    
    #ifdef TORQUE_DEBUG
    
-   if ( mDebugGuardBuffer )
-   {
-		const U32 guardSize = sizeof( _VBGuardString );
-		const U32 sizeLocked = (lockedVertexEnd - lockedVertexStart) * mVertexSize;
+      if ( mDebugGuardBuffer )
+      {
+         const U32 guardSize = sizeof( _VBGuardString );
+		   const U32 sizeLocked = (lockedVertexEnd - lockedVertexStart) * mVertexSize;
 
-		// First check the guard areas for overwrites.
-		AssertFatal(dMemcmp( mDebugGuardBuffer, _VBGuardString, guardSize) == 0,
-		"GFXD3D11VertexBuffer::unlock - Caught lock memory underrun!" );
-		AssertFatal(dMemcmp( mDebugGuardBuffer + sizeLocked + guardSize, _VBGuardString, guardSize) == 0,
-		"GFXD3D11VertexBuffer::unlock - Caught lock memory overrun!" );
+		   // First check the guard areas for overwrites.
+		   AssertFatal(dMemcmp( mDebugGuardBuffer, _VBGuardString, guardSize) == 0,
+		   "GFXD3D11VertexBuffer::unlock - Caught lock memory underrun!" );
+		   AssertFatal(dMemcmp( mDebugGuardBuffer + sizeLocked + guardSize, _VBGuardString, guardSize) == 0,
+		   "GFXD3D11VertexBuffer::unlock - Caught lock memory overrun!" );
                         
-		// Copy the debug content down to the real VB.
-		dMemcpy(mLockedBuffer, mDebugGuardBuffer + guardSize, sizeLocked);
+		   // Copy the debug content down to the real VB.
+		   dMemcpy(mLockedBuffer, mDebugGuardBuffer + guardSize, sizeLocked);
 
-		// Cleanup.
-		delete [] mDebugGuardBuffer;
-		mDebugGuardBuffer = NULL;
-		//mLockedBuffer = NULL;
-   }
+		   // Cleanup.
+		   delete [] mDebugGuardBuffer;
+		   mDebugGuardBuffer = NULL;
+		   //mLockedBuffer = NULL;
+      }
 
    #endif // TORQUE_DEBUG
+
    if(mBufferType == GFXBufferTypeStatic)
-	  {
+   {
 		const U32 sizeLocked = (lockedVertexEnd - lockedVertexStart) * mVertexSize;
 		//set up the update region of the buffer
 		D3D11_BOX box;
@@ -177,19 +177,16 @@ void GFXD3D11VertexBuffer::unlock()
 		//clean up the old buffer
 		delete[] mLockedBuffer;
 		mLockedBuffer = NULL;
-	  }
-	  else
-	  {
-		 
-		D3D11DEVICECONTEXT->Unmap(vb,0);
-      
-   
-	  }
+   }
+   else
+   {	 
+      D3D11DEVICECONTEXT->Unmap(vb,0);
+   }
    
 
    mIsFirstLock = false;
 
-   /* Anis -> uncomment it for debugging purpose. called many times per frame... spammy! */
+   //uncomment it for debugging purpose. called many times per frame... spammy!
    //Con::printf("%x: Unlocking %s range (%d, %d)", this, (mBufferType == GFXBufferTypeVolatile ? "volatile" : "static"), lockedVertexStart, lockedVertexEnd);
 
    lockedVertexEnd = lockedVertexStart = 0;
@@ -227,10 +224,10 @@ void GFXD3D11VertexBuffer::resurrect()
 
 		HRESULT hr = D3D11DEVICE->CreateBuffer(&desc, NULL, &vb);
 
-	    if(FAILED(hr)) 
-	    {
+      if(FAILED(hr)) 
+      {
 		   AssertFatal(false, "GFXD3D11VertexBuffer::resurrect - Failed to allocate VB");
-	    }
+      }
    }
 }
 

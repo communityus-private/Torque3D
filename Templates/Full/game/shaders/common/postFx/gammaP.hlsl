@@ -27,18 +27,32 @@ TORQUE_UNIFORM_SAMPLER2D(backBuffer, 0);
 TORQUE_UNIFORM_SAMPLER1D(colorCorrectionTex, 1);
 
 uniform float OneOverGamma;
+uniform float Brightness;
+uniform float Contrast;
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0  
 {
     float4 color = TORQUE_TEX2D(backBuffer, IN.uv0.xy);
 
    // Apply the color correction.
+<<<<<<< HEAD
    color.r = TORQUE_TEX1D(colorCorrectionTex, color.r).r;
    color.g = TORQUE_TEX1D(colorCorrectionTex, color.g).g;
    color.b = TORQUE_TEX1D(colorCorrectionTex, color.b).b;
+=======
+   color.r = TORQUE_TEX1D( colorCorrectionTex, color.r ).r;
+   color.g = TORQUE_TEX1D( colorCorrectionTex, color.g ).g;
+   color.b = TORQUE_TEX1D( colorCorrectionTex, color.b ).b;
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 
    // Apply gamma correction
     color.rgb = pow( abs(color.rgb), OneOverGamma );
+
+   // Apply contrast
+   color.rgb = ((color.rgb - 0.5f) * Contrast) + 0.5f;
+ 
+   // Apply brightness
+   color.rgb += Brightness;
 
     return color;    
 }

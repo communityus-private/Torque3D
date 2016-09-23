@@ -112,7 +112,6 @@ StaticShapeData::StaticShapeData(const StaticShapeData& other, bool temp_clone) 
    noIndividualDamage = other.noIndividualDamage;
    dynamicTypeField = other.dynamicTypeField;
    isShielded = other.isShielded; // -- uninitialized, unused
-   energyPerDamagePoint = other.energyPerDamagePoint; // -- uninitialized, unused
 }
 // AFX CODE BLOCK (datablock-temp-clone) >>
 
@@ -251,22 +250,6 @@ void StaticShape::processTick(const Move* move)
    if (move && mDamageState == Enabled) {
       setImageTriggerState(0,move->trigger[0]);
       setImageTriggerState(1,move->trigger[1]);
-   }
-
-   if (isMounted()) {
-      MatrixF mat;
-      mMount.object->getMountTransform( mMount.node, mMount.xfm, &mat );
-      Parent::setTransform(mat);
-      Parent::setRenderTransform(mat);
-   }
-}
-
-void StaticShape::interpolateTick(F32 delta)
-{
-   if (isMounted()) {
-      MatrixF mat;
-      mMount.object->getRenderMountTransform( delta, mMount.node, mMount.xfm, &mat );
-      Parent::setRenderTransform(mat);
    }
 }
 

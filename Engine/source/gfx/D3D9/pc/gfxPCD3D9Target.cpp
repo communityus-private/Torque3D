@@ -31,6 +31,9 @@
 #include "gfx/gfxDebugEvent.h"
 #include "windowManager/win32/win32Window.h"
 
+#ifndef _GFXDEVICE_H_
+#include "gfx/gfxDevice.h"
+#endif
 
 GFXPCD3D9TextureTarget::GFXPCD3D9TextureTarget() 
    :  mTargetSize( Point2I::Zero ),
@@ -451,6 +454,7 @@ void GFXPCD3D9WindowTarget::createAdditionalSwapChain()
 
 void GFXPCD3D9WindowTarget::resetMode()
 {
+   GFX->beginReset();
    mWindow->setSuppressReset(true);
 
    if (mSwapChain)
@@ -470,12 +474,6 @@ void GFXPCD3D9WindowTarget::resetMode()
       if ( pp.MultiSampleType != D3DMULTISAMPLE_NONE )      
          ppAntiAliaseLevel = pp.MultiSampleQuality + 1;
 
-      // AFX CODE BLOCK (hack) <<
-      // In some cases we need to force a video-mode reset even if the size or the fullscreen
-      // status has not changed.
-      extern bool AFX_forceVideoReset;
-      if (!AFX_forceVideoReset)
-      // AFX CODE BLOCK (hack) >>
       // Early out if none of the settings which require a device reset
       // have changed.      
       if ( backbufferSize == getSize() && 
@@ -515,6 +513,7 @@ void GFXPCD3D9WindowTarget::zombify()
 
 void GFXPCD3D9WindowTarget::resurrect()
 {
+   GFX->beginReset();
    if(mImplicit)
    {
       setImplicitSwapChain();

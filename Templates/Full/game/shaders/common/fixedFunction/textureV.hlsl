@@ -25,7 +25,12 @@
 struct Appdata
 {
 	float3 position   : POSITION;
+<<<<<<< HEAD
 	float2 texCoord   : TEXCOORD;
+=======
+	float4 color      : COLOR;
+	float2 texCoord   : TEXCOORD0;
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 };
 
 struct Conn

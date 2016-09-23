@@ -133,16 +133,15 @@ void SpecularMapHLSL::processVert(Vector<ShaderComponent*> &componentList, const
 void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const MaterialFeatureData &fd )
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "float2", true, componentList);
+   Var *texCoord = getInTexCoord( "texCoord", "float2", true, componentList );
 
    // create texture var
    Var *specularMap = new Var;
-   specularMap->setName("specularMap");
+   specularMap->setType( "sampler2D" );
+   specularMap->setName( "specularMap" );
    specularMap->uniform = true;
    specularMap->sampler = true;
    specularMap->constNum = Var::getTexUnitNum();
-
-
    Var *specularMapTex = NULL;
 
    if (mIsDirect3D11)

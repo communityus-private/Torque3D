@@ -244,6 +244,8 @@ function EditorSaveMissionMenu()
 
 function EditorSaveMission()
 {
+   // just save the mission without renaming it
+   
    // first check for dirty and read-only files:
    if((EWorldEditor.isDirty || ETerrainEditor.isMissionDirty) && !isWriteableFileName($Server::MissionFile))
    {
@@ -483,6 +485,7 @@ function EditorOpenMission(%filename)
 
 function EditorExportToCollada()
 {
+
    %dlg = new SaveFileDialog()
    {
       Filters        = "COLLADA Files (*.dae)|*.dae|";
@@ -515,6 +518,7 @@ function EditorExportToCollada()
 
 function EditorMakePrefab()
 {
+
    %dlg = new SaveFileDialog()
    {
       Filters        = "Prefab Files (*.prefab)|*.prefab|";
@@ -766,6 +770,15 @@ function EditorCameraSpeedMenu::setupGuiControls(%this)
    // Set up min/max camera slider range
    eval("CameraSpeedDropdownCtrlContainer-->Slider.range = \"" @ %minSpeed @ " " @ %maxSpeed @ "\";");
 }
+
+//////////////////////////////////////////////////////////////////////////
+// Tools Menu Handler
+//////////////////////////////////////////////////////////////////////////
+function EditorUtilitiesMenu::onSelectItem(%this, %id, %text)
+{
+   return Parent::onSelectItem(%this, %id, %text);
+}
+
 //////////////////////////////////////////////////////////////////////////
 // World Menu Handler Object Menu
 //////////////////////////////////////////////////////////////////////////

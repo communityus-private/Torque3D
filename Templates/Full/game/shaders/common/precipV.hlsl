@@ -32,13 +32,22 @@
 struct Vert
 {
 	float3 position	: POSITION;
+<<<<<<< HEAD
 	float4 texCoord	: TEXCOORD0;
+=======
+	float2 texCoord	: TEXCOORD0;
+   float4 color : COLOR0;
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 };
 
 struct Conn
 {
 	float4 position : TORQUE_POSITION;
+<<<<<<< HEAD
 	float4 texCoord	: TEXCOORD0;
+=======
+	float2 texCoord	: TEXCOORD0;
+>>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 	float4 color : COLOR0;
 };
 

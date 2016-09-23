@@ -31,7 +31,7 @@
 #include "gfx/D3D11/gfxD3D11StateBlock.h"
 #include "gfx/D3D11/gfxD3D11TextureManager.h"
 #include "gfx/D3D11/gfxD3D11Cubemap.h"
-#include "gfx/D3D11/gfxD3D11IndexBuffer.h"
+#include "gfx/D3D11/gfxD3D11PrimitiveBuffer.h"
 #include "gfx/gfxInit.h"
 #include "gfx/gfxResource.h"
 #include "platform/tmm_on.h"
@@ -42,6 +42,8 @@
 
 class PlatformWindow;
 class GFXD3D11ShaderConstBuffer;
+class OculusVRHMDDevice;
+class D3D11OculusTexture;
 
 //------------------------------------------------------------------------------
 
@@ -53,6 +55,8 @@ class GFXD3D11Device : public GFXDevice
    friend class GFXD3D11TextureObject;
    friend class GFXD3D11TextureTarget;
    friend class GFXD3D11WindowTarget;
+	friend class OculusVRHMDDevice;
+	friend class D3D11OculusTexture;
 
    virtual GFXFormat selectSupportedFormat(GFXTextureProfile *profile,
    const Vector<GFXFormat> &formats, bool texture, bool mustblend, bool mustfilter);
@@ -68,7 +72,7 @@ class GFXD3D11Device : public GFXDevice
 
 protected:
 
-	 class D3D11VertexDecl : public GFXVertexDecl
+   class D3D11VertexDecl : public GFXVertexDecl
    {
    public:
       virtual ~D3D11VertexDecl()
@@ -131,6 +135,8 @@ protected:
 
    bool mOcclusionQuerySupported;
 
+   U32 mDrawInstancesCount;   
+
    /// To manage creating and re-creating of these when device is aquired
    void reacquireDefaultPoolResources();
 
@@ -182,6 +188,8 @@ protected:
    virtual DXGI_SWAP_CHAIN_DESC setupPresentParams( const GFXVideoMode &mode, const HWND &hwnd );
 
    String _createTempShaderInternal(const GFXVertexFormat *vertexFormat);
+   // Supress any debug layer messages we don't want to see
+   void _suppressDebugMessages();
    
 public:
 
@@ -193,6 +201,7 @@ public:
 
    ID3D11DepthStencilView* getDepthStencilView() { return mDeviceDepthStencilView; }
    ID3D11RenderTargetView* getRenderTargetView() { return mDeviceBackBufferView; }
+   ID3D11Texture2D* getBackBufferTexture() { return mDeviceBackbuffer; }
 
    /// Constructor
    /// @param   d3d   Direct3D object to instantiate this device with
@@ -243,10 +252,13 @@ public:
    virtual GFXVertexBuffer* allocVertexBuffer(  U32 numVerts, 
                                                 const GFXVertexFormat *vertexFormat,
                                                 U32 vertSize,
-                                                GFXBufferType bufferType );
+                                                GFXBufferType bufferType,
+                                                void* data = NULL);
+
    virtual GFXPrimitiveBuffer *allocPrimitiveBuffer(  U32 numIndices, 
                                                       U32 numPrimitives, 
-                                                      GFXBufferType bufferType );
+                                                      GFXBufferType bufferType,
+                                                      void* data = NULL);
 
    virtual GFXVertexDecl* allocVertexDecl( const GFXVertexFormat *vertexFormat );
    virtual void setVertexDecl( const GFXVertexDecl *decl );

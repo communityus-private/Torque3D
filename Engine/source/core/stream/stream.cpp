@@ -128,7 +128,7 @@ bool Stream::writeFormattedBuffer(const char *format, ...)
    char buffer[4096];
    va_list args;
    va_start(args, format);
-   const S32 length = vsprintf(buffer, format, args);
+   const S32 length = dVsprintf(buffer, sizeof(buffer), format, args);
 
    // Sanity!
    AssertFatal(length <= sizeof(buffer), "writeFormattedBuffer - String format exceeded buffer size.  This will cause corruption.");
@@ -155,7 +155,7 @@ void Stream::readLongString(U32 maxStringLen, char *stringBuf)
 {
    U32 len;
    read(&len);
-   if(len > maxStringLen)
+   if(len >= maxStringLen)
    {
       m_streamStatus = IOError;
       return;

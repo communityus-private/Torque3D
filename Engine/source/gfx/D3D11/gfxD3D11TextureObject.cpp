@@ -29,15 +29,15 @@
 U32 GFXD3D11TextureObject::mTexCount = 0;
 #endif
 
-/*
-	anis -> GFXFormatR8G8B8 has now the same behaviour as GFXFormatR8G8B8X8. 
-	This is because 24 bit format are now deprecated by microsoft, for data alignment reason there's no changes beetween 24 and 32 bit formats.
-	DirectX 10-11 both have 24 bit format no longer.
-*/
+
+//	GFXFormatR8G8B8 has now the same behaviour as GFXFormatR8G8B8X8. 
+//	This is because 24 bit format are now deprecated by microsoft, for data alignment reason there's no changes beetween 24 and 32 bit formats.
+//	DirectX 10-11 both have 24 bit format no longer.
+
 
 GFXD3D11TextureObject::GFXD3D11TextureObject( GFXDevice * d, GFXTextureProfile *profile) : GFXTextureObject( d, profile )
 {
-#ifdef TORQUE_DEBUG
+#ifdef D3D11_DEBUG_SPEW
    mTexCount++;
    Con::printf("+ texMake %d %x", mTexCount, this);
 #endif
@@ -55,7 +55,7 @@ GFXD3D11TextureObject::GFXD3D11TextureObject( GFXDevice * d, GFXTextureProfile *
 GFXD3D11TextureObject::~GFXD3D11TextureObject()
 {
    kill();
-#ifdef TORQUE_DEBUG
+#ifdef D3D11_DEBUG_SPEW
    mTexCount--;
    Con::printf("+ texkill %d %x", mTexCount, this);
 #endif
@@ -130,11 +130,9 @@ void GFXD3D11TextureObject::unlock(U32 mipLevel)
    if( mProfile->isRenderTarget() )
    {
       //AssertFatal( 0, "GFXD3D11TextureObject::unlock - Need to handle mapping render targets" );
-      GFXD3D11Device* dev = D3D11;
-
       GFXD3D11TextureObject* to = (GFXD3D11TextureObject*)&(*mLockTex);
       
-      dev->getDeviceContext()->Unmap(to->get2DTex(), mLockedSubresource);
+      D3D11->getDeviceContext()->Unmap(to->get2DTex(), mLockedSubresource);
       
       mLockedSubresource = 0;
       mLocked = false;
@@ -182,8 +180,8 @@ bool GFXD3D11TextureObject::copyToBmp(GBitmap* bmp)
    // check format limitations
    // at the moment we only support RGBA for the source (other 4 byte formats should
    // be easy to add though)
-   AssertFatal(mFormat == GFXFormatR8G8B8A8, "copyToBmp: invalid format");
-   if (mFormat != GFXFormatR8G8B8A8)
+   AssertFatal(mFormat == GFXFormatR8G8B8A8 || mFormat == GFXFormatR8G8B8A8_LINEAR_FORCE, "copyToBmp: invalid format");
+   if (mFormat != GFXFormatR8G8B8A8 && mFormat != GFXFormatR8G8B8A8_LINEAR_FORCE)
       return false;
 
    PROFILE_START(GFXD3D11TextureObject_copyToBmp);
@@ -199,7 +197,7 @@ bool GFXD3D11TextureObject::copyToBmp(GBitmap* bmp)
    const U32 sourceBytesPerPixel = 4;
    U32 destBytesPerPixel = 0;
 
-   if(bmp->getFormat() == GFXFormatR8G8B8A8)
+   if (bmp->getFormat() == GFXFormatR8G8B8A8 || bmp->getFormat() == GFXFormatR8G8B8A8_LINEAR_FORCE)
       destBytesPerPixel = 4;
    else if(bmp->getFormat() == GFXFormatR8G8B8)
       destBytesPerPixel = 3;
@@ -221,9 +219,9 @@ bool GFXD3D11TextureObject::copyToBmp(GBitmap* bmp)
 
    PROFILE_START(GFXD3D11TextureObject_copyToBmp_pixCopy);
    // copy data into bitmap
-   for (int row = 0; row < height; ++row)
+   for (U32 row = 0; row < height; ++row)
    {
-      for (int col = 0; col < width; ++col)
+      for (U32 col = 0; col < width; ++col)
       {
          destPtr[0] = srcPtr[2]; // red
          destPtr[1] = srcPtr[1]; // green
