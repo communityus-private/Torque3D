@@ -283,6 +283,7 @@ SimGroup *gRootGroup = NULL;
 SimManagerNameDictionary *gNameDictionary;
 SimIdDictionary *gIdDictionary;
 U32 gNextObjectId;
+SimGroup *gObjectPool = NULL;
 
 static void initRoot()
 {
@@ -308,6 +309,16 @@ static void shutdownRoot()
 
    SAFE_DELETE(gNameDictionary);
    SAFE_DELETE(gIdDictionary);
+}
+
+static void shutdownObjectPool()
+{
+   if (gObjectPool->getRefCount() != 0)
+      gObjectPool->decRefCount();
+
+   if (engineAPI::gUseConsoleInterop)
+      gObjectPool->deleteObject();
+   gObjectPool = NULL;
 }
 
 //---------------------------------------------------------------------------
@@ -396,6 +407,20 @@ SimObject* findObject(SimObjectId id)
 	return gIdDictionary->find(id);
 }
 
+SimObject* findInObjectPool(const char* className)
+{
+   for (SimSet::iterator iter = gObjectPool->begin(); iter != gObjectPool->end(); ++iter)
+   {
+      StringTableEntry classNameStr = StringTable->insert(className);
+      if (classNameStr == (*iter)->getClassRep()->getClassName())
+      {
+         return (*iter);
+      }
+   }
+
+   return NULL;
+}
+
 SimObject *spawnObject(String spawnClass, String spawnDataBlock, String spawnName,
                        String spawnProperties, String spawnScript)
 {
@@ -436,6 +461,11 @@ SimObject *spawnObject(String spawnClass, String spawnDataBlock, String spawnNam
 SimGroup *getRootGroup()
 {
    return gRootGroup;
+}
+
+SimGroup *getObjectPool()
+{
+   return gObjectPool;
 }
 
 String getUniqueName( const char *inName )
@@ -571,12 +601,16 @@ void init()
    gRootGroup->addObject(gDataBlockGroup);
    
    SimPersistID::init();
+
+   gObjectPool = new SimGroup();
+   gObjectPool->registerObject("ObjectPool");
 }
 
 void shutdown()
 {
    sgIsShuttingDown = true;
    
+   shutdownObjectPool();
    shutdownRoot();
    shutdownEventQueue();
    

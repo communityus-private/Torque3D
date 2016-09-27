@@ -40,6 +40,7 @@
 #include "gfx/gfxDebugEvent.h"
 #include "math/util/matrixSet.h"
 #include "console/consoleTypes.h"
+#include "math/mPolyhedron.h"
 
 const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "directLighting" );
 const String AdvancedLightBinManager::smBufferName( "directLighting" );
@@ -146,6 +147,7 @@ AdvancedLightBinManager::AdvancedLightBinManager( AdvancedLightManager *lm /* = 
    mMRTLightmapsDuringDeferred = true;
 
    mReflectProbeMaterial = nullptr;
+   mReflectProbeDiffuseMaterial = nullptr;
 
    Con::NotifyDelegate callback( this, &AdvancedLightBinManager::_deleteLightMaterials );
    Con::addVariableNotify( "$pref::Shadows::filterMode", callback );
@@ -282,7 +284,32 @@ void AdvancedLightBinManager::addSphereReflectionProbe(ReflectProbeInfo *probeIn
    pEntry.probeInfo = probeInfo;
    //pEntry.probeMaterial = _getReflectProbeMaterial();
 
-   mReflectProbeMaterial = _getReflectProbeMaterial();
+   if (!mReflectProbeMaterial)
+      mReflectProbeMaterial = _getReflectProbeMaterial();
+
+   if (!mReflectProbeDiffuseMaterial)
+      mReflectProbeDiffuseMaterial = _getReflectProbeDiffuseMaterial();
+   //
+
+   mReflectProbeBin.push_back(pEntry);
+}
+
+void AdvancedLightBinManager::addConvexReflectionProbe(ReflectProbeInfo *probeInfo)
+{
+   ReflectProbeBinEntry pEntry;
+
+   pEntry.vertBuffer = probeInfo->vertBuffer;
+   pEntry.primBuffer = probeInfo->primBuffer;
+   pEntry.numPrims = probeInfo->numPrims;
+
+   pEntry.probeInfo = probeInfo;
+   //pEntry.probeMaterial = _getReflectProbeMaterial();
+
+   if (!mReflectProbeMaterial)
+      mReflectProbeMaterial = _getReflectProbeMaterial();
+
+   if (!mReflectProbeDiffuseMaterial)
+      mReflectProbeDiffuseMaterial = _getReflectProbeDiffuseMaterial();
    //
 
    mReflectProbeBin.push_back(pEntry);
@@ -436,25 +463,62 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
    //GFX->setViewport(mNamedTarget.getViewport());
 
    //Order the probes by size, biggest to smallest
+   PROFILE_START(AdvancedLightManager_ReflectProbeRender);
    dQsort(mReflectProbeBin.address(), mReflectProbeBin.size(), sizeof(const ReflectProbeBinEntry), AscendingReflectProbeInfluence);
+
+   //Diffuse color contribution
+   /*for (ReflectProbeBinIterator itr = mReflectProbeBin.begin(); itr != mReflectProbeBin.end(); itr++)
+   {
+      ReflectProbeBinEntry& curEntry = *itr;
+
+      // Set geometry
+      GFX->setVertexBuffer(curEntry.vertBuffer);
+      GFX->setPrimitiveBuffer(curEntry.primBuffer);
+
+      MatrixF probeTrans = MatrixF::Identity;
+      probeTrans.setPosition(curEntry.probeInfo->getPosition());
+      probeTrans.scale(curEntry.probeInfo->mRadius * 1.01f);
+
+      sgData.objTrans = &probeTrans;
+
+      if (mReflectProbeDiffuseMaterial && mReflectProbeDiffuseMaterial->matInstance)
+      {
+         mReflectProbeDiffuseMaterial->setProbeParameters(curEntry.probeInfo, state, worldToCameraXfm);
+
+         while (mReflectProbeDiffuseMaterial->matInstance->setupPass(state, sgData))
+         {
+            // Set transforms
+            matrixSet.setWorld(*sgData.objTrans);
+            mReflectProbeDiffuseMaterial->matInstance->setTransforms(matrixSet, state);
+            mReflectProbeDiffuseMaterial->matInstance->setSceneInfo(state, sgData);
+
+            if (curEntry.primBuffer)
+               GFX->drawIndexedPrimitive(GFXTriangleList, 0, 0, curEntry.vertBuffer->mNumVerts, 0, curEntry.numPrims);
+            else
+               GFX->drawPrimitive(GFXTriangleList, 0, curEntry.numPrims);
+         }
+      }
+   }*/
 
    NamedTexTarget* lightInfoTarget = NamedTexTarget::find("indirectLighting");
 
    GFXTextureObject *indirectLightTexObject = lightInfoTarget->getTexture();
    if (!indirectLightTexObject) return;
 
-   GFXTextureTargetRef indirectLightTarget = GFX->allocRenderToTextureTarget(); 
-   
+   GFXTextureTargetRef indirectLightTarget = GFX->allocRenderToTextureTarget();
+
    indirectLightTarget->attachTexture(GFXTextureTarget::Color0, indirectLightTexObject);
 
    GFX->getActiveRenderTarget()->preserve();
    GFX->pushActiveRenderTarget();
    GFX->setActiveRenderTarget(indirectLightTarget);
 
-   PROFILE_START(AdvancedLightManager_ReflectProbeRender);
    for (ReflectProbeBinIterator itr = mReflectProbeBin.begin(); itr != mReflectProbeBin.end(); itr++)
    {
       ReflectProbeBinEntry& curEntry = *itr;
+
+      if (curEntry.numPrims == 0)
+         continue;
 
       // Set geometry
       GFX->setVertexBuffer(curEntry.vertBuffer);
@@ -484,10 +548,10 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
          }
       }
    }
-   PROFILE_END();
 
    indirectLightTarget->resolve();
    GFX->popActiveRenderTarget();
+   PROFILE_END();
 
    // Set NULL for active shadow map (so nothing gets confused)
    mShadowManager->setLightShadowMap(NULL);
@@ -588,6 +652,21 @@ AdvancedLightBinManager::ReflectProbeMaterialInfo* AdvancedLightBinManager::_get
       getGFXVertexFormat<AdvancedLightManager::LightVertex>());
 
    return mReflectProbeMaterial;
+}
+
+AdvancedLightBinManager::ReflectProbeMaterialInfo* AdvancedLightBinManager::_getReflectProbeDiffuseMaterial()
+{
+   PROFILE_SCOPE(AdvancedLightBinManager__getReflectProbeDiffuseMaterial);
+
+   //ReflectProbeMaterialInfo *info = NULL;
+
+   if (!mReflectProbeDiffuseMaterial)
+
+      // Now create the material info object.
+      mReflectProbeDiffuseMaterial = new ReflectProbeMaterialInfo("ReflectionProbeDiffuseMaterial",
+      getGFXVertexFormat<AdvancedLightManager::LightVertex>());
+
+   return mReflectProbeDiffuseMaterial;
 }
 
 void AdvancedLightBinManager::_setupPerFrameParameters( const SceneRenderState *state )
@@ -996,6 +1075,8 @@ bool LightMatInstance::setupPass( SceneRenderState *state, const SceneData &sgDa
    }
    else // Internal pass, this is the add-specular/multiply-darken-color pass
       GFX->setStateBlock(mLitState[StaticLightLMGeometry]);
+
+   GFX->setStateBlock(mLitState[DynamicLight]);
 
    return bRetVal;
 }

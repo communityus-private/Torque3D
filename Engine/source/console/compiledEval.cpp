@@ -834,7 +834,19 @@ breakContinue:
             if(!currentNewObject)
             {
                // Well, looks like we have to create a new object.
-               ConsoleObject *object = ConsoleObject::create((const char*)callArgv[1]);
+
+               //With object pooling, the idea is to have a pool of objects that have been "deleted", and are stored into a separate
+               //simgroup outside the normal sim, objects disabled.
+               //When we go to add an object, before we CREATE one, we first see if there's an object of the appropriate type in the 
+               //object pool. If there is, we pull it out of the pool, rename and assign fields according to the creation parameters
+               //and then added to the target group as expected.
+               //When we later delete the object, it goes back into the pool for reuse.
+               //The pool is usually explicitly called for cleanup on map deletion or server destruction.
+               ConsoleObject *object = Sim::findInObjectPool((const char*)callArgv[1]);
+
+               //Nothing in the pool, so create a new one
+               if (!object)
+                  object = ConsoleObject::create((const char*)callArgv[1]);
 
                // Deal with failure!
                if(!object)

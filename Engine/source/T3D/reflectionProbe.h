@@ -105,6 +105,8 @@ private:
 
    ReflectProbeInfo* mProbeInfo;
 
+   Polyhedron mPolyhedron;
+
    F32 mRadius;
    bool mOverrideColor;
    ColorF mSkyColor;
@@ -177,6 +179,8 @@ public:
 
    // Get the Material instance
    void updateMaterial();
+
+   void setPolyhedron(const Polyhedron& rPolyhedron);
 
    // This is the function that allows this object to submit itself for rendering
    void prepRenderImage(SceneRenderState *state);

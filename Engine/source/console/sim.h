@@ -124,6 +124,7 @@ namespace Sim
 
    SimDataBlockGroup *getDataBlockGroup();
    SimGroup* getRootGroup();
+   SimGroup* getObjectPool();
 
    SimObject* findObject(ConsoleValueRef&);
    SimObject* findObject(SimObjectId);
@@ -201,6 +202,8 @@ namespace Sim
 
    bool saveObject(SimObject *obj, const char *filename);
    SimObject *loadObjectStream(const char *filename);
+
+   SimObject* findInObjectPool(const char* className);
 }
 
 #endif // _SIM_H_
