@@ -292,6 +292,10 @@ public:
    /// for this light.
    bool mDebugRender;
 
+   GFXPrimitiveBuffer* primBuffer;
+   GFXVertexBuffer* vertBuffer;
+   U32 numPrims;
+
 public:
 
    ReflectProbeInfo();

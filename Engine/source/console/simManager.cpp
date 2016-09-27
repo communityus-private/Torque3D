@@ -313,7 +313,9 @@ static void shutdownRoot()
 
 static void shutdownObjectPool()
 {
-   gObjectPool->decRefCount();
+   if (gObjectPool->getRefCount() != 0)
+      gObjectPool->decRefCount();
+
    if (engineAPI::gUseConsoleInterop)
       gObjectPool->deleteObject();
    gObjectPool = NULL;

@@ -92,6 +92,7 @@ public:
 
    //Reflect Probes
    void addSphereReflectProbe(ReflectProbeInfo* probeInfo);
+   void addConvexReflectProbe(ReflectProbeInfo* probeInfo);
 
    typedef GFXVertexPC LightVertex;
 

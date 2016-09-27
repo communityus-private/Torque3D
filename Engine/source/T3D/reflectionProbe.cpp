@@ -50,6 +50,7 @@
 #include "core/resourceManager.h"
 
 #include "console/simPersistId.h"
+#include "math/mPolyhedron.impl.h"
 #include <string>
 
 extern bool gEditingMission;
@@ -286,6 +287,54 @@ bool ReflectionProbe::onAdd()
    if (isClientObject())
       updateMaterial();
 
+   Point3F origin = Point3F(-0.5000000, 0.5000000, -0.5000000);
+   Point3F vecs[3];
+   vecs[0] = Point3F(1.0000000, 0.0000000, 0.0000000);
+   vecs[1] = Point3F(0.0000000, -1.0000000, 0.0000000);
+   vecs[2] = Point3F(0.0000000, 0.0000000, 1.0000000);
+
+   origin += getPosition();
+
+   mPolyhedron.pointList.setSize(8);
+   mPolyhedron.pointList[0] = origin;
+   mPolyhedron.pointList[1] = origin + vecs[0];
+   mPolyhedron.pointList[2] = origin + vecs[1];
+   mPolyhedron.pointList[3] = origin + vecs[2];
+   mPolyhedron.pointList[4] = origin + vecs[0] + vecs[1];
+   mPolyhedron.pointList[5] = origin + vecs[0] + vecs[2];
+   mPolyhedron.pointList[6] = origin + vecs[1] + vecs[2];
+   mPolyhedron.pointList[7] = origin + vecs[0] + vecs[1] + vecs[2];
+
+   Point3F normal;
+   mPolyhedron.planeList.setSize(6);
+
+   mCross(vecs[2], vecs[0], &normal);
+   mPolyhedron.planeList[0].set(origin, normal);
+   mCross(vecs[0], vecs[1], &normal);
+   mPolyhedron.planeList[1].set(origin, normal);
+   mCross(vecs[1], vecs[2], &normal);
+   mPolyhedron.planeList[2].set(origin, normal);
+   mCross(vecs[1], vecs[0], &normal);
+   mPolyhedron.planeList[3].set(mPolyhedron.pointList[7], normal);
+   mCross(vecs[2], vecs[1], &normal);
+   mPolyhedron.planeList[4].set(mPolyhedron.pointList[7], normal);
+   mCross(vecs[0], vecs[2], &normal);
+   mPolyhedron.planeList[5].set(mPolyhedron.pointList[7], normal);
+
+   mPolyhedron.edgeList.setSize(12);
+   mPolyhedron.edgeList[0].vertex[0] = 0; mPolyhedron.edgeList[0].vertex[1] = 1; mPolyhedron.edgeList[0].face[0] = 0; mPolyhedron.edgeList[0].face[1] = 1;
+   mPolyhedron.edgeList[1].vertex[0] = 1; mPolyhedron.edgeList[1].vertex[1] = 5; mPolyhedron.edgeList[1].face[0] = 0; mPolyhedron.edgeList[1].face[1] = 4;
+   mPolyhedron.edgeList[2].vertex[0] = 5; mPolyhedron.edgeList[2].vertex[1] = 3; mPolyhedron.edgeList[2].face[0] = 0; mPolyhedron.edgeList[2].face[1] = 3;
+   mPolyhedron.edgeList[3].vertex[0] = 3; mPolyhedron.edgeList[3].vertex[1] = 0; mPolyhedron.edgeList[3].face[0] = 0; mPolyhedron.edgeList[3].face[1] = 2;
+   mPolyhedron.edgeList[4].vertex[0] = 3; mPolyhedron.edgeList[4].vertex[1] = 6; mPolyhedron.edgeList[4].face[0] = 3; mPolyhedron.edgeList[4].face[1] = 2;
+   mPolyhedron.edgeList[5].vertex[0] = 6; mPolyhedron.edgeList[5].vertex[1] = 2; mPolyhedron.edgeList[5].face[0] = 2; mPolyhedron.edgeList[5].face[1] = 5;
+   mPolyhedron.edgeList[6].vertex[0] = 2; mPolyhedron.edgeList[6].vertex[1] = 0; mPolyhedron.edgeList[6].face[0] = 2; mPolyhedron.edgeList[6].face[1] = 1;
+   mPolyhedron.edgeList[7].vertex[0] = 1; mPolyhedron.edgeList[7].vertex[1] = 4; mPolyhedron.edgeList[7].face[0] = 4; mPolyhedron.edgeList[7].face[1] = 1;
+   mPolyhedron.edgeList[8].vertex[0] = 4; mPolyhedron.edgeList[8].vertex[1] = 2; mPolyhedron.edgeList[8].face[0] = 1; mPolyhedron.edgeList[8].face[1] = 5;
+   mPolyhedron.edgeList[9].vertex[0] = 4; mPolyhedron.edgeList[9].vertex[1] = 7; mPolyhedron.edgeList[9].face[0] = 4; mPolyhedron.edgeList[9].face[1] = 5;
+   mPolyhedron.edgeList[10].vertex[0] = 5; mPolyhedron.edgeList[10].vertex[1] = 7; mPolyhedron.edgeList[10].face[0] = 3; mPolyhedron.edgeList[10].face[1] = 4;
+   mPolyhedron.edgeList[11].vertex[0] = 7; mPolyhedron.edgeList[11].vertex[1] = 6; mPolyhedron.edgeList[11].face[0] = 3; mPolyhedron.edgeList[11].face[1] = 5;
+
    setMaskBits(-1);
 
    return true;
@@ -344,6 +393,28 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
    stream->writeFlag(mUseCubemap);
    stream->write(mCubemapName);
 
+   //if (stream->writeFlag(mask & PolyMask))
+   {
+      U32 i;
+      stream->write(mPolyhedron.pointList.size());
+      for (i = 0; i < mPolyhedron.pointList.size(); i++)
+         mathWrite(*stream, mPolyhedron.pointList[i]);
+
+      stream->write(mPolyhedron.planeList.size());
+      for (i = 0; i < mPolyhedron.planeList.size(); i++)
+         mathWrite(*stream, mPolyhedron.planeList[i]);
+
+      stream->write(mPolyhedron.edgeList.size());
+      for (i = 0; i < mPolyhedron.edgeList.size(); i++) {
+         const Polyhedron::Edge& rEdge = mPolyhedron.edgeList[i];
+
+         stream->write(rEdge.face[0]);
+         stream->write(rEdge.face[1]);
+         stream->write(rEdge.vertex[0]);
+         stream->write(rEdge.vertex[1]);
+      }
+   }
+
    return retMask;
 }
 
@@ -399,6 +470,33 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
    if (mCubemapName.isNotEmpty())
       Sim::findObject(mCubemapName, mCubemap);
 
+   //if (stream->readFlag())
+   {
+      U32 i, size;
+      Polyhedron tempPH;
+      stream->read(&size);
+      tempPH.pointList.setSize(size);
+      for (i = 0; i < tempPH.pointList.size(); i++)
+         mathRead(*stream, &tempPH.pointList[i]);
+
+      stream->read(&size);
+      tempPH.planeList.setSize(size);
+      for (i = 0; i < tempPH.planeList.size(); i++)
+         mathRead(*stream, &tempPH.planeList[i]);
+
+      stream->read(&size);
+      tempPH.edgeList.setSize(size);
+      for (i = 0; i < tempPH.edgeList.size(); i++) {
+         Polyhedron::Edge& rEdge = tempPH.edgeList[i];
+
+         stream->read(&rEdge.face[0]);
+         stream->read(&rEdge.face[1]);
+         stream->read(&rEdge.vertex[0]);
+         stream->read(&rEdge.vertex[1]);
+      }
+      setPolyhedron(tempPH);
+   }
+
    createGeometry();
    updateMaterial();
 }
@@ -419,23 +517,108 @@ void ReflectionProbe::createGeometry()
    // Attempt to get the resource from the ResourceManager
    mEditorShape = ResourceManager::get().load(shapeFile);
 
-   if (!mEditorShape)
+   if (mEditorShape)
    {
-      Con::errorf("RenderShapeExample::createShape() - Unable to load shape: %s", shapeFile.c_str());
+      mEditorShapeInst = new TSShapeInstance(mEditorShape, isClientObject());
+   }
+}
+
+void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
+{
+   mPolyhedron = rPolyhedron;
+
+   mPolyhedron.transform(getTransform(), getScale());
+
+   Point3F halfScale = getScale()/2;
+   mObjBox = Box3F(-halfScale, halfScale);
+
+   resetWorldBox();
+
+   /*MatrixF base(true);
+   base.scale(Point3F(1.0 / mObjScale.x,
+      1.0 / mObjScale.y,
+      1.0 / mObjScale.z));
+   base.mul(mWorldToObj);*/
+
+   //
+   //Translate the probeInfo's polyhedron into a convex shape for rendering with
+   const U32 numPoints = mPolyhedron.getNumPoints();
+
+   if (numPoints == 0)
+   {
+      mProbeInfo->numPrims = numPoints;
       return;
    }
 
-   // Attempt to preload the Materials for this shape
-   /*if (isClientObject() &&
-      !mShape->preloadMaterialList(mShape.getPath()) &&
-      NetConnection::filesWereDownloaded())
-   {
-      mShape = NULL;
-      return;
-   }*/
+   const Point3F* points = mPolyhedron.getPoints();
+   const PlaneF* planes = mPolyhedron.getPlanes();
+   const Point3F viewDir = GFX->getViewMatrix().getForwardVector();
 
-   // Create the TSShapeInstance
-   mEditorShapeInst = new TSShapeInstance(mEditorShape, isClientObject());
+   // Create a temp buffer for the vertices and
+   // put all the polyhedron's points in there.
+
+   GFXVertexBufferHandle< AdvancedLightManager::LightVertex > verts(GFX, numPoints, GFXBufferTypeStatic);
+
+   verts.lock();
+   for (U32 i = 0; i < numPoints; ++i)
+   {
+      verts[i].point = points[i];
+      verts[i].color = ColorI::WHITE;
+   }
+
+   if (getTransform())
+   {
+      for (U32 i = 0; i < numPoints; ++i)
+         getTransform().mulP(verts[i].point);
+   }
+   verts.unlock();
+
+   // Allocate a temp buffer for the face indices.
+
+   const U32 numIndices = mPolyhedron.getNumEdges() * 3;
+   const U32 numPlanes = mPolyhedron.getNumPlanes();
+
+   GFXPrimitiveBufferHandle prims(GFX, numIndices, 0, GFXBufferTypeVolatile);
+
+   // Unfortunately, since polygons may have varying numbers of
+   // vertices, we also need to retain that information.
+
+   FrameTemp< U32 > numIndicesForPoly(numPlanes);
+   U32 numPolys = 0;
+
+   // Create all the polygon indices.
+   U16* indices;
+   prims.lock(&indices);
+   U32 idx = 0;
+   for (U32 i = 0; i < numPlanes; ++i)
+   {
+      // Since face extraction is somewhat costly, don't bother doing it for
+      // backfacing polygons if culling is enabled.
+
+      /*if (!desc.cullDefined || desc.cullMode != GFXCullNone)
+      {
+         F32 dot = mDot(planes[i], viewDir);
+
+         // See if it faces *the same way* as the view direction.  This would
+         // normally mean that the face is *not* backfacing but since we expect
+         // planes on the polyhedron to be facing *inwards*, we need to reverse
+         // the logic here.
+
+         if (dot > 0.f)
+            continue;
+      }*/
+
+      U32 numPoints = mPolyhedron.extractFace(i, &indices[idx], numIndices - idx);
+      numIndicesForPoly[numPolys] = numPoints;
+      idx += numPoints;
+
+      numPolys++;
+   }
+   prims.unlock();
+
+   mProbeInfo->vertBuffer = verts;
+   mProbeInfo->primBuffer = prims;
+   mProbeInfo->numPrims = numPolys;
 }
 
 void ReflectionProbe::updateMaterial()
@@ -561,7 +744,10 @@ void ReflectionProbe::submitLights(LightManager *lm, bool staticLighting)
       mProbeInfo->mCubemap->mCubemap = NULL;
    }
 
-   lm->addSphereReflectProbe(mProbeInfo);
+   if (mProbeShapeType == Sphere)
+      lm->addSphereReflectProbe(mProbeInfo);
+   //else
+   //   lm->addConvexReflectProbe(mProbeInfo);
 }
 
 void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
@@ -582,7 +768,10 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    ColorI color = ColorI::WHITE;
    color.alpha = 50;
 
-   draw->drawSphere(desc, mRadius, getPosition(), color);
+   if (mProbeShapeType == Sphere)
+      draw->drawSphere(desc, mRadius, getPosition(), color);
+   else
+      draw->drawPolyhedron(desc, mPolyhedron, color);
 }
 
 DefineEngineMethod(ReflectionProbe, postApply, void, (), ,

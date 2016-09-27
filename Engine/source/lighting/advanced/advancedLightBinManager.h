@@ -133,6 +133,7 @@ public:
 
    // Add a reflection probe to the bin
    void addSphereReflectionProbe(ReflectProbeInfo *probeInfo);
+   void addConvexReflectionProbe(ReflectProbeInfo *probeInfo);
 
    virtual bool setTargetSize(const Point2I &newTargetSize);
 
@@ -290,7 +291,9 @@ protected:
    LightMaterialInfo* _getLightMaterial( LightInfo::Type lightType, ShadowType shadowType, bool useCookieTex );
 
    ReflectProbeMaterialInfo* mReflectProbeMaterial;
+   ReflectProbeMaterialInfo* mReflectProbeDiffuseMaterial;
    ReflectProbeMaterialInfo* _getReflectProbeMaterial();
+   ReflectProbeMaterialInfo* _getReflectProbeDiffuseMaterial();
 
    ///
    void _onShadowFilterChanged();
@@ -312,6 +315,8 @@ public:
       GFXPrimitiveBuffer* primBuffer;
       GFXVertexBuffer* vertBuffer;
       U32 numPrims;
+
+      ReflectProbeBinEntry() : probeInfo(nullptr), primBuffer(nullptr), vertBuffer(nullptr), probeMaterial(nullptr) {}
    };
 
 protected:

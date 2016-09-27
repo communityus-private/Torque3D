@@ -50,6 +50,12 @@
 #include "console/engineAPI.h"
 #include "T3D/accumulationVolume.h"
 #include "T3D/envVolume.h"
+
+#ifndef _OPTIMIZEDPOLYLIST_H_
+#include "collision/optimizedPolyList.h"
+#endif
+#include "renderInstance/renderMeshMgr.h"
+
 using namespace Torque;
 
 extern bool gEditingMission;
@@ -386,6 +392,18 @@ bool TSStatic::_createShape()
    else if( cubeDescId > 0 )
    {
       Sim::findObject( cubeDescId, reflectorDesc );
+   }
+
+   if (isClientObject())
+   {
+      OptimizedPolyList geom;
+      mShapeInstance->buildPolyList(&geom, 0);
+
+      RenderMeshMgr* renderMeshManager;
+      if (Sim::findObject("MeshBin", renderMeshManager))
+      {
+         //renderMeshManager->addStaticBatchElement(this, &geom, "");
+      }
    }
 
    return true;
