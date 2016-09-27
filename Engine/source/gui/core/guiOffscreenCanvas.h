@@ -38,6 +38,10 @@ public:
    void _teardownTargets();
 
    NamedTexTargetRef getTarget() { return &mNamedTarget; }
+   void setTargetName(String newTargetName) { mTargetName = newTargetName; }
+
+   void setTargetSize(Point2I newTargetSize) { mTargetSize = newTargetSize; }
+   void setDynamicTarget(bool isDynamic) { mDynamicTarget = isDynamic;  }
 
    void markDirty() { mTargetDirty = true; }
 

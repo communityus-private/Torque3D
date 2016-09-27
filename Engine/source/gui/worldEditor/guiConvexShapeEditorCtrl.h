@@ -114,6 +114,29 @@ public:
    void dropSelectionAtScreenCenter();
    void splitSelectedFace();
 
+   Point2F getSelectedFaceUVOffset();
+   Point2F getSelectedFaceUVScale();
+   const char* getSelectedFaceMaterial();
+   bool getSelectedFaceHorzFlip();
+   bool getSelectedFaceVertFlip();
+   float getSelectedFaceZRot();
+
+   void setSelectedFaceUVOffset(Point2F offset);
+   void setSelectedFaceUVScale(Point2F offset);
+   void setSelectedFaceMaterial(const char* materialName);
+   void setSelectedFaceHorzFlip(bool flipped);
+   void setSelectedFaceVertFlip(bool flipped);
+   void setSelectedFaceZRot(float degrees);
+   void toggleGridSnapping();
+   void setGridSnapSize(float gridSize);
+
+   void updateShape();
+
+   float getGridSnapSize() { return mGridPlaneSize; }
+
+   void CSGSubtractBrush();
+   bool CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface);
+
    /// Interface with Tools.
    /// @{ 
 
@@ -156,6 +179,9 @@ protected:
 
    U32 mSavedGizmoFlags;
 
+   Vector<SimObjectPtr<ConvexShape>>   mSelectedBrushes;
+   Vector<U32>                         mSelectedFaces;
+
    /// The selected ConvexShape.
    SimObjectPtr<ConvexShape> mConvexSEL;      
 
@@ -181,6 +207,8 @@ protected:
    bool mHasCopied;
    RayInfo mLastRayInfo;
 
+   bool mGridSnap;
+
    Gui3DMouseEvent mMouseDownEvent;
 
    Point3F mGizmoMatOffset;
@@ -191,6 +219,15 @@ protected:
 
    UndoAction *mLastUndo;
    UndoManager *mUndoManager;
+
+   struct ConvexShapeProxy
+   {
+      ConvexShape* shapeProxy;
+      SceneObject* targetObject;
+      String targetObjectClass;
+   };
+
+   Vector<ConvexShapeProxy> mProxyObjects;
 
    ConvexEditorTool *mActiveTool;
    ConvexEditorCreateTool *mCreateTool;   

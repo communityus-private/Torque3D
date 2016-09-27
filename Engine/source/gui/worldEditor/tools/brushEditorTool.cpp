@@ -778,3 +778,28 @@ bool BrushEditorTool::addBoxBrush(Box3F newBrushBounds)
    //newBrush->addBrushFromSurfaces(surfaces);
    return true;
 }
+
+DefineConsoleFunction(toggleBrushEditor, void, (),,
+   "Create a ConvexShape from the given polyhedral object.")
+{
+   BrushEditorTool* brushTool;
+   if (!Sim::findObject("BrushEditor", brushTool))
+   {
+      brushTool = new BrushEditorTool();
+      brushTool->registerObject("BrushEditor");
+   }
+
+   WorldEditor* worldEditor;
+   if (!Sim::findObject("EWorldEditor", worldEditor))
+   {
+      return;
+   }
+
+   EditorTool* curTool = worldEditor->getActiveEditorTool();
+
+   if(curTool == nullptr || brushTool != curTool)
+      worldEditor->setEditorTool(brushTool);
+   else
+      worldEditor->setEditorTool(nullptr);
+}
+

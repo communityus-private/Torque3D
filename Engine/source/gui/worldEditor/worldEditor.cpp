@@ -3998,11 +3998,11 @@ DefineEngineMethod( WorldEditor, createConvexShapeFrom, ConvexShape*, ( SceneObj
 
       // Turn everything into a "surface" property for the ConvexShape.
 
-      char buffer[ 1024 ];
-      dSprintf( buffer, sizeof( buffer ), "%g %g %g %g %g %g %g",
+      char buffer[1024];
+      dSprintf(buffer, sizeof(buffer), "%g %g %g %g %g %g %g %i %g %g %g %g %f %d %d",
          quat.x, quat.y, quat.z, quat.w,
-         position.x, position.y, position.z
-      );
+         position.x, position.y, position.z,
+         0, 0, 0, 1, 1, 0, false, false);
 
       // Add the surface.
 

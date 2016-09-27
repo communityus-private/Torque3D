@@ -40,6 +40,7 @@
 #include "T3D/components/render/renderComponentInterface.h"
 
 #include "gui/core/guiOffscreenCanvas.h"
+#include "T3D/gameTSCtrl.h"
 
 #ifdef TORQUE_OPENVR
 #include "platform/input/openVR/openVRProvider.h"
@@ -88,6 +89,8 @@ VRCameraComponent::VRCameraComponent() : CameraComponent()
    mUseParentTransform = true;
 
    mFriendlyName = "VRCamera(Component)";
+
+   vrInitialized = false;
 }
 
 VRCameraComponent::~VRCameraComponent()
@@ -132,7 +135,7 @@ void VRCameraComponent::onComponentAdd()
       //Should be good, get our device id
       S32 vrDisplayAdapter = OPENVR->getDisplayDeviceId();
 
-      GameConnection* conn;
+      GameConnection* conn = GameConnection::getConnectionToServer();
       if (!conn)
       {
          Con::errorf("VRCameraComponent::onComponentAdd(): Invalid GameConnection.");
@@ -146,13 +149,13 @@ void VRCameraComponent::onComponentAdd()
       if(!Sim::findObject("VRCanvas", vrCanvas))
       {
          vrCanvas = new GuiOffscreenCanvas();
-         /*{
-            targetSize = "512 512";
-            targetName = "VRCanvas";
-            dynamicTarget = true;
-         };*/
 
          vrCanvas->registerObject("VRCanvas");
+
+         vrCanvas->setTargetName("VRCanvas");
+         vrCanvas->setTargetSize(Point2I(512,512));
+         vrCanvas->setDynamicTarget(true);
+         vrCanvas->_setupTargets();
       }
 
       GuiControl* vrOverlay = nullptr;
@@ -163,9 +166,30 @@ void VRCameraComponent::onComponentAdd()
          vrOverlay->registerObject("VROverlay");
       }
 
-      //vrCanvas->setC
+      GameTSCtrl* playGui = nullptr;
+      if (!Sim::findObject("PlayGUI", playGui))
+      {
+         return;
+      }
 
+      vrCanvas->setCursorON(false);
+      playGui->setRenderStyle(GameTSCtrl::RenderStyleStereoSideBySide);
+      playGui->setStereoGui(vrCanvas);
+
+      vrCanvas->setContentControl(vrOverlay);
+
+      Con::setVariable("$GameCanvas", "VRCanvas");
+
+      //Point2I ext = playGui->getRoot()->getExtent();
+
+      Con::setFloatVariable("$VRMouseScaleX", 512.0 / 1920.0);
+      Con::setFloatVariable("$VRMouseScaleY", 512.0 / 1060.0);
+
+      // Reset all sensors
       OPENVR->resetSensors();
+
+      Con::setBoolVariable("$Video::VREnabled", OPENVR->isEnabled());
+      
       //return value ? OPENVR->enable() : OPENVR->disable();
 
       //$Video::forceDisplayAdapter = OpenVR::getDisplayDeviceId()
@@ -216,6 +240,79 @@ void VRCameraComponent::onComponentAdd()
       $Video::VREnabled = OpenVR::isDeviceActive();
       */
    }
+}
+
+void VRCameraComponent::setupVR()
+{
+   if (vrInitialized)
+      return;
+
+   //check if VR is enabled
+   if (!ManagedSingleton<OpenVRProvider>::instanceOrNull())
+   {
+      Con::errorf("VRCameraComponent::onComponentAdd(): No VR Device present.");
+      return;
+   }
+
+   //Should be good, get our device id
+   S32 vrDisplayAdapter = OPENVR->getDisplayDeviceId();
+
+   GameConnection* conn = GameConnection::getConnectionToServer();
+   if (!conn)
+   {
+      Con::errorf("VRCameraComponent::onComponentAdd(): Invalid GameConnection.");
+      return;
+   }
+
+   conn->setDisplayDevice(OPENVR);
+
+   //get the client's VR canvas
+   GuiOffscreenCanvas* vrCanvas = nullptr;
+   if (!Sim::findObject("VRCanvas", vrCanvas))
+   {
+      vrCanvas = new GuiOffscreenCanvas();
+
+      vrCanvas->registerObject("VRCanvas");
+
+      vrCanvas->setTargetName("VRCanvas");
+      vrCanvas->setTargetSize(Point2I(512, 512));
+      vrCanvas->setDynamicTarget(true);
+      vrCanvas->_setupTargets();
+   }
+
+   GuiControl* vrOverlay = nullptr;
+   if (!Sim::findObject("VROverlay", vrOverlay))
+   {
+      vrOverlay = new GuiControl();
+
+      vrOverlay->registerObject("VROverlay");
+   }
+
+   GameTSCtrl* playGui = nullptr;
+   if (!Sim::findObject("PlayGUI", playGui))
+   {
+      return;
+   }
+
+   vrCanvas->setCursorON(false);
+   playGui->setRenderStyle(GameTSCtrl::RenderStyleStereoSideBySide);
+   playGui->setStereoGui(vrCanvas);
+
+   vrCanvas->setContentControl(vrOverlay);
+
+   Con::setVariable("$GameCanvas", "VRCanvas");
+
+   //Point2I ext = playGui->getRoot()->getExtent();
+
+   Con::setFloatVariable("$VRMouseScaleX", 512.0 / 1920.0);
+   Con::setFloatVariable("$VRMouseScaleY", 512.0 / 1060.0);
+
+   // Reset all sensors
+   OPENVR->resetSensors();
+
+   Con::setBoolVariable("$Video::VREnabled", OPENVR->isEnabled());
+
+   vrInitialized = true;
 }
 
 void VRCameraComponent::onComponentRemove()
@@ -521,6 +618,8 @@ void VRCameraComponent::unpackUpdate(NetConnection *con, BitStream *stream)
 
       mUseParentTransform = stream->readFlag();
    }
+
+   setupVR();
 }
 
 void VRCameraComponent::setForwardVector(VectorF newForward, VectorF upVector)

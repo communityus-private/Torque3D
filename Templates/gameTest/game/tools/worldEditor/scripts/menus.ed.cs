@@ -267,6 +267,7 @@ function EditorGui::buildMenus(%this)
       item[1] = "Profiler" TAB "ctrl F2" TAB "showMetrics(true);";
       item[2] = "State Machine Editor" TAB "" TAB "Canvas.pushDialog(StateMachineEditor);";
       item[3] = "Shader/Material Editor" TAB "" TAB "Canvas.pushDialog(ShaderEditor);";
+      item[4] = "Brush Editor" TAB "" TAB "toggleBrushEditor();";
    };
    %this.menuBar.insert(%toolsMenu, %this.menuBar.getCount());
       

@@ -411,6 +411,7 @@ class WorldEditor : public EditTSCtrl
 	  static Signal<void(WorldEditor*)> smRenderSceneSignal;
 
      void setEditorTool(EditorTool*);
+     EditorTool* getActiveEditorTool() { return mActiveEditorTool; }
 };
 
 typedef WorldEditor::DropType WorldEditorDropType;

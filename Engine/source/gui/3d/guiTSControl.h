@@ -191,6 +191,8 @@ public:
 
    bool shouldRenderChildControls() { return mRenderStyle == RenderStyleStandard; }
 
+   void setRenderStyle(U32 renderStyle) { mRenderStyle = renderStyle; }
+
    void setStereoGui(GuiOffscreenCanvas *canvas);
    void renderDisplayPreview(const RectI &updateRect, GFXTexHandle &previewTexture);
 

@@ -46,6 +46,8 @@ class VRCameraComponent : public CameraComponent
    F32 mCameraMinFov;                ///< Min vertical FOV allowed in degrees.
    F32 mCameraMaxFov;                ///< Max vertical FOV allowed in degrees.
 
+   bool vrInitialized;
+
 protected:
    Point3F mPosOffset;
    RotationF mRotOffset;
@@ -71,8 +73,8 @@ public:
    virtual void onRemove();
    static void initPersistFields();
 
-   void onComponentAdd();
-   void onComponentRemove();
+   virtual void onComponentAdd();
+   virtual void onComponentRemove();
 
    static bool _setCameraFov(void *object, const char *index, const char *data);
 
@@ -98,6 +100,8 @@ public:
    {
       return mPosOffset;
    }
+
+   void setupVR();
 
    /// Gets the minimum viewing distance, maximum viewing distance, camera offsetand rotation
    /// for this object, if the world were to be viewed through its eyes

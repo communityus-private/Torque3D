@@ -47,6 +47,7 @@ new TerrainMaterial()
    detailBrightness = "1";
    Enabled = "1";
    diffuseSize = "200";
+   normalMap = "art/Textures/TTR_Wall/wall93_Normal";
 };
 
 singleton Material(TerrainFX_grass2)
@@ -121,6 +122,7 @@ new TerrainMaterial()
    detailBrightness = "1";
    Enabled = "1";
    diffuseSize = "200";
+   normalMap = "art/Textures/TTR_Window/win15_Normal";
 };
 
 // ----------------------------------------------------------------------------
@@ -187,7 +189,7 @@ new TerrainMaterial()
 // Sample sand
 // ----------------------------------------------------------------------------
 
-singleton Material(TerrainFX_sand)
+singleton Material()
 {
    mapTo = "sand";
    footstepSoundId = "3";
@@ -198,6 +200,16 @@ singleton Material(TerrainFX_sand)
    specularPower[0] = "1";
    effectColor[0] = "0.84 0.71 0.5 1";
    effectColor[1] = "0.84 0.71 0.5 0.349";
+   diffuseMap = "art/terrains/Example/sand";
+   diffuseSize = "200";
+   detailMap = "art/terrains/Example/sand_d";
+   detailSize = "10";
+   detailDistance = "100";
+   internalName = "sand";
+   detailBrightness = "1";
+   enabled = "1";
+   isManaged = "1";
+   normalMap = "art/Textures/TTR_Window/win12_Normal";
 };
 
 new TerrainMaterial()

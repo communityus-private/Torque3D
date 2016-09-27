@@ -194,3 +194,87 @@ function serverCmdSetClientAspectRatio(%client, %width, %height)
 
    %cameraComp.ScreenAspect = %width SPC %height;
 }
+
+///
+///
+///
+
+function VRCameraComponent::onAdd(%this) 
+{
+   %this.addComponentField(clientOwner, "The client that views this camera", "int", "1", "");
+
+   %test = %this.clientOwner;
+
+   %barf = ClientGroup.getCount();
+
+   %clientID = %this.getClientID();
+   if(%clientID && !isObject(%clientID.camera))
+   {
+      %this.scopeToClient(%clientID);
+      %this.setDirty();
+
+      %clientID.setCameraObject(%this.owner);
+      %clientID.setControlCameraFov(%this.FOV);
+      
+      %clientID.camera = %this.owner;
+   }
+
+   %res = $pref::Video::mode;
+   %derp = 0;
+}
+
+function VRCameraComponent::onRemove(%this)
+{
+   %clientID = %this.getClientID();
+   if(%clientID)
+      %clientID.clearCameraObject();
+}
+
+function CameraComponent::onInspectorUpdate(%this)
+{
+   //if(%this.clientOwner)
+      //%this.clientOwner.setCameraObject(%this.owner);
+}
+
+function VRCameraComponent::getClientID(%this)
+{
+	return ClientGroup.getObject(%this.clientOwner-1);
+}
+
+function VRCameraComponent::isClientCamera(%this, %client)
+{
+	%clientID = ClientGroup.getObject(%this.clientOwner-1);
+	
+	if(%client.getID() == %clientID)
+		return true;
+	else
+	    return false;
+}
+
+function VRCameraComponent::onClientConnect(%this, %client)
+{
+   //if(%this.isClientCamera(%client) && !isObject(%client.camera))
+   //{
+      %this.scopeToClient(%client);
+      %this.setDirty();
+      
+      %client.setCameraObject(%this.owner);
+      %client.setControlCameraFov(%this.FOV);
+      
+      %client.camera = %this.owner;
+   //}
+   //else
+   //{
+   //   echo("CONNECTED CLIENT IS NOT CAMERA OWNER!");
+   //}
+}
+
+function VRCameraComponent::onClientDisconnect(%this, %client)
+{
+   Parent::onClientDisconnect(%this, %client);
+   
+   if(isClientCamera(%client)){
+      %this.clearScopeToClient(%client);
+      %client.clearCameraObject();
+   }
+}

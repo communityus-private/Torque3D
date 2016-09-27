@@ -131,20 +131,46 @@ public:
       S32 id;
    }; 
 
-   struct surfaceTexture
+   struct surfaceMaterial
    {
       // The name of the Material we will use for rendering
       String            materialName;
 
       // The actual Material instance
       BaseMatInstance*  materialInst;
+
+      surfaceMaterial()
+      {
+         materialName = "";
+         materialInst = NULL;
+      }
+   };
+
+   struct surfaceUV
+   {
+      S32 matID;
       Point2F offset;
       Point2F scale;
+      float   zRot;
+      bool horzFlip;
+      bool vertFlip;
+
+      surfaceUV() : matID(0), offset(Point2F(0.0f, 0.0f)), scale(Point2F(1.0f, 1.0f)), zRot(0.0f), horzFlip(false), vertFlip(false) {}
+   };
+
+   struct surfaceBuffers
+   {
+      // The GFX vertex and primitive buffers
+      GFXVertexBufferHandle< VertexType > mVertexBuffer;
+      GFXPrimitiveBufferHandle            mPrimitiveBuffer;
+
+      U32 mVertCount;
+      U32 mPrimCount;
    };
 
 	struct Geometry
 	{  
-		void generate( const Vector< PlaneF > &planes, const Vector< Point3F > &tangents, const Vector< Point2F > texOffset, const Vector< Point2F > texScale);
+      void generate(const Vector< PlaneF > &planes, const Vector< Point3F > &tangents, const Vector< surfaceMaterial > surfaceTextures, const Vector< Point2F > texOffset, const Vector< Point2F > texScale, const Vector< bool > horzFlip, const Vector< bool > vertFlip);
 
 		Vector< Point3F > points;      
 		Vector< Face > faces;
@@ -211,6 +237,8 @@ public:
 
    /// @}
 
+      String getMaterialName() { return mMaterialName; }
+
 protected:
 
    void _updateMaterial();
@@ -225,6 +253,7 @@ protected:
    static bool protectedSetSurface( void *object, const char *index, const char *data );
 
    static bool protectedSetSurfaceTexture( void *object, const char *index, const char *data );
+   static bool protectedSetSurfaceUV(void *object, const char *index, const char *data);
   
 protected:
    
@@ -235,11 +264,11 @@ protected:
    BaseMatInstance*  mMaterialInst;
 
    // The GFX vertex and primitive buffers
-   GFXVertexBufferHandle< VertexType > mVertexBuffer;
+   /*GFXVertexBufferHandle< VertexType > mVertexBuffer;
    GFXPrimitiveBufferHandle            mPrimitiveBuffer;
 
    U32 mVertCount;
-   U32 mPrimCount;
+   U32 mPrimCount;*/
 
    Geometry mGeometry;  
 
@@ -250,7 +279,9 @@ protected:
    Vector< Point3F > mFaceCenters;
 
    //this is mostly for storage purposes, so we can save the texture mods
-   Vector< surfaceTexture > mSurfaceTextures;
+   Vector< surfaceMaterial > mSurfaceTextures;
+   Vector< surfaceUV > mSurfaceUVs;
+   Vector< surfaceBuffers > mSurfaceBuffers;
 
    Convex *mConvexList;
 
