@@ -41,6 +41,90 @@ class GuiConvexEditorUndoAction;
 class ConvexEditorTool;
 class ConvexEditorCreateTool;
 
+//Used for CSG operations
+class CSGNode;
+class CSGSolid;
+
+class Polygon
+{
+public:
+   enum PlaneRelation
+   {
+      Back,
+      Front,
+      On,
+      Intersect
+   };
+
+   struct Edge
+   {
+      U32 points[2];
+
+      Edge() { points[0] = points[1] = 0; }
+      Edge(U32 pointA, U32 pointB) { points[0] = pointA; points[1] = pointB; }
+   };
+
+   PlaneF surfacePlane;
+   Vector<Point3F> points;
+
+   Polygon();
+
+   Polygon(Vector<Point3F> _points);
+
+   Vector<Edge> getEdges();
+   
+   bool isValid();
+   void simplify();
+   bool isConvex();
+
+   //Gets whether this polygon is in front of, behind, or on, or intersecting a plane
+   // Returns an enum to indicate relation to plane
+   PlaneRelation getPlaneSide(PlaneF p);
+
+   bool split(PlaneF clip);
+   bool split(PlaneF clip, Polygon* back, Polygon *front);
+
+   //Splits the polygon along a plane, if valid. If it's coplanar, the coplanar vars will be non-null
+   bool split(PlaneF clip, Polygon* back, Polygon *front, Polygon* coplanarBack, Polygon* coplanarFront);
+
+   void flip();
+};
+
+class CSGNode
+{
+   Vector<Polygon> polygons;
+
+   PlaneF plane;
+   CSGNode* front;
+   CSGNode* back;
+
+public:
+
+   CSGNode(CSGSolid* solid);
+   CSGNode();
+
+   Vector<Polygon> clipPolygons(Vector<Polygon> &_polygons);
+
+   void clipTo(CSGNode* csg);
+   void invert();
+
+   Vector<Polygon> allPolygons();
+   void build(Vector<Polygon> _polygons);
+};
+
+class CSGSolid
+{
+public:
+   Vector<Polygon> polygons;
+
+   CSGSolid(Vector<Polygon> _polygons);
+   CSGSolid();
+
+   CSGSolid doUnion(CSGSolid* solid);
+   CSGSolid doSubtract(CSGSolid* solid);
+   CSGSolid doIntersect(CSGSolid* solid);
+};
+
 class GuiConvexEditorCtrl : public EditTSCtrl
 {
    typedef EditTSCtrl Parent;
@@ -134,8 +218,22 @@ public:
 
    float getGridSnapSize() { return mGridPlaneSize; }
 
+   //CSG functions
    void CSGSubtractBrush();
    bool CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface);
+   void convertToPolyhedron(ConvexShape* targetBrush, Polyhedron* outPoly);
+   void convertFromPolyhedron(AnyPolyhedron* poly, ConvexShape* outBrush);
+
+   void convertToCSGSolid(ConvexShape* targetBrush, CSGSolid* outSolid);
+
+   enum SelectMode
+   {
+      VertMode,
+      FaceMode,
+      BrushMode
+   };
+
+   void setSelectMode(U32 selectMode) { mSelectionMode = static_cast<SelectMode>(selectMode); }
 
    /// Interface with Tools.
    /// @{ 
@@ -175,12 +273,26 @@ protected:
 
 protected:
 
+   SelectMode mSelectionMode;
+
    bool mIsDirty;
 
    U32 mSavedGizmoFlags;
 
-   Vector<SimObjectPtr<ConvexShape>>   mSelectedBrushes;
-   Vector<U32>                         mSelectedFaces;
+   Vector<SimObjectPtr<ConvexShape>> mSelectedBrushes;
+   struct selectedFace
+   {
+      SimObjectPtr<ConvexShape> mOwnerBrush;
+      U32 faceId;
+   };
+   Vector<selectedFace> mSelectedFaces;
+
+   struct selectedVert
+   {
+      SimObjectPtr<ConvexShape> mOwnerBrush;
+      U32 vertId;
+   };
+   Vector<selectedVert>  mSelectedVerts;
 
    /// The selected ConvexShape.
    SimObjectPtr<ConvexShape> mConvexSEL;      
@@ -190,6 +302,9 @@ protected:
 
    S32 mFaceSEL;
    S32 mFaceHL;
+   S32 mVertHL;
+
+   Point2I hlvertpos;
 
    MatrixF mFaceSavedXfm;
 

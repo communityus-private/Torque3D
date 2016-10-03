@@ -50,6 +50,7 @@
 #include "T3D/zone.h"
 #include "T3D/portal.h"
 #include "T3D/reflectionProbe.h"
+#include "math/mPolyhedron.impl.h"
 
 IMPLEMENT_CONOBJECT( GuiConvexEditorCtrl );
 
@@ -59,11 +60,395 @@ ConsoleDocClass( GuiConvexEditorCtrl,
    "@internal"
 );
 
+//CSG Stuff
+Polygon::Polygon()
+{
+   surfacePlane = PlaneF(Point3F(0, 0, 0), Point3F(0, 0, 1));
+}
+
+Polygon::Polygon(Vector<Point3F> _points)
+{
+   points = _points;
+   surfacePlane = PlaneF(points[0], points[1], points[2]);
+   //Simplify();
+}
+
+Vector<Polygon::Edge> Polygon::getEdges()
+{
+   Vector<Edge> edgeList;
+   for (U32 i = 1; i < points.size(); ++i)
+   {
+      Edge e = Edge(i - 1, i);
+      edgeList.push_back(e);
+   }
+
+   return edgeList;
+}
+
+bool Polygon::isValid()
+{
+   bool valid = true;
+   for (U32 i = 0; i < points.size(); ++i)
+   {
+      if (surfacePlane.whichSide(points[i]) != PlaneF::Side::On)
+      {
+         valid = false;
+         break;
+      }
+   }
+
+   return valid;
+}
+
+void Polygon::simplify()
+{
+
+}
+
+bool Polygon::isConvex()
+{
+   return true;
+}
+
+//Gets whether this polygon is in front of, behind, or on, or intersecting a plane
+// Returns an enum to indicate relation to plane
+Polygon::PlaneRelation Polygon::getPlaneSide(PlaneF p)
+{
+   U32 back = 0;
+   U32 front = 0;
+   U32 on = 0;
+   U32 pointCount = points.size();
+
+   for (U32 i = 0; i < pointCount; ++i)
+   {
+      PlaneF::Side s = p.whichSide(points[i]);
+
+      if (s == PlaneF::Side::Back)
+         back++;
+      else if (s == PlaneF::Side::Front)
+         front++;
+      else
+         on++;
+   }
+
+   if (back == pointCount)
+      return PlaneRelation::Back;
+   else if (front == pointCount)
+      return PlaneRelation::Front;
+   else if (on == pointCount)
+      return PlaneRelation::On;
+   else
+      return PlaneRelation::Intersect;
+}
+
+bool Polygon::split(PlaneF clip)
+{
+   Polygon back, front;
+   if (split(clip, &back, &front))
+   {
+      points = back.points;
+      surfacePlane = back.surfacePlane;
+
+      return true;
+   }
+
+   return false;
+}
+
+bool Polygon::split(PlaneF clip, Polygon* back, Polygon *front)
+{
+   Polygon cBack, cFront;
+   return split(clip, back, front, &cBack, &cFront);
+}
+
+//Splits the polygon along a plane, if valid. If it's coplanar, the coplanar vars will be non-null
+bool Polygon::split(PlaneF clip, Polygon* back, Polygon *front, Polygon* coplanarBack, Polygon* coplanarFront)
+{
+   PlaneRelation relation = getPlaneSide(clip);
+
+   if (relation != PlaneRelation::Intersect)
+   {
+      //We don't split this, so just set appropriate returns and exit
+      back = front = nullptr;
+      coplanarBack = coplanarFront = nullptr;
+
+      if (relation == PlaneRelation::Back)
+         back = this;
+      else if (relation == PlaneRelation::Front)
+         front = this;
+      else
+         coplanarBack = coplanarFront = this;
+
+      return false;
+   }
+
+   Vector<Point3F> backVerts;
+   Vector<Point3F> frontVerts;
+
+   Vector<Edge> edges = getEdges();
+
+   for (U32 i = 0; i < edges.size(); ++i)
+   {
+      Point3F pointA = points[edges[i].points[0]];
+      Point3F pointB = points[edges[i].points[1]];
+
+      F32 t = clip.intersect(pointA, pointB);
+      if (t != 0 && t != 1)
+      {
+         Point3F intersectPoint;
+         intersectPoint.interpolate(pointA, pointB, t);
+
+         backVerts.push_back(intersectPoint);
+         frontVerts.push_back(intersectPoint);
+      }
+
+      PlaneF::Side pASide = clip.whichSide(pointA);
+      PlaneF::Side pBSide = clip.whichSide(pointB);
+
+      if (pASide == PlaneF::Side::Back)
+         backVerts.push_back(pointA);
+      else
+         frontVerts.push_back(pointA);
+
+      if (pBSide == PlaneF::Side::Back)
+         backVerts.push_back(pointB);
+      else
+         frontVerts.push_back(pointB);
+   }
+
+   back = new Polygon(backVerts);
+   front = new Polygon(frontVerts);
+   coplanarBack = coplanarFront = nullptr;
+
+   return true;
+}
+
+void Polygon::flip()
+{
+   points.reverse();
+   surfacePlane = PlaneF(surfacePlane.getPosition(), -surfacePlane.getNormal());
+}
+
+CSGNode::CSGNode(CSGSolid* solid)
+{
+   Vector<Polygon> polies = solid->polygons;
+   front = nullptr;
+   back = nullptr;
+
+   build(polies);
+}
+
+CSGNode::CSGNode()
+{
+   polygons.clear();
+   front = nullptr;
+   back = nullptr;
+}
+
+Vector<Polygon> CSGNode::clipPolygons(Vector<Polygon> &_polygons)
+{
+   if (!plane)
+      return polygons;
+
+   Vector<Polygon> _front;
+   Vector<Polygon> _back;
+
+   for (U32 i = 0; i < _polygons.size(); ++i)
+   {
+      Polygon* b;
+      Polygon* f;
+      Polygon* cf;
+      Polygon* cb;
+
+      Polygon* poly = &_polygons[i];
+      poly->split(plane, b, f, cb, cf);
+
+      if (f)
+         _front.push_back(*f);
+      if (b)
+         _front.push_back(*b);
+      if (cf)
+         _front.push_back(*cf);
+      if (cb)
+         _front.push_back(*cb);
+   }
+
+   if (front)
+      _front = front->clipPolygons(_front);
+
+   if (back)
+      _back = back->clipPolygons(_back);
+   else
+      _back.clear();
+
+   return _front;
+}
+
+void CSGNode::clipTo(CSGNode* csg)
+{
+   polygons = csg->clipPolygons(polygons);
+
+   if (front)
+      front->clipTo(csg);
+
+   if (back)
+      back->clipTo(csg);
+}
+
+void CSGNode::invert()
+{
+   for (U32 i = 0; i < polygons.size(); ++i)
+   {
+      Polygon* poly = &polygons[i];
+
+      poly->flip();
+   }
+
+   plane = PlaneF(plane.getPosition(), -plane.getNormal());
+
+   if (front)
+      front->invert();
+
+   if (back)
+      back->invert();
+
+   CSGNode* temp = front;
+   front = back;
+   back = temp;
+}
+
+Vector<Polygon> CSGNode::allPolygons()
+{
+   Vector<Polygon> _polygons = polygons;
+
+   if (front)
+      _polygons.merge(front->allPolygons());
+
+   if (back)
+      _polygons.merge(back->allPolygons());
+
+   return _polygons;
+}
+
+void CSGNode::build(Vector<Polygon> _polygons)
+{
+   if (_polygons.empty())
+      return;
+
+   plane = _polygons[0].surfacePlane;
+   Vector<Polygon> _front;
+   Vector<Polygon> _back;
+
+   for (U32 i = 0; i < _polygons.size(); ++i)
+   {
+      Polygon* f = new Polygon();
+      Polygon* b = new Polygon();
+      Polygon* cf = new Polygon();
+      Polygon* cb = new Polygon();
+
+      Polygon* poly = &_polygons[i];
+      poly->split(plane, b, f, cb, cf);
+
+      if (b)
+         _back.push_back(*b);
+      if (f)
+         _front.push_back(*f);
+      if (cf)
+         polygons.push_back(*cf);
+      if (cb)
+         polygons.push_back(*cb);
+   }
+
+   if (!_front.empty())
+   {
+      if (!front)
+         front = new CSGNode();
+
+      front->build(_front);
+   }
+
+   if (!_back.empty())
+   {
+      if (!back)
+         back = new CSGNode();
+
+      back->build(_back);
+   }
+}
+
+CSGSolid::CSGSolid(Vector<Polygon> _polygons)
+{
+   polygons = _polygons;
+}
+
+CSGSolid::CSGSolid()
+{
+   polygons.clear();
+}
+
+CSGSolid CSGSolid::doUnion(CSGSolid* solid)
+{
+   CSGNode* a = new CSGNode(this);
+   CSGNode* b = new CSGNode(solid);
+
+   a->clipTo(b);
+   b->clipTo(a);
+
+   b->invert();
+   b->clipTo(a);
+
+   b->invert();
+   a->build(b->allPolygons());
+
+   return CSGSolid(a->allPolygons());
+}
+
+CSGSolid CSGSolid::doSubtract(CSGSolid* solid)
+{
+   CSGNode* a = new CSGNode(this);
+   CSGNode* b = new CSGNode(solid);
+
+   a->invert();
+   a->clipTo(b);
+
+   b->clipTo(a);
+   b->invert();
+
+   b->clipTo(a);
+   b->invert();
+
+   a->build(b->allPolygons());
+   a->invert();
+
+   return CSGSolid(a->allPolygons());
+}
+
+CSGSolid CSGSolid::doIntersect(CSGSolid* solid)
+{
+   CSGNode* a = new CSGNode(this);
+   CSGNode* b = new CSGNode(solid);
+
+   a->invert();
+   b->clipTo(a);
+
+   b->invert();
+   a->clipTo(b);
+
+   b->clipTo(a);
+   a->build(b->allPolygons());
+   a->invert();
+
+   return CSGSolid(a->allPolygons());
+}
+
+//
+//
 
 GuiConvexEditorCtrl::GuiConvexEditorCtrl()
  : mIsDirty( false ),
    mFaceHL( -1 ),
    mFaceSEL( -1 ),
+   mVertHL( -1 ),
    mFaceSavedXfm( true ),
    mSavedUndo( false ),
    mDragging( false ),
@@ -79,7 +464,8 @@ GuiConvexEditorCtrl::GuiConvexEditorCtrl()
    mHasCopied( false ),
    mSavedGizmoFlags( -1 ),
    mCtrlDown( false ),
-   mGridSnap(false)
+   mGridSnap(false),
+   mSelectionMode(VertMode)
 {   
 	mMaterialName = StringTable->insert("Grid512_OrangeLines_Mat");
 }
@@ -180,33 +566,13 @@ void GuiConvexEditorCtrl::setVisible( bool val )
                continue;
             }
 
-            // We don't want the extracted poly list to be affected by the object's
-            // current transform and scale so temporarily reset them.
-
             MatrixF savedTransform = mProxyObjects[i].shapeProxy->getTransform();
             Point3F savedScale = mProxyObjects[i].shapeProxy->getScale();
 
-            mProxyObjects[i].shapeProxy->setTransform(MatrixF::Identity);
-            mProxyObjects[i].shapeProxy->setScale(Point3F(1.f, 1.f, 1.f));
-
-            // Extract the geometry.  Use the object-space bounding volumes
-            // as we have moved the object to the origin for the moment.
-
-            OptimizedPolyList polyList;
-            if (!mProxyObjects[i].shapeProxy->buildPolyList(PLC_Export, &polyList, 
-               mProxyObjects[i].shapeProxy->getObjBox(), mProxyObjects[i].shapeProxy->getObjBox().getBoundingSphere()))
-            {
-               Con::errorf("WorldEditor::createPolyhedralObject - Failed to extract geometry!");
-               continue;
-            }
-
-            // Restore the object's original transform.
-
-            mProxyObjects[i].shapeProxy->setTransform(savedTransform);
-            mProxyObjects[i].shapeProxy->setScale(savedScale);
+            Polyhedron polyhedron;
+            convertToPolyhedron(mProxyObjects[i].shapeProxy, &polyhedron);
 
             // Create the object.
-
             SceneObject* object = dynamic_cast< SceneObject* >(classRep->create());
             if (!object)
             {
@@ -214,12 +580,7 @@ void GuiConvexEditorCtrl::setVisible( bool val )
                continue;
             }
 
-            // Convert the polylist to a polyhedron.
-
-            Polyhedron polyhedron = polyList.toPolyhedron();
-
             // Add the vertex data.
-
             const U32 numPoints = polyhedron.getNumPoints();
             const Point3F* points = polyhedron.getPoints();
 
@@ -230,7 +591,6 @@ void GuiConvexEditorCtrl::setVisible( bool val )
             }
 
             // Add the plane data.
-
             const U32 numPlanes = polyhedron.getNumPlanes();
             const PlaneF* planes = polyhedron.getPlanes();
 
@@ -246,7 +606,6 @@ void GuiConvexEditorCtrl::setVisible( bool val )
             }
 
             // Add the edge data.
-
             const U32 numEdges = polyhedron.getNumEdges();
             const Polyhedron::Edge* edges = polyhedron.getEdges();
 
@@ -265,7 +624,6 @@ void GuiConvexEditorCtrl::setVisible( bool val )
             }
 
             // Set the transform.
-
             object->setTransform(savedTransform);
             object->setScale(savedScale);
 
@@ -334,6 +692,51 @@ void GuiConvexEditorCtrl::setVisible( bool val )
             if (Trigger* triggerObj = dynamic_cast<Trigger*>(misGroup->at(c)))
             {
             }
+            else if (Portal* triggerObj = dynamic_cast<Portal*>(misGroup->at(c)))
+            {
+               if (!triggerObj)
+               {
+                  Con::errorf("WorldEditor::createConvexShapeFrom - Invalid object");
+                  continue;
+               }
+
+               IScenePolyhedralObject* iPoly = dynamic_cast< IScenePolyhedralObject* >(triggerObj);
+               if (!iPoly)
+               {
+                  Con::errorf("WorldEditor::createConvexShapeFrom - Not a polyhedral object!");
+                  continue;
+               }
+
+               // Get polyhedron.
+               AnyPolyhedron polyhedron = iPoly->ToAnyPolyhedron();
+               ConvexShape* shape = new ConvexShape();
+
+               convertFromPolyhedron(&polyhedron, shape);
+
+               // Copy the transform.
+               shape->setTransform(triggerObj->getTransform());
+               shape->setScale(triggerObj->getScale());
+
+               // Register the shape.
+               if (!shape->registerObject())
+               {
+                  Con::errorf("WorldEditor::createConvexShapeFrom - Could not register ConvexShape!");
+                  delete shape;
+                  continue;
+               }
+
+               //Set the texture to a representatory one so we know what's what
+               shape->mMaterialName = "PortalProxyMaterial";
+               shape->_updateMaterial();
+
+               //set up the proxy object
+               ConvexShapeProxy newProxy;
+               newProxy.shapeProxy = shape;
+               newProxy.targetObject = triggerObj;
+               newProxy.targetObjectClass = "Portal";
+
+               mProxyObjects.push_back(newProxy);
+            }
             else if (Zone* triggerObj = dynamic_cast<Zone*>(misGroup->at(c)))
             {
                if (!triggerObj)
@@ -350,59 +753,12 @@ void GuiConvexEditorCtrl::setVisible( bool val )
                }
 
                // Get polyhedron.
-
                AnyPolyhedron polyhedron = iPoly->ToAnyPolyhedron();
-               const U32 numPlanes = polyhedron.getNumPlanes();
-               if (!numPlanes)
-               {
-                  Con::errorf("WorldEditor::createConvexShapeFrom - Object returned no valid polyhedron");
-                  continue;
-               }
-
-               // Create a ConvexShape.
-
                ConvexShape* shape = new ConvexShape();
 
-               // Add all planes.
-
-               for (U32 i = 0; i < numPlanes; ++i)
-               {
-                  const PlaneF& plane = polyhedron.getPlanes()[i];
-
-                  // Polyhedron planes are facing inwards so we need to
-                  // invert the normal here.
-
-                  Point3F normal = plane.getNormal();
-                  normal.neg();
-
-                  // Turn the orientation of the plane into a quaternion.
-                  // The normal is our up vector (that's what's expected
-                  // by ConvexShape for the surface orientation).
-
-                  MatrixF orientation(true);
-                  MathUtils::getMatrixFromUpVector(normal, &orientation);
-                  const QuatF quat(orientation);
-
-                  // Get the plane position.
-
-                  const Point3F position = plane.getPosition();
-
-                  // Turn everything into a "surface" property for the ConvexShape.
-
-                  char buffer[1024];
-                  dSprintf(buffer, sizeof(buffer), "%g %g %g %g %g %g %g %i %g %g %g %g %f %d %d",
-                     quat.x, quat.y, quat.z, quat.w,
-                     position.x, position.y, position.z,
-                     0, 0, 0, 1.0, 1.0, 0, true, false);
-
-                  // Add the surface.
-
-                  static StringTableEntry sSurface = StringTable->insert("surface");
-                  shape->setDataField(sSurface, NULL, buffer);
-               }
+               convertFromPolyhedron(&polyhedron, shape);
 
                // Copy the transform.
-
                shape->setTransform(triggerObj->getTransform());
                shape->setScale(triggerObj->getScale());
 
@@ -424,99 +780,6 @@ void GuiConvexEditorCtrl::setVisible( bool val )
                newProxy.shapeProxy = shape;
                newProxy.targetObject = triggerObj;
                newProxy.targetObjectClass = "Zone";
-
-               mProxyObjects.push_back(newProxy);
-            }
-            else if (Portal* triggerObj = dynamic_cast<Portal*>(misGroup->at(c)))
-            {
-               if (!triggerObj)
-               {
-                  Con::errorf("WorldEditor::createConvexShapeFrom - Invalid object");
-                  continue;
-               }
-
-               IScenePolyhedralObject* iPoly = dynamic_cast< IScenePolyhedralObject* >(triggerObj);
-               if (!iPoly)
-               {
-                  Con::errorf("WorldEditor::createConvexShapeFrom - Not a polyhedral object!");
-                  continue;
-               }
-
-               // Get polyhedron.
-
-               AnyPolyhedron polyhedron = iPoly->ToAnyPolyhedron();
-               const U32 numPlanes = polyhedron.getNumPlanes();
-               if (!numPlanes)
-               {
-                  Con::errorf("WorldEditor::createConvexShapeFrom - Object returned no valid polyhedron");
-                  continue;
-               }
-
-               // Create a ConvexShape.
-
-               ConvexShape* shape = new ConvexShape();
-
-               // Add all planes.
-
-               for (U32 i = 0; i < numPlanes; ++i)
-               {
-                  const PlaneF& plane = polyhedron.getPlanes()[i];
-
-                  // Polyhedron planes are facing inwards so we need to
-                  // invert the normal here.
-
-                  Point3F normal = plane.getNormal();
-                  normal.neg();
-
-                  // Turn the orientation of the plane into a quaternion.
-                  // The normal is our up vector (that's what's expected
-                  // by ConvexShape for the surface orientation).
-
-                  MatrixF orientation(true);
-                  MathUtils::getMatrixFromUpVector(normal, &orientation);
-                  const QuatF quat(orientation);
-
-                  // Get the plane position.
-
-                  const Point3F position = plane.getPosition();
-
-                  // Turn everything into a "surface" property for the ConvexShape.
-
-                  char buffer[1024];
-                  dSprintf(buffer, sizeof(buffer), "%g %g %g %g %g %g %g %i %g %g %g %g %f %d %d",
-                     quat.x, quat.y, quat.z, quat.w,
-                     position.x, position.y, position.z,
-                     0, 0, 0, 1.0, 1.0, 0, true, false);
-
-                  // Add the surface.
-
-                  static StringTableEntry sSurface = StringTable->insert("surface");
-                  shape->setDataField(sSurface, NULL, buffer);
-               }
-
-               // Copy the transform.
-
-               shape->setTransform(triggerObj->getTransform());
-               shape->setScale(triggerObj->getScale());
-
-               // Register the shape.
-
-               if (!shape->registerObject())
-               {
-                  Con::errorf("WorldEditor::createConvexShapeFrom - Could not register ConvexShape!");
-                  delete shape;
-                  continue;
-               }
-
-               //Set the texture to a representatory one so we know what's what
-               shape->mMaterialName = "PortalProxyMaterial";
-               shape->_updateMaterial();
-
-               //set up the proxy object
-               ConvexShapeProxy newProxy;
-               newProxy.shapeProxy = shape;
-               newProxy.targetObject = triggerObj;
-               newProxy.targetObjectClass = "Portal";
 
                mProxyObjects.push_back(newProxy);
             }
@@ -687,6 +950,35 @@ void GuiConvexEditorCtrl::on3DMouseMove(const Gui3DMouseEvent & event)
    S32 hitFace = -1;
    
    _cursorCast( event, &hitShape, &hitFace );
+
+   if (hitShape && mSelectionMode == VertMode)
+   {
+      S32 hoverNodeIdx = -1;
+      F32 hoverNodeDist = F32_MAX;
+      Point2I bestVertPos;
+
+      Point2I mNodeHalfSize = Point2I(4, 4);
+
+      for (U32 v = 0; v < hitShape->mGeometry.points.size(); ++v)
+      {
+         const Point3F &vertPos = hitShape->mGeometry.points[v];
+
+         Point3F screenPos;
+         project(vertPos, &screenPos);
+
+         RectI rect(Point2I((S32)screenPos.x, (S32)screenPos.y) - mNodeHalfSize, mNodeHalfSize * 2);
+
+         if (rect.pointInRect(event.mousePoint) && screenPos.z < hoverNodeDist)
+         {
+            hoverNodeDist = screenPos.z;
+            hoverNodeIdx = v;
+            bestVertPos = Point2I(screenPos.x, screenPos.y);
+         }
+      }
+
+      mVertHL = hoverNodeIdx;
+      hlvertpos = bestVertPos;
+   }
 
    if ( !mConvexSEL )
    {
@@ -1394,6 +1686,12 @@ void GuiConvexEditorCtrl::renderScene(const RectI & updateRect)
 
    if ( gizmoAlpha == 1.0f )   
       mGizmo->renderGizmo( mLastCameraQuery.cameraMatrix, mLastCameraQuery.fov );
+
+   if (mVertHL != -1)
+   {
+      Point2I nodeHalfSize = Point2I(4, 4);
+      drawer->drawRectFill(hlvertpos - nodeHalfSize, hlvertpos + nodeHalfSize, ColorI::RED);
+   }
 } 
 
 void GuiConvexEditorCtrl::drawFacePlane( ConvexShape *shape, S32 faceId )
@@ -2903,15 +3201,47 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
    if (!mConvexSEL)
       return;
 
+   ConvexShape* splitBrush = new ConvexShape();
+   splitBrush->mSurfaces = mConvexSEL->mSurfaces;
+   splitBrush->mSurfaceTextures = mConvexSEL->mSurfaceTextures;
+   splitBrush->mSurfaceUVs = mConvexSEL->mSurfaceUVs;
+
+   updateShape(splitBrush);
+
+   MatrixF splitSurface;
+   splitSurface.setPosition(mConvexSEL->getPosition());
+
+   splitSurface.setColumn(0, Point3F(0, 1, 0));
+   splitSurface.setColumn(1, Point3F(0, 0, -1));
+   splitSurface.setColumn(2, Point3F(-1, 0, 0));
+
+   //CSGSplitBrush(mConvexSEL, splitSurface);
+
+   splitSurface.setPosition(splitBrush->getPosition());
+
+   splitSurface.setColumn(0, Point3F(0, -1, 0));
+   splitSurface.setColumn(1, Point3F(0, 0, 1));
+   splitSurface.setColumn(2, Point3F(1, 0, 0));
+
+   CSGSplitBrush(splitBrush, splitSurface);
+
+   splitBrush->registerObject();
+
    SimGroup* misGroup;
    if (!Sim::findObject("MissionGroup", misGroup))
    {
       return;
    }
 
-   ConvexShape* splitBrush = nullptr;
-   DebugDrawer* dbgdrw = DebugDrawer::get();
+   misGroup->addObject(splitBrush);
 
+   updateShape(splitBrush);
+
+   /*CSGSolid subtractSolid;
+
+   convertToCSGSolid(mConvexSEL, &subtractSolid);
+
+   Vector<CSGSolid> solids;
    //find all our brushes
    for (U32 c = 0; c < misGroup->size(); ++c)
    {
@@ -2926,7 +3256,17 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
          if (!obj->getWorldBox().isOverlapped(mConvexSEL->getWorldBox()))
             continue;
 
-         for (U32 s = 0; s < mConvexSEL->mSurfaces.size(); ++s)
+         CSGSolid solidBrush;
+
+         convertToCSGSolid(obj, &solidBrush);
+
+         solids.push_back(solidBrush);
+
+         CSGSolid clippedSolid = solidBrush.doSubtract(&subtractSolid);
+
+         bool tmp = true;
+
+         /*for (U32 s = 0; s < mConvexSEL->mSurfaces.size(); ++s)
          {
             Point3F surfPos = mConvexSEL->mSurfaces[s].getPosition();
 
@@ -2944,66 +3284,104 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
             }
          }
       }
-   }
+   }*/
 }
 
 bool GuiConvexEditorCtrl::CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface)
 {
-   //split it right down the middle!
-   MatrixF trans = targetBrush->getTransform();
+   Polyhedron newBrushPoly;
+   Polyhedron poly;
+   convertToPolyhedron(targetBrush, &poly);
 
-   //splitSurface.setPosition(splitSurface.getPosition() + targetBrush->getPosition());
+   PlaneF splitPlane = PlaneF(targetBrush->getPosition(), splitSurface.getUpVector());
 
-   /*splitSurface.setColumn(0, Point3F(0, 1, 0));
-   splitSurface.setColumn(1, Point3F(0, 0, -1));
-   splitSurface.setColumn(2, Point3F(-1, 0, 0));
-   splitSurface.setPosition(Point3F(0, 0, 0));*/
+   Vector<PlaneF> validPlanes;
 
-   MatrixF invSplit;
-   Point3F c0, c1, c2;
-   splitSurface.getColumn(0, &c0);
-   splitSurface.getColumn(1, &c1);
-   splitSurface.getColumn(2, &c2);
-
-   invSplit.setColumn(0, -c0);
-   invSplit.setColumn(1, -c1);
-   invSplit.setColumn(2, -c2);
-   invSplit.setPosition(splitSurface.getPosition());
-
-   DebugDrawer* dbgdrw = DebugDrawer::get();
-
-   //Validate it intersects our volume
-   bool valid = false;
-   for (U32 i = 0; i < targetBrush->mGeometry.faces.size(); ++i)
+   //We have a split, so time to rebuild the polyhedron with the new face and remove the clipped geometry
+   //First, figure out what planes are specifically clipped
+   Vector<Polygon> polyList;
+   for (U32 i = 0; i < poly.planeList.size(); ++i)
    {
-      for (U32 e = 0; e < targetBrush->mGeometry.faces[i].edges.size(); ++e)
+      Polygon p;
+      p.surfacePlane = poly.planeList[i];
+
+      Vector<U32> faceIndicies;
+      for (U32 e = 0; e < poly.edgeList.size(); ++e)
       {
-         Point3F p0 = targetBrush->mGeometry.points[targetBrush->mGeometry.faces[i].edges[e].p0];
-         Point3F p1 = targetBrush->mGeometry.points[targetBrush->mGeometry.faces[i].edges[e].p1];
+         if (poly.edgeList[e].face[0] != i && poly.edgeList[e].face[1] != i)
+            continue;
 
-         PlaneF splitPlane = PlaneF(splitSurface.getPosition(), splitSurface.getUpVector());
+         Polyhedron::Edge edg = poly.edgeList[e];
 
-         Point3F t;
-         if(splitPlane.clipSegment(p0, p1, t))
-         {
-            //successful intersection!
-            dbgdrw->drawBox(t + targetBrush->getPosition() + Point3F(-0.1, -0.1, -0.1), t + targetBrush->getPosition() + Point3F(0.1, 0.1, 0.1));
-            dbgdrw->setLastTTL(15000);
-            valid = true;
-            break;
-         }
+         faceIndicies.push_back_unique(edg.vertex[0]);
+         faceIndicies.push_back_unique(edg.vertex[1]);
       }
 
-      if (valid)
-         break;
+      //build the face so we can clip it
+      Vector<Point3F> faceVerts;
+      for (U32 v = 0; v < faceIndicies.size(); ++v)
+      {
+         U32 index = faceIndicies[v];
+         Point3F vertPos = poly.pointList[index];
+         p.points.push_back(vertPos);
+      }
+
+      Polygon::PlaneRelation planePos = p.getPlaneSide(splitPlane);
+
+      if (planePos == Polygon::PlaneRelation::Back)
+      {
+         validPlanes.push_back(p.surfacePlane);
+      }
+      else if (planePos == Polygon::PlaneRelation::Intersect)
+      {
+         //split it
+         Point3F clippedVerts[256];
+         U32 clippedVertsCount = splitPlane.clipPolygon(p.points.address(), p.points.size(), clippedVerts);
+
+         Point3F center = Point3F::Zero;
+         for (U32 v = 0; v < clippedVertsCount; ++v)
+         {
+            Point3F vertPos = clippedVerts[v];
+            center += vertPos;
+         }
+
+         center /= clippedVertsCount;
+
+         PlaneF planeClipped = PlaneF(center, p.surfacePlane.getNormal());
+
+         validPlanes.push_back(planeClipped);
+      }
+      else //on
+      {
+      }
    }
 
-   if (!valid)
-      return false;
+   //finally, add the splitting plane
+   PlaneF invPlane = PlaneF(targetBrush->getPosition(), -splitSurface.getUpVector());
+   validPlanes.push_back(invPlane);
+
+   PlaneSetF targetBrushPolyPlanes = PlaneSetF(validPlanes.address(), validPlanes.size());
+   
+   newBrushPoly.buildFromPlanes(targetBrushPolyPlanes);
+
+   AnyPolyhedron tempPoly = newBrushPoly;
+
+   convertFromPolyhedron(&tempPoly, targetBrush);
+
+   for (U32 i = 0; i < newBrushPoly.edgeList.size(); ++i)
+   {
+      Point3F pointA = newBrushPoly.pointList[newBrushPoly.edgeList[i].vertex[0]];
+      Point3F pointB = newBrushPoly.pointList[newBrushPoly.edgeList[i].vertex[1]];
+
+      DebugDrawer::get()->drawLine(pointA, pointB);
+      DebugDrawer::get()->setLastTTL(15000);
+   }
+
+   return true;
 
    //we objectively know it's a valid split so skip validation.
    //first, duplicate the brush
-   ConvexShape* splitBrush = new ConvexShape();
+   /*ConvexShape* splitBrush = new ConvexShape();
    splitBrush->registerObject();
 
    SimGroup* misGroup;
@@ -3075,7 +3453,132 @@ bool GuiConvexEditorCtrl::CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitS
    //splitBrush->recenter();
    recenterShape(splitBrush);
 
-   return true;
+   return true;*/
+}
+
+void GuiConvexEditorCtrl::convertToPolyhedron(ConvexShape* targetBrush, Polyhedron* outPoly)
+{
+   /*MatrixF savedTransform = targetBrush->getTransform();
+   Point3F savedScale = targetBrush->getScale();
+
+   targetBrush->setTransform(MatrixF::Identity);
+   targetBrush->setScale(Point3F(1.f, 1.f, 1.f));*/
+
+   // Extract the geometry.  Use the object-space bounding volumes
+   // as we have moved the object to the origin for the moment.
+
+   OptimizedPolyList polyList;
+   if (!targetBrush->buildPolyList(PLC_Export, &polyList,
+      targetBrush->getObjBox(), targetBrush->getObjBox().getBoundingSphere()))
+   {
+      Con::errorf("GuiConvexEditorCtrl::convertToPolyhedron - Failed to extract geometry!");
+      return;
+   }
+
+   // Restore the object's original transform.
+   //targetBrush->setTransform(savedTransform);
+   //targetBrush->setScale(savedScale);
+
+   // Convert the polylist to a polyhedron.
+   Polyhedron tempPoly = polyList.toPolyhedron();
+   outPoly->planeList = tempPoly.planeList;
+   outPoly->edgeList = tempPoly.edgeList;
+   outPoly->pointList = tempPoly.pointList;
+}
+
+void GuiConvexEditorCtrl::convertFromPolyhedron(AnyPolyhedron* poly, ConvexShape* outBrush )
+{
+   const U32 numPlanes = poly->getNumPlanes();
+   if (!numPlanes)
+   {
+      Con::errorf("GuiConvexEditorCtrl::convertFromPolyhedron - not a valid polyhedron");
+      return;
+   }
+
+   // Add all planes.
+   for (U32 i = 0; i < numPlanes; ++i)
+   {
+      const PlaneF& plane = poly->getPlanes()[i];
+
+      // Polyhedron planes are facing inwards so we need to
+      // invert the normal here.
+
+      Point3F normal = plane.getNormal();
+      normal.neg();
+
+      // Turn the orientation of the plane into a quaternion.
+      // The normal is our up vector (that's what's expected
+      // by ConvexShape for the surface orientation).
+
+      MatrixF orientation(true);
+      MathUtils::getMatrixFromUpVector(normal, &orientation);
+      const QuatF quat(orientation);
+
+      // Get the plane position.
+
+      const Point3F position = plane.getPosition();
+
+      // Turn everything into a "surface" property for the ConvexShape.
+
+      char buffer[1024];
+      dSprintf(buffer, sizeof(buffer), "%g %g %g %g %g %g %g %i %g %g %g %g %f %d %d",
+         quat.x, quat.y, quat.z, quat.w,
+         position.x, position.y, position.z,
+         0, 0, 0, 1.0, 1.0, 0, true, false);
+
+      // Add the surface.
+
+      static StringTableEntry sSurface = StringTable->insert("surface");
+      outBrush->setDataField(sSurface, NULL, buffer);
+   }
+}
+
+void GuiConvexEditorCtrl::convertToCSGSolid(ConvexShape* targetBrush, CSGSolid* outSolid)
+{
+   /*MatrixF savedTransform = targetBrush->getTransform();
+   Point3F savedScale = targetBrush->getScale();
+
+   targetBrush->setTransform(MatrixF::Identity);
+   targetBrush->setScale(Point3F(1.f, 1.f, 1.f));*/
+
+   // Extract the geometry.  Use the object-space bounding volumes
+   // as we have moved the object to the origin for the moment.
+
+   OptimizedPolyList polyList;
+   if (!targetBrush->buildPolyList(PLC_Export, &polyList,
+      targetBrush->getObjBox(), targetBrush->getObjBox().getBoundingSphere()))
+   {
+      Con::errorf("GuiConvexEditorCtrl::convertToPolyhedron - Failed to extract geometry!");
+      return;
+   }
+
+   // Restore the object's original transform.
+   //targetBrush->setTransform(savedTransform);
+   //targetBrush->setScale(savedScale);
+
+   // Convert the polylist to a polyhedron.
+   Polyhedron tempPoly = polyList.toPolyhedron();
+
+   Vector<Polygon> polies;
+   for (U32 i = 0; i < tempPoly.planeList.size(); ++i)
+   {
+      U32 indicies[256];
+      S32 indexCount;
+      indexCount = tempPoly.extractFace(i, indicies, 256);
+
+      Vector<Point3F> verts;
+      for (U32 v = 0; v < indexCount; ++v)
+      {
+         Point3F vert = tempPoly.pointList[indicies[v]];
+         verts.push_back(vert);
+      }
+
+      Polygon p = Polygon(verts);
+
+      polies.push_back(p);
+   }
+
+   outSolid->polygons = polies;
 }
 
 DefineConsoleMethod( GuiConvexEditorCtrl, hollowSelection, void, (), , "" )
@@ -3326,4 +3829,37 @@ DefineEngineMethod(GuiConvexEditorCtrl, CSGSplitBrush, void, (), ,
 {
    return;
    //return object->CSGSplitBrush();
+}
+
+DefineEngineMethod(GuiConvexEditorCtrl, setVertMode, void, (), ,
+   "@brief Mount objB to this object at the desired slot with optional transform.\n\n"
+
+   "@param objB  Object to mount onto us\n"
+   "@param slot  Mount slot ID\n"
+   "@param txfm (optional) mount offset transform\n"
+   "@return true if successful, false if failed (objB is not valid)")
+{
+   return object->setSelectMode(GuiConvexEditorCtrl::VertMode);
+}
+
+DefineEngineMethod(GuiConvexEditorCtrl, setFaceMode, void, (), ,
+   "@brief Mount objB to this object at the desired slot with optional transform.\n\n"
+
+   "@param objB  Object to mount onto us\n"
+   "@param slot  Mount slot ID\n"
+   "@param txfm (optional) mount offset transform\n"
+   "@return true if successful, false if failed (objB is not valid)")
+{
+   return object->setSelectMode(GuiConvexEditorCtrl::FaceMode);
+}
+
+DefineEngineMethod(GuiConvexEditorCtrl, setBrushMode, void, (), ,
+   "@brief Mount objB to this object at the desired slot with optional transform.\n\n"
+
+   "@param objB  Object to mount onto us\n"
+   "@param slot  Mount slot ID\n"
+   "@param txfm (optional) mount offset transform\n"
+   "@return true if successful, false if failed (objB is not valid)")
+{
+   return object->setSelectMode(GuiConvexEditorCtrl::BrushMode);
 }

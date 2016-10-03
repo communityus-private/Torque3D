@@ -398,6 +398,20 @@ bool ConvexShape::onAdd()
 
    addToScene();
 
+   PlaneF p = PlaneF(Point3F(0, 0, 0), Point3F(0, 0, 1));
+
+   Point3F a = Point3F(0, 0, 1);
+   Point3F b = Point3F(1, 0, -1);
+   Point3F c = Point3F(-1, 0, -1);
+
+   Vector<Point3F> points;
+   points.push_back(a);
+   points.push_back(b);
+   points.push_back(c);
+
+   Point3F vertices[64];
+   p.clipPolygon(points.address(), points.size(), vertices);
+
    return true;
 }
 
