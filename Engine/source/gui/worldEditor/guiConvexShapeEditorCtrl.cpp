@@ -3215,7 +3215,9 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
    splitSurface.setColumn(1, Point3F(0, 0, -1));
    splitSurface.setColumn(2, Point3F(-1, 0, 0));
 
-   //CSGSplitBrush(mConvexSEL, splitSurface);
+   CSGSplitBrush(mConvexSEL, splitSurface);
+   //updateShape(mConvexSEL);
+   //recenterShape(mConvexSEL);
 
    splitSurface.setPosition(splitBrush->getPosition());
 
@@ -3223,7 +3225,7 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
    splitSurface.setColumn(1, Point3F(0, 0, 1));
    splitSurface.setColumn(2, Point3F(1, 0, 0));
 
-   CSGSplitBrush(splitBrush, splitSurface);
+   /*CSGSplitBrush(splitBrush, splitSurface);
 
    splitBrush->registerObject();
 
@@ -3235,7 +3237,7 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
 
    misGroup->addObject(splitBrush);
 
-   updateShape(splitBrush);
+   updateShape(splitBrush);*/
 
    /*CSGSolid subtractSolid;
 
@@ -3366,7 +3368,11 @@ bool GuiConvexEditorCtrl::CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitS
 
    AnyPolyhedron tempPoly = newBrushPoly;
 
+   ConvexShape* temp = new ConvexShape();
+
    convertFromPolyhedron(&tempPoly, targetBrush);
+
+   targetBrush->mSurfaces = temp->mSurfaces;
 
    for (U32 i = 0; i < newBrushPoly.edgeList.size(); ++i)
    {
