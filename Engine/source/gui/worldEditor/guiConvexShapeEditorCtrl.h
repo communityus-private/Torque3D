@@ -220,7 +220,7 @@ public:
 
    //CSG functions
    void CSGSubtractBrush();
-   bool CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface);
+   bool CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface, Polyhedron* backPolyhedron, Polyhedron* frontPolyhedron);
    void convertToPolyhedron(ConvexShape* targetBrush, Polyhedron* outPoly);
    void convertFromPolyhedron(AnyPolyhedron* poly, ConvexShape* outBrush);
 

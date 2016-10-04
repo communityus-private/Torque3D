@@ -3201,50 +3201,12 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
    if (!mConvexSEL)
       return;
 
-   ConvexShape* splitBrush = new ConvexShape();
-   splitBrush->mSurfaces = mConvexSEL->mSurfaces;
-   splitBrush->mSurfaceTextures = mConvexSEL->mSurfaceTextures;
-   splitBrush->mSurfaceUVs = mConvexSEL->mSurfaceUVs;
-
-   updateShape(splitBrush);
-
-   MatrixF splitSurface;
-   splitSurface.setPosition(mConvexSEL->getPosition());
-
-   splitSurface.setColumn(0, Point3F(0, 1, 0));
-   splitSurface.setColumn(1, Point3F(0, 0, -1));
-   splitSurface.setColumn(2, Point3F(-1, 0, 0));
-
-   CSGSplitBrush(mConvexSEL, splitSurface);
-   //updateShape(mConvexSEL);
-   //recenterShape(mConvexSEL);
-
-   splitSurface.setPosition(splitBrush->getPosition());
-
-   splitSurface.setColumn(0, Point3F(0, -1, 0));
-   splitSurface.setColumn(1, Point3F(0, 0, 1));
-   splitSurface.setColumn(2, Point3F(1, 0, 0));
-
-   /*CSGSplitBrush(splitBrush, splitSurface);
-
-   splitBrush->registerObject();
-
    SimGroup* misGroup;
    if (!Sim::findObject("MissionGroup", misGroup))
    {
       return;
    }
 
-   misGroup->addObject(splitBrush);
-
-   updateShape(splitBrush);*/
-
-   /*CSGSolid subtractSolid;
-
-   convertToCSGSolid(mConvexSEL, &subtractSolid);
-
-   Vector<CSGSolid> solids;
-   //find all our brushes
    for (U32 c = 0; c < misGroup->size(); ++c)
    {
       ConvexShape* obj = dynamic_cast<ConvexShape*>(misGroup->at(c));
@@ -3258,50 +3220,143 @@ void GuiConvexEditorCtrl::CSGSubtractBrush()
          if (!obj->getWorldBox().isOverlapped(mConvexSEL->getWorldBox()))
             continue;
 
-         CSGSolid solidBrush;
-
-         convertToCSGSolid(obj, &solidBrush);
-
-         solids.push_back(solidBrush);
-
-         CSGSolid clippedSolid = solidBrush.doSubtract(&subtractSolid);
-
-         bool tmp = true;
-
-         /*for (U32 s = 0; s < mConvexSEL->mSurfaces.size(); ++s)
+         bool didSplit = false;
+         for (U32 i = 0; i < mConvexSEL->mSurfaces.size(); ++i)
          {
-            Point3F surfPos = mConvexSEL->mSurfaces[s].getPosition();
+            Polyhedron backPoly;
+            Polyhedron frontPoly;
 
-            F32 planeSize = 10;
-            Point3F corner = (mConvexSEL->mSurfaces[s].getRightVector() * planeSize) + (mConvexSEL->mSurfaces[s].getForwardVector() * planeSize);
-            Point3F cornerB = -corner;
+            MatrixF worldSurface = mConvexSEL->mSurfaces[i];
+            worldSurface.setPosition(mConvexSEL->getPosition() + mConvexSEL->mSurfaces[i].getPosition());
 
-            if (CSGSplitBrush(obj, mConvexSEL->mSurfaces[s]))
+            if (CSGSplitBrush(obj, worldSurface, &backPoly, &frontPoly))
             {
-               dbgdrw->drawBox(mConvexSEL->getPosition() + surfPos + corner,
-                  mConvexSEL->getPosition() + surfPos + cornerB, ColorF(0, 0, 1, 0.3));
-               dbgdrw->setLastTTL(15000);
+               /*Point3F surfPos = worldSurface.getPosition();
+               F32 planeSize = 10;
+               Point3F corner = (mConvexSEL->mSurfaces[i].getRightVector() * planeSize) + (mConvexSEL->mSurfaces[i].getForwardVector() * planeSize);
+               Point3F cornerB = -corner;
 
+               DebugDrawer::get()->drawBox(surfPos + corner,  surfPos + cornerB, ColorF(0, 0, 1, 0.3));
+               DebugDrawer::get()->setLastTTL(15000);
+
+               Point3F surfaceNorm = mConvexSEL->mSurfaces[i].getUpVector();
+               surfaceNorm.normalize();
+
+               DebugDrawer::get()->drawLine(surfPos, surfPos + (surfaceNorm * 2), ColorF(1, 0, 0, 0.3));
+               DebugDrawer::get()->setLastTTL(15000);*/
+
+               //back poly
+               obj->mSurfaces.clear();
+
+               AnyPolyhedron tempPoly = frontPoly;
+               convertFromPolyhedron(&tempPoly, obj);
+               updateShape(obj);
+               recenterShape(obj);
+               obj->setPosition(frontPoly.getCenterPoint());
+
+               //do a final validation
+               //if the back polyhedron is completely contained within the subtracting brush, drop it
+               bool notContained = false;
+               for (U32 e = 0; e < backPoly.edgeList.size(); ++e)
+               {
+                  Point3F edgePointA = backPoly.pointList[backPoly.edgeList[e].vertex[0]];
+                  Point3F edgePointB = backPoly.pointList[backPoly.edgeList[e].vertex[1]];
+
+                  for (U32 f = 0; f < mConvexSEL->mSurfaces.size(); ++f)
+                  {
+                     PlaneF surfacePlane = PlaneF(mConvexSEL->getPosition() + mConvexSEL->mSurfaces[f].getPosition(), mConvexSEL->mSurfaces[f].getUpVector());
+
+                     PlaneF::Side aSide = surfacePlane.whichSide(edgePointA);
+                     PlaneF::Side bSide = surfacePlane.whichSide(edgePointB);
+
+                     if ((aSide == PlaneF::Side::Front && bSide == PlaneF::Side::Back)
+                        || (bSide == PlaneF::Side::Front && aSide == PlaneF::Side::Back)
+                        || (aSide == PlaneF::Side::On && bSide == PlaneF::Side::Front)
+                        || (bSide == PlaneF::Side::On && aSide == PlaneF::Side::Front))
+                     {
+                        notContained = true;
+                        break;
+                     }
+                  }
+
+                  if (notContained)
+                     break;
+               }
+
+               if (notContained)
+               {
+                  ConvexShape* splitBrush = new ConvexShape();
+
+                  //front poly
+                  tempPoly = backPoly;
+                  convertFromPolyhedron(&tempPoly, splitBrush);
+                  updateShape(splitBrush);
+                  recenterShape(splitBrush);
+                  splitBrush->setPosition(backPoly.getCenterPoint());
+
+                  splitBrush->registerObject();
+
+                  misGroup->addObject(splitBrush);
+               }
                break;
             }
          }
       }
-   }*/
+   }
 }
 
-bool GuiConvexEditorCtrl::CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface)
+bool GuiConvexEditorCtrl::CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface, Polyhedron* backPolyhedron, Polyhedron* frontPolyhedron)
 {
-   Polyhedron newBrushPoly;
+   if (!targetBrush || !backPolyhedron || !frontPolyhedron)
+      return false;
+
    Polyhedron poly;
    convertToPolyhedron(targetBrush, &poly);
 
-   PlaneF splitPlane = PlaneF(targetBrush->getPosition(), splitSurface.getUpVector());
+   Point3F splitPos = splitSurface.getPosition();
+   Point3F splitNorm = splitSurface.getUpVector();
 
-   Vector<PlaneF> validPlanes;
+   PlaneF splitPlane = PlaneF(splitSurface.getPosition(), splitSurface.getUpVector());
+   PlaneF invSplitPlane = PlaneF(splitSurface.getPosition(), -splitSurface.getUpVector());
+
+   //Early out if there's no intersection at all
+   U32 back = 0;
+   U32 front = 0;
+   U32 on = 0;
+   U32 pointCount = poly.pointList.size();
+
+   for (U32 i = 0; i < pointCount; ++i)
+   {
+      Point3F point = poly.pointList[i];
+      PlaneF::Side s = splitPlane.whichSide(point);
+
+      if (s == PlaneF::Side::Back)
+         back++;
+      else if (s == PlaneF::Side::Front)
+         front++;
+      else
+         on++;
+   }
+
+   Polygon::PlaneRelation side;
+
+   if (back == pointCount)
+      side = Polygon::PlaneRelation::Back;
+   else if (front == pointCount)
+      side = Polygon::PlaneRelation::Front;
+   else if (on == pointCount)
+      side = Polygon::PlaneRelation::On;
+   else
+      side = Polygon::PlaneRelation::Intersect;
+
+   if (side != Polygon::PlaneRelation::Intersect)
+      return false;
+
+   Vector<PlaneF> validBackPlanes;
+   Vector<PlaneF> validFrontPlanes;
 
    //We have a split, so time to rebuild the polyhedron with the new face and remove the clipped geometry
    //First, figure out what planes are specifically clipped
-   Vector<Polygon> polyList;
    for (U32 i = 0; i < poly.planeList.size(); ++i)
    {
       Polygon p;
@@ -3321,24 +3376,33 @@ bool GuiConvexEditorCtrl::CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitS
 
       //build the face so we can clip it
       Vector<Point3F> faceVerts;
+      Point3F faceCenter = Point3F::Zero;
       for (U32 v = 0; v < faceIndicies.size(); ++v)
       {
          U32 index = faceIndicies[v];
          Point3F vertPos = poly.pointList[index];
          p.points.push_back(vertPos);
+
+         faceCenter += vertPos;
       }
+      faceCenter /= faceIndicies.size();
 
       Polygon::PlaneRelation planePos = p.getPlaneSide(splitPlane);
 
       if (planePos == Polygon::PlaneRelation::Back)
       {
-         validPlanes.push_back(p.surfacePlane);
+         validBackPlanes.push_back(p.surfacePlane);
       }
       else if (planePos == Polygon::PlaneRelation::Intersect)
       {
          //split it
+
+         //Do the target brush
          Point3F clippedVerts[256];
          U32 clippedVertsCount = splitPlane.clipPolygon(p.points.address(), p.points.size(), clippedVerts);
+
+         if (clippedVertsCount == 0)
+            continue;
 
          Point3F center = Point3F::Zero;
          for (U32 v = 0; v < clippedVertsCount; ++v)
@@ -3351,37 +3415,80 @@ bool GuiConvexEditorCtrl::CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitS
 
          PlaneF planeClipped = PlaneF(center, p.surfacePlane.getNormal());
 
-         validPlanes.push_back(planeClipped);
+         validBackPlanes.push_back(planeClipped);
+
+         //And now the split brush
+         clippedVertsCount = invSplitPlane.clipPolygon(p.points.address(), p.points.size(), clippedVerts);
+
+         if (clippedVertsCount == 0)
+            continue;
+
+         center = Point3F::Zero;
+         for (U32 v = 0; v < clippedVertsCount; ++v)
+         {
+            Point3F vertPos = clippedVerts[v];
+            center += vertPos;
+         }
+
+         center /= clippedVertsCount;
+
+         planeClipped = PlaneF(center, p.surfacePlane.getNormal());
+
+         validFrontPlanes.push_back(planeClipped);
       }
-      else //on
+      else if (planePos == Polygon::PlaneRelation::Front)
       {
+         validFrontPlanes.push_back(p.surfacePlane);
       }
    }
 
-   //finally, add the splitting plane
-   PlaneF invPlane = PlaneF(targetBrush->getPosition(), -splitSurface.getUpVector());
-   validPlanes.push_back(invPlane);
+   //never actually properly clipped any polygons, so bail out
+   if (validBackPlanes.empty() || validFrontPlanes.empty())
+      return false;
 
-   PlaneSetF targetBrushPolyPlanes = PlaneSetF(validPlanes.address(), validPlanes.size());
+   //finally, add the splitting plane to plane sets
+   validBackPlanes.push_back(invSplitPlane);
+   validFrontPlanes.push_back(splitPlane);
+
+   //Build the back polyhedron
+   PlaneSetF backPolyPlanes = PlaneSetF(validBackPlanes.address(), validBackPlanes.size());
    
-   newBrushPoly.buildFromPlanes(targetBrushPolyPlanes);
+   backPolyhedron->pointList.clear();
+   backPolyhedron->edgeList.clear();
+   backPolyhedron->planeList.clear();
+   backPolyhedron->buildFromPlanes(backPolyPlanes);
 
-   AnyPolyhedron tempPoly = newBrushPoly;
+   if (backPolyhedron->planeList.empty())
+      return false;
 
-   ConvexShape* temp = new ConvexShape();
-
-   convertFromPolyhedron(&tempPoly, targetBrush);
-
-   targetBrush->mSurfaces = temp->mSurfaces;
-
-   for (U32 i = 0; i < newBrushPoly.edgeList.size(); ++i)
+   /*for (U32 i = 0; i < backPolyhedron->edgeList.size(); ++i)
    {
-      Point3F pointA = newBrushPoly.pointList[newBrushPoly.edgeList[i].vertex[0]];
-      Point3F pointB = newBrushPoly.pointList[newBrushPoly.edgeList[i].vertex[1]];
+      Point3F pointA = backPolyhedron->pointList[backPolyhedron->edgeList[i].vertex[0]];
+      Point3F pointB = backPolyhedron->pointList[backPolyhedron->edgeList[i].vertex[1]];
 
       DebugDrawer::get()->drawLine(pointA, pointB);
-      DebugDrawer::get()->setLastTTL(15000);
-   }
+      DebugDrawer::get()->setLastTTL(30000);
+   }*/
+
+   //and the front
+   PlaneSetF frontPolyPlanes = PlaneSetF(validFrontPlanes.address(), validFrontPlanes.size());
+
+   frontPolyhedron->pointList.clear();
+   frontPolyhedron->edgeList.clear();
+   frontPolyhedron->planeList.clear();
+   frontPolyhedron->buildFromPlanes(frontPolyPlanes);
+
+   if (frontPolyhedron->planeList.empty())
+      return false;
+
+   /*for (U32 i = 0; i < frontPolyhedron->edgeList.size(); ++i)
+   {
+      Point3F pointA = frontPolyhedron->pointList[frontPolyhedron->edgeList[i].vertex[0]];
+      Point3F pointB = frontPolyhedron->pointList[frontPolyhedron->edgeList[i].vertex[1]];
+
+      DebugDrawer::get()->drawLine(pointA, pointB);
+      DebugDrawer::get()->setLastTTL(30000);
+   }*/
 
    return true;
 
