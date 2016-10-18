@@ -2010,6 +2010,11 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
       cubeMapTex->constNum = cubeMap->constNum;
    }
 
+   Var *cubeMapMips = new Var;
+   cubeMapMips->setType("float");
+   cubeMapMips->setName("cubeMapMips");
+   cubeMapMips->uniform = true;
+
    // TODO: Restore the lighting attenuation here!
    Var *attn = NULL;
    //if ( fd.materialFeatures[MFT_DynamicLight] )
@@ -2025,7 +2030,7 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    if (smoothness) //try to grab smoothness directly
    {
       if (mIsDirect3D11)
-         texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @)*11.0 + 1.0, 8.0))", cubeMapTex, cubeMap, reflectVec, smoothness);
+         texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @)*@ + 1.0, @))", cubeMapTex, cubeMap, reflectVec, smoothness, cubeMapMips, cubeMapMips);
       else
          texCube = new GenOp("texCUBElod( @, float4(@, min((1.0 - @)*11.0 + 1.0, 8.0)))", cubeMap, reflectVec, smoothness);
    }
