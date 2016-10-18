@@ -543,8 +543,8 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
       // MFT_TerrainAdditive feature to lerp the
       // output normal with the previous pass.
       //
-      //if ( deferredMat )
-         //desc.setColorWrites( true, true, false, false );
+      if ( deferredMat )
+         desc.setColorWrites( true, true, true, false );
    }
 
    // We write to the zbuffer if this is a deferred

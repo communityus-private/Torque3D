@@ -1447,7 +1447,6 @@ void TSSkinMesh::setupVertexTransforms()
       for( i = 0, j = 0; i < curTransform.transformCount; i += 4, j += 1 )
       {
          __TSMeshVertex_BoneData &v = mVertexData.getBone(curTransform.vertexIndex, j);
-         const BatchData::TransformOp &transformOp = curTransform.transform[i];
          S32 vertsSet = transformsLeft > 4 ? 4 : transformsLeft;
 
          __TSMeshIndex_List indices;
@@ -2607,7 +2606,7 @@ void TSMesh::disassemble()
    tsalloc.copyToBuffer32( (S32*)&mCenter, 3 );
    tsalloc.set32( (S32)mRadius );
 
-   bool shouldMakeEditable = TSShape::smVersion < 27;
+   bool shouldMakeEditable = TSShape::smVersion < 27 || mVertSize == 0;
 
    // Re-create the vectors
    if (shouldMakeEditable)
@@ -2799,6 +2798,18 @@ void TSSkinMesh::assemble( bool skip )
          ptr32 = getSharedData32(parentMesh, 3 * numVerts, (S32**)smNormsList.address(), skip);
          batchData.initialNorms.set((Point3F*)ptr32, numVerts);
          encodedNorms.set(NULL, 0);
+      }
+
+      // Sometimes we'll have a mesh with 0 verts but initialVerts is set,
+      // so set these accordingly
+      if (verts.size() == 0)
+      {
+         verts = batchData.initialVerts;
+      }
+
+      if (norms.size() == 0)
+      {
+         norms = batchData.initialNorms;
       }
    }
    else
@@ -3172,9 +3183,6 @@ U32 TSMesh::getNumVerts()
 
 void TSMesh::_convertToVertexData(TSMeshVertexArray &outArray, const Vector<Point3F> &_verts, const Vector<Point3F> &_norms)
 {
-   U32 colorOffset = 0;
-   U32 boneOffset = 0;
-
    // Update tangents list
    createTangents(verts, norms);
 
@@ -3191,7 +3199,6 @@ void TSMesh::_convertToVertexData(TSMeshVertexArray &outArray, const Vector<Poin
    if (mNumVerts == 0)
       return;
 
-   bool needsSkin = mVertexFormat->hasBlendIndices();
    bool needWeightSet = outArray.getBoneOffset() != 0;
 
    bool hasColor = getHasColor();
@@ -3229,8 +3236,6 @@ void TSMesh::_convertToVertexData(TSMeshVertexArray &outArray, const Vector<Poin
 
 void TSMesh::makeEditable()
 {
-   bool hasTVert2 = getHasTVert2();
-   bool hasColor = getHasColor();
    bool hasVerts = verts.size() != 0;
 
    if(mVertexData.isReady() && !hasVerts)
@@ -3282,8 +3287,6 @@ void TSSkinMesh::addWeightsFromVertexBuffer()
 
 void TSSkinMesh::makeEditable()
 {
-   bool hasTVert2 = getHasTVert2();
-   bool hasColor = getHasColor();
    bool hasVerts = verts.size() != 0;
 
    // Reconstruct bone mapping
@@ -3430,8 +3433,8 @@ void TSBasicVertexFormat::addMeshRequirements(TSMesh *mesh)
    bool hasTexcoord2 = false;
    bool hasSkin = false;
 
-   hasColors = mesh->getHasColor() || (texCoordOffset != -1);
-   hasTexcoord2 = mesh->getHasTVert2() || (colorOffset != -1);
+   hasColors = mesh->getHasColor() || (colorOffset != -1);
+   hasTexcoord2 = mesh->getHasTVert2() || (texCoordOffset != -1);
    hasSkin = (mesh->getMeshType() == TSMesh::SkinMeshType) || (boneOffset != -1);
 
    S32 offset = sizeof(TSMesh::__TSMeshVertexBase);

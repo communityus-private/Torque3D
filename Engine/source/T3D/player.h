@@ -40,6 +40,10 @@ class SplashData;
 class PhysicsPlayer;
 class Player;
 
+#ifdef TORQUE_OPENVR
+class OpenVRTrackedObject;
+#endif
+
 //----------------------------------------------------------------------------
 
 struct PlayerData: public ShapeBaseData {
@@ -518,6 +522,10 @@ protected:
    Point3F mLastPos;          ///< Holds the last position for physics updates
    Point3F mLastWaterPos;     ///< Same as mLastPos, but for water
 
+#ifdef TORQUE_OPENVR
+   SimObjectPtr<OpenVRTrackedObject> mControllers[2];
+#endif
+
    struct ContactInfo 
    {
       bool contacted, jump, run;
@@ -577,11 +585,16 @@ protected:
 
    PhysicsPlayer* getPhysicsRep() const { return mPhysicsRep; }
 
+#ifdef TORQUE_OPENVR
+   void setControllers(Vector<OpenVRTrackedObject*> controllerList);
+#endif
+
   protected:
    virtual void reSkin();
 
    void setState(ActionState state, U32 ticks=0);
    void updateState();
+
 
    // Jetting
    bool mJetting;
@@ -686,7 +699,6 @@ public:
    void getEyeBaseTransform(MatrixF* mat, bool includeBank);
    void getRenderEyeTransform(MatrixF* mat);
    void getRenderEyeBaseTransform(MatrixF* mat, bool includeBank);
-   virtual DisplayPose calcCameraDeltaPose(GameConnection *con, const DisplayPose& inPose);
    void getCameraParameters(F32 *min, F32 *max, Point3F *offset, MatrixF *rot);
    void getMuzzleTransform(U32 imageSlot,MatrixF* mat);
    void getRenderMuzzleTransform(U32 imageSlot,MatrixF* mat);   

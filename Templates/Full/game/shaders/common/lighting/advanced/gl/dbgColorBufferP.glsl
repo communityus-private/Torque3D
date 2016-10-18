@@ -21,14 +21,14 @@
 //-----------------------------------------------------------------------------
 
 #include "../../../gl/hlslCompat.glsl"
-#include "shadergen:/autogenConditioners.h"
 
+in vec2 uv0;
 uniform sampler2D colorBufferTex;
 
 in vec2 uv0;
 out vec4 OUT_FragColor0;
 
 void main()
-{ 
-   OUT_FragColor0 = vec4(texture( colorBufferTex, uv0 ).rgb, 1.0);   
+{
+   OUT_FragColor0 = vec4(texture( colorBufferTex, uv0 ).rgb, 1.0);
 }
