@@ -513,8 +513,8 @@ bool GameConnection::readConnectRequest(BitStream *stream, const char **errorStr
 
    for(U32 i = 0; i < mConnectArgc+3; i++)
    {
-      connectArgv[i].value = &connectArgvValue[i];
-      connectArgvValue[i].init();
+	   connectArgv[i].value = &connectArgvValue[i];
+	   connectArgvValue[i].init();
    }
 
    for(U32 i = 0; i < mConnectArgc; i++)
@@ -602,7 +602,7 @@ void GameConnection::setControlObject(GameBase *obj)
       // Update the camera's FOV to match the new control object
       //but only if we don't have a specific camera object
       if (!mCameraObject)
-         setControlCameraFov(obj->getCameraFov());
+      setControlCameraFov( obj->getCameraFov() );
    }
 
    // Okay, set our control object.
@@ -958,8 +958,8 @@ void GameConnection::onRemove()
       // clientgroup and what not (this is so that we can disconnect from a local server
       // without needing to destroy and recreate the server before we can connect to it 
       // again).
-      // Safe-delete as we don't know whether the server connection is currently being
-      // worked on.
+	   // Safe-delete as we don't know whether the server connection is currently being
+	   // worked on.
       getRemoteConnection()->safeDeleteObject();
       setRemoteConnectionObject(NULL);
    }
@@ -2470,7 +2470,6 @@ DefineEngineMethod( GameConnection, getVisibleGhostDistance, F32, (),,
 {
    return object->getVisibleGhostDistance();
 }
-
 // AFX CODE BLOCK (obj-select) <<
 //
 // The object selection code here is, in part, based, on functionality described
@@ -2769,16 +2768,17 @@ ConsoleFunction(getDatablockCacheCRC, S32, 1, 1, "getDatablockCacheCRC()")
 ConsoleFunction(extractDatablockCacheCRC, S32, 2, 2, "extractDatablockCacheCRC(filename)")
 {
    FileStream f_stream;
-   if(!f_stream.open(argv[1], Torque::FS::File::Read))
+   const char* fileName = argv[1];
+   if(!f_stream.open(fileName, Torque::FS::File::Read))
    {
-      Con::errorf("Failed to open file '%s'.", argv[1]);
+      Con::errorf("Failed to open file '%s'.", fileName);
       return -1;
    }
 
    U32 stream_sz = f_stream.getStreamSize();
    if (stream_sz < 4*32)
    {
-      Con::errorf("File '%s' is not a valid datablock cache.", argv[1]);
+      Con::errorf("File '%s' is not a valid datablock cache.", fileName);
       f_stream.close();
       return -1;
    }
@@ -2792,13 +2792,13 @@ ConsoleFunction(extractDatablockCacheCRC, S32, 2, 2, "extractDatablockCacheCRC(f
 
    if (pre_code != post_code)
    {
-      Con::errorf("File '%s' is not a valid datablock cache.", argv[1]);
+      Con::errorf("File '%s' is not a valid datablock cache.", fileName);
       return -1;
    }
 
    if (pre_code != (U32)CLIENT_CACHE_VERSION_CODE)
    {
-      Con::errorf("Version of datablock cache file '%s' does not match version of running software.", argv[1]);
+      Con::errorf("Version of datablock cache file '%s' does not match version of running software.", fileName);
       return -1;
    }
 
