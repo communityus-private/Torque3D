@@ -174,7 +174,7 @@ enum SceneObjectTypes
 #endif // AFX CODE BLOCK (afxModel-type) >>
 };
 
-enum SceneObjectTypeMasks
+enum SceneObjectTypeMasks : U32
 {
    STATIC_COLLISION_TYPEMASK = (StaticShapeObjectType |
    EntityObjectType),
