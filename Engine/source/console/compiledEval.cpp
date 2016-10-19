@@ -869,6 +869,7 @@ breakContinue:
                      Con::errorf(ConsoleLogEntry::General, "%s: Unable to instantiate non-datablock class %s.", getFileLine(ip), (const char*)callArgv[1]);
                      // Clean up...
                      delete object;
+                     currentNewObject = NULL;
                      ip = failJump;
                      break;
                   }
@@ -1003,7 +1004,7 @@ breakContinue:
                      }
                   }
                   else
-                     Con::errorf(ConsoleLogEntry::General, "%d: Unable to find parent object %s for %s.", lineNumber, objParent, callArgv[1]);
+                     Con::errorf(ConsoleLogEntry::General, "%d: Unable to find parent object %s for %s.", lineNumber, objParent, (const char*)callArgv[1]);
                }
             }
             // AFX CODE BLOCK (copy-on-reload) >>
