@@ -69,9 +69,9 @@ Vector<String> _initSamplerNames()
 const Vector<String> TerrainCellMaterial::mSamplerNames = _initSamplerNames();
 
 TerrainCellMaterial::TerrainCellMaterial()
-   :  mCurrPass( 0 ),
-      mTerrain( NULL ),
-      mDeferredMat( NULL ),
+   :  mTerrain( NULL ),
+      mCurrPass( 0 ),
+      mDeferredMat(NULL),
       mReflectMat( NULL )
 {
    smAllMaterials.push_back( this );

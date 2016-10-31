@@ -32,9 +32,9 @@ TSRenderState::TSRenderState()
       mNoRenderNonTranslucent( false ),
       mMaterialHint( NULL ),
       mCuller( NULL ),
-      mLightQuery( NULL ),
       mUseOriginSort( false ),
       mMaterialDamage(0.0f),
+      mLightQuery( NULL ),
       mAccuTex( NULL ),
       mNodeTransforms( NULL ),
       mNodeTransformCount( 0 )
