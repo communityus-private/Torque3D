@@ -59,10 +59,9 @@ void main()
    float frez = directLighting.a;
    
    vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   vec3 fresnelColor = indirectLighting*frez;
-   vec3 reflectColor = indirectLighting*colorBuffer* metalness;
-   colorBuffer = diffuseColor+mix(reflectColor,fresnelColor,frez);
-   colorBuffer *= directLighting.rgb;
+   vec3 reflectColor = indirectLighting*colorBuffer;
+   colorBuffer = diffuseColor+lerp(reflectColor,indirectLighting,frez);
+   colorBuffer *= directLighting.rgb; 
    
    OUT_col =  hdrEncode(vec4(colorBuffer,1.0));
 }

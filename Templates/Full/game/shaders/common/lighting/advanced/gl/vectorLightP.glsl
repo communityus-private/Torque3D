@@ -193,13 +193,13 @@ out vec4 OUT_col;
 void main()             
 {
    // Matinfo flags
-   float4 matInfo = texture( matInfoBuffer, uv0 );
+   float4 matInfo = texture( matInfoBuffer, uv0 );   
    //early out if emissive
-   bool emissive = getFlag(matInfo.r, 0);
-   if (emissive)
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
    {
       OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
-      return;
+       return;
    }
    
    vec4 colorSample = texture( colorBuffer, uv0 );
