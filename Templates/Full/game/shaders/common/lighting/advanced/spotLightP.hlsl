@@ -212,5 +212,5 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       specular *= lightBrightness;
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
-   return matInfo.g*(float4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
+   return (float4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a));
 }

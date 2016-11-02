@@ -123,6 +123,9 @@ inline void GFXGLWindowTarget::_setupAttachments()
 
 void GFXGLWindowTarget::makeActive()
 {
+   //make the rendering context active on this window
+   _makeContextCurrent();
+
    if(mBackBufferFBO)
    {
       glBindFramebuffer( GL_FRAMEBUFFER, mBackBufferFBO);

@@ -45,6 +45,8 @@
 
 class PlatformWindow;
 class GFXD3D11ShaderConstBuffer;
+class OculusVRHMDDevice;
+class D3D11OculusTexture;
 
 //------------------------------------------------------------------------------
 
@@ -60,6 +62,8 @@ private:
    friend class GFXD3D11TextureObject;
    friend class GFXD3D11TextureTarget;
    friend class GFXD3D11WindowTarget;
+	friend class OculusVRHMDDevice;
+	friend class D3D11OculusTexture;
 
    virtual GFXFormat selectSupportedFormat(GFXTextureProfile *profile,
    const Vector<GFXFormat> &formats, bool texture, bool mustblend, bool mustfilter);

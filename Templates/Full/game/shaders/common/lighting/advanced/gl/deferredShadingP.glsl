@@ -56,13 +56,12 @@ void main()
    vec3 indirectLighting = texture( indirectLightingBuffer, uv0 ).rgb; //environment mapping*lightmaps
    float metalness = matInfo.a;
       
-   float frez = max(0.04,directLighting.a);
+   float frez = directLighting.a;
    
    vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   vec3 fresnelColor = frez*(mix(vec3(0.04f), colorBuffer, metalness)+indirectLighting);
-   vec3 reflectColor = indirectLighting*colorBuffer*metalness;
-   colorBuffer = diffuseColor + reflectColor+fresnelColor;
-   colorBuffer *= directLighting.rgb;
+   vec3 reflectColor = indirectLighting*colorBuffer;
+   colorBuffer = diffuseColor+lerp(reflectColor,indirectLighting,frez);
+   colorBuffer *= directLighting.rgb; 
    
    OUT_col =  hdrEncode(vec4(colorBuffer,1.0));
 }

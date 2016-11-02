@@ -315,6 +315,5 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
       lightColorOut = debugColor;
    #endif
    
-   
-   return float4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a);
+   return (float4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a));
 }

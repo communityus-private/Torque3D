@@ -170,6 +170,7 @@ void TSShapeInstance::buildInstanceData(TSShape * _shape, bool loadMaterials)
    // material list...
    mMaterialList = NULL;
    mOwnMaterialList = false;
+   mUseOwnBuffer = false;
 
    //
    mData = 0;
@@ -537,7 +538,7 @@ void TSShapeInstance::render( const TSRenderState &rdata, S32 dl, F32 intraDL )
    S32 end = rdata.isNoRenderTranslucent() ? mShape->subShapeFirstTranslucentObject[ss] : mShape->subShapeFirstObject[ss] + mShape->subShapeNumObjects[ss];
    TSVertexBufferHandle *realBuffer;
 
-   if (TSShape::smUseHardwareSkinning)
+   if (TSShape::smUseHardwareSkinning && !mUseOwnBuffer)
    {
       // For hardware skinning, just using the buffer associated with the shape will work fine
       realBuffer = &mShape->mShapeVertexBuffer;
@@ -647,7 +648,7 @@ S32 TSShapeInstance::setDetailFromDistance( const SceneRenderState *state, F32 s
    // 4:3 aspect ratio, we've changed the reference value
    // to 300 to be more compatible with legacy shapes.
    //
-   const F32 pixelScale = (state->getViewport().extent.x / state->getViewport().extent.y);
+   const F32 pixelScale = (state->getViewport().extent.x / state->getViewport().extent.y)*2;
 
    // This is legacy DTS support for older "multires" based
    // meshes.  The original crossbow weapon uses this.
@@ -898,3 +899,7 @@ bool TSShapeInstance::hasAccumulation()
    return result;
 }
 
+void TSShapeInstance::setUseOwnBuffer()
+{
+   mUseOwnBuffer = true;
+}

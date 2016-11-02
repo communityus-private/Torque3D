@@ -1,4 +1,4 @@
-#debug -----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 # Copyright (c) 2014 GarageGames, LLC
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,19 +22,21 @@
 
 project(${TORQUE_APP_NAME})
 
-if(NOT TORQUE_CPU_X64)
-   message(WARNING "32 bit builds are deprecated on desktop builds")
-endif()
-
 if(UNIX)
     if(NOT CXX_FLAG32)
         set(CXX_FLAG32 "")
     endif()
     #set(CXX_FLAG32 "-m32") #uncomment for build x32 on OSx64
 
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors -Wno-return-type-c-linkage -Wno-unused-local-typedef ${TORQUE_ADDITIONAL_LINKER_FLAGS}")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors -Wno-return-type-c-linkage -Wno-unused-local-typedef ${TORQUE_ADDITIONAL_LINKER_FLAGS}")
+    else()
     # default compiler flags
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors ${TORQUE_ADDITIONAL_LINKER_FLAGS} -Wl,-rpath,'$$ORIGIN'")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors ${TORQUE_ADDITIONAL_LINKER_FLAGS} -Wl,-rpath,'$$ORIGIN'")
+
+   endif()    
 
 	# for asm files
 	SET (CMAKE_ASM_NASM_OBJECT_FORMAT "elf")
@@ -57,12 +59,25 @@ mark_as_advanced(TORQUE_ADVANCED_LIGHTING)
 option(TORQUE_BASIC_LIGHTING "Basic Lighting" ON)
 mark_as_advanced(TORQUE_BASIC_LIGHTING)
 if(WIN32)
-	option(TORQUE_D3D11 "Allow DirectX11 render" ON)
-	option(TORQUE_SFX_DirectX "DirectX Sound" OFF)
+	option(TORQUE_SFX_DirectX "DirectX Sound" ON)
+	mark_as_advanced(TORQUE_SFX_DirectX)
 else()
 	set(TORQUE_SFX_DirectX OFF)
 endif()
 option(TORQUE_SFX_OPENAL "OpenAL Sound" ON)
+#windows uses openal-soft
+if(WIN32)
+#disable a few things that are not required
+set(ALSOFT_TESTS OFF CACHE BOOL "Build and install test programs" FORCE)
+set(ALSOFT_UTILS OFF CACHE BOOL "Build and install utility programs" FORCE)
+set(ALSOFT_EXAMPLES OFF CACHE BOOL "Build and install example programs" FORCE)
+set(ALSOFT_CONFIG OFF CACHE BOOL "Install alsoft.conf sample configuration file" FORCE)
+set(ALSOFT_INSTALL OFF CACHE BOOL "Install headers and libraries" FORCE)
+set(ALSOFT_NO_CONFIG_UTIL OFF CACHE BOOL "Disable building the alsoft-config utility" FORCE)
+set(ALSOFT_HRTF_DEFS OFF CACHE BOOL "Install HRTF definition files" FORCE)
+set(ALSOFT_AMBDEC_PRESETS OFF CACHE BOOL "Install AmbDec presets" FORCE)
+add_subdirectory( ${libDir}/openal-soft ${CMAKE_CURRENT_BINARY_DIR}/openal-soft)
+endif()
 mark_as_advanced(TORQUE_SFX_OPENAL)
 option(TORQUE_HIFI "HIFI? support" OFF)
 mark_as_advanced(TORQUE_HIFI)
@@ -73,11 +88,24 @@ if(WIN32)
 else()
 	set(TORQUE_SDL ON) # we need sdl to work on Linux/Mac
 endif()
+if(WIN32)
+	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
+	#mark_as_advanced(TORQUE_OPENGL)
+else()
+	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
+endif()
 
-# OpenGL
-option(TORQUE_OPENGL "Allow OpenGL render" ON)
-# Dedicated disabled by default
-option(TORQUE_DEDICATED "Torque dedicated" OFF)
+if(WIN32)
+	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
+	#mark_as_advanced(TORQUE_OPENGL)
+else()
+	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
+	option(TORQUE_DEDICATED "Torque dedicated" OFF)
+endif()
+
+if(WIN32)
+	option(TORQUE_D3D11 "Allow Direct3D 11 render" OFF)
+endif()
 
 option(TORQUE_EXPERIMENTAL_EC "Experimental Entity/Component systems" OFF)
 mark_as_advanced(TORQUE_EXPERIMENTAL_EC)
@@ -139,13 +167,11 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd4018")
     # warning C4244: 'initializing' : conversion from 'XXX' to 'XXX', possible loss of data
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -wd4244")
-    if(TORQUE_SFX_DirectX)
-      set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY INCLUDE_DIRECTORIES $ENV{DXSDK_DIR}/Include)
-      if( TORQUE_CPU_X64 )
-           link_directories($ENV{DXSDK_DIR}/Lib/x64)
-       else()
-           link_directories($ENV{DXSDK_DIR}/Lib/x86)
-       endif()
+
+    if( TORQUE_CPU_X64 )
+        link_directories($ENV{DXSDK_DIR}/Lib/x64)
+    else()
+        link_directories($ENV{DXSDK_DIR}/Lib/x86)
     endif()
 endif()
 
@@ -319,7 +345,7 @@ if(TORQUE_SFX_OPENAL AND NOT TORQUE_DEDICATED)
     addPath("${srcDir}/sfx/openal")
     if(WIN32)
 	     addPath("${srcDir}/sfx/openal/win32")
-		   addInclude("${libDir}/openal/win32")
+		 addInclude("${libDir}/openal-soft/include")
     endif()
 	  if(UNIX AND NOT APPLE)
 		   addPath("${srcDir}/sfx/openal/linux")
@@ -415,19 +441,19 @@ if(TORQUE_SDL)
  	else()
  	   set(BLACKLIST "nfd_gtk.c" "nfd_cocoa.m" )
  	   addLib(nativeFileDialogs)
-      set(BLACKLIST ""  )
+     set(BLACKLIST ""  )
  	   addLib(comctl32)
   endif()
 
-    #override and hide SDL2 cache variables - Set windows to use shared lib
-    if(WIN32)
-      set(SDL_SHARED ON CACHE BOOL "Build a shared version of the library" FORCE)
-      set(SDL_STATIC OFF CACHE BOOL "Build a static version of the library" FORCE)
-    else()
+    #override and hide SDL2 cache variables
+    #set apple to sue sdl static lib, other platforms use dynamic
+    if(APPLE)
       set(SDL_SHARED OFF CACHE BOOL "Build a shared version of the library" FORCE)
       set(SDL_STATIC ON CACHE BOOL "Build a static version of the library" FORCE)
+    else()
+      set(SDL_SHARED ON CACHE BOOL "Build a shared version of the library" FORCE)
+      set(SDL_STATIC OFF CACHE BOOL "Build a static version of the library" FORCE)
     endif()
-
     add_subdirectory( ${libDir}/sdl ${CMAKE_CURRENT_BINARY_DIR}/sdl2)
     link_directories( ${libDir}/sdl ${CMAKE_CURRENT_BINARY_DIR}/sdl2)
 endif()
@@ -458,7 +484,7 @@ if(WIN32)
     set(BLACKLIST "" )
     addPath("${srcDir}/platformWin32/menus")
     if(NOT TORQUE_SDL)
-      addPath("${srcDir}/platformWin32/threads")
+       addPath("${srcDir}/platformWin32/threads")
     endif()
     addPath("${srcDir}/platformWin32/videoInfo")
     addPath("${srcDir}/platformWin32/minidump")
@@ -466,7 +492,11 @@ if(WIN32)
 	if(TORQUE_D3D11)
 		addPath("${srcDir}/gfx/D3D11")
 	endif()
-    addPath("${srcDir}/shaderGen/HLSL")
+    addPath("${srcDir}/gfx/D3D9")
+    addPath("${srcDir}/gfx/D3D9/pc")
+    addPath("${srcDir}/gfx/D3D11")
+    addDef( "TORQUE_D3D11" )
+    addPath("${srcDir}/shaderGen/HLSL") 
     addPath("${srcDir}/terrain/hlsl")
     addPath("${srcDir}/forest/hlsl")
     # add windows rc file for the icon
@@ -588,7 +618,7 @@ endif()
 
 if(WIN32)
     # copy pasted from T3D build system, some might not be needed
-    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WSOCK32.LIB;vfw32.lib;Imm32.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
+    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WSOCK32.LIB;vfw32.lib;Imm32.lib;d3d9.lib;d3dx9.lib;DxErr.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
     mark_as_advanced(TORQUE_EXTERNAL_LIBS)
     addLib("${TORQUE_EXTERNAL_LIBS}")
 
@@ -596,6 +626,12 @@ if(WIN32)
       addLib(OpenGL32.lib)
    endif()
 
+   # JTH: DXSDK is compiled with older runtime, and MSVC 2015+ is when __vsnprintf is undefined.
+   # This is a workaround by linking with the older legacy library functions.
+   # See this for more info: http://stackoverflow.com/a/34230122
+   if (MSVC14)
+      addLib(legacy_stdio_definitions.lib)
+   endif()
 endif()
 
 if (APPLE)
@@ -694,6 +730,11 @@ endif()
 if(UNIX AND NOT APPLE)
 	addInclude("/usr/include/freetype2/freetype")
 	addInclude("/usr/include/freetype2")
+endif()
+
+# external things
+if(WIN32)
+    set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY INCLUDE_DIRECTORIES $ENV{DXSDK_DIR}/Include)
 endif()
 
 if(MSVC)

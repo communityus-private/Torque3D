@@ -35,6 +35,14 @@
 // we now have to use NSProcessInfo
 #import <Foundation/Foundation.h>
 
+//recently removed in Xcode 8 - most likely don't need these anymore
+#ifndef CPUFAMILY_INTEL_YONAH
+#define CPUFAMILY_INTEL_YONAH		0x73d67300
+#endif
+
+#ifndef CPUFAMILY_INTEL_MEROM
+#define CPUFAMILY_INTEL_MEROM		0x426f69ef
+#endif
 // Original code by Sean O'Brien (http://www.garagegames.com/community/forums/viewthread/81815).
 
 

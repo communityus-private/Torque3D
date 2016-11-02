@@ -103,7 +103,6 @@ void STDCALL glAmdDebugCallback(GLuint id, GLenum category, GLenum severity, GLs
         Con::printf("AMDOPENGL: %s", message);
 }
 
-
 void GFXGLDevice::initGLState()
 {  
    // We don't currently need to sync device state with a known good place because we are
@@ -176,8 +175,10 @@ void GFXGLDevice::initGLState()
 
 GFXGLDevice::GFXGLDevice(U32 adapterIndex) :
    mAdapterIndex(adapterIndex),
+   mNeedUpdateVertexAttrib(false),
    mCurrentPB(NULL),
    mDrawInstancesCount(0),
+   mCurrentShader( NULL ),
    m_mCurrentWorld(true),
    m_mCurrentView(true),
    mContext(NULL),
@@ -187,8 +188,6 @@ GFXGLDevice::GFXGLDevice(U32 adapterIndex) :
    mMaxFFTextures(2),
    mMaxTRColors(1),
    mClip(0, 0, 0, 0),
-   mCurrentShader( NULL ),
-   mNeedUpdateVertexAttrib(false),
    mWindowRT(NULL),
    mUseGlMap(true)
 {

@@ -104,6 +104,7 @@ public:
       NoDiscard = BIT(11),
 
       
+      NoModify = BIT(11)
 
    };
 
