@@ -193,9 +193,6 @@ enum GFXFormat
    GFXFormatD24S8,   
    GFXFormatD24FS8,
 
-   // sRGB formats
-   GFXFormatR8G8B8A8_SRGB,
-
    // Guaranteed RGBA8 (for apis which really dont like bgr)
    GFXFormatR8G8B8A8_LINEAR_FORCE,
 
