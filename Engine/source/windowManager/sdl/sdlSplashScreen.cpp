@@ -77,7 +77,6 @@ bool Platform::closeSplashWindow()
    SDL_DestroyRenderer(gSplashRenderer);
    SDL_DestroyWindow(gSplashWindow);
    SDL_DestroyWindow(gSplashWindow);
-#endif
 
    return true;
 }
