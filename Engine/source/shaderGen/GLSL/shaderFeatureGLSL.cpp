@@ -165,7 +165,7 @@ LangElement *ShaderFeatureGLSL::expandNormalMap(   LangElement *sampleNormalOp,
       else if (hasBc5)
       {
          // BC5
-         meta->addStatement(new GenOp("   @ = float4( @.rg * 2.0 - 1.0, 0.0, 0.0 ); // bc5nm\r\n", normalDecl, sampleNormalOp ) );
+         meta->addStatement(new GenOp("   @ = float4( @.gr * 2.0 - 1.0, 0.0, 0.0 ); // bc5nm\r\n", normalDecl, sampleNormalOp ) );
          meta->addStatement(new GenOp("   @.z = sqrt( 1.0 - dot( @.xy, @.xy ) );  // bc5nm\r\n", normalVar, normalVar, normalVar ) );
       }
    }
