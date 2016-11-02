@@ -103,7 +103,7 @@ public:
    virtual U32 getWidth() { return mTex->getWidth(); }
    virtual U32 getHeight() { return mTex->getHeight(); }
    virtual U32 getDepth() { return 0; }
-   virtual bool hasMips() { return mTex->getNumMipLevels() != 1; }
+   virtual bool hasMips() { return mTex->getMipMapLevels() != 1; }
    virtual GLenum getBinding() { return GFXGLCubemap::getEnumForFaceNumber(mFace); }
    virtual GFXFormat getFormat() { return mTex->getFormat(); }
    virtual bool isCompatible(const GFXGLTextureObject* tex)
