@@ -1289,14 +1289,18 @@ void ProcessedShaderMaterial::setSceneInfo(SceneRenderState * state, const Scene
 
    // Set cubemap stuff here (it's convenient!)
    const Point3F &eyePosWorld = state->getCameraPosition();
-   if ( handles->mCubeEyePosSC->isValid() )
+   if(_hasCubemap(pass) || mMaterial->mDynamicCubemap)
    {
-      if(_hasCubemap(pass) || mMaterial->mDynamicCubemap)
+	  if ( handles->mCubeEyePosSC->isValid() )
       {
          Point3F cubeEyePos = eyePosWorld - sgData.objTrans->getPosition();
          shaderConsts->set(handles->mCubeEyePosSC, cubeEyePos);
-         shaderConsts->setSafe(handles->mCubeMipsSC, (S32)sgData.cubemap->getMipMapLevels());
       }
+	   if (sgData.cubemap)
+		   shaderConsts->setSafe(handles->mCubeMipsSC, (S32)sgData.cubemap->getMipMapLevels());
+	   else
+		   shaderConsts->setSafe(handles->mCubeMipsSC, 1);
+
    }
 
    shaderConsts->setSafe(handles->mVisiblitySC, sgData.visibility);
