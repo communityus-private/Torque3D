@@ -1870,10 +1870,11 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    cubeMapTex->texture = true;
    cubeMapTex->constNum = cubeMap->constNum;
 
-   Var *cubeMapMips = new Var;
-   cubeMapMips->setType("float");
-   cubeMapMips->setName("cubeMapMips");
-   cubeMapMips->uniform = true;
+   Var *cubeMips = new Var;
+   cubeMips->setType("float");
+   cubeMips->setName("cubeMips");
+   cubeMips->uniform = true;
+   cubeMips->constSortPos = cspPotentialPrimitive;
 
    // TODO: Restore the lighting attenuation here!
    Var *attn = NULL;
@@ -1889,11 +1890,11 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
 
    if (smoothness) //try to grab smoothness directly
    {
-      texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @)*@ + 1.0, @))", cubeMapTex, cubeMap, reflectVec, smoothness, cubeMapMips, cubeMapMips);
+      texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @)*@ + 1.0, @))", cubeMapTex, cubeMap, reflectVec, smoothness, cubeMips, cubeMips);
    }
    else if (glossColor)//failing that, try and find color data
    {
-      texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMapTex, cubeMap, reflectVec, glossColor);
+      texCube = new GenOp("@.SampleLevel( @, float3(@).rgb, min((1.0 - @.b)*@ + 1.0, @))", cubeMapTex, cubeMap, reflectVec, glossColor, cubeMips, cubeMips);
    }
    else //failing *that*, just draw the cubemap
    {

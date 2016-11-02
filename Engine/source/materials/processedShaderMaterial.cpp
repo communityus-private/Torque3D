@@ -1295,7 +1295,7 @@ void ProcessedShaderMaterial::setSceneInfo(SceneRenderState * state, const Scene
       {
          Point3F cubeEyePos = eyePosWorld - sgData.objTrans->getPosition();
          shaderConsts->set(handles->mCubeEyePosSC, cubeEyePos);
-         shaderConsts->set(handles->mCubeMipsSC, (S32)sgData.cubemap->getSize());
+         shaderConsts->setSafe(handles->mCubeMipsSC, (S32)sgData.cubemap->getMipMapLevels());
       }
    }
 
