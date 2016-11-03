@@ -1811,6 +1811,12 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    cubeMap->sampler = true;
    cubeMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
+   Var *cubeMips = new Var;
+   cubeMips->setType("float");
+   cubeMips->setName("cubeMips");
+   cubeMips->uniform = true;
+   cubeMips->constSortPos = cspPotentialPrimitive;
+
    // TODO: Restore the lighting attenuation here!
    Var *attn = NULL;
    //if ( fd.materialFeatures[MFT_DynamicLight] )
@@ -1823,9 +1829,9 @@ void ReflectCubeFeatGLSL::processPix(  Vector<ShaderComponent*> &componentList,
    Var* matinfo = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget2) );
    Var *smoothness = (Var*)LangElement::find("smoothness");
    if (smoothness) //try to grab smoothness directly
-      texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, smoothness);
+      texCube = new GenOp("textureLod(  @, @, min((1.0 - @)*@ + 1.0, @))", cubeMap, reflectVec, smoothness, cubeMips, cubeMips);
    else if (glossColor) //failing that, try and find color data
-      texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*11.0 + 1.0, 8.0))", cubeMap, reflectVec, glossColor);
+      texCube = new GenOp("textureLod( @, @, min((1.0 - @.b)*@ + 1.0, @))", cubeMap, reflectVec, glossColor, cubeMips, cubeMips);
    else //failing *that*, just draw the cubemap
       texCube = new GenOp("texture( @, @)", cubeMap, reflectVec);
    LangElement *lerpVal = NULL;
