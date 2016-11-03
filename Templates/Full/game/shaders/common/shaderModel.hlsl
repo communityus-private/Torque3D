@@ -33,6 +33,8 @@
    #define TORQUE_TARGET1 SV_Target1
    #define TORQUE_TARGET2 SV_Target2
    #define TORQUE_TARGET3 SV_Target3
+   #define TORQUE_TARGET4 SV_Target4
+   #define TORQUE_TARGET5 SV_Target5
    // Sampler uniforms
    //1D is emulated to a 2D for now
    #define TORQUE_UNIFORM_SAMPLER1D(tex,regist) uniform Texture2D texture_##tex : register(T##regist); uniform SamplerState tex : register(S##regist)
