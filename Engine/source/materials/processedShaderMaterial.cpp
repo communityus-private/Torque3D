@@ -1280,49 +1280,49 @@ void ProcessedShaderMaterial::setNodeTransforms(const MatrixF *transforms, const
 
 void ProcessedShaderMaterial::setSceneInfo(SceneRenderState * state, const SceneData& sgData, U32 pass)
 {
-   PROFILE_SCOPE( ProcessedShaderMaterial_setSceneInfo );
+   PROFILE_SCOPE(ProcessedShaderMaterial_setSceneInfo);
 
    GFXShaderConstBuffer* shaderConsts = _getShaderConstBuffer(pass);
    ShaderConstHandles* handles = _getShaderConstHandles(pass);
 
-   shaderConsts->setSafe( handles->mMaterialDamageSC, sgData.mMaterialDamage);
+   shaderConsts->setSafe(handles->mMaterialDamageSC, sgData.mMaterialDamage);
 
    // Set cubemap stuff here (it's convenient!)
    const Point3F &eyePosWorld = state->getCameraPosition();
-   if(_hasCubemap(pass) || mMaterial->mDynamicCubemap)
+   if (_hasCubemap(pass) || mMaterial->mDynamicCubemap)
    {
-	  if ( handles->mCubeEyePosSC->isValid() )
+      if (handles->mCubeEyePosSC->isValid())
       {
          Point3F cubeEyePos = eyePosWorld - sgData.objTrans->getPosition();
          shaderConsts->set(handles->mCubeEyePosSC, cubeEyePos);
       }
 
    }
-	   if (sgData.cubemap)
-		   shaderConsts->setSafe(handles->mCubeMipsSC, (F32)sgData.cubemap->getMipMapLevels());
-	   else
-		   shaderConsts->setSafe(handles->mCubeMipsSC, 1.0f);
+   if (sgData.cubemap)
+      shaderConsts->setSafe(handles->mCubeMipsSC, (F32)sgData.cubemap->getMipMapLevels());
+   else
+      shaderConsts->setSafe(handles->mCubeMipsSC, 1.0f);
 
    shaderConsts->setSafe(handles->mVisiblitySC, sgData.visibility);
 
-   shaderConsts->setSafe(handles->mEyePosWorldSC, eyePosWorld);   
+   shaderConsts->setSafe(handles->mEyePosWorldSC, eyePosWorld);
 
-   if ( handles->mEyePosSC->isValid() )
+   if (handles->mEyePosSC->isValid())
    {
-      MatrixF tempMat( *sgData.objTrans );
+      MatrixF tempMat(*sgData.objTrans);
       tempMat.inverse();
       Point3F eyepos;
-      tempMat.mulP( eyePosWorld, &eyepos );
-      shaderConsts->set(handles->mEyePosSC, eyepos);   
+      tempMat.mulP(eyePosWorld, &eyepos);
+      shaderConsts->set(handles->mEyePosSC, eyepos);
    }
 
-   shaderConsts->setSafe(handles->mEyeMatSC, state->getCameraTransform());   
+   shaderConsts->setSafe(handles->mEyeMatSC, state->getCameraTransform());
 
-   ShaderRenderPassData *rpd = _getRPD( pass );
-   for ( U32 i=0; i < rpd->featureShaderHandles.size(); i++ )
-      rpd->featureShaderHandles[i]->setConsts( state, sgData, shaderConsts );
+   ShaderRenderPassData *rpd = _getRPD(pass);
+   for (U32 i = 0; i < rpd->featureShaderHandles.size(); i++)
+      rpd->featureShaderHandles[i]->setConsts(state, sgData, shaderConsts);
 
-   LIGHTMGR->setLightInfo( this, mMaterial, sgData, state, pass, shaderConsts );
+   LIGHTMGR->setLightInfo(this, mMaterial, sgData, state, pass, shaderConsts);
 }
 
 void ProcessedShaderMaterial::setBuffers( GFXVertexBufferHandleBase *vertBuffer, GFXPrimitiveBufferHandle *primBuffer )

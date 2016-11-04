@@ -248,10 +248,10 @@ void GFXD3D11TextureTarget::activate()
    stateApplied();
    
    // Now set all the new surfaces into the appropriate slots.
-   ID3D11RenderTargetView* rtViews[MaxRenderSlotId] = { NULL, NULL, NULL, NULL, NULL, NULL};
+   ID3D11RenderTargetView* rtViews[MaxRenderSlotId] = { NULL, NULL, NULL, NULL, NULL, NULL,NULL};
 
    ID3D11DepthStencilView* dsView = (ID3D11DepthStencilView*)(mTargetViews[GFXTextureTarget::DepthStencil]);
-   for (U32 i = 0; i < 4; i++)
+   for (U32 i = 0; i < 6; i++)
    {
       rtViews[i] = (ID3D11RenderTargetView*)mTargetViews[GFXTextureTarget::Color0 + i];
    }
@@ -263,7 +263,7 @@ void GFXD3D11TextureTarget::activate()
 void GFXD3D11TextureTarget::deactivate()
 {
    //re-gen mip maps
-   for (U32 i = 0; i < 4; i++)
+   for (U32 i = 0; i < 6; i++)
    {
       ID3D11ShaderResourceView* pSRView = mTargetSRViews[GFXTextureTarget::Color0 + i];
       if (pSRView)
