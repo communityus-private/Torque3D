@@ -34,6 +34,7 @@
 #include "console/engineAPI.h"
 #include "math/mathUtils.h"
 
+#include "gfx/bitmap/cubemapSaver.h"
 
 IMPLEMENT_CONOBJECT( CubemapData );
 
@@ -173,4 +174,15 @@ DefineEngineMethod( CubemapData, getFilename, const char*, (),,
    "defined.  This is used by the material editor." )
 {
    return object->getFilename();
+}
+
+DefineEngineMethod(CubemapData, save, void, (const char* _file, const char*_format), ("",""),
+	"Returns the script filename of where the CubemapData object was "
+	"defined.  This is used by the material editor.")
+{
+	CubemapSaver saver;
+	char* fiel = const_cast<char*>(_file);
+	if (_file == "")
+		_file = object->getName();
+	saver.save(object->mCubemap, _file, GFXFormatR8G8B8A8);
 }

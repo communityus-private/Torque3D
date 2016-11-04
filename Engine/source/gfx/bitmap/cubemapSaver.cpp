@@ -1,0 +1,167 @@
+//-----------------------------------------------------------------------------
+// Copyright (c) 2012 GarageGames, LLC
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to
+// deal in the Software without restriction, including without limitation the
+// rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+// sell copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+// IN THE SOFTWARE.
+//-----------------------------------------------------------------------------
+
+#include "gfx/bitmap/cubemapSaver.h"
+#include "platform/platform.h"
+#include "gfx/bitmap/ddsFile.h"
+#include "gfx/bitmap/ddsUtils.h"
+#include "gfx/gfxDevice.h"
+#include "gfx/gfxTransformSaver.h"
+#include "gfx/gfxTextureManager.h"
+#include "materials/shaderData.h"
+#include "core/stream/fileStream.h"
+#include "math/mathUtils.h"
+#include "math/mTransform.h"
+
+const U32 CubeFaces = 6;
+
+void _setConstBuffer(GFXShaderConstHandle* handle, GFXShaderConstBuffer *cbuf, const VectorF &vLookatPt, const VectorF &vUpVec)
+{
+   VectorF cross = mCross(vUpVec, vLookatPt);
+   cross.normalizeSafe();
+
+   MatrixF matView(true);
+   matView.setColumn(0, cross);
+   matView.setColumn(1, vLookatPt);
+   matView.setColumn(2, vUpVec);
+   matView.setPosition(VectorF(0.0f, 0.0f, 1.0f));
+   matView.inverse();
+
+   if (handle->isValid())
+      cbuf->set(handle, matView);
+   else
+      Con::errorf("CubemapSaver: Failed to set a shader constant handle.");
+}
+
+bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXFormat format)
+{
+   AssertFatal(cubemap.isValid(), "CubemapSaver::save cubemap is not valid");
+
+   GFXCubemap *pCubemap = cubemap.getPointer();
+   U32 faceSize = pCubemap->getSize();
+
+   ShaderData *shaderData = nullptr;
+   GFXShaderRef shader = Sim::findObject("CubemapSaveShader", shaderData) ? shaderData->getShader() : nullptr;
+   if (!shader)
+   {
+      Con::errorf("CubemapSaver::save - could not find CubemapSaveShader");
+      return false;
+   }
+
+   GFXShaderConstHandle *matHandles[CubeFaces];
+
+   matHandles[0] = shader->getShaderConstHandle("$mat0");
+   matHandles[1] = shader->getShaderConstHandle("$mat1");
+   matHandles[2] = shader->getShaderConstHandle("$mat2");
+   matHandles[3] = shader->getShaderConstHandle("$mat3");
+   matHandles[4] = shader->getShaderConstHandle("$mat4");
+   matHandles[5] = shader->getShaderConstHandle("$mat5");
+   
+   GFXShaderConstBufferRef cbuffer = shader->allocConstBuffer();
+
+   GFXTextureTarget *pTarget = GFX->allocRenderToTextureTarget();
+
+   GFX->pushActiveRenderTarget();
+   
+   //setup render targets
+   GFXTexHandle pTextures[CubeFaces];
+   for (U32 i = 0; i < CubeFaces; i++)
+   {
+      pTextures[i].set(faceSize, faceSize, format,
+         &GFXDefaultRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
+         1, GFXTextureManager::AA_MATCH_BACKBUFFER);
+
+      pTarget->attachTexture(GFXTextureTarget::RenderSlot(GFXTextureTarget::Color0 + i), pTextures[i]);
+   }
+
+
+   //create stateblock
+   GFXStateBlockDesc desc;
+   desc.setZReadWrite(false, false);
+   desc.samplersDefined = true;
+   desc.samplers[0].addressModeU = GFXAddressClamp;
+   desc.samplers[0].addressModeV = GFXAddressClamp;
+   desc.samplers[0].addressModeW = GFXAddressClamp;
+   desc.samplers[0].magFilter = GFXTextureFilterLinear;
+   desc.samplers[0].minFilter = GFXTextureFilterLinear;
+   desc.samplers[0].mipFilter = GFXTextureFilterLinear;
+   
+   GFXVertexBufferHandle<GFXVertexP> vert(GFX, 4, GFXBufferTypeVolatile);
+   vert.lock();
+   vert[0].point.set(-1.0, 1.0, 0.0);
+   vert[1].point.set(1.0, 1.0, 0.0);
+   vert[2].point.set(-1.0, -1.0, 0.0);
+   vert[3].point.set(1.0, -1.0, 0.0);
+   vert.unlock();
+
+   //yep funky order and rotations with t3d z up
+   _setConstBuffer(matHandles[0], cbuffer, VectorF(0.0f, 1.0f, 0.0f), VectorF(-1.0f, 0.0f, 0.0f));
+   _setConstBuffer(matHandles[1], cbuffer, VectorF(0.0f, 1.0f, 0.0f), VectorF(1.0f, 0.0f, 0.0f));
+   _setConstBuffer(matHandles[2], cbuffer, VectorF(0.0f, 1.0f, 0.0f), VectorF(0.0f, 0.0f, -1.0f));
+   _setConstBuffer(matHandles[3], cbuffer, VectorF(0.0f, 1.0f, 0.0f), VectorF(0.0f, 0.0f, 1.0f));
+   _setConstBuffer(matHandles[4], cbuffer, VectorF(0.0f, 0.0f, -1.0f), VectorF(0.0f, -1.0f, 0.0f));
+   _setConstBuffer(matHandles[5], cbuffer, VectorF(0.0f, 0.0f, 1.0f), VectorF(0.0f, 1.0f, 0.0f));
+
+
+   GFXTransformSaver saver;
+   GFX->setActiveRenderTarget(pTarget);
+   GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
+   GFX->setStateBlockByDesc(desc);
+   GFX->setWorldMatrix(MatrixF::Identity);
+   GFX->setProjectionMatrix(MatrixF::Identity);
+   GFX->setCubeTexture(0, pCubemap);
+   GFX->setShaderConstBuffer(cbuffer);
+   GFX->setShader(shader);
+   GFX->setVertexBuffer(vert);
+   GFX->drawPrimitive(GFXTriangleStrip, 0, 2);
+   pTarget->resolve();
+
+   for (U32 i = 0; i < CubeFaces; i++)
+   {
+      GBitmap *pBitmap = new GBitmap(faceSize, faceSize, false, format);
+      bool result = pTextures[i].copyToBmp(pBitmap);
+      FileStream  stream;
+      char str[2];
+      sprintf(str, "%d", i);
+      String spath = path + String(str) + String(".dds");
+      stream.open(spath, Torque::FS::File::Write);
+      if (stream.getStatus() == Stream::Ok)
+      {
+         // Write it out.
+         //foo->writeBitmap("png", stream);
+         DDSFile *dds = DDSFile::createDDSFileFromGBitmap(pBitmap);
+         DDSUtil::swizzleDDS(dds, *GFX->getDeviceSwizzle32());
+         dds->write(stream);
+		 delete dds;
+      }
+
+      delete pBitmap;
+   }
+
+   //cleaup
+   GFX->popActiveRenderTarget();
+   GFX->setTexture(0, NULL);
+   GFX->updateStates();
+
+
+   return true;
+}
