@@ -105,14 +105,6 @@ bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXF
    desc.samplers[0].minFilter = GFXTextureFilterLinear;
    desc.samplers[0].mipFilter = GFXTextureFilterLinear;
    
-   GFXVertexBufferHandle<GFXVertexP> vert(GFX, 4, GFXBufferTypeVolatile);
-   vert.lock();
-   vert[0].point.set(-1.0, 1.0, 0.0);
-   vert[1].point.set(1.0, 1.0, 0.0);
-   vert[2].point.set(-1.0, -1.0, 0.0);
-   vert[3].point.set(1.0, -1.0, 0.0);
-   vert.unlock();
-
    //yep funky order and rotations with t3d z up
    _setConstBuffer(matHandles[0], cbuffer, VectorF(0.0f, 1.0f, 0.0f), VectorF(-1.0f, 0.0f, 0.0f));
    _setConstBuffer(matHandles[1], cbuffer, VectorF(0.0f, 1.0f, 0.0f), VectorF(1.0f, 0.0f, 0.0f));
@@ -131,8 +123,7 @@ bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXF
    GFX->setCubeTexture(0, pCubemap);
    GFX->setShaderConstBuffer(cbuffer);
    GFX->setShader(shader);
-   GFX->setVertexBuffer(vert);
-   GFX->drawPrimitive(GFXTriangleStrip, 0, 2);
+   GFX->drawPrimitive(GFXTriangleList, 0, 3);
    pTarget->resolve();
 
    for (U32 i = 0; i < CubeFaces; i++)
@@ -151,7 +142,7 @@ bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXF
          DDSFile *dds = DDSFile::createDDSFileFromGBitmap(pBitmap);
          DDSUtil::swizzleDDS(dds, *GFX->getDeviceSwizzle32());
          dds->write(stream);
-		 delete dds;
+		   delete dds;
       }
 
       delete pBitmap;

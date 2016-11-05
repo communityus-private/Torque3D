@@ -180,9 +180,8 @@ DefineEngineMethod(CubemapData, save, void, (const char* _file, const char*_form
 	"Returns the script filename of where the CubemapData object was "
 	"defined.  This is used by the material editor.")
 {
-	CubemapSaver saver;
 	char* fiel = const_cast<char*>(_file);
 	if (_file == "")
 		_file = object->getName();
-	saver.save(object->mCubemap, _file, GFXFormatR8G8B8A8);
+   CubemapSaver::save(object->mCubemap, _file, GFXFormatR8G8B8A8);
 }

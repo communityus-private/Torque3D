@@ -22,11 +22,6 @@
 
 #include "shaderModel.hlsl"
 
-struct Appdata
-{
-   float3 pos     : POSITION;
-};
-
 struct Conn
 {
    float4 hpos : TORQUE_POSITION;
@@ -45,20 +40,17 @@ uniform float4x4 mat3;
 uniform float4x4 mat4;
 uniform float4x4 mat5;
 
-Conn main(Appdata In)
+Conn main(uint id: SV_VertexID)
 {
    Conn Out;
-   float4 vertex = float4(In.pos, 1.0);
-
+   float4 vertex = float4(float2((id << 1) & 2, id & 2) * float2(2, -2) + float2(-1, 1), 0, 1);
    Out.hpos = vertex;
-
-
-   Out.face_pos_x = mul(mat0, Out.hpos).xyz;
-   Out.face_neg_x = mul(mat1, Out.hpos).xyz;
-   Out.face_pos_y = mul(mat2, Out.hpos).xyz;
-   Out.face_neg_y = mul(mat3, Out.hpos).xyz;
-   Out.face_pos_z = mul(mat4, Out.hpos).xyz;
-   Out.face_neg_z = mul(mat5, Out.hpos).xyz;
+   Out.face_pos_x = mul(mat0, vertex).xyz;
+   Out.face_neg_x = mul(mat1, vertex).xyz;
+   Out.face_pos_y = mul(mat2, vertex).xyz;
+   Out.face_neg_y = mul(mat3, vertex).xyz;
+   Out.face_pos_z = mul(mat4, vertex).xyz;
+   Out.face_neg_z = mul(mat5, vertex).xyz;
 
    return Out;
 }
