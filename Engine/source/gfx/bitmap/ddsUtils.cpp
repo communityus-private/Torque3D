@@ -112,8 +112,21 @@ bool DDSUtil::squishDDS( DDSFile *srcDDS, const GFXFormat dxtFormat )
 
 void DDSUtil::swizzleDDS( DDSFile *srcDDS, const Swizzle<U8, 4> &swizzle )
 {
-   for( S32 i = 0; i < srcDDS->mMipMapCount; i++ )
+   if (srcDDS->mFlags.test(DDSFile::CubeMapFlag))
    {
-      swizzle.InPlace( srcDDS->mSurfaces.last()->mMips[i], srcDDS->getSurfaceSize( i ) );
+      for (S32 cubeFace = 0; cubeFace < DDSFile::Cubemap_Surface_Count; cubeFace++)
+      {
+         for (S32 i = 0; i < srcDDS->mMipMapCount; i++)
+         {
+            swizzle.InPlace(srcDDS->mSurfaces[cubeFace]->mMips[i], srcDDS->getSurfaceSize(i));
+         }
+      }
+   }
+   else
+   {
+      for (S32 i = 0; i < srcDDS->mMipMapCount; i++)
+      {
+         swizzle.InPlace(srcDDS->mSurfaces.last()->mMips[i], srcDDS->getSurfaceSize(i));
+      }
    }
 }

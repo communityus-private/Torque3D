@@ -54,7 +54,18 @@ void _setConstBuffer(GFXShaderConstHandle* handle, GFXShaderConstBuffer *cbuf, c
 
 bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXFormat format)
 {
-   AssertFatal(cubemap.isValid(), "CubemapSaver::save cubemap is not valid");
+   if (!cubemap.isValid())
+   {
+      Con::errorf("CubemapSaver: cubemap handle is not valid");
+      return false;
+   }
+
+   //Temp must remove when formats added
+   if(format != GFXFormatR8G8B8A8)
+   {
+      Con::errorf("CubemapSaver: only GFXFormatR8G8B8A8 supported for now");
+      return false;
+   }
 
    GFXCubemap *pCubemap = cubemap.getPointer();
    U32 faceSize = pCubemap->getSize();
@@ -79,7 +90,6 @@ bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXF
    GFXShaderConstBufferRef cbuffer = shader->allocConstBuffer();
 
    GFXTextureTarget *pTarget = GFX->allocRenderToTextureTarget();
-
    GFX->pushActiveRenderTarget();
    
    //setup render targets
@@ -92,7 +102,6 @@ bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXF
 
       pTarget->attachTexture(GFXTextureTarget::RenderSlot(GFXTextureTarget::Color0 + i), pTextures[i]);
    }
-
 
    //create stateblock
    GFXStateBlockDesc desc;
@@ -126,27 +135,48 @@ bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXF
    GFX->drawPrimitive(GFXTriangleList, 0, 3);
    pTarget->resolve();
 
+   GBitmap *pBitmaps[CubeFaces];
+   bool error = false;
    for (U32 i = 0; i < CubeFaces; i++)
    {
-      GBitmap *pBitmap = new GBitmap(faceSize, faceSize, false, format);
-      bool result = pTextures[i].copyToBmp(pBitmap);
-      FileStream  stream;
-      char str[2];
-      sprintf(str, "%d", i);
-      String spath = path + String(str) + String(".dds");
-      stream.open(spath, Torque::FS::File::Write);
-      if (stream.getStatus() == Stream::Ok)
+      pBitmaps[i] = new GBitmap(faceSize, faceSize, false, format);
+      bool result = pTextures[i].copyToBmp(pBitmaps[i]);
+      if (!result)
       {
-         // Write it out.
-         //foo->writeBitmap("png", stream);
-         DDSFile *dds = DDSFile::createDDSFileFromGBitmap(pBitmap);
-         DDSUtil::swizzleDDS(dds, *GFX->getDeviceSwizzle32());
-         dds->write(stream);
-		   delete dds;
+         Con::errorf("CubemapSaver: cubemap number %u failed to copy", i);
+         error = true;
       }
-
-      delete pBitmap;
+      //Temp must remove when formats added
+      if (pBitmaps[i]->getFormat() != GFXFormatR8G8B8A8)
+      {
+         Con::errorf("CubemapSaver: cubemap number %u is not GFXFormatR8G8B8A8", i);
+         error = true;
+      }
    }
+
+   if (!error)
+   {
+      DDSFile *pDds = DDSFile::createDDSCubemapFileFromGBitmaps(pBitmaps);
+      if (pDds)
+      {
+         // fix up GFXFormatR8G8B8A8
+         if (format == GFXFormatR8G8B8A8)
+            DDSUtil::swizzleDDS(pDds, Swizzles::bgra);
+
+         FileStream  stream;
+         stream.open(path, Torque::FS::File::Write);
+
+         if (stream.getStatus() == Stream::Ok)
+            pDds->write(stream);
+         else
+            Con::errorf("CubemapSaver: failed to open file stream for file %s", path.getFullPath().c_str());
+
+         SAFE_DELETE(pDds);
+      }
+   }
+
+   for (U32 i = 0; i < CubeFaces; i++)
+      SAFE_DELETE(pBitmaps[i]);
 
    //cleaup
    GFX->popActiveRenderTarget();

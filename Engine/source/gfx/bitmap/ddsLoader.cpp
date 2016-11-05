@@ -704,9 +704,17 @@ bool DDSFile::writeHeader( Stream &s )
       caps1 |= DDSCAPSComplex | DDSCAPSMipMap;
 
    tmp = 0;
+   U32 caps2 = 0;
+
+   //cubemap
+   if (mFlags.test(CubeMapFlag))
+   {
+      caps2 = DDSCAPS2Cubemap | DDSCAPS2Cubemap_POSITIVEX | DDSCAPS2Cubemap_NEGATIVEX | DDSCAPS2Cubemap_POSITIVEY,
+         DDSCAPS2Cubemap_NEGATIVEY | DDSCAPS2Cubemap_POSITIVEZ | DDSCAPS2Cubemap_NEGATIVEZ;
+   }
 
    s.write( caps1 );
-   s.write( tmp );
+   s.write( caps2 );
    s.write( tmp );
    s.write( tmp );// More icky reserved space.
 
@@ -731,6 +739,14 @@ bool DDSFile::write( Stream &s )
    if(mFlags.test(CubeMapFlag))
    {
       // Do something with cubemaps.
+      for (U32 cubeFace = 0; cubeFace < Cubemap_Surface_Count; cubeFace++)
+      {
+         // write the mips
+         for (S32 i = 0; i < mMipMapCount; i++)
+         {
+            mSurfaces[cubeFace]->writeNextMip(this, s, mHeight, mWidth, i);
+         }
+      }
    }
    else if (mFlags.test(VolumeFlag))
    {
@@ -912,6 +928,60 @@ DDSFile *DDSFile::createDDSFileFromGBitmap( const GBitmap *gbmp )
       // Uncomment to debug-dump each mip level
       //ret->mSurfaces.last()->dumpImage( ret, i, avar( "%d_Gbmp_xmip%d", ret, i ) );
    }
+
+   return ret;
+}
+
+DDSFile *DDSFile::createDDSCubemapFileFromGBitmaps(GBitmap **gbmps)
+{
+   if (gbmps == NULL)
+      return NULL;
+
+   AssertFatal(gbmps[0], "createDDSCubemapFileFromGBitmaps bitmap 0 is null");
+   AssertFatal(gbmps[1], "createDDSCubemapFileFromGBitmaps bitmap 1 is null");
+   AssertFatal(gbmps[2], "createDDSCubemapFileFromGBitmaps bitmap 2 is null");
+   AssertFatal(gbmps[3], "createDDSCubemapFileFromGBitmaps bitmap 3 is null");
+   AssertFatal(gbmps[4], "createDDSCubemapFileFromGBitmaps bitmap 4 is null");
+   AssertFatal(gbmps[5], "createDDSCubemapFileFromGBitmaps bitmap 5 is null");
+
+   DDSFile *ret = new DDSFile;
+   //all cubemaps have the same dimensions and formats
+   GBitmap *pBitmap = gbmps[0];
+
+   if (pBitmap->getFormat() != GFXFormatR8G8B8A8)
+   {
+      Con::errorf("createDDSCubemapFileFromGBitmaps: Only GFXFormatR8G8B8A8 supported for now");
+      return NULL;
+   }
+
+   // Set up the DDSFile properties that matter. Since this is a GBitmap, there
+   // are assumptions that can be made
+   ret->mHeight = pBitmap->getHeight();
+   ret->mWidth = pBitmap->getWidth();
+   ret->mDepth = 0;
+   ret->mFormat = pBitmap->getFormat();
+   ret->mFlags.set(RGBData | CubeMapFlag | CubeMap_PosX_Flag | CubeMap_NegX_Flag | CubeMap_PosY_Flag,
+      CubeMap_NegY_Flag | CubeMap_PosZ_Flag | CubeMap_NegZ_Flag);
+   ret->mBytesPerPixel = pBitmap->getBytesPerPixel();
+   //todo implement mip mapping
+   ret->mMipMapCount = pBitmap->getNumMipLevels();
+   ret->mHasTransparency = pBitmap->getHasTransparency();
+
+   for (U32 cubeFace = 0; cubeFace < Cubemap_Surface_Count; cubeFace++)
+   {
+      ret->mSurfaces.push_back(new SurfaceData());
+      // Load the mips
+      for (S32 i = 0; i < ret->mMipMapCount; i++)
+      {
+         const U32 mipSz = ret->getSurfaceSize(i);
+         ret->mSurfaces.last()->mMips.push_back(new U8[mipSz]);
+
+         U8 *mipMem = ret->mSurfaces.last()->mMips.last();
+         //straight copy
+         dMemcpy(mipMem, gbmps[cubeFace]->getBits(i), mipSz);
+      }
+   }
+
 
    return ret;
 }
