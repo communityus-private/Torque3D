@@ -143,8 +143,8 @@ singleton ShaderData( CubemapSaveShader )
    DXVertexShaderFile = "shaders/common/cubemapSaveV.hlsl";
    DXPixelShaderFile = "shaders/common/cubemapSaveP.hlsl";
 	
-   OGLVertexShaderFile  = "shaders/common/gl/cubemapSaveV.hlsl";
-   OGLPixelShaderFile   = "shaders/common/gl/cubemapSaveV.hlsl";
+   OGLVertexShaderFile  = "shaders/common/gl/cubemapSaveV.glsl";
+   OGLPixelShaderFile   = "shaders/common/gl/cubemapSaveP.glsl";
    
    samplerNames[0] = "$cubemapTex";
 	

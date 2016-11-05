@@ -80,12 +80,12 @@ bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXF
 
    GFXShaderConstHandle *matHandles[CubeFaces];
 
-   matHandles[0] = shader->getShaderConstHandle("$mat0");
-   matHandles[1] = shader->getShaderConstHandle("$mat1");
-   matHandles[2] = shader->getShaderConstHandle("$mat2");
-   matHandles[3] = shader->getShaderConstHandle("$mat3");
-   matHandles[4] = shader->getShaderConstHandle("$mat4");
-   matHandles[5] = shader->getShaderConstHandle("$mat5");
+   matHandles[0] = shader->getShaderConstHandle("$matrix0");
+   matHandles[1] = shader->getShaderConstHandle("$matrix1");
+   matHandles[2] = shader->getShaderConstHandle("$matrix2");
+   matHandles[3] = shader->getShaderConstHandle("$matrix3");
+   matHandles[4] = shader->getShaderConstHandle("$matrix4");
+   matHandles[5] = shader->getShaderConstHandle("$matrix5");
    
    GFXShaderConstBufferRef cbuffer = shader->allocConstBuffer();
 
