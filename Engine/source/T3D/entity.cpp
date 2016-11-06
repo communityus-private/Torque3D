@@ -215,7 +215,7 @@ bool Entity::onAdd()
    if (!Parent::onAdd())
       return false;
 
-   mObjBox = Box3F(Point3F(-1, -1, -1), Point3F(1, 1, 1));
+   mObjBox = Box3F(Point3F(-0.5, -0.5, -0.5), Point3F(0.5, 0.5, 0.5));
 
    resetWorldBox();
    setObjectBox(mObjBox);
@@ -928,63 +928,6 @@ void Entity::getRenderMountTransform(F32 delta, S32 index, const MatrixF &xfm, M
    Parent::getMountTransform(index, xfm, outMat);
 }
 
-void Entity::setForwardVector(VectorF newForward, VectorF upVector)
-{
-   MatrixF mat = getTransform();
-
-   VectorF up(0.0f, 0.0f, 1.0f);
-   VectorF axisX;
-   VectorF axisY = newForward;
-   VectorF axisZ;
-
-   if (upVector != VectorF::Zero)
-      up = upVector;
-
-   // Validate and normalize input:  
-   F32 lenSq;
-   lenSq = axisY.lenSquared();
-   if (lenSq < 0.000001f)
-   {
-      axisY.set(0.0f, 1.0f, 0.0f);
-      Con::errorf("Entity::setForwardVector() - degenerate forward vector");
-   }
-   else
-   {
-      axisY /= mSqrt(lenSq);
-   }
-
-
-   lenSq = up.lenSquared();
-   if (lenSq < 0.000001f)
-   {
-      up.set(0.0f, 0.0f, 1.0f);
-      Con::errorf("SceneObject::setForwardVector() - degenerate up vector - too small");
-   }
-   else
-   {
-      up /= mSqrt(lenSq);
-   }
-
-   if (fabsf(mDot(up, axisY)) > 0.9999f)
-   {
-      Con::errorf("SceneObject::setForwardVector() - degenerate up vector - same as forward");
-      // i haven't really tested this, but i think it generates something which should be not parallel to the previous vector:  
-      F32 tmp = up.x;
-      up.x = -up.y;
-      up.y = up.z;
-      up.z = tmp;
-   }
-
-   // construct the remaining axes:  
-   mCross(axisY, up, &axisX);
-   mCross(axisX, axisY, &axisZ);
-
-   mat.setColumn(0, axisX);
-   mat.setColumn(1, axisY);
-   mat.setColumn(2, axisZ);
-
-   setTransform(mat);
-}
 //
 //These basically just redirect to any collision behaviors we have
 bool Entity::castRay(const Point3F &start, const Point3F &end, RayInfo* info)

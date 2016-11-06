@@ -177,6 +177,11 @@ PlatformWindow *PlatformWindowManagerSDL::createWindow(GFXDevice *device, const 
       Con::warnf("PlatformWindowManagerSDL::createWindow - created a window with no device!");
    }
 
+   //Set it up for drag-n-drop events 
+#ifdef TORQUE_TOOLS
+   SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+#endif
+
    linkWindow(window);
 
    return window;
@@ -259,6 +264,38 @@ void PlatformWindowManagerSDL::_process()
                window->_processSDLEvent(evt);
             break;
          }
+
+         /*case(SDL_DROPBEGIN):
+         {
+
+         }*/
+
+         case (SDL_DROPFILE): 
+         {      
+            // In case if dropped file
+            if (!Con::isFunction("onDropBegin") || !Con::isFunction("onDropFile") || !Con::isFunction("onDropEnd"))
+               break;
+
+            char* fileName = evt.drop.file;
+
+            if (!Platform::isFile(fileName))
+               break;
+
+            int fileCount = 1;
+            Con::executef("onDropBegin", Con::getIntArg(fileCount));
+
+            Con::executef("onDropFile", StringTable->insert(fileName));
+
+            Con::executef("onDropEnd", Con::getIntArg(fileCount));
+            
+            SDL_free(fileName);    // Free dropped_filedir memory
+            break;
+         }
+
+         /*case(SDL_DROPCOMPLETE):
+         {
+
+         }*/
 
          default:
          {

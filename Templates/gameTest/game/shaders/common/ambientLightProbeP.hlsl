@@ -8,7 +8,7 @@ struct Conn
    float3 wsEyeRay : TEXCOORD1;
 };
 
-TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
+uniform sampler2D prePassBuffer : register(S0);
 
 uniform float3 eyePosWorld;
 uniform float3 volumeStart;
@@ -19,11 +19,11 @@ uniform float4 GroundColor;
 uniform float Intensity;
 
 uniform float useCubemap;
-TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 1);
+uniform samplerCUBE  cubeMap : register(S1);
 
-float4 main( Conn IN ) : TORQUE_TARGET0
+float4 main( Conn IN ) : COLOR0
 { 
-   /*float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
+   float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
    float depth = prepassSample.a;
 
@@ -71,6 +71,5 @@ float4 main( Conn IN ) : TORQUE_TARGET0
    }
 
    //return color;
-   return hdrEncode(float4(color.rgb, 0.0));*/
-   return float4(1,1,1,1);
+   return hdrEncode(float4(color.rgb, 0.0));
 }

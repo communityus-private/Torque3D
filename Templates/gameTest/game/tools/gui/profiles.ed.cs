@@ -38,26 +38,26 @@ new GuiControlProfile (ToolsGuiDefaultProfile)
 
    // fill color
    opaque = false;
-   fillColor = "242 241 240";
-   fillColorHL ="228 228 235";
-   fillColorSEL = "98 100 137";
-   fillColorNA = "255 255 255 ";
+   fillColor = "32 32 32 255";
+   fillColorHL ="72 72 72 255";
+   fillColorSEL = "18 18 18 255";
+   fillColorNA = "72 12 0  255";
 
    // border color
    border = 0;
-   borderColor   = "100 100 100"; 
-   borderColorHL = "50 50 50 50";
-   borderColorNA = "75 75 75"; 
+   borderColor   = "21 21 21 255"; 
+   borderColorHL = "72 72 72 255";
+   borderColorNA = "72 72 72 255"; 
 
    // font
    fontType = "Arial";
    fontSize = 14;
    fontCharset = ANSI;
 
-   fontColor = "0 0 0";
-   fontColorHL = "0 0 0";
-   fontColorNA = "0 0 0";
-   fontColorSEL= "255 255 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorSEL= "196 116 108 255";
 
    // bitmap information
    bitmap = "";
@@ -76,6 +76,43 @@ new GuiControlProfile (ToolsGuiDefaultProfile)
    // sounds
    //soundButtonDown = "";
    //soundButtonOver = "";
+};
+
+if( !isObject( ToolsGuiEditorProfile ) )
+new GuiControlProfile (ToolsGuiEditorProfile)
+{
+   tab = true;
+   canKeyFocus = false;
+   hasBitmapArray = false;
+   mouseOverSelected = false;
+   
+   // don't go transparent when it's a background
+   opaque = true;
+   fillColor = "32 32 32 255";
+   fillColorHL ="72 72 72 255";
+   fillColorSEL = "18 18 18 255";
+   fillColorNA = "72 12 0  255";
+   border = 0;
+   borderColor   = "21 21 21 255"; 
+   borderColorHL = "72 72 72 255";
+   borderColorNA = "72 72 72 255"; 
+   fontType = "Arial";
+   fontSize = 14;
+   fontCharset = ANSI;
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorSEL= "196 116 108 255";
+   bitmap = "";
+   bitmapBase = "";
+   textOffset = "0 0";
+   modal = true;
+   justify = "left";
+   autoSizeWidth = false;
+   autoSizeHeight = false;
+   returnTab = false;
+   numbersOnly = false;
+   cursorColor = "0 0 0 255";
 };
 
 if( !isObject( ToolsGuiSolidDefaultProfile ) )
@@ -118,15 +155,15 @@ if( !isObject( ToolsGuiToolTipProfile ) )
 new GuiControlProfile (ToolsGuiToolTipProfile)
 {
    // fill color
-   fillColor = "239 237 222";
+   fillColor = "72 72 72";
 
    // border color
-   borderColor   = "138 134 122";
+   borderColor   = "196 196 196 255";
 
    // font
    fontType = "Arial";
    fontSize = 14;
-   fontColor = "0 0 0";
+   fontColor = "255 255 255 255";
 
    category = "Tools";
 };
@@ -141,11 +178,10 @@ new GuiControlProfile( ToolsGuiModelessDialogProfile )
 if( !isObject( ToolsGuiFrameSetProfile ) )
 new GuiControlProfile (ToolsGuiFrameSetProfile)
 {
-   fillcolor = "255 255 255";
-   borderColor = "246 245 244";
-   border = 1;
+   fillcolor = "32 32 32 255";
+   borderColor = "72 72 72";
    opaque = true;
-   border = true;
+   border = false;
    category = "Tools";
 };
 
@@ -154,11 +190,11 @@ new GuiControlProfile (ToolsGuiWindowProfile)
 {
    opaque = false;
    border = 2;
-   fillColor = "242 241 240";
-   fillColorHL = "221 221 221";
-   fillColorNA = "200 200 200";
-   fontColor = "50 50 50";
-   fontColorHL = "0 0 0";
+   fillColor = "32 32 32 255";
+   fillColorHL = "72 72 72 255";
+   fillColorNA = "18 18 18 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
    bevelColorHL = "255 255 255";
    bevelColorLL = "0 0 0";
    text = "untitled";
@@ -167,6 +203,17 @@ new GuiControlProfile (ToolsGuiWindowProfile)
    hasBitmapArray = true;
    justify = "left";
    category = "Tools";
+   fontColors[0] = "196 196 196 255";
+   fillColorSEL = "72 12 0 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "18 18 18 255";
+   fontColors[3] = "196 116 108 255";
+   fontColors[4] = "160 72 64 255";
+   fontColors[5] = "196 116 108 255";
+   fontColorNA = "18 18 18 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
 };
 
 if( !isObject( ToolsGuiToolbarWindowProfile ) )
@@ -187,14 +234,29 @@ if( !isObject( ToolsGuiTextProfile ) )
 new GuiControlProfile (ToolsGuiTextProfile)
 {
    justify = "left";
-   fontColor = "20 20 20";
+   fontColor = "196 196 196 255";
    category = "Tools";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "128 128 128 255";
+   fontColors[3] = "196 116 108 255";
+   fontColors[4] = "160 72 64 255";
+   fontColors[5] = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
+   fillColor = "32 32 32 255";
+   fillColorHL = "72 72 72 255";
+   fillColorNA = "18 18 18 255";
+   fillColorSEL = "72 12 0 255";
 };
 
 if( !isObject( ToolsGuiTextBoldCenterProfile ) )
 new GuiControlProfile (ToolsGuiTextBoldCenterProfile : ToolsGuiTextProfile)
 {
-   fontColor = "50 50 50";
+   // fontColor = "50 50 50"; // +++ already defined in ToolsGuiTextProfile
    fontType = "Arial Bold";
    fontSize = 16;
    justify = "center";
@@ -229,17 +291,32 @@ new GuiControlProfile (ToolsGuiAutoSizeTextProfile)
    autoSizeWidth = true;
    autoSizeHeight = true;   
    category = "Tools";
+   fontColors[0] = "0 0 0 255";
 };
 
 if( !isObject( ToolsGuiMLTextProfile ) )
 new GuiControlProfile( ToolsGuiMLTextProfile )
 {
-   fontColorLink = "100 100 100";
-   fontColorLinkHL = "255 255 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
    autoSizeWidth = true;
    autoSizeHeight = true;  
    border = false;
    category = "Tools";
+   fillColor = "32 32 32 255";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "128 128 128 255";
+   fontColors[3] = "196 116 108 255";
+   fontColors[4] = "160 72 64 255";
+   fontColors[5] = "196 116 108 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorSEL = "196 116 108 255";
+   fillColorHL = "72 72 72 255";
+   fillColorNA = "18 18 18 255";
+   fillColorSEL = "72 12 0 255";
 };
 
 if( !isObject( ToolsGuiTextArrayProfile ) )
@@ -272,12 +349,12 @@ new GuiControlProfile( ToolsGuiTextEditProfile )
    border = -2; // fix to display textEdit img
    //borderWidth = "1";  // fix to display textEdit img
    //borderColor = "100 100 100";
-   fillColor = "242 241 240 0";
-   fillColorHL = "255 255 255";
-   fontColor = "0 0 0";
+   fillColor = "21 21 21 255";
+   fillColorHL = "72 72 72 255";
+   fontColor = "196 196 196 255";
    fontColorHL = "255 255 255";
-   fontColorSEL = "98 100 137";
-   fontColorNA = "200 200 200";
+   fontColorSEL = "72 12 0 255";
+   fontColorNA = "128 128 128 255";
    textOffset = "4 2";
    autoSizeWidth = false;
    autoSizeHeight = true;
@@ -285,6 +362,12 @@ new GuiControlProfile( ToolsGuiTextEditProfile )
    tab = true;
    canKeyFocus = true;   
    category = "Tools";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "128 128 128 255";
+   fontColors[3] = "72 12 0 255";
+   fillColorNA = "18 18 18 0";
+   fillColorSEL = "72 72 72 255";
+   fontColors[0] = "196 196 196 255";
 };
 
 if( !isObject( ToolsGuiTextEditCenterProfile ) )
@@ -339,7 +422,7 @@ new GuiControlProfile( ToolsGuiProgressTextProfile )
 {
    fontSize = "14";
 	fontType = "Arial";
-   fontColor = "0 0 0";
+   fontColor = "196 196 196 255";
    justify = "center";
    category = "Tools";   
 };
@@ -347,10 +430,10 @@ new GuiControlProfile( ToolsGuiProgressTextProfile )
 if( !isObject( ToolsGuiButtonProfile ) )
 new GuiControlProfile( ToolsGuiButtonProfile )
 {
-   opaque = true;
-   border = true;
-   fontColor = "50 50 50";
-   fontColorHL = "0 0 0";
+   opaque = "0";
+   border = "1";
+   fontColor = "224 224 224 255";
+   fontColorHL = "255 255 255 255";
    fontColorNA = "200 200 200";
    fixedExtent = false;
    justify = "center";
@@ -358,6 +441,17 @@ new GuiControlProfile( ToolsGuiButtonProfile )
 	bitmap = "./images/button";
    hasBitmapArray = false;
    category = "Tools";
+   fillColor = "21 21 21 255";
+   fillColorHL = "128 128 128 255";
+   fillColorNA = "24 24 24 255";
+   fillColorSEL = "90 90 90 255";
+   fontColors[0] = "224 224 224 255";
+   fontColors[2] = "200 200 200 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[4] = "160 72 64 255";
+   fontColorLink = "160 72 64 255";
+   fontColors[5] = "196 116 108 255";
+   fontColorLinkHL = "196 116 108 255";
 };
 
 if( !isObject( ToolsGuiThumbHighlightButtonProfile ) )
@@ -372,9 +466,9 @@ new GuiControlProfile( ToolsGuiIconButtonProfile )
 {
    opaque = true;
    border = true;
-   fontColor = "50 50 50";
-   fontColorHL = "0 0 0";
-   fontColorNA = "200 200 200";
+   fontColor = "196 196 196";
+   fontColorHL = "255 255 255";
+   fontColorNA = "128 128 128";
    fixedExtent = false;
    justify = "center";
    canKeyFocus = false;
@@ -395,32 +489,36 @@ new GuiControlProfile(ToolsGuiEditorTabPage)
 {
    opaque = true;
    border = false;
-   fontColor = "0 0 0";
-   fontColorHL = "0 0 0";
-   fixedExtent = false;
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fixedExtent = 0;
    justify = "center";
    canKeyFocus = false;
    bitmap = "./images/tab";
    hasBitmapArray = true;
    category = "Tools";
+   fontColors[1] = "255 255 255 255";
 };
 
 if( !isObject( ToolsGuiCheckBoxProfile ) )
 new GuiControlProfile( ToolsGuiCheckBoxProfile )
 {
    opaque = false;
-   fillColor = "232 232 232";
+   fillColor = "21 21 21 255";
    border = false;
    borderColor = "100 100 100";
    fontSize = 14;
-   fontColor = "20 20 20";
-   fontColorHL = "80 80 80";
-	fontColorNA = "200 200 200";
-   fixedExtent = true;
+   fontColor = "196 196 196 255";
+   fontColorHL = "196 196 196 255";
+	fontColorNA = "128 128 128 255";
+   fixedExtent = 1;
    justify = "left";
    bitmap = "./images/checkbox";
    hasBitmapArray = true;
    category = "Tools";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "196 196 196 255";
+   fontColors[2] = "128 128 128 255";
 };
 
 if( !isObject( ToolsGuiCheckBoxListProfile ) )
@@ -428,6 +526,7 @@ new GuiControlProfile( ToolsGuiCheckBoxListProfile : ToolsGuiCheckBoxProfile)
 {
    bitmap = "./images/checkbox-list";
    category = "Tools";
+   fillColor = "21 21 21 255";
 };
 
 if( !isObject( ToolsGuiCheckBoxListFlipedProfile ) )
@@ -435,49 +534,71 @@ new GuiControlProfile( ToolsGuiCheckBoxListFlipedProfile : ToolsGuiCheckBoxProfi
 {
    bitmap = "./images/checkbox-list_fliped";
    category = "Tools";
+   fillColor = "21 21 21 255";
 };
 
 if( !isObject( ToolsGuiInspectorCheckBoxTitleProfile ) )
 new GuiControlProfile( ToolsGuiInspectorCheckBoxTitleProfile : ToolsGuiCheckBoxProfile ){
-   fontColor = "100 100 100";
+   fontColor = "196 196 196 255";
    category = "Tools";
+   fillColor = "32 32 32 255";
+   fontColors[0] = "196 196 196 255";
 };
 
 if( !isObject( ToolsGuiRadioProfile ) )
 new GuiControlProfile( ToolsGuiRadioProfile )
 {
    fontSize = 14;
-   fillColor = "232 232 232";
-   fontColor = "20 20 20";
-   fontColorHL = "80 80 80";
+   fillColor = "32 32 32 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
    fixedExtent = true;
    bitmap = "./images/radioButton";
    hasBitmapArray = true;
    category = "Tools";
+   modal = "1";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
 };
 
 if( !isObject( ToolsGuiScrollProfile ) )
 new GuiControlProfile( ToolsGuiScrollProfile )
 {
    opaque = true;
-   fillcolor = "255 255 255";
+   fillcolor = "21 21 21 255";
    fontColor = "0 0 0";
    fontColorHL = "150 150 150";
    border = true;
    bitmap = "./images/scrollBar";
    hasBitmapArray = true;
    category = "Tools";
+   fontColors[0] = "0 0 0 255";
+   fontColors[1] = "150 150 150 255";
 };
 
 if( !isObject( ToolsGuiOverlayProfile ) )
 new GuiControlProfile( ToolsGuiOverlayProfile )
 {
    opaque = true;
-   fillcolor = "255 255 255";
-   fontColor = "0 0 0";
-   fontColorHL = "255 255 255";
+   fillcolor = "21 21 21 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
 	fillColor = "0 0 0 100";
    category = "Tools";
+   canKeyFocus = "0";
+   fillColorHL = "72 72 72 255";
+   fillColorNA = "18 18 18 255";
+   fillColorSEL = "116 116 116 255";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "128 128 128 255";
+   fontColors[4] = "160 72 64 255";
+   fontColors[5] = "196 116 108 255";
+   fontColorNA = "128 128 128 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
+   fontColors[3] = "255 255 255 255";
+   fontColorSEL = "255 255 255 255";
 };
 
 if( !isObject( ToolsGuiSliderProfile ) )
@@ -485,6 +606,24 @@ new GuiControlProfile( ToolsGuiSliderProfile )
 {
    bitmap = "./images/slider";
    category = "Tools";
+   canKeyFocus = "1";
+   fillColor = "21 21 21 255";
+   fillColorHL = "72 72 72 255";
+   fillColorNA = "18 18 18 255";
+   fillColorSEL = "116 116 116 255";
+   border = "1";
+   textOffset = "6 4";
+   profileForChildren = "ToolsGuiSliderProfile";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "128 128 128 255";
+   fontColors[4] = "160 72 64 255";
+   fontColors[5] = "196 116 108 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
 };
 
 if( !isObject( ToolsGuiSliderBoxProfile ) )
@@ -499,9 +638,11 @@ new GuiControlProfile( ToolsGuiPopupMenuItemBorder : ToolsGuiButtonProfile )
 {
    opaque = true;
    border = true;
-   fontColor = "0 0 0";
-   fontColorHL = "0 0 0";
-   fontColorNA = "255 255 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
    fixedExtent = false;
    justify = "center";
    canKeyFocus = false;
@@ -529,6 +670,15 @@ new GuiControlProfile( ToolsGuiPopUpMenuDefault : ToolsGuiDefaultProfile )
    fontColorSEL = "255 255 255";//"0 0 0";
    borderColor = "100 100 100";
    category = "Tools";
+   canKeyFocus = "1";
+   fillColorNA = "18 18 18 255";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "255 255 255 255";
+   fontColor = "196 196 196 255";
+   fontColorNA = "255 255 255 255";
+   fontColorHL = "255 255 255 255";
+   fontColorSEL = "255 255 255";
 };
 
 if( !isObject( ToolsGuiPopUpMenuProfile ) )
@@ -540,6 +690,23 @@ new GuiControlProfile( ToolsGuiPopUpMenuProfile : ToolsGuiPopUpMenuDefault )
    border             = 1;
    profileForChildren = ToolsGuiPopUpMenuDefault;
    category = "Tools";
+   fillColor = "21 21 21 255";
+   fillColorHL = "72 72 72 255";
+   fillColorNA = "18 18 18 255";
+   fillColorSEL = "116 116 116 255";
+   borderColor = "128 128 128 255";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "128 128 128 255";
+   fontColors[3] = "255 255 255 255";
+   fontColors[4] = "160 72 64 255";
+   fontColors[5] = "196 116 108 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorSEL = "255 255 255 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
 };
 
 if( !isObject( ToolsGuiPopUpMenuTabProfile ) )
@@ -552,6 +719,11 @@ new GuiControlProfile( ToolsGuiPopUpMenuTabProfile : ToolsGuiPopUpMenuDefault )
    border             = 1;
    profileForChildren = ToolsGuiPopUpMenuDefault;
    category = "Tools";
+   
+   fontColor = "255 255 255 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "255 255 255 255";
+   fontColorSEL = "255 255 255 255";
 };
 
 if( !isObject( ToolsGuiPopUpMenuEditProfile ) )
@@ -579,9 +751,9 @@ new GuiControlProfile( ToolsGuiTabBookProfile )
 {
    fillColorHL = "100 100 100";
    fillColorNA = "150 150 150";
-   fontColor = "30 30 30";
-   fontColorHL = "0 0 0";
-   fontColorNA = "50 50 50";
+   fontColor = "224 224 224 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "64 64 64 255";
    fontType = "Arial";
    fontSize = 14;
    justify = "center";
@@ -594,6 +766,10 @@ new GuiControlProfile( ToolsGuiTabBookProfile )
    tab = true;
    cankeyfocus = true;
    category = "Tools";
+   fontColors[0] = "224 224 224 255";
+   fontColors[2] = "64 64 64 255";
+   fontColors[3] = "255 255 255 255";
+   fontColorSEL = "255 255 255 255";
 };
 
 if( !isObject( ToolsGuiTabBookNoBitmapProfile ) )
@@ -611,7 +787,7 @@ new GuiControlProfile( ToolsGuiTabPageProfile : ToolsGuiDefaultProfile )
    justify = "center";
    bitmap = "./images/tab";
    opaque = false;
-   fillColor = "240 239 238";
+   fillColor = "21 21 21 255";
    category = "Tools";
 };
 
@@ -621,20 +797,24 @@ new GuiControlProfile( ToolsGuiTreeViewProfile )
    bitmap = "./images/treeView";
    autoSizeHeight = true;
    canKeyFocus = true;
-   fillColor = "255 255 255"; 
-   fillColorHL = "228 228 235";
-   fillColorSEL = "98 100 137";
-   fillColorNA = "255 255 255";
-   fontColor = "0 0 0";
-   fontColorHL = "0 0 0";   
-   fontColorSEL= "255 255 255";
-   fontColorNA = "200 200 200";
+   fillColor = "21 21 21 255"; 
+   fillColorHL = "72 72 72 255";
+   fillColorSEL = "128 128 128 255";
+   fillColorNA = "21 21 21 255";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";   
+   fontColorSEL= "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    borderColor = "128 000 000";
    borderColorHL = "255 228 235";
    fontSize = 14;   
    opaque = false;
    border = false;
    category = "Tools";
+   fontColors[0] = "196 196 196 255";
+   fontColors[1] = "255 255 255 255";
+   fontColors[2] = "128 128 128 255";
+   fontColors[3] = "255 255 255 255";
 };
 
 if( !isObject( ToolsGuiTextPadProfile ) )
@@ -647,7 +827,7 @@ new GuiControlProfile( ToolsGuiTextPadProfile )
    
    // Deviate from the Default
    opaque=true;  
-   fillColor = "255 255 255";   
+   fillColor = "21 21 21 255";   
    border = 0;
    category = "Tools";
 };
@@ -670,12 +850,12 @@ new GuiControlProfile( ToolsGuiFormProfile : ToolsGuiTextProfile )
 singleton GuiControlProfile( GuiEditorClassProfile )
 {
    opaque = true;
-   fillColor = "232 232 232";
-   border = 1;
+   fillColor = "32 32 32 255";
+   border = 0;
    borderColor   = "40 40 40 140";
    borderColorHL = "127 127 127";
-   fontColor = "0 0 0";
-   fontColorHL = "50 50 50";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
    fixedExtent = true;
    justify = "center";
    bitmap = "tools/gui/images/scrollBar";
@@ -686,13 +866,13 @@ singleton GuiControlProfile( GuiEditorClassProfile )
 singleton GuiControlProfile( GuiBackFillProfile )
 {
    opaque = true;
-   fillColor = "0 94 94";
-   border = true;
+   fillColor = "36 36 36 255";
+   border = false;
    borderColor = "255 128 128";
    fontType = "Arial";
    fontSize = 12;
-   fontColor = "0 0 0";
-   fontColorHL = "50 50 50";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
    fixedExtent = true;
    justify = "center";
    category = "Editor";
@@ -701,13 +881,13 @@ singleton GuiControlProfile( GuiBackFillProfile )
 singleton GuiControlProfile( GuiControlListPopupProfile )
 {
    opaque = true;
-   fillColor = "255 255 255";
-   fillColorHL = "204 203 202";
+   fillColor = "32 32 32 255";
+   fillColorHL = "72 72 72 255";
    border = false;
    //borderColor = "0 0 0";
-   fontColor = "0 0 0";
-   fontColorHL = "0 0 0";
-   fontColorNA = "50 50 50";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    textOffset = "0 2";
    autoSizeWidth = false;
    autoSizeHeight = true;
@@ -722,6 +902,16 @@ singleton GuiControlProfile( GuiSceneGraphEditProfile )
 {
    canKeyFocus = true;
    tab = true;
+   category = "Editor";
+};
+
+singleton GuiControlProfile( GuiPreviewBackgroundProfile )
+{
+   borderColor = "21 21 21 255";
+   borderColorNA = "72 72 72 255";
+   fillColorNA = "36 36 36 0";
+   borderColorHL = "0 0 0 255";
+   bitmap = "tools/gui/images/preview_grid";
    category = "Editor";
 };
 
@@ -745,8 +935,8 @@ singleton GuiControlProfile( GuiInspectorTextEditProfile )
 {
    // Transparent Background
    opaque = true;
-   fillColor = "0 0 0 0";
-   fillColorHL = "255 255 255";
+   fillColor = "21 21 21 0";
+   fillColorHL = "72 72 72 255";
 
    // No Border (Rendered by field control)
    border = false;
@@ -758,10 +948,10 @@ singleton GuiControlProfile( GuiInspectorTextEditProfile )
    fontType = "Arial";
    fontSize = 14;
 
-   fontColor = "0 0 0";
-   fontColorSEL = "43 107 206";
-   fontColorHL = "244 244 244";
-   fontColorNA = "100 100 100";
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    category = "Editor";
 };
 singleton GuiControlProfile( GuiDropdownTextEditProfile :  ToolsGuiTextEditProfile )
@@ -780,9 +970,13 @@ singleton GuiControlProfile( GuiInspectorGroupProfile )
    fontType    = "Arial";
    fontSize    = "14";
    
-   fontColor = "0 0 0 150";
-   fontColorHL = "25 25 25 220";
-   fontColorNA = "128 128 128";
+   fillColor = "32 32 32 255";
+   fillColorHL = "72 72 72 255";
+   
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    
    justify = "left";
    opaque = false;
@@ -799,9 +993,9 @@ singleton GuiControlProfile( GuiInspectorFieldProfile)
 {
    // fill color
    opaque = false;
-   fillColor = "255 255 255";
-   fillColorHL = "204 203 202";
-   fillColorNA = "244 244 244";
+   fillColor = "21 21 21 255";
+   fillColorHL = "64 64 64 255";
+   fillColorNA = "128 128 128 255";
 
    // border color
    border = false;
@@ -816,9 +1010,10 @@ singleton GuiControlProfile( GuiInspectorFieldProfile)
    fontType = "Arial";
    fontSize = 14;
 
-   fontColor = "32 32 32";
-   fontColorHL = "50 50 50";
-   fontColorNA = "190 190 190";
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    textOffset = "10 0";
 
    tab = true;
@@ -836,16 +1031,16 @@ singleton GuiControlProfile( GuiInspectorMultiFieldProfile : GuiInspectorFieldPr
 
 singleton GuiControlProfile( GuiInspectorMultiFieldDifferentProfile : GuiInspectorFieldProfile )
 {
-   border = true;
-   borderColor = "190 100 100";
+   border = false;
+   borderColor = "21 21 21 255";
 };
 
 singleton GuiControlProfile( GuiInspectorDynamicFieldProfile : GuiInspectorFieldProfile )
 {
    // Transparent Background
    opaque = true;
-   fillColor = "0 0 0 0";
-   fillColorHL = "255 255 255";
+   fillColor = "21 21 21 0";
+   fillColorHL = "72 72 72 255";
 
    // No Border (Rendered by field control)
    border = false;
@@ -857,10 +1052,10 @@ singleton GuiControlProfile( GuiInspectorDynamicFieldProfile : GuiInspectorField
    fontType = "Arial";
    fontSize = 14;
 
-   fontColor = "0 0 0";
-   fontColorSEL = "43 107 206";
-   fontColorHL = "244 244 244";
-   fontColorNA = "100 100 100";
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    category = "Editor";
 };
 
@@ -881,18 +1076,22 @@ singleton GuiControlProfile( GuiInspectorRolloutProfile0 )
    // font
    fontType = "Arial";
    fontSize = 14;
+   
+   fillColor = "21 21 21 255";
+   fillColorHL = "72 72 72 255";
 
-   fontColor = "32 32 32";
-   fontColorHL = "32 100 100";
-   fontColorNA = "0 0 0";
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    
    justify = "left";
    opaque = false;
    
    border = 0;
-   borderColor   = "190 190 190";
-   borderColorHL = "156 156 156";
-   borderColorNA = "64 64 64";
+   borderColor   = "72 72 72";
+   borderColorHL = "72 72 72";
+   borderColorNA = "72 72 72";
   
    bitmap = "tools/editorclasses/gui/images/rollout_plusminus_header";
    
@@ -910,7 +1109,7 @@ singleton GuiControlProfile( GuiInspectorStackProfile )
 singleton GuiControlProfile( GuiInspectorProfile  : GuiInspectorFieldProfile )
 {
    opaque = true;
-   fillColor = "255 255 255 255";
+   fillColor = "21 21 21 255";
    border = 0;
    cankeyfocus = true;
    tab = true;
@@ -919,7 +1118,7 @@ singleton GuiControlProfile( GuiInspectorProfile  : GuiInspectorFieldProfile )
 singleton GuiControlProfile( GuiInspectorInfoProfile  : GuiInspectorFieldProfile )
 {
    opaque = true;
-   fillColor = "242 241 240";
+   fillColor = "21 21 21 255";
    border = 0;
    cankeyfocus = true;
    tab = true;
@@ -952,24 +1151,24 @@ singleton GuiControlProfile( GuiInspectorTypeFileNameProfile )
    // Center text
    justify = "center";
 
-   fontColor = "32 32 32";
-   fontColorHL = "50 50 50";
-   fontColorNA = "0 0 0";
+   fillColor = "21 21 21 255";
+   fillColorHL = "72 72 72 255";
 
-   fillColor = "255 255 255";
-   fillColorHL = "204 203 202";
-   fillColorNA = "244 244 244";
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
 
-   borderColor   = "190 190 190";
-   borderColorHL = "156 156 156";
-   borderColorNA = "64 64 64";
+   borderColor   = "72 72 72";
+   borderColorHL = "72 72 72";
+   borderColorNA = "72 72 72";
    category = "Editor";
 };
 
 singleton GuiControlProfile( GuiInspectorColumnCtrlProfile : GuiInspectorFieldProfile )
 {
    opaque = true;
-   fillColor = "210 210 210"; 
+   fillColor = "210 210 210 255"; 
    border = 0;
    category = "Editor";
 };
@@ -998,7 +1197,11 @@ singleton GuiControlProfile( InspectorTypeCheckboxProfile : GuiInspectorFieldPro
 singleton GuiControlProfile( GuiToolboxButtonProfile : ToolsGuiButtonProfile )
 {
    justify = "center";
-   fontColor = "0 0 0";
+   fontColor = "196 196 196 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   fontColorLink = "160 72 64 255";
+   fontColorLinkHL = "196 116 108 255";
    border = 0;
    textOffset = "0 0";   
    category = "Editor";
@@ -1006,10 +1209,14 @@ singleton GuiControlProfile( GuiToolboxButtonProfile : ToolsGuiButtonProfile )
 
 singleton GuiControlProfile( GuiDirectoryTreeProfile : ToolsGuiTreeViewProfile )
 {
-   fontColor = "40 40 40";
-   fontColorSEL= "250 250 250 175"; 
-   fillColorHL = "0 60 150";
-   fontColorNA = "240 240 240";
+   fillColor = "21 21 21 255";
+   fillColorHL = "72 72 72 255";
+
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   
    fontType = "Arial";
    fontSize = 14;
    category = "Editor";
@@ -1017,10 +1224,14 @@ singleton GuiControlProfile( GuiDirectoryTreeProfile : ToolsGuiTreeViewProfile )
 
 singleton GuiControlProfile( GuiDirectoryFileListProfile )
 {
-   fontColor = "40 40 40";
-   fontColorSEL= "250 250 250 175"; 
-   fillColorHL = "0 60 150";
-   fontColorNA = "240 240 240";
+   fillColor = "21 21 21 255";
+   fillColorHL = "72 72 72 255";
+
+   fontColor = "196 196 196 255";
+   fontColorSEL = "196 116 108 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
+   
    fontType = "Arial";
    fontSize = 14;
    category = "Editor";
@@ -1062,10 +1273,10 @@ singleton GuiControlProfile( GuiEditorScrollProfile )
 singleton GuiControlProfile( GuiCreatorIconButtonProfile )
 {
    opaque = true;       
-   fillColor = "225 243 252 255";
-   fillColorHL = "225 243 252 0";
-   fillColorNA = "225 243 252 0";
-   fillColorSEL = "225 243 252 0";
+   fillColor = "64 64 64 255";
+   fillColorHL = "128 128 128 255";
+   fillColorNA = "21 21 21 255";
+   fillColorSEL = "72 72 72 255";
       
    //tab = true;
    //canKeyFocus = true;
@@ -1073,15 +1284,15 @@ singleton GuiControlProfile( GuiCreatorIconButtonProfile )
    fontType = "Arial";
    fontSize = 14;
 
-   fontColor = "0 0 0";
-   fontColorSEL = "43 107 206";
-   fontColorHL = "244 244 244";
-   fontColorNA = "100 100 100";
+   fontColor = "196 196 196 255";
+   fontColorSEL = "212 212 212 255";
+   fontColorHL = "255 255 255 255";
+   fontColorNA = "128 128 128 255";
    
-   border = 1;
-   borderColor   = "153 222 253 255";
-   borderColorHL = "156 156 156";
-   borderColorNA = "153 222 253 0";
+   border = false;
+   borderColor   = "72 72 72 0";
+   borderColorHL = "72 72 72 0";
+   borderColorNA = "72 72 72 0";
    
    //bevelColorHL = "255 255 255";
    //bevelColorLL = "0 0 0";
@@ -1090,10 +1301,13 @@ singleton GuiControlProfile( GuiCreatorIconButtonProfile )
 
 singleton GuiControlProfile( GuiMenuBarProfile )
 {
-   fillcolor = "255 255 255";
-   fillcolorHL = "213 231 248";
-   borderColor = "98 163 229";
-   borderColorHL = "122 177 232";
+   fillColor = "64 64 64 255";
+   fillColorHL = "128 128 128 255";
+   fillColorNA = "21 21 21 255";
+   fillColorSEL = "72 72 72 255";
+   borderColor   = "72 72 72 0";
+   borderColorHL = "72 72 72 0";
+   borderColorNA = "72 72 72 0";
    border = 0;
    borderThickness = 1;
    opaque = true;

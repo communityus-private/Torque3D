@@ -113,12 +113,14 @@ function CreateNewAsset()
 	AssetBrowser.loadFilters();
 }
 
-function createNewComponentAsset(%assetName, %modulePath)
+function createNewComponentAsset()
 {
+   %modulePath = "modules/" @ AssetBrowser_newComponentAssetWindow-->NewComponentPackageList.getText();
+   
    if(%modulePath $= "")
       %modulePath = "modules/" @ AssetBrowser.selectedModule;
       
-   %assetName = NewAssetName.getText();
+   %assetName = NewComponentName.getText();
    
    %tamlpath = %modulePath @ "/components/" @ %assetName @ ".asset.taml";
    %scriptPath = %modulePath @ "/components/" @ %assetName @ ".cs";
@@ -127,10 +129,10 @@ function createNewComponentAsset(%assetName, %modulePath)
    {
       AssetName = %assetName;
       versionId = 1;
-      componentName = %assetName;
-      componentClass = NewComponentParentClass.getText();
-      friendlyName = NewComponentFriendName.getText();
-      componentType = NewComponentGroupName.getText();
+      componentName = NewComponentName.getText();
+      componentClass = ParentComponentList.getText();
+      friendlyName = NewComponentFriendlyName.getText();
+      componentType = NewComponentGroup.getText();
       description = NewComponentDescription.getText();
       scriptFile = %scriptPath;
    };

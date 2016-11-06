@@ -512,6 +512,9 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       /// Returns the render world box
       const Box3F& getRenderWorldBox()  const { return mRenderWorldBox; }
 
+      /// Sets the forward vector of the object
+      void setForwardVector(VectorF newForward, VectorF upVector = VectorF(0, 0, 1));
+
       /// Sets the state of this object as hidden or not. If an object is hidden
       /// it is removed entirely from collisions, it is not ghosted and is
       /// essentially "non existant" as far as simulation is concerned.

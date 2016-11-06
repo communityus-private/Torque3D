@@ -1478,7 +1478,7 @@ void ConvexShape::_updateCollision()
 {
    SAFE_DELETE( mPhysicsRep );
 
-   //if ( !PHYSICSMGR )
+   if ( !PHYSICSMGR )
       return;
 
    PhysicsCollision *colShape = PHYSICSMGR->createCollision();

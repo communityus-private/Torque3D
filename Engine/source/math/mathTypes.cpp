@@ -1032,6 +1032,36 @@ DefineConsoleFunction( VectorLerp, VectorF, ( VectorF a, VectorF b, F32 t ),,
    return c;
 }
 
+DefineConsoleFunction(VectorReflect, VectorF, (VectorF vec, VectorF normal), ,
+   "Compute the dot product of two vectors.\n"
+   "@param a The first vector.\n"
+   "@param b The second vector.\n"
+   "@return The dot product @a a * @a b.\n\n"
+   "@tsexample\n"
+   "//-----------------------------------------------------------------------------\n"
+   "//\n"
+   "// VectorDot( %a, %b );\n"
+   "//\n"
+   "// The dot product between vector a, (ax, ay, az), and vector b, (bx, by, bz), is:\n"
+   "//\n"
+   "//     a . b = ( ax * bx + ay * by + az * bz )\n"
+   "//\n"
+   "//-----------------------------------------------------------------------------\n\n"
+
+   "%a = \"1 1 0\";\n"
+   "%b = \"2 0 1\";\n\n"
+
+   "// %r = \"( 1 * 2 + 1 * 0 + 0 * 1 )\";\n"
+   "// %r = 2;\n"
+   "%r = VectorDot( %a, %b );\n"
+   "@endtsexample\n\n"
+   "@ingroup Vectors")
+{
+   normal.normalize();
+
+   return MathUtils::reflect(vec, normal);
+}
+
 //-----------------------------------------------------------------------------
 
 DefineConsoleFunction( MatrixCreate, TransformF, ( VectorF position, AngAxisF orientation ),,

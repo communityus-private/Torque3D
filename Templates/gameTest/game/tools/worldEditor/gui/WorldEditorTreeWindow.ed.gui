@@ -176,6 +176,113 @@
                };
             };
          };
+         new GuiTabPageCtrl() {
+            canSaveDynamicFields = "0";
+            Enabled = "1";
+            isContainer = "1";
+            Profile = "ToolsGuiEditorTabPage";
+            HorizSizing = "width";
+            VertSizing = "height";
+            position = "0 19";
+            Extent = "197 271";
+            MinExtent = "8 2";
+            canSave = "1";
+            Visible = "1";
+            hovertime = "1000";
+            Margin = "0 0 0 0";
+            Padding = "0 0 0 0";
+            AnchorTop = "1";
+            AnchorBottom = "0";
+            AnchorLeft = "1";
+            AnchorRight = "0";
+            text = "TempObjects";
+            maxLength = "1024";
+
+            new GuiTextEditCtrl( DynSceneEditorTreeFilter ) {
+               position = "2 4";
+               extent = "175 18";
+               profile = "ToolsGuiTextEditProfile";
+               horizSizing = "width";
+               vertSizing = "bottom";
+               class = "GuiTreeViewFilterText";
+               treeView = EditorTree;
+            };
+            
+            new GuiBitmapButtonCtrl() {
+               bitmap = "tools/gui/images/clear-icon";
+               groupNum = "-1";
+               buttonType = "PushButton";
+               useMouseEvents = "0";
+               isContainer = "0";
+               Profile = "ToolsGuiDefaultProfile";
+               HorizSizing = "left";
+               VertSizing = "bottom";
+               position = "180 5";
+               Extent = "17 17";
+               MinExtent = "8 2";
+               canSave = "1";
+               Visible = "1";
+               tooltipprofile = "ToolsGuiToolTipProfile";
+               hovertime = "1000";
+               canSaveDynamicFields = "0";
+               class = "GuiTreeViewFilterClearButton";
+               textCtrl = EditorTreeFilter;
+            };
+                              
+            new GuiScrollCtrl() {
+               canSaveDynamicFields = "0";
+               Enabled = "1";
+               isContainer = "1";
+               Profile = "ToolsGuiScrollProfile";
+               HorizSizing = "width";
+               VertSizing = "height";
+               Position = "0 25";
+               Extent = "197 246";
+               MinExtent = "8 8";
+               canSave = "1";
+               Visible = "1";
+               hovertime = "1000";
+               willFirstRespond = "1";
+               hScrollBar = "dynamic";
+               vScrollBar = "dynamic";
+               lockHorizScroll = "false";
+               lockVertScroll = "false";
+               constantThumbHeight = "0";
+               childMargin = "0 0";
+
+               new GuiTreeViewCtrl(DynSceneEditorTree) {
+                  canSaveDynamicFields = "0";
+                  Enabled = "1";
+                  isContainer = "1";
+                  Profile = "ToolsGuiTreeViewProfile";
+                  HorizSizing = "right";
+                  VertSizing = "bottom";
+                  Position = "1 1";
+                  Extent = "193 21";
+                  MinExtent = "8 8";
+                  canSave = "1";
+                  Visible = "1";
+                  hovertime = "1000";
+                  tabSize = "16";
+                  textOffset = "2";
+                  fullRowSelect = "0";
+                  itemHeight = "21";
+                  destroyTreeOnSleep = "1";
+                  MouseDragging = "1";
+                  MultipleSelections = "1";
+                  DeleteObjectAllowed = "1";
+                  DragToItemAllowed = "1";
+                  showRoot = "1";
+                  useInspectorTooltips = "1";
+                  tooltipOnWidthOnly = "1";
+                  showObjectIds = "0";
+                  showClassNames = "0";
+                  showObjectNames = "1";
+                  showInternalNames = "1";
+                  showClassNameForUnnamedObjects = "1";
+               };
+            };
+         };
          new GuiTabPageCtrl(EWCreatorWindow) {
             canSaveDynamicFields = "0";
             internalName = "CreatorWindow";

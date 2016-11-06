@@ -38,3 +38,10 @@ datablock TSForestItemData(ExampleForestMesh)
    tightnessCoefficient = "4";
 };
 
+
+datablock TSForestItemData(medGrass5M)
+{
+   internalName = "medGrass5M";
+   shapeFile = "art/shapes/grass/MedGrass5m.dae";
+   collidable = "0";
+};

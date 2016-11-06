@@ -147,8 +147,6 @@ public:
    virtual void getMountTransform(S32 index, const MatrixF &xfm, MatrixF *outMat);
    virtual void getRenderMountTransform(F32 delta, S32 index, const MatrixF &xfm, MatrixF *outMat);
 
-   void setForwardVector(VectorF newForward, VectorF upVector = VectorF::Zero);
-
    virtual void mountObject(SceneObject *obj, S32 node, const MatrixF &xfm = MatrixF::Identity);
    void mountObject(SceneObject* objB, MatrixF txfm);
    void onMount(SceneObject *obj, S32 node);

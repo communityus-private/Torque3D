@@ -246,11 +246,11 @@ void RenderPassManager::render(SceneRenderState * state)
    GFX->pushWorldMatrix();
    MatrixF proj = GFX->getProjectionMatrix();
 
-   MaskedOcclusionCulling *moc = MaskedOcclusionCulling::Create();
+   /*MaskedOcclusionCulling *moc = MaskedOcclusionCulling::Create();
 
    moc->SetResolution(state->getViewport().len_x(), state->getViewport().len_y());
    moc->ClearBuffer();
-   moc->SetNearClipPlane(state->getCullingFrustum().getNearDist());
+   moc->SetNearClipPlane(state->getCullingFrustum().getNearDist());*/
    
    for (Vector<RenderBinManager *>::iterator itr = mRenderBins.begin();
       itr != mRenderBins.end(); itr++)
@@ -262,7 +262,7 @@ void RenderPassManager::render(SceneRenderState * state)
       getRenderBinSignal().trigger(curBin, state, false);
    }
 
-   MaskedOcclusionCulling::Destroy(moc);
+  // MaskedOcclusionCulling::Destroy(moc);
 
    GFX->popWorldMatrix();
    GFX->setProjectionMatrix( proj );

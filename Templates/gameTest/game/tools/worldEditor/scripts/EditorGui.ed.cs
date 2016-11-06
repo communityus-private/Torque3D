@@ -842,6 +842,7 @@ function WorldEditorPlugin::onActivated( %this )
    EditorGui.menuBar.insert( EditorGui.worldMenu, EditorGui.menuBar.dynamicItemInsertPos );
    EWorldEditor.makeFirstResponder(true);
    EditorTree.open(MissionGroup,true);
+   DynSceneEditorTree.open(MissionCleanup,true);
    EWCreatorWindow.setNewObjectGroup(MissionGroup);
 
    EWorldEditor.syncGui();
@@ -1619,7 +1620,7 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
    }
 
    // Open context menu if this is a SimGroup
-   else if( %obj.isMemberOfClass( "SimGroup" ) )
+   else if( %obj.class $=  "SimGroup" )
    {
       %popup = ETSimGroupContextPopup;
       if( !isObject( %popup ) )
@@ -2161,10 +2162,19 @@ function EWorldEditor::toggleLockChildren( %this, %simGroup )
 {
    foreach( %child in %simGroup )
    {
-      if( %child.isMemberOfClass( "SimGroup" ) )
+      if( %child.className $= "SimGroup" )
+      {
          %this.toggleLockChildren( %child );
+      }
+      else if(%child.isMemberOfClass( "SimGroup" ))
+      {
+         %this.toggleLockChildren( %child );
+         %this.setLocked( %child, !%child.hidden );
+      }
       else
-         %child.setLocked( !%child.locked );
+      {
+         %this.setLocked( %child, !%child.hidden );
+      }
    }
    
    EWorldEditor.syncGui();
@@ -2174,10 +2184,19 @@ function EWorldEditor::toggleHideChildren( %this, %simGroup )
 {
    foreach( %child in %simGroup )
    {
-      if( %child.isMemberOfClass( "SimGroup" ) )
+      if( %child.className $= "SimGroup" )
+      {
          %this.toggleHideChildren( %child );
-      else
+      }
+      else if(%child.isMemberOfClass( "SimGroup" ))
+      {
+         %this.toggleHideChildren( %child );
          %this.hideObject( %child, !%child.hidden );
+      }
+      else
+      {
+         %this.hideObject( %child, !%child.hidden );
+      }
    }
    
    EWorldEditor.syncGui();

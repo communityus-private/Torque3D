@@ -24,7 +24,7 @@
 </Config>
 <Config>
 <Name>Debug</Name>
-<Executable>CurrentDev.exe</Executable>
+<Executable>CurrentDev_DEBUG.exe</Executable>
 <Arguments/>
 <HasExports>true</HasExports>
 <Precompile>true</Precompile>

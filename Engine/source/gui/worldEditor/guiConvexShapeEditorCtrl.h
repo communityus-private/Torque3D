@@ -90,35 +90,24 @@ public:
    void flip();
 };
 
-class CSGNode
-{
-   Vector<Polygon> polygons;
-
-   PlaneF plane;
-   CSGNode* front;
-   CSGNode* back;
-
-public:
-
-   CSGNode(CSGSolid* solid);
-   CSGNode();
-
-   Vector<Polygon> clipPolygons(Vector<Polygon> &_polygons);
-
-   void clipTo(CSGNode* csg);
-   void invert();
-
-   Vector<Polygon> allPolygons();
-   void build(Vector<Polygon> _polygons);
-};
-
 class CSGSolid
 {
 public:
    Vector<Polygon> polygons;
 
    CSGSolid(Vector<Polygon> _polygons);
+   CSGSolid(ConvexShape* shape);
    CSGSolid();
+
+   Polyhedron convertToPolyhedron(ConvexShape* targetBrush);
+   void convertConvexShape(ConvexShape* outBrush);
+
+   Vector<Polygon> clipPolygons(Vector<Polygon> &_polygons);
+
+   void clipTo(CSGSolid* csg);
+   void invert();
+
+   void build(Vector<Polygon> _polygons);
 
    CSGSolid doUnion(CSGSolid* solid);
    CSGSolid doSubtract(CSGSolid* solid);
@@ -220,7 +209,7 @@ public:
 
    //CSG functions
    void CSGSubtractBrush();
-   bool CSGSplitBrush(ConvexShape* targetBrush, MatrixF splitSurface, Polyhedron* backPolyhedron, Polyhedron* frontPolyhedron);
+   bool CSGSplitBrush(ConvexShape* targetBrush, PlaneF splitPlane, Polyhedron* backPolyhedron, Polyhedron* frontPolyhedron);
    void convertToPolyhedron(ConvexShape* targetBrush, Polyhedron* outPoly);
    void convertFromPolyhedron(AnyPolyhedron* poly, ConvexShape* outBrush);
 

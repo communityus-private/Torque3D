@@ -11,7 +11,7 @@
         enabled="true"
         class="ControlObjectComponent"
         clientOwner="1" />
-    <CameraComponent
+   <CameraComponent
         networked="false"
         enabled="true"
         FOV="80"
