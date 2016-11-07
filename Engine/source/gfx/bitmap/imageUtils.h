@@ -51,6 +51,8 @@ namespace ImageUtil
    void swizzleDDS(DDSFile *srcDDS, const Swizzle<U8, 4> &swizzle);
    //check if a GFXFormat is compressed
    bool isCompressedFormat(const GFXFormat format);
+   //check if a GFXFormat has an alpha channel
+   bool isAlphaFormat(const GFXFormat format);
 };
 
 #endif

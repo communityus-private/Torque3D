@@ -244,4 +244,26 @@ namespace ImageUtil
       else
          return false;
    }
+
+   bool isAlphaFormat(const GFXFormat format)
+   {
+      switch (format)
+      {
+         case GFXFormatA8:
+         case GFXFormatA4L4:
+         case GFXFormatA8L8:
+         case GFXFormatR5G5B5A1:
+         case GFXFormatR8G8B8A8:
+         case GFXFormatB8G8R8A8:
+         case GFXFormatR16G16B16A16F:
+         case GFXFormatR32G32B32A32F:
+         case GFXFormatR10G10B10A2:
+         //case GFXFormatBC1://todo BC1 can store alpha
+         case GFXFormatBC2:
+         case GFXFormatBC3:
+            return true;
+         default:
+            return false;
+      }
+   }
 }
