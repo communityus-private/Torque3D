@@ -30,10 +30,10 @@
 #include "core/resource.h"
 #endif
 
-class CubemapSaver
+namespace CubemapSaver
 {
-public:
-   static bool save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXFormat format);
+   // save cubemap handle to a dds cubemap with optional compression
+   bool save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXFormat compressionFormat = GFXFormat_FIRST);
 };
 
 #endif

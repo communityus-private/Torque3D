@@ -188,5 +188,5 @@ DefineEngineMethod(CubemapData, save, void, (const char* _file, const char*_form
    if(!finalName.endsWith(".dds") || !finalName.endsWith(".DDS"))
       finalName += String(".dds");
 
-   CubemapSaver::save(object->mCubemap, finalName, GFXFormatR8G8B8A8);
+   CubemapSaver::save(object->mCubemap, finalName, GFXFormatBC1);
 }

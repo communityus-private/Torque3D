@@ -26,7 +26,7 @@
 #include "gfx/gfxDevice.h"
 #include "gfx/gfxCardProfile.h"
 #include "gfx/gfxStringEnumTranslate.h"
-#include "gfx/bitmap/ddsUtils.h"
+#include "gfx/bitmap/imageUtils.h"
 #include "core/strings/stringFunctions.h"
 #include "core/util/safeDelete.h"
 #include "core/resourceManager.h"
@@ -399,11 +399,11 @@ GFXTextureObject *GFXTextureManager::_createTexture(  GBitmap *bmp,
                   {
                      PROFILE_START(DXT_DXTNMSwizzle);
                      static DXT5nmSwizzle sDXT5nmSwizzle;
-                     DDSUtil::swizzleDDS( bmpDDS, sDXT5nmSwizzle );
+                     ImageUtil::swizzleDDS( bmpDDS, sDXT5nmSwizzle );
                      PROFILE_END();
                   }
 
-                  convSuccess = DDSUtil::squishDDS( bmpDDS, realFmt );
+                  convSuccess = ImageUtil::ddsCompress( bmpDDS, realFmt );
                   break;
                default:
                   AssertFatal(false, "Attempting to convert to a non-DXT format");

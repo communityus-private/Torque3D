@@ -256,7 +256,7 @@ U8* GFXGLTextureObject::getTextureData( U32 mip )
    AssertFatal( mMipLevels, "");
    mip = (mip < mMipLevels) ? mip : 0;
 
-   const U32 dataSize = isCompressedFormat(mFormat) 
+   const U32 dataSize = ImageUtil::isCompressedFormat(mFormat) 
        ? getCompressedSurfaceSize( mFormat, mTextureSize.x, mTextureSize.y, mip ) 
        : (mTextureSize.x >> mip) * (mTextureSize.y >> mip) * mBytesPerTexel;
 
@@ -264,7 +264,7 @@ U8* GFXGLTextureObject::getTextureData( U32 mip )
    PRESERVE_TEXTURE(mBinding);
    glBindTexture(mBinding, mHandle);
 
-   if( isCompressedFormat(mFormat) )
+   if( ImageUtil::isCompressedFormat(mFormat) )
       glGetCompressedTexImage( mBinding, mip, data );
    else
       glGetTexImage(mBinding, mip, GFXGLTextureFormat[mFormat], GFXGLTextureType[mFormat], data);

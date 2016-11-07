@@ -39,7 +39,6 @@
 class Stream;
 class GBitmap;
 
-
 struct DDSFile
 {
    enum DDSFlags
@@ -114,9 +113,6 @@ struct DDSFile
       }
 
       Vector<U8*> mMips;
-
-      // Helper function to read in a mipchain.
-      bool readMipChain();
 
       void dumpImage(DDSFile *dds, U32 mip, const char *file);
       

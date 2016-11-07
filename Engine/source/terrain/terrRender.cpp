@@ -48,7 +48,7 @@
 #include "gfx/gfxTransformSaver.h"
 #include "gfx/bitmap/gBitmap.h"
 #include "gfx/bitmap/ddsFile.h"
-#include "gfx/bitmap/ddsUtils.h"
+#include "gfx/bitmap/imageUtils.h"
 #include "terrain/terrMaterial.h"
 #include "gfx/gfxDebugEvent.h"
 #include "gfx/gfxCardProfile.h"
@@ -329,7 +329,7 @@ void TerrainBlock::_updateBaseTexture(bool writeToCache)
          blendBmp.extrudeMipLevels();
 
          DDSFile *blendDDS = DDSFile::createDDSFileFromGBitmap( &blendBmp );
-         DDSUtil::squishDDS( blendDDS, GFXFormatBC1 );
+         ImageUtil::ddsCompress( blendDDS, GFXFormatBC1 );
 
          // Write result to file stream
          blendDDS->write( fs );

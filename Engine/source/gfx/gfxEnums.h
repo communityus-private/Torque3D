@@ -24,6 +24,9 @@
 #define _GFXENUMS_H_
 
 #include "core/util/fourcc.h"
+#ifndef _PLATFORMASSERT_H_
+#include "platform/platformAssert.h"
+#endif
 
 // These are for the enum translation. It will help with porting to other platforms
 // and API's.

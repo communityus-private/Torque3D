@@ -112,7 +112,7 @@ void GFXGLTextureManager::innerCreateTexture( GFXGLTextureObject *retTex,
    
    // Create it
    // @todo OPENGL - Creating mipmaps for compressed formats. Not supported on OpenGL ES and bugged on AMD. We use mipmaps present on file.
-   if( forceMips && !retTex->mIsNPoT2 && !isCompressedFormat(format) )
+   if( forceMips && !retTex->mIsNPoT2 && !ImageUtil::isCompressedFormat(format) )
    {
       retTex->mMipLevels = numMipLevels > 1 ? numMipLevels : 0;
    }
@@ -161,7 +161,7 @@ void GFXGLTextureManager::innerCreateTexture( GFXGLTextureObject *retTex,
     {
         //If it wasn't for problems on amd drivers this next part could be really simplified and we wouldn't need to go through manually creating our
         //mipmap pyramid and instead just use glGenerateMipmap
-        if(isCompressedFormat(format))
+        if(ImageUtil::isCompressedFormat(format))
         {
             AssertFatal(binding == GL_TEXTURE_2D, 
             "GFXGLTextureManager::innerCreateTexture - Only compressed 2D textures are supported");
@@ -314,26 +314,12 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
    {
       PROFILE_SCOPE(GFXGLTexMan_loadSurface);
 
-      if(isCompressedFormat(texture->mFormat))
+      if(ImageUtil::isCompressedFormat(texture->mFormat))
       {
          if((!isPow2(dds->getWidth()) || !isPow2(dds->getHeight())) && GFX->getCardProfiler()->queryProfile("GL::Workaround::noCompressedNPoTTextures"))
          {
-            U32 squishFlag = squish::kDxt1;
-            switch (texture->mFormat)
-            {
-               case GFXFormatBC2:
-               case GFXFormatBC2_SRGB:
-                  squishFlag = squish::kDxt3;
-                  break;
-               case GFXFormatBC3:
-               case GFXFormatBC3_SRGB:
-                  squishFlag = squish::kDxt5;
-                  break;
-               default:
-                  break;
-            }
             U8* uncompressedTex = new U8[dds->getWidth(i) * dds->getHeight(i) * 4];
-            squish::DecompressImage(uncompressedTex, dds->getWidth(i), dds->getHeight(i), dds->mSurfaces[0]->mMips[i], squishFlag);
+            ImageUtil::decompress(dds->mSurfaces[0]->mMips[i],uncompressedTex, dds->getWidth(i), dds->getHeight(i), texture->mFormat);
             glTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GL_RGBA, GL_UNSIGNED_BYTE, uncompressedTex);
             delete[] uncompressedTex;
          }
@@ -344,7 +330,7 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
          glTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureFormat[texture->mFormat], GFXGLTextureType[texture->mFormat], dds->mSurfaces[0]->mMips[i]);
    }
 
-   if(numMips !=1 && !isCompressedFormat(texture->mFormat))
+   if(numMips !=1 && !ImageUtil::isCompressedFormat(texture->mFormat))
       glGenerateMipmap(texture->getBinding());
    
    return true;

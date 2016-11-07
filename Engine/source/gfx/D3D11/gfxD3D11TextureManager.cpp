@@ -23,6 +23,7 @@
 #include "gfx/D3D11/gfxD3D11Device.h"
 #include "gfx/D3D11/gfxD3D11EnumTranslate.h"
 #include "gfx/bitmap/bitmapUtils.h"
+#include "gfx/bitmap/imageUtils.h"
 #include "gfx/gfxCardProfile.h"
 #include "gfx/gfxStringEnumTranslate.h"
 #include "core/strings/unicode.h"
@@ -286,7 +287,7 @@ bool GFXD3D11TextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *p
    const bool supportsAutoMips = GFX->getCardProfiler()->queryProfile("autoMipMapLevel", true);
 
    // Helper bool
-   const bool isCompressedTexFmt = aTexture->mFormat >= GFXFormatBC1 && aTexture->mFormat <= GFXFormatBC3_SRGB;
+   const bool isCompressedTexFmt = ImageUtil::isCompressedFormat(aTexture->mFormat);
 
    // Settings for mipmap generation
    U32 maxDownloadMip = pDL->getNumMipLevels();

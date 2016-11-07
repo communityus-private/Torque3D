@@ -31,7 +31,7 @@
 #include "renderInstance/renderImposterMgr.h"
 #include "gfx/gfxTransformSaver.h"
 #include "gfx/bitmap/ddsFile.h"
-#include "gfx/bitmap/ddsUtils.h"
+#include "gfx/bitmap/imageUtils.h"
 #include "gfx/gfxTextureManager.h"
 #include "math/mRandom.h"
 #include "core/stream/fileStream.h"
@@ -486,10 +486,10 @@ void TSLastDetail::_update()
    //delete tempMap;
 
    DDSFile *ddsDest = DDSFile::createDDSFileFromGBitmap( &destBmp );
-   DDSUtil::squishDDS( ddsDest, GFXFormatBC2 );
+   ImageUtil::ddsCompress( ddsDest, GFXFormatBC2 );
 
    DDSFile *ddsNormals = DDSFile::createDDSFileFromGBitmap( &destNormal );
-   DDSUtil::squishDDS( ddsNormals, GFXFormatBC3 );
+   ImageUtil::ddsCompress( ddsNormals, GFXFormatBC3 );
 
    // Finally save the imposters to disk.
    FileStream fs;

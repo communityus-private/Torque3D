@@ -28,6 +28,7 @@
 #include "gfx/gfxTextureManager.h"
 #include "gfx/gfxCardProfile.h"
 #include "gfx/bitmap/ddsFile.h"
+#include "gfx/bitmap/imageUtils.h"
 
 
 GLenum GFXGLCubemap::faceList[6] = 
@@ -71,7 +72,7 @@ void GFXGLCubemap::fillCubeTextures(GFXTexHandle* faces)
    U32 reqWidth = faces[0]->getWidth();
    U32 reqHeight = faces[0]->getHeight();
    GFXFormat regFaceFormat = faces[0]->getFormat();
-   const bool isCompressed = isCompressedFormat(regFaceFormat);
+   const bool isCompressed = ImageUtil::isCompressedFormat(regFaceFormat);
    mWidth = reqWidth;
    mHeight = reqHeight;
    mFaceFormat = regFaceFormat;
@@ -140,7 +141,7 @@ void GFXGLCubemap::initStatic( DDSFile *dds )
    mHeight = dds->getHeight();
    mFaceFormat = dds->getFormat();
    mMipMapLevels = dds->getMipLevels();
-   const bool isCompressed = isCompressedFormat(mFaceFormat);
+   const bool isCompressed = ImageUtil::isCompressedFormat(mFaceFormat);
    glGenTextures(1, &mCubemap);
 
    PRESERVE_CUBEMAP_TEXTURE();
@@ -184,7 +185,7 @@ void GFXGLCubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 {
    mDynamicTexSize = texSize;
    mFaceFormat = faceFormat;
-   const bool isCompressed = isCompressedFormat(faceFormat);
+   const bool isCompressed = ImageUtil::isCompressedFormat(faceFormat);
    mMipMapLevels = getMax( (U32)1, getMaxMipmaps( texSize, texSize, 1 ) );
 
    glGenTextures(1, &mCubemap);
@@ -201,7 +202,7 @@ void GFXGLCubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 
     for(U32 i = 0; i < 6; i++)
     {
-        if( isCompressedFormat(faceFormat) )
+        if( ImageUtil::isCompressedFormat(faceFormat) )
         {
             for( U32 mip = 0; mip < mMipMapLevels; ++mip )
             {
