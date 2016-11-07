@@ -75,7 +75,7 @@ namespace ImageUtil
       GFXFormat format;
       CompressQuality quality;
 
-      CompressJob(const U8 *srcRGBA, U8 *dst, S32 w, S32 h, const GFXFormat compressFormat, const CompressQuality compressQuality)
+      CompressJob(const U8 *srcRGBA, U8 *dst, const S32 w, const S32 h, const GFXFormat compressFormat, const CompressQuality compressQuality)
          : pSrc(srcRGBA),pDst(dst), width(w), height(h), format(compressFormat),quality(compressQuality) {}
 
    protected:
@@ -87,7 +87,7 @@ namespace ImageUtil
 
 
    // compress raw pixel data, expects rgba format
-   bool rawCompress(const U8 *srcRGBA, U8 *dst, S32 width, S32 height, const GFXFormat compressFormat, const CompressQuality compressQuality)
+   bool rawCompress(const U8 *srcRGBA, U8 *dst, const S32 width, const S32 height, const GFXFormat compressFormat, const CompressQuality compressQuality)
    {
       if (!isCompressedFormat(compressFormat))
          return false;
@@ -143,8 +143,6 @@ namespace ImageUtil
                const U32 mipSz = srcDDS->getSurfaceSize(currentMip);
                U8 *dstBits = new U8[mipSz];
                dstDataStore[dataIndex] = dstBits;
-               // Compress
-              // ImageUtil::rawCompress(srcBits, dstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality);
 
                ThreadSafeRef<CompressJob> item(new CompressJob(srcBits, dstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality));
                pThreadPool->queueWorkItem(item);
@@ -207,7 +205,7 @@ namespace ImageUtil
       return true;
    }
 
-   bool decompress(const U8 *src, U8 *dstRGBA, S32 width, S32 height, const GFXFormat srcFormat)
+   bool decompress(const U8 *src, U8 *dstRGBA,const S32 width,const S32 height, const GFXFormat srcFormat)
    {
       if (!isCompressedFormat(srcFormat))
          return false;

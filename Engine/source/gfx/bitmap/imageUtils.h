@@ -42,11 +42,11 @@ namespace ImageUtil
    };
 
    // compress raw pixel data, expects rgba format
-   bool rawCompress(const U8 *srcRGBA, U8 *dst, S32 width, S32 height, const GFXFormat compressFormat, const CompressQuality compressQuality = LowQuality);
+   bool rawCompress(const U8 *srcRGBA, U8 *dst, const S32 width, const S32 height, const GFXFormat compressFormat, const CompressQuality compressQuality = LowQuality);
    // compress DDSFile
    bool ddsCompress(DDSFile *srcDDS, const GFXFormat compressFormat, const CompressQuality compressQuality = LowQuality);
    // decompress compressed pixel data, dest data should be rgba format
-   bool decompress(const U8 *src, U8 *dstRGBA, S32 width, S32 height, const GFXFormat srcFormat);
+   bool decompress(const U8 *src, U8 *dstRGBA, const S32 width, const S32 height, const GFXFormat srcFormat);
    //swizzle dds file
    void swizzleDDS(DDSFile *srcDDS, const Swizzle<U8, 4> &swizzle);
    //check if a GFXFormat is compressed
