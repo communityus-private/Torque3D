@@ -177,7 +177,7 @@ DefineEngineMethod( CubemapData, getFilename, const char*, (),,
    return object->getFilename();
 }
 
-DefineEngineMethod(CubemapData, save, void, (const char* filename, GFXFormat format), ("", GFXFormatBC1),
+DefineEngineMethod(CubemapData, save, void, (const char* filename, const GFXFormat format), ("", GFXFormatBC1),
 	"Returns the script filename of where the CubemapData object was "
 	"defined.  This is used by the material editor.")
 {
