@@ -213,18 +213,21 @@ bool DDSFile::readHeader(Stream &s)
    }
 
    //dds headers
-   dds::DDS_HEADER header;
-   dds::DDS_HEADER_DXT10 dx10Header;
+   dds::DDS_HEADER header = {};
+   dds::DDS_HEADER_DXT10 dx10header = {};
    //todo DX10 formats
    bool hasDx10Header = false;
 
    //read in header
-   s.read(sizeof(dds::DDS_HEADER), &header);
+   s.read(DDS_HEADER_SIZE, &header);
    //check for dx10 header support
    if ((header.ddspf.flags & DDS_FOURCC) && (header.ddspf.fourCC == dds::D3DFMT_DX10))
    {
       //read in dx10 header
-      s.read(sizeof(dds::DDS_HEADER_DXT10), &dx10Header);
+      s.read(DDS_HEADER_DX10_SIZE, &dx10header);
+      if (!dds::validateHeaderDx10(dx10header))
+         return false;
+
       hasDx10Header = true;
    }
 
@@ -240,177 +243,98 @@ bool DDSFile::readHeader(Stream &s)
    mDepth = header.depth;
    mFourCC = header.ddspf.fourCC;
 
-   if(header.flags & DDS_HEADER_FLAGS_LINEARSIZE)
-      mFlags.set(LinearSizeFlag); // ( mHeight / 4 ) * ( mWidth / 4 ) * DDSSIZE
+   //process dx10 header
+   if (hasDx10Header)
+   {
+      if (dx10header.arraySize > 1)
+      {
+         Con::errorf("DDSFile::readHeader - DX10 arrays not supported");
+         return false;
+      }
+
+      mFormat = dds::getGFXFormat(dx10header.dxgiFormat);
+      //make sure getGFXFormat gave us a valid format
+      if (mFormat == GFXFormat_FIRST)
+         return false;
+      //cubemap
+      if (dx10header.miscFlag & dds::D3D10_RESOURCE_MISC_TEXTURECUBE)
+      {
+         mFlags.set(CubeMap_All_Flags | ComplexFlag);
+      }
+
+      mHasTransparency = ImageUtil::isAlphaFormat(mFormat);
+
+      //mip map flag
+      if (mMipMapCount > 1)
+         mFlags.set(MipMapsFlag | ComplexFlag);
+
+      if (ImageUtil::isCompressedFormat(mFormat))
+         mFlags.set(CompressedData);
+      else
+      {
+         mBytesPerPixel = header.ddspf.bpp / 8;
+         mFlags.set(RGBData);
+      }
+
+      // we finished now
+      return true;
+   }
+
+   //process regular header
+
+   //D3DFMT_DX10 is caught above, no need to check now
+   if (header.ddspf.flags & DDS_FOURCC)
+   {
+      mFormat = dds::getGFXFormat(mFourCC);
+      //make sure getGFXFormat gave us a valid format
+      if (mFormat == GFXFormat_FIRST)
+         return false;
+
+      if (ImageUtil::isCompressedFormat(mFormat))
+         mFlags.set(CompressedData);
+      else
+      {
+         mBytesPerPixel = header.ddspf.bpp / 8;
+         mFlags.set(RGBData);
+      }
+   }
+   else
+   {
+      mFormat = dds::getGFXFormat(header.ddspf);
+      //make sure getGFXFormat gave us a valid format
+      if (mFormat == GFXFormat_FIRST)
+         return false;
+
+      mBytesPerPixel = header.ddspf.bpp / 8;
+      mFlags.set(RGBData);
+   }
+
+   //mip map flag
+   if (mMipMapCount > 1)
+      mFlags.set(MipMapsFlag | ComplexFlag);
+
+   //set transparency flag
+   mHasTransparency = (header.ddspf.flags & DDS_ALPHAPIXELS);
+
+   if (header.flags & DDS_HEADER_FLAGS_LINEARSIZE)
+      mFlags.set(LinearSizeFlag);
    else if (header.flags & DDS_HEADER_FLAGS_PITCH)
-      mFlags.set(PitchSizeFlag); // ( mWidth / 4 ) * DDSSIZE ???
+      mFlags.set(PitchSizeFlag);
 
-   if(header.flags & DDS_HEADER_FLAGS_VOLUME)
-      mFlags.set(VolumeFlag);
-
-   if(header.flags & DDS_HEADER_FLAGS_MIPMAP)
-      mFlags.set(MipMapsFlag);
-
-   // For now let's just dump the header info.
-   if(header.ddspf.flags & DDS_LUMINANCE)
+   //set cubemap flags
+   if (header.cubemapFlags & DDS_CUBEMAP)
    {
-      mFlags.set(RGBData);
-
-      mBytesPerPixel = header.ddspf.bpp / 8;
-
-      bool hasAlpha = header.ddspf.flags & DDS_ALPHAPIXELS;
-
-      mHasTransparency = hasAlpha;
-
-      // Try to match a format.
-      if(hasAlpha)
-      {
-         // If it has alpha it is one of...
-         // GFXFormatA8L8
-         // GFXFormatA4L4
-
-         if(header.ddspf.bpp == 16)
-            mFormat = GFXFormatA8L8;
-         else if(header.ddspf.bpp == 8)
-            mFormat = GFXFormatA4L4;
-         else
-         {
-            Con::errorf("DDSFile::readHeader - unable to match alpha Luminance format!");
-            return false;
-         }
-      }
-      else
-      {
-         // Otherwise it is one of...
-         // GFXFormatL16
-         // GFXFormatL8
-
-         if(header.ddspf.bpp == 16)
-            mFormat = GFXFormatL16;
-         else if(header.ddspf.bpp == 8)
-            mFormat = GFXFormatL8;
-         else
-         {
-            Con::errorf("DDSFile::readHeader - unable to match non-alpha Luminance format!");
-            return false;
-         }
-      }
-   }
-   else if(header.ddspf.flags & DDS_RGB)
-   {
-      mFlags.set(RGBData);
-      mBytesPerPixel = header.ddspf.bpp / 8;
-
-      bool hasAlpha = false;
-
-      if(header.ddspf.flags & DDS_ALPHAPIXELS)
-      {
-         hasAlpha = true;
-         //Con::printf("   alpha mask = %x", pfAlphaMask);
-      }
-      else
-      {
-         //Con::printf("   no alpha.");
-      }
-
-      mHasTransparency = hasAlpha;
-
-      // Try to match a format.
-      if(hasAlpha)
-      {
-         // If it has alpha it is one of...
-         // GFXFormatR8G8B8A8
-         // GFXFormatR5G5B5A1
-         // GFXFormatA8
-
-         if(header.ddspf.bpp == 32)
-            mFormat = GFXFormatB8G8R8A8;
-         else if(header.ddspf.bpp == 16)
-            mFormat = GFXFormatR5G5B5A1;
-         else if(header.ddspf.bpp == 8)
-            mFormat = GFXFormatA8;
-         else
-         {
-            Con::errorf("DDSFile::readHeader - unable to match alpha RGB format!");
-            return false;
-         }
-      }
-      else
-      {
-         // Otherwise it is one of...
-         // GFXFormatR8G8B8
-         // GFXFormatR8G8B8X8
-         // GFXFormatR5G6B5
-         // GFXFormatL8
-
-         if(header.ddspf.bpp == 24)
-            mFormat = GFXFormatR8G8B8;
-         else if(header.ddspf.bpp == 32)
-            mFormat = GFXFormatR8G8B8X8;
-         else if(header.ddspf.bpp == 16)
-            mFormat = GFXFormatR5G6B5;
-         else if(header.ddspf.bpp == 8)
-         {
-            // luminance
-            mFormat = GFXFormatL8;
-         }
-         else
-         {
-            Con::errorf("DDSFile::readHeader - unable to match non-alpha RGB format!");
-            return false;
-         }
-      }
-
-      // Sweet, all done.
-   }
-   else if (header.ddspf.flags & DDS_FOURCC)
-   {
-      mHasTransparency = (header.ddspf.flags & DDS_ALPHAPIXELS);
-      mFlags.set(CompressedData);
-
-/*      Con::printf("FourCC Pixel format of DDS:");
-      Con::printf("   fourcc = '%c%c%c%c'", ((U8*)&pfFourCC)[0], ((U8*)&pfFourCC)[1], ((U8*)&pfFourCC)[2], ((U8*)&pfFourCC)[3]); */
-
-      // Ok, make a format determination.
-      switch(mFourCC)
-      {
-      case dds::D3DFMT_DXT1:
-         mFormat = GFXFormatBC1;
-         break;
-      case dds::D3DFMT_DXT2:
-      case dds::D3DFMT_DXT3:
-         mFormat = GFXFormatBC2;
-         break;
-      case dds::D3DFMT_DXT4:
-      case dds::D3DFMT_DXT5:
-         mFormat = GFXFormatBC3;
-         break;
-      case dds::D3DFMT_ATI1:
-         mFormat = GFXFormatBC4;
-         break;
-      case dds::D3DFMT_ATI2:
-         mFormat = GFXFormatBC5;
-         break;
-      default:
-         Con::errorf("DDSFile::readHeader - unknown fourcc = '%c%c%c%c'", ((U8*)&mFourCC)[0], ((U8*)&mFourCC)[1], ((U8*)&mFourCC)[2], ((U8*)&mFourCC)[3]);
-         break;
-      }
-
-   }
-
-   // Caps2 has cubemap/volume info. Care about that.
-   if(header.cubemapFlags & DDS_CUBEMAP)
-   {
-      mFlags.set(CubeMapFlag);
-
+      mFlags.set(CubeMapFlag | ComplexFlag);
       // Store the face flags too.
-      if (header.cubemapFlags & DDS_CUBEMAP_POSITIVEX) mFlags.set( CubeMap_PosX_Flag );
-      if (header.cubemapFlags & DDS_CUBEMAP_NEGATIVEX) mFlags.set( CubeMap_NegX_Flag );
-      if (header.cubemapFlags & DDS_CUBEMAP_POSITIVEY) mFlags.set( CubeMap_PosY_Flag );
-      if (header.cubemapFlags & DDS_CUBEMAP_NEGATIVEY) mFlags.set( CubeMap_NegY_Flag );
-      if (header.cubemapFlags & DDS_CUBEMAP_POSITIVEZ) mFlags.set( CubeMap_PosZ_Flag );
-      if (header.cubemapFlags & DDS_CUBEMAP_NEGATIVEZ) mFlags.set( CubeMap_NegZ_Flag );
+      if (header.cubemapFlags & DDS_CUBEMAP_POSITIVEX) mFlags.set(CubeMap_PosX_Flag);
+      if (header.cubemapFlags & DDS_CUBEMAP_NEGATIVEX) mFlags.set(CubeMap_NegX_Flag);
+      if (header.cubemapFlags & DDS_CUBEMAP_POSITIVEY) mFlags.set(CubeMap_PosY_Flag);
+      if (header.cubemapFlags & DDS_CUBEMAP_NEGATIVEY) mFlags.set(CubeMap_NegY_Flag);
+      if (header.cubemapFlags & DDS_CUBEMAP_POSITIVEZ) mFlags.set(CubeMap_PosZ_Flag);
+      if (header.cubemapFlags & DDS_CUBEMAP_NEGATIVEZ) mFlags.set(CubeMap_NegZ_Flag);
    }
+
+
 
    return true;
 }
@@ -493,17 +417,28 @@ bool DDSFile::writeHeader( Stream &s )
    U32 magic = DDS_MAGIC;
    s.write(magic);
 
-   dds::DDS_HEADER header;
-   dds::DDS_HEADER_DXT10 dx10Header;
-   dds::DDS_PIXELFORMAT format;
+   dds::DDS_HEADER header = {};
+   dds::DDS_HEADER_DXT10 dx10header = {};
 
-   //todo DX10 formats
    bool hasDx10Header = false;
    //flags
    U32 surfaceFlags = DDS_SURFACE_FLAGS_TEXTURE;
    U32 cubemapFlags = 0;
    U32 headerFlags = DDS_HEADER_FLAGS_TEXTURE;
 
+   //pixel format
+   const dds::DDS_PIXELFORMAT &format = dds::getDDSFormat(mFormat);
+
+   // todo better dx10 support
+   if (format.fourCC == dds::D3DFMT_DX10)
+   {
+      dx10header.dxgiFormat = dds::getDXGIFormat(mFormat);
+      dx10header.arraySize = 1;
+      dx10header.resourceDimension = dds::D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+      dx10header.miscFlag = 0;
+      dx10header.miscFlags2 = 0;
+      hasDx10Header = true;
+   }
 
    if (mFlags.test(CompressedData))
       headerFlags |= DDS_HEADER_FLAGS_LINEARSIZE;
@@ -525,10 +460,10 @@ bool DDSFile::writeHeader( Stream &s )
 
    //volume texture
    if (mDepth > 0)
+   {
       headerFlags |= DDS_HEADER_FLAGS_VOLUME;
-
-   //pixel format
-   format = dds::getDDSFormat(mFormat);
+      dx10header.resourceDimension = dds::D3D10_RESOURCE_DIMENSION_TEXTURE3D;
+   }
 
    //main dds header
    header.size = sizeof(dds::DDS_HEADER);
@@ -549,11 +484,11 @@ bool DDSFile::writeHeader( Stream &s )
       return false;
 
    //Write out the header
-   s.write(header.size, &header);
+   s.write(DDS_HEADER_SIZE, &header);
    
    //Write out dx10 header
    if (hasDx10Header)
-      s.write(sizeof(dds::DDS_HEADER_DXT10), &dx10Header);
+      s.write(DDS_HEADER_DX10_SIZE, &dx10header);
 
    return true;
 }

@@ -276,6 +276,8 @@ namespace dds
    ///////////////////////////////////////////////////////////////////////////////////
    #pragma pack(push,1)
 
+   #define DDS_HEADER_SIZE       124
+   #define DDS_HEADER_DX10_SIZE  20
    #define DDS_MAGIC       0x20534444  // "DDS "
    #define DDS_FOURCC      0x00000004  // DDPF_FOURCC
    #define DDS_RGB         0x00000040  // DDPF_RGB
@@ -286,6 +288,7 @@ namespace dds
    #define DDS_ALPHA       0x00000002  // DDPF_ALPHA
    #define DDS_PAL8        0x00000020  // DDPF_PALETTEINDEXED8
    #define DDS_BUMPDUDV    0x00080000  // DDPF_BUMPDUDV
+   #define DDS_YUV         0x00000200  //DDPF_YUV
 
    #define DDS_HEADER_FLAGS_TEXTURE        0x00001007  // DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH | DDSD_PIXELFORMAT 
    #define DDS_HEADER_FLAGS_MIPMAP         0x00020000  // DDSD_MIPMAPCOUNT
@@ -377,6 +380,18 @@ namespace dds
       U32   GBitMask;
       U32   BBitMask;
       U32   ABitMask;
+
+      bool operator==(const DDS_PIXELFORMAT& _test) const
+      {
+         return ( size == _test.size &&
+                  flags == _test.flags &&
+                  fourCC == _test.fourCC &&
+                  bpp == _test.bpp &&
+                  RBitMask == _test.RBitMask &&
+                  GBitMask == _test.GBitMask &&
+                  BBitMask == _test.BBitMask &&
+                  ABitMask == _test.ABitMask);
+      }
    };
 
    struct DDS_HEADER
@@ -514,8 +529,8 @@ namespace dds
    //                               Functions                                       //
    ///////////////////////////////////////////////////////////////////////////////////
 
-   //get dds pixelformat from GFXFormat - todo more formats
-   DDS_PIXELFORMAT getDDSFormat(const GFXFormat format)
+   //get DDS_PIXELFORMAT struct from GFXFormat - todo more formats
+   const DDS_PIXELFORMAT getDDSFormat(const GFXFormat format)
    {
       switch (format)
       {
@@ -530,6 +545,8 @@ namespace dds
          case GFXFormatR8G8B8A8: return DDSPF_A8R8G8B8;
          case GFXFormatR8G8B8X8: return DDSPF_X8R8G8B8;
          case GFXFormatB8G8R8A8: return DDSPF_A8B8G8R8;
+         case GFXFormatR16G16B16A16F:
+         case GFXFormatR32G32B32A32F: return DDSPF_DX10;
          //compressed
          case GFXFormatBC1:      return DDSPF_DXT1;
          case GFXFormatBC2:      return DDSPF_DXT3;
@@ -544,11 +561,46 @@ namespace dds
       }
    }
 
-   //get gfx pixelformat from D3DFMT - todo more formats
-   GFXFormat getGFXFormat(const D3DFMT format)
+   //get DXGI_FORMAT from GFXFormat - todo more formats
+   const DXGI_FORMAT getDXGIFormat(const GFXFormat format)
    {
       switch (format)
       {
+         //byte
+         case GFXFormatR5G6B5:         return DXGI_FORMAT_B5G6R5_UNORM;
+         case GFXFormatR5G5B5A1:       return DXGI_FORMAT_B5G5R5A1_UNORM;
+         case GFXFormatB8G8R8A8:       return DXGI_FORMAT_R8G8B8A8_UNORM;
+         case GFXFormatR8G8B8A8:       return DXGI_FORMAT_B8G8R8A8_UNORM;
+         case GFXFormatR8G8B8X8:       return DXGI_FORMAT_B8G8R8X8_UNORM;
+         case GFXFormatR10G10B10A2:    return DXGI_FORMAT_R10G10B10A2_UNORM;
+         //uint
+         case GFXFormatR16G16:         return DXGI_FORMAT_R16G16_UINT;
+         case GFXFormatR16G16B16A16:   return DXGI_FORMAT_R16G16B16A16_UINT;
+         //float
+         case GFXFormatR16F:           return DXGI_FORMAT_R16_FLOAT;
+         case GFXFormatR32F:           return DXGI_FORMAT_R32_FLOAT;
+         case GFXFormatR16G16B16A16F:  return DXGI_FORMAT_R16G16B16A16_FLOAT;
+         case GFXFormatR32G32B32A32F:  return DXGI_FORMAT_R32G32B32A32_FLOAT;
+         //compressed
+         case GFXFormatBC1:            return DXGI_FORMAT_BC1_UNORM;
+         case GFXFormatBC2:            return DXGI_FORMAT_BC2_UNORM;
+         case GFXFormatBC3:            return DXGI_FORMAT_BC3_UNORM;
+         case GFXFormatBC4:            return DXGI_FORMAT_BC4_UNORM;
+         case GFXFormatBC5:            return DXGI_FORMAT_BC5_UNORM;
+         default:
+         {
+            Con::errorf("dds::getDXGIFormat: unknown format");
+            return DXGI_FORMAT_UNKNOWN;
+         }
+      }
+   }
+
+   //get GFXFormat from D3DFMT - todo more formats
+   const GFXFormat getGFXFormat(const D3DFMT format)
+   {
+      switch (format)
+      {
+         //byte        
          case D3DFMT_A4L4:          return GFXFormatA4L4;
          case D3DFMT_L8:            return GFXFormatL8;
          case D3DFMT_A8:            return GFXFormatA8;
@@ -560,6 +612,14 @@ namespace dds
          case D3DFMT_A8R8G8B8:      return GFXFormatR8G8B8A8;
          case D3DFMT_X8R8G8B8:      return GFXFormatR8G8B8X8;
          case D3DFMT_A8B8G8R8:      return GFXFormatB8G8R8A8;
+         //uint
+         case D3DFMT_G16R16:        return GFXFormatR16G16;
+         case D3DFMT_A16B16G16R16:  return GFXFormatR16G16B16A16;
+         //float
+         case D3DFMT_R16F:          return GFXFormatR16F;
+         case D3DFMT_R32F:          return GFXFormatR32F;
+         case D3DFMT_A16B16G16R16F: return GFXFormatR16G16B16A16F;
+         case D3DFMT_A32B32G32R32F: return GFXFormatR32G32B32A32F;
          //compressed
          case D3DFMT_DXT1:          return GFXFormatBC1;
          case D3DFMT_DXT2:          
@@ -571,14 +631,114 @@ namespace dds
          default:
          {
             Con::errorf("dds::getGFXFormat: unknown format");
-            return GFXFormatR8G8B8A8;
+            return GFXFormat_FIRST;
          }
       }
    }
 
-   bool validateHeader(const DDS_HEADER &header)
+   //get GFXFormat from DXGI_FORMAT - todo more formats
+   const GFXFormat getGFXFormat(const DXGI_FORMAT format)
    {
-      if (header.size != 124)
+      switch (format)
+      {
+         //byte
+         case DXGI_FORMAT_B5G6R5_UNORM:         return GFXFormatR5G6B5;
+         case DXGI_FORMAT_B5G5R5A1_UNORM:       return GFXFormatR5G5B5A1;
+         case DXGI_FORMAT_R8G8B8A8_UNORM:       return GFXFormatB8G8R8A8;
+         case DXGI_FORMAT_B8G8R8A8_UNORM:       return GFXFormatR8G8B8A8;
+         case DXGI_FORMAT_B8G8R8X8_UNORM:       return GFXFormatR8G8B8X8;
+         case DXGI_FORMAT_R10G10B10A2_UNORM:    return GFXFormatR10G10B10A2;
+         //uint
+         case DXGI_FORMAT_R16G16_UINT:          return GFXFormatR16G16;
+         case DXGI_FORMAT_R16G16B16A16_UINT:    return GFXFormatR16G16B16A16;
+         //float
+         case DXGI_FORMAT_R16_FLOAT:            return GFXFormatR16F;
+         case DXGI_FORMAT_R32_FLOAT:            return GFXFormatR32F;
+         case DXGI_FORMAT_R16G16B16A16_FLOAT:   return GFXFormatR16G16B16A16F;
+         case DXGI_FORMAT_R32G32B32A32_FLOAT:   return GFXFormatR32G32B32A32F;
+         //compressed
+         case DXGI_FORMAT_BC1_UNORM:            return GFXFormatBC1;
+         case DXGI_FORMAT_BC2_UNORM:            return GFXFormatBC2;
+         case DXGI_FORMAT_BC3_UNORM:            return GFXFormatBC3;
+         case DXGI_FORMAT_BC4_UNORM:            return GFXFormatBC4;
+         case DXGI_FORMAT_BC5_UNORM:            return GFXFormatBC5;
+         default:
+         {
+            Con::errorf("dds::getGFXFormatDxgi: unknown format");
+            return GFXFormat_FIRST;
+         }
+      }
+   }
+
+   //get GFXFormat from DDS_PIXELFORMAT struct - todo more formats
+   const GFXFormat getGFXFormat(const DDS_PIXELFORMAT &format)
+   {
+      if (format == DDSPF_DXT1)
+         return GFXFormatBC1;
+      else if (format == DDSPF_DXT2)
+         return GFXFormatBC2;
+      else if (format == DDSPF_DXT3)
+         return GFXFormatBC2;
+      else if (format == DDSPF_DXT4)
+         return GFXFormatBC3;
+      else if (format == DDSPF_DXT5)
+         return GFXFormatBC3;
+      else if (format == DDSPF_ATI1)
+         return GFXFormatBC4;
+      else if (format == DDSPF_ATI2)
+         return GFXFormatBC5;
+      else if (format == DDSPF_A8R8G8B8)
+         return GFXFormatR8G8B8A8;
+      else if (format == DDSPF_A8B8G8R8)
+         return GFXFormatB8G8R8A8;
+      else if (format == DDSPF_R8G8B8)
+         return GFXFormatR8G8B8;
+      else if (format == DDSPF_X8R8G8B8)
+         return GFXFormatR8G8B8X8;
+      else if (format == DDSPF_A8L8)
+         return GFXFormatA8L8;
+      else if (format == DDSPF_A4L4)
+         return GFXFormatA4L4;
+      else if (format == DDSPF_A8)
+         return GFXFormatA8;
+      else if (format == DDSPF_L8)
+         return GFXFormatL8;
+      else if (format == DDSPF_R5G6B5)
+         return GFXFormatR5G6B5;
+      else if (format == DDSPF_A1R5G5B5)
+         return GFXFormatR5G5B5A1;
+      else
+      {
+         Con::errorf("dds::getGFXFormat: unknown format");
+         return GFXFormat_FIRST;
+      }
+   }
+
+   //get GFXFormat from fourcc value - todo more formats
+   const GFXFormat getGFXFormat(const U32 fourcc)
+   {
+      switch (fourcc)
+      {
+         case D3DFMT_DXT1: return GFXFormatBC1;
+         case D3DFMT_DXT2:
+         case D3DFMT_DXT3: return GFXFormatBC2;
+         case D3DFMT_DXT4:
+         case D3DFMT_DXT5: return GFXFormatBC3;
+         case D3DFMT_ATI1: return GFXFormatBC4;
+         case D3DFMT_ATI2: return GFXFormatBC5;
+         case D3DFMT_A16B16G16R16F: return GFXFormatR16G16B16A16F;
+         case D3DFMT_A32B32G32R32F: return GFXFormatR32G32B32A32F;
+         default:
+         {
+            Con::errorf("dds::getGFXFormatFourcc: unknown format");
+            return GFXFormat_FIRST;
+         }
+      }
+   }
+
+   const bool validateHeader(const DDS_HEADER &header)
+   {
+      if (header.size != DDS_HEADER_SIZE)
       {
          Con::errorf("DDS_HEADER - incorrect header size. Expected 124 bytes.");
          return false;
@@ -594,6 +754,17 @@ namespace dds
       {
          // Both are invalid!
          Con::errorf("DDS_HEADER - encountered both DDSD_LINEARSIZE and DDSD_PITCH!");
+         return false;
+      }
+
+      return true;
+   }
+
+   const bool validateHeaderDx10(const DDS_HEADER_DXT10 &header)
+   {
+      if (sizeof(DDS_HEADER_DXT10) != DDS_HEADER_DX10_SIZE)
+      {
+         Con::errorf("DDS_HEADER_DXT10 - incorrect header size. Expected 20 bytes.");
          return false;
       }
 

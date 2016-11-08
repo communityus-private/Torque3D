@@ -64,6 +64,7 @@ struct DDSFile
       CubeMap_NegY_Flag = BIT(11),
       CubeMap_PosZ_Flag = BIT(12),
       CubeMap_NegZ_Flag = BIT(13),
+      CubeMap_All_Flags = CubeMapFlag|CubeMap_PosX_Flag | CubeMap_NegX_Flag | CubeMap_PosY_Flag | CubeMap_NegY_Flag | CubeMap_PosZ_Flag | CubeMap_NegZ_Flag,
    };
 
    /// The index into mSurfaces for each 
