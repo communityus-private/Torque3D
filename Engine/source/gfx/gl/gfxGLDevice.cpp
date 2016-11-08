@@ -567,7 +567,8 @@ void GFXGLDevice::drawPrimitive( GFXPrimitiveType primType, U32 vertexStart, U32
 {
    preDrawPrimitive();
   
-   vertexStart += mCurrentVB[0]->mBufferVertexOffset;
+   if(mCurrentVB[0])
+      vertexStart += mCurrentVB[0]->mBufferVertexOffset;
 
    if(mDrawInstancesCount)
       glDrawArraysInstanced(GFXGLPrimType[primType], vertexStart, primCountToIndexCount(primType, primitiveCount), mDrawInstancesCount);
