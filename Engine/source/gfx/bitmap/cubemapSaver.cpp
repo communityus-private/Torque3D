@@ -55,7 +55,7 @@ namespace CubemapSaver
          Con::errorf("CubemapSaver: Failed to set a shader constant handle.");
    }
 
-   bool CubemapSaver::save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXFormat compressionFormat)
+   bool save(GFXCubemapHandle cubemap, const Torque::Path &path, GFXFormat compressionFormat)
    {
       if (!cubemap.isValid())
       {
