@@ -78,6 +78,11 @@ AFTER_MODULE_INIT( Sim )
    Con::NotifyDelegate shadowCallback( &ShadowMapManager::updateShadowDisable );
    Con::addVariableNotify( "$pref::Shadows::disable", shadowCallback );
    Con::addVariableNotify( "$Shadows::disable", shadowCallback );
+
+   Con::addVariable("$pref::Shadows::teleportDist",
+      TypeF32, &ShadowMapPass::smShadowsTeleportDist,
+      "Minimum distance moved per frame to determine that we are teleporting.\n");
+   Con::addVariableNotify("$pref::Shadows::teleportDist", shadowCallback);
 }
 
 Signal<void(void)> ShadowMapManager::smShadowDeactivateSignal;

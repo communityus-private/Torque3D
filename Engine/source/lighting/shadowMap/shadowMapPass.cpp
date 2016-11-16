@@ -56,11 +56,8 @@ bool ShadowMapPass::smDisableShadows = false;
 bool ShadowMapPass::smDisableShadowsEditor = false;
 bool ShadowMapPass::smDisableShadowsPref = false;
 
-/// milliseconds before static redraw
-S32 ShadowMapPass::smStaticShadowUpdateFreq = 32;
-/// milliseconds before dynamic redraw
-S32 ShadowMapPass::smDynamicShadowUpdateFreq = 16;
-
+/// distance moved per frame before forcing a shadow update
+F32 ShadowMapPass::smShadowsTeleportDist = 4;
 /// We have a default 8ms render budget for shadow rendering.
 U32 ShadowMapPass::smRenderBudgetMs = 8;
 
@@ -227,7 +224,7 @@ void ShadowMapPass::render(   SceneManager *sceneManager,
    bool forceUpdate = false;
 
    //force an update if we're jumping around (respawning, ect)
-   if ((control->getPosition() - mPrevCamPos).lenSquared() > 10)
+   if ((control->getPosition() - mPrevCamPos).lenSquared() > mPow(smShadowsTeleportDist,2))
       forceUpdate = true;
 
    // 2 Shadow Maps per Light. This may fail.
