@@ -226,6 +226,7 @@ void ShadowMapPass::render(   SceneManager *sceneManager,
    //force an update if we're jumping around (respawning, ect)
    if ((control->getPosition() - mPrevCamPos).lenSquared() > mPow(smShadowsTeleportDist,2))
       forceUpdate = true;
+   mPrevCamPos = control->getPosition();
 
    // 2 Shadow Maps per Light. This may fail.
    for ( U32 i = 0; i < shadowMaps.size(); i += 2 )
