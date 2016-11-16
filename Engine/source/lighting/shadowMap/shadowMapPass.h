@@ -112,6 +112,7 @@ private:
    SimObjectPtr<DynamicShadowRenderPassManager> mDynamicShadowRPM;
    LightManager* mLightManager;
    ShadowMapManager* mShadowManager;
+   Point3F mPrevCamPos;
 };
 
 class ShadowRenderPassManager : public RenderPassManager

@@ -39,6 +39,7 @@
 #include "gfx/gfxDebugEvent.h"
 #include "platform/platformTimer.h"
 
+#include "T3D/gameBase/gameConnection.h"
 
 const String ShadowMapPass::PassTypeName("ShadowMap");
 
@@ -89,7 +90,7 @@ ShadowMapPass::ShadowMapPass(LightManager* lightManager, ShadowMapManager* shado
    mDynamicShadowRPM->addManager( new RenderImposterMgr( 0.6f, 0.6f )  );
 
    mActiveLights = 0;
-
+   mPrevCamPos = Point3F::Zero;
    mTimer = PlatformTimer::create();
 
    Con::addVariable( "$ShadowStats::activeMaps", TypeS32, &smActiveShadowMaps,
@@ -214,6 +215,21 @@ void ShadowMapPass::render(   SceneManager *sceneManager,
    mTimer->getElapsedMs();
    mTimer->reset();
 
+   // Must have a connection and control object
+   GameConnection* conn = GameConnection::getConnectionToServer();
+   if (!conn)
+      return;
+
+   GameBase * control = dynamic_cast<GameBase*>(conn->getControlObject());
+   if (!control)
+      return;
+
+   bool forceUpdate = false;
+
+   //force an update if we're jumping around (respawning, ect)
+   if ((control->getPosition() - mPrevCamPos).lenSquared() > 10)
+      forceUpdate = true;
+
    // 2 Shadow Maps per Light. This may fail.
    for ( U32 i = 0; i < shadowMaps.size(); i += 2 )
    {
@@ -226,8 +242,8 @@ void ShadowMapPass::render(   SceneManager *sceneManager,
 		 mShadowManager->setLightShadowMap(lsm);
          mShadowManager->setLightDynamicShadowMap( dlsm );
 
-		 lsm->render(mShadowRPM, diffuseState, false);
-		 dlsm->render(mDynamicShadowRPM, diffuseState, true);
+         lsm->render(mShadowRPM, diffuseState, false, forceUpdate);
+         dlsm->render(mDynamicShadowRPM, diffuseState, true, forceUpdate);
 
          ++smUpdatedShadowMaps;
       }
