@@ -204,25 +204,26 @@ private:
 #define GFX_DeclareTextureProfile(name)  extern GFXTextureProfile name
 #define GFX_ImplementTextureProfile(name, type,  flags, compression) GFXTextureProfile name(#name, type, flags, compression)
 
-// Set up some defaults..
-
+// Default Texture profiles
 // Texture we can render to.
-GFX_DeclareTextureProfile(GFXDefaultRenderTargetProfile);
-// Standard diffuse texture that stays in system memory.
-GFX_DeclareTextureProfile(GFXDefaultPersistentProfile);
-// Generic diffusemap. This works in most cases.
-GFX_DeclareTextureProfile(GFXDefaultStaticDiffuseProfile);
-// sRGB diffusemap. This works in most cases.
-GFX_DeclareTextureProfile(GFXDefaultStaticDiffuseSRGBProfile);
-// Generic normal map.
-GFX_DeclareTextureProfile(GFXDefaultStaticNormalMapProfile);
-// DXT5 swizzled normal map
-GFX_DeclareTextureProfile(GFXDefaultStaticDXT5nmProfile);
+GFX_DeclareTextureProfile(GFXRenderTargetProfile);
+GFX_DeclareTextureProfile(GFXRenderTargetSRGBProfile);
+// Standard static diffuse textures
+GFX_DeclareTextureProfile(GFXStaticTextureProfile);
+GFX_DeclareTextureProfile(GFXStaticTextureSRGBProfile);
+// Standard static diffuse textures that are persistent in memory
+GFX_DeclareTextureProfile(GFXTexturePersistentProfile);
+GFX_DeclareTextureProfile(GFXTexturePersistentSRGBProfile);
 // Texture that resides in system memory - used to copy data to
-GFX_DeclareTextureProfile(GFXSystemMemProfile);
+GFX_DeclareTextureProfile(GFXSystemMemTextureProfile);
+// normal map profiles
+GFX_DeclareTextureProfile(GFXNormalMapProfile);
+GFX_DeclareTextureProfile(GFXNormalMapBC3Profile);
+GFX_DeclareTextureProfile(GFXNormalMapBC5Profile);
 // Depth buffer texture
-GFX_DeclareTextureProfile(GFXDefaultZTargetProfile);
+GFX_DeclareTextureProfile(GFXZTargetProfile);
 // Dynamic Texure
 GFX_DeclareTextureProfile(GFXDynamicTextureProfile);
+GFX_DeclareTextureProfile(GFXDynamicTextureSRGBProfile);
 
 #endif

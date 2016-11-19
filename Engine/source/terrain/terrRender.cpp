@@ -85,11 +85,7 @@ void TerrainBlock::_updateMaterials()
 
       if (!mat->getDiffuseMap().isEmpty())
       {
-         GFXTextureProfile *profile = &GFXDefaultStaticDiffuseProfile;
-         if (mat->isBaseTextureSRGB())
-            profile = &GFXDefaultStaticDiffuseSRGBProfile;
-
-         mBaseTextures[i].set(mat->getDiffuseMap(), profile ,
+         mBaseTextures[i].set(mat->getDiffuseMap(), &GFXStaticTextureSRGBProfile,
             "TerrainBlock::_updateMaterials() - DiffuseMap");
       }
       else
@@ -242,7 +238,7 @@ void TerrainBlock::_updateBaseTexture(bool writeToCache)
          mBaseTex->getHeight() == destSize.y )
       blendTex = mBaseTex;
    else
-      blendTex.set( destSize.x, destSize.y, GFXFormatR8G8B8A8, &GFXDefaultRenderTargetProfile, "" );
+      blendTex.set( destSize.x, destSize.y, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, "" );
 
    GFX->pushActiveRenderTarget();   
 

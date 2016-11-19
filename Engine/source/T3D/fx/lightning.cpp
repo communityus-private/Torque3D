@@ -300,7 +300,7 @@ bool LightningData::preload(bool server, String &errorStr)
       for (U32 i = 0; i < MaxTextures; i++) 
       {
          if (strikeTextureNames[i][0])
-            strikeTextures[i] = GFXTexHandle(strikeTextureNames[i], &GFXDefaultStaticDiffuseProfile, avar("%s() - strikeTextures[%d] (line %d)", __FUNCTION__, i, __LINE__));
+            strikeTextures[i] = GFXTexHandle(strikeTextureNames[i], &GFXStaticTextureSRGBProfile, avar("%s() - strikeTextures[%d] (line %d)", __FUNCTION__, i, __LINE__));
       }
    }
 

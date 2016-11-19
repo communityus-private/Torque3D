@@ -222,7 +222,7 @@ DXGI_SWAP_CHAIN_DESC GFXD3D11Device::setupPresentParams(const GFXVideoMode &mode
    d3dpp.BufferCount = !smDisableVSync ? 2 : 1; // triple buffering when vsync is on.
    d3dpp.BufferDesc.Width = mode.resolution.x;
    d3dpp.BufferDesc.Height = mode.resolution.y;
-   d3dpp.BufferDesc.Format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8];
+   d3dpp.BufferDesc.Format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8_SRGB];
    d3dpp.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
    d3dpp.OutputWindow = hwnd;
    d3dpp.SampleDesc = sampleDesc;
@@ -289,7 +289,7 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
 
       UINT numModes = 0;
       DXGI_MODE_DESC* displayModes = NULL;
-      DXGI_FORMAT format = DXGI_FORMAT_B8G8R8A8_UNORM;
+      DXGI_FORMAT format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8_SRGB];
 
       // Get the number of elements
       hr = pOutput->GetDisplayModeList(format, 0, &numModes, NULL);
@@ -356,7 +356,7 @@ void GFXD3D11Device::enumerateVideoModes()
 
       UINT numModes = 0;
       DXGI_MODE_DESC* displayModes = NULL;
-      DXGI_FORMAT format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8];
+      DXGI_FORMAT format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8_SRGB];
 
       // Get the number of elements
       hr = pOutput->GetDisplayModeList(format, 0, &numModes, NULL);
@@ -543,7 +543,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    //create back buffer view
    D3D11_RENDER_TARGET_VIEW_DESC RTDesc;
 
-   RTDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   RTDesc.Format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8_SRGB];
    RTDesc.Texture2D.MipSlice = 0;
    RTDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 
@@ -728,7 +728,7 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
    //create back buffer view
    D3D11_RENDER_TARGET_VIEW_DESC RTDesc;
 
-   RTDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   RTDesc.Format = GFXD3D11TextureFormat[GFXFormatR8G8B8A8_SRGB];
    RTDesc.Texture2D.MipSlice = 0;
    RTDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
 
@@ -880,12 +880,13 @@ void GFXD3D11Device::clear(U32 flags, ColorI color, F32 z, U32 stencil)
    ID3D11DepthStencilView* dsView = NULL;
 
    mD3DDeviceContext->OMGetRenderTargets(1, &rtView, &dsView);
+   const ColorF colorf = color.toLinear();
 
    const FLOAT clearColor[4] = {
-      static_cast<F32>(color.red) * (1.0f / 255.0f),
-      static_cast<F32>(color.green) * (1.0f / 255.0f),
-      static_cast<F32>(color.blue) * (1.0f / 255.0f),
-      static_cast<F32>(color.alpha) * (1.0f / 255.0f)
+      static_cast<F32>(colorf.red),
+      static_cast<F32>(colorf.green),
+      static_cast<F32>(colorf.blue),
+      static_cast<F32>(colorf.alpha)
    };
 
    if (flags & GFXClearTarget && rtView)
