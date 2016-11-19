@@ -246,7 +246,7 @@ void vertex2f( F32 x, F32 y )
    vert->point.x = x;
    vert->point.y = y;
    vert->point.z = 0.0;
-   vert->color = mCurColor;
+   vert->color = mCurColor.toLinear();
    vert->texCoord = mCurTexCoord;
 }
 
@@ -261,7 +261,7 @@ void vertex3f( F32 x, F32 y, F32 z )
    vert->point.x = x;
    vert->point.y = y;
    vert->point.z = z;
-   vert->color = mCurColor;
+   vert->color = mCurColor.toLinear();
    vert->texCoord = mCurTexCoord;
 }
 
@@ -274,7 +274,7 @@ void vertex3fv( const F32 *data )
    GFXVertexPCT *vert = &mTempVertBuff[mCurVertIndex++];
 
    vert->point.set( data[0], data[1], data[2] );
-   vert->color = mCurColor;
+   vert->color = mCurColor.toLinear();
    vert->texCoord = mCurTexCoord;
 }
 
@@ -287,7 +287,7 @@ void vertex2fv( const F32 *data )
    GFXVertexPCT *vert = &mTempVertBuff[mCurVertIndex++];
 
    vert->point.set( data[0], data[1], 0.f );
-   vert->color = mCurColor;
+   vert->color = mCurColor.toLinear();
    vert->texCoord = mCurTexCoord;
 }
 
