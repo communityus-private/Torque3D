@@ -154,6 +154,10 @@ void TerrainCellMaterial::_updateDefaultAnisotropy()
          // Set the updated stateblock.
          pass.stateBlock = GFX->createStateBlock( desc );
 
+         //reflection
+         desc.setCullMode(GFXCullCW);
+         pass.reflectionStateBlock = GFX->createStateBlock(desc);
+
          // Create the wireframe state blocks.
          GFXStateBlockDesc wireframe( desc );
          wireframe.fillMode = GFXFillWireframe;
@@ -308,8 +312,6 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
                                        bool reflectMat,
                                        bool baseOnly )
 {
-   if ( GFX->getPixelShaderVersion() < 3.0f )
-      baseOnly = true;
 
    // NOTE: At maximum we only try to combine sgMaxTerrainMaterialsPerPass materials 
    // into a single pass.  This is sub-optimal for the simplest
@@ -663,14 +665,15 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
 
    // If we're doing deferred it requires some 
    // special stencil settings for it to work.
-   if ( deferredMat )
-      desc.addDesc( RenderDeferredMgr::getOpaqueStenciWriteDesc( false ) );
+   if (deferredMat)
+      desc.addDesc(RenderDeferredMgr::getOpaqueStenciWriteDesc(false));
 
-   // Shut off culling for deferred materials (reflection support).
-   if ( deferredMat )
-      desc.setCullMode( GFXCullNone );
-
+   desc.setCullMode(GFXCullCCW);
    pass->stateBlock = GFX->createStateBlock( desc );
+
+   //reflection stateblock
+   desc.setCullMode(GFXCullCW);
+   pass->reflectionStateBlock = GFX->createStateBlock(desc);
 
    // Create the wireframe state blocks.
    GFXStateBlockDesc wireframe( desc );
@@ -772,8 +775,10 @@ bool TerrainCellMaterial::setupPass(   const SceneRenderState *state,
    if ( pass.lightMapTexConst->isValid() )
       GFX->setTexture( pass.lightMapTexConst->getSamplerRegister(), mTerrain->getLightMapTex() );
 
-   if ( sceneData.wireframe )
-      GFX->setStateBlock( pass.wireframeStateBlock );
+   if (sceneData.wireframe)
+      GFX->setStateBlock(pass.wireframeStateBlock);
+   else if (state->isReflectPass())
+      GFX->setStateBlock(pass.reflectionStateBlock);
    else
       GFX->setStateBlock( pass.stateBlock );
 
