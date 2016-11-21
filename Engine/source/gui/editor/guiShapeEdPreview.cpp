@@ -58,6 +58,7 @@ IMPLEMENT_CALLBACK( GuiShapeEdPreview, onThreadPosChanged, void, ( F32 pos, bool
    "Called when the position of the active thread has changed, such as during "
    "playback." );
 
+extern GFXCubemap * gLevelEnvMap;
 
 GuiShapeEdPreview::GuiShapeEdPreview()
 :  mOrbitDist( 5.0f ),
@@ -1354,6 +1355,7 @@ void GuiShapeEdPreview::renderWorld(const RectI &updateRect)
    // Set up our TS render state here.
    TSRenderState rdata;
    rdata.setSceneState(&state);
+   rdata.setCubemap(gLevelEnvMap);
 
    LIGHTMGR->unregisterAllLights();
    LIGHTMGR->setSpecialLight( LightManager::slSunLightType, mFakeSun );

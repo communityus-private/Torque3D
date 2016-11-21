@@ -753,7 +753,7 @@ void ProcessedDeferredMaterial::_determineFeatures( U32 stageNum,
 
    bool envmapped = false;
    SceneObject * test = dynamic_cast<SceneObject *>(mUserObject);
-   if (!mMaterial->mEmissive[stageNum] && test && (test->getTypeMask() & (DynamicShapeObjectType | StaticObjectType | StaticShapeObjectType)))
+   if (!mMaterial->mEmissive[stageNum] )//&& test && (test->getTypeMask() & (DynamicShapeObjectType | StaticObjectType | StaticShapeObjectType)))
       envmapped = true;
    // cubemaps only available on stage 0 for now - bramage   
    if ( stageNum < 1 &&
