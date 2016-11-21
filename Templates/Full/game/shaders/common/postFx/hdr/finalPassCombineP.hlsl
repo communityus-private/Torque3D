@@ -70,6 +70,10 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
       bloom.rgb = lerp( bloom.rgb, rodColor, coef );
    }
 
+   // Add the bloom effect.
+   float depth = TORQUE_DEFERRED_UNCONDITION(deferredTex, IN.uv0).w;
+   sample += g_fBloomScale * bloom;
+
    // Map the high range of color values into a range appropriate for
    // display, taking into account the user's adaptation level, 
    // white point, and selected value for for middle gray.
@@ -80,10 +84,6 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 	  float toneScalar = Lp;
       sample.rgb = lerp( sample.rgb, sample.rgb * toneScalar, g_fEnableToneMapping );
    }
-
-   // Add the bloom effect.
-   float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
-   sample += g_fBloomScale * bloom;
 
    // Apply the color correction.
    sample.r = TORQUE_TEX1D( colorCorrectionTex, sample.r ).r;
