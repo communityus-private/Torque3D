@@ -119,6 +119,9 @@ public:
    };
 
    GFXTextureProfile(const String &name, Types type, U32 flags, Compression compression = NONE);
+   // Equality operators
+   inline bool operator==(const GFXTextureProfile &in_Cmp) const { return (mName == in_Cmp.mName && mProfile == in_Cmp.mProfile); }
+   inline bool operator!=(const GFXTextureProfile &in_Cmp) const { return !(*this == in_Cmp); }
 
    // Accessors
    String getName() const { return mName; };
@@ -169,7 +172,8 @@ public:
    inline bool isPooled() const { return testFlag(Pooled); }
    inline bool canDiscard() const { return !testFlag(NoDiscard); }
    inline bool isSRGB() const { return testFlag(SRGB); }
-
+   //compare profile flags for equality
+   inline bool compareFlags(const GFXTextureProfile& in_Cmp) const{ return (mProfile == in_Cmp.mProfile); }
 private:
    /// These constants control the packing for the profile; if you add flags, types, or
    /// compression info then make sure these are giving enough bits!

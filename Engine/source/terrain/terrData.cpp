@@ -176,7 +176,6 @@ ImplementEnumType(baseTexFormat,
 { TerrainBlock::NONE, "NONE", "No cached terrain.\n" },
 { TerrainBlock::DDS, "DDS", "Cache the terrain in a DDS format.\n" },
 { TerrainBlock::PNG, "PNG", "Cache the terrain in a PNG format.\n" },
-{ TerrainBlock::JPG, "JPG", "Cache the terrain in a JPG format.\n" },
 EndImplementEnumType;
 
 TerrainBlock::TerrainBlock()
@@ -873,7 +872,7 @@ GFXTextureObject* TerrainBlock::getLightMapTex()
    if ( mLightMapTex.isNull() && mLightMap )
    {
       mLightMapTex.set( mLightMap, 
-                        &GFXStaticTextureSRGBProfile, 
+                        &GFXStaticTextureProfile, 
                         false, 
                         "TerrainBlock::getLightMapTex()" );
    }
