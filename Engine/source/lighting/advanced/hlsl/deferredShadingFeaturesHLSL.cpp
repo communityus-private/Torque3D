@@ -71,30 +71,21 @@ void DeferredSpecMapHLSL::processPix( Vector<ShaderComponent*> &componentList, c
    specularMapTex->constNum = specularMap->constNum;
    LangElement *texOp = new GenOp("   @.Sample(@, @)", specularMapTex, specularMap, texCoord);
    
-   Var *specularColor = (Var*)LangElement::find("specularColor");
-   if (!specularColor) specularColor = new Var("specularColor", "float4");
-   Var *metalness = (Var*)LangElement::find("metalness");
-   if (!metalness) metalness = new Var("metalness", "float");
-   Var *smoothness = (Var*)LangElement::find("smoothness");
-   if (!smoothness) smoothness = new Var("smoothness", "float");
+   //alpha channel unused for now
+   Var *compositeMap = (Var*)LangElement::find("compositeMap");
+   if (!compositeMap) compositeMap = new Var("compositeMap", "float4");
+
+   meta->addStatement(new GenOp("   @ = @;\r\n", new DecOp(compositeMap), texOp));
+   if (fd.features[MFT_InvertSmoothness])
+      meta->addStatement(new GenOp("@.r = 1.0-@.r;\r\n", compositeMap, compositeMap));
 
    if (fd.features[MFT_FlipRB])
-   {
-      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(metalness), texOp));
-      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(smoothness), texOp));
-   }
+      meta->addStatement(new GenOp("   @.bga = @.bgr;\r\n", material, compositeMap));
    else
-   {
-      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
-      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
-   }
-   if (fd.features[MFT_InvertSmoothness])
-      meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
+      meta->addStatement(new GenOp("   @.bga = @.rgb;\r\n", material, compositeMap));
 
-   meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
+   output = meta; 
 
-   meta->addStatement(new GenOp("   @.bga = float3(@,@.g,@);\r\n", material, smoothness, specularColor, metalness));
-   output = meta;
 }
 
 ShaderFeature::Resources DeferredSpecMapHLSL::getResources( const MaterialFeatureData &fd )
