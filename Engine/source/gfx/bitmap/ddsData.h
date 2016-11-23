@@ -610,8 +610,9 @@ namespace dds
          case D3DFMT_A1R5G5B5:      return GFXFormatR5G5B5A1;
          case D3DFMT_R8G8B8:        return GFXFormatR8G8B8;
          case D3DFMT_A8R8G8B8:      return GFXFormatR8G8B8A8;
-         case D3DFMT_X8R8G8B8:      return GFXFormatR8G8B8X8;
+         case D3DFMT_X8R8G8B8:      return GFXFormatR8G8B8A8;
          case D3DFMT_A8B8G8R8:      return GFXFormatB8G8R8A8;
+         case D3DFMT_X8B8G8R8:      return GFXFormatB8G8R8A8;
          //uint
          case D3DFMT_G16R16:        return GFXFormatR16G16;
          case D3DFMT_A16B16G16R16:  return GFXFormatR16G16B16A16;
@@ -689,12 +690,14 @@ namespace dds
          return GFXFormatBC5;
       else if (format == DDSPF_A8R8G8B8)
          return GFXFormatR8G8B8A8;
+      else if (format == DDSPF_X8R8G8B8)
+         return GFXFormatR8G8B8A8;
       else if (format == DDSPF_A8B8G8R8)
+         return GFXFormatB8G8R8A8;
+      else if (format == DDSPF_X8B8G8R8)
          return GFXFormatB8G8R8A8;
       else if (format == DDSPF_R8G8B8)
          return GFXFormatR8G8B8;
-      else if (format == DDSPF_X8R8G8B8)
-         return GFXFormatR8G8B8X8;
       else if (format == DDSPF_A8L8)
          return GFXFormatA8L8;
       else if (format == DDSPF_A4L4)

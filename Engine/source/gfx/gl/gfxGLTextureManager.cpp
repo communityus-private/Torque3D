@@ -228,40 +228,32 @@ void GFXGLTextureManager::innerCreateTexture( GFXGLTextureObject *retTex,
 // loadTexture - GBitmap
 //-----------------------------------------------------------------------------
 
-static void _fastTextureLoad(GFXGLTextureObject* texture, GBitmap* pDL)
+static void _textureUpload(const S32 width, const S32 height,const S32 bytesPerPixel,const GFXGLTextureObject* texture, const GFXFormat fmt, const U8* data,const S32 mip=0, Swizzle<U8, 4> *pSwizzle = NULL)
 {
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, texture->getBuffer());
-   U32 bufSize = pDL->getWidth(0) * pDL->getHeight(0) * pDL->getBytesPerPixel();
+   U32 bufSize = width * height * bytesPerPixel;
    glBufferData(GL_PIXEL_UNPACK_BUFFER, bufSize, NULL, GL_STREAM_DRAW);
-   
-   if(pDL->getFormat() == GFXFormatR8G8B8A8 || pDL->getFormat() == GFXFormatR8G8B8X8 || pDL->getFormat() == GFXFormatR8G8B8A8_SRGB)
+
+   if(pSwizzle)
    {
       PROFILE_SCOPE(Swizzle32_Upload);
       U8* pboMemory = (U8*)dMalloc(bufSize);
-      GFX->getDeviceSwizzle32()->ToBuffer(pboMemory, pDL->getBits(0), bufSize);
-      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, bufSize, pboMemory );
+      pSwizzle->ToBuffer(pboMemory, data, bufSize);
+      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, bufSize, pboMemory);
       dFree(pboMemory);
    }
    else
    {
       PROFILE_SCOPE(SwizzleNull_Upload);
-      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, bufSize, pDL->getBits(0) );
+      glBufferSubData(GL_PIXEL_UNPACK_BUFFER, 0, bufSize, data);
    }
-   
-   if(texture->getBinding() == GL_TEXTURE_2D)
-	   glTexSubImage2D(texture->getBinding(), 0, 0, 0, pDL->getWidth(0), pDL->getHeight(0), GFXGLTextureFormat[pDL->getFormat()], GFXGLTextureType[pDL->getFormat()], NULL);
-   else
-	   glTexSubImage1D(texture->getBinding(), 0, 0, (pDL->getWidth(0) > 1 ? pDL->getWidth(0) : pDL->getHeight(0)), GFXGLTextureFormat[pDL->getFormat()], GFXGLTextureType[pDL->getFormat()], NULL);
-   
-   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-}
 
-static void _slowTextureLoad(GFXGLTextureObject* texture, GBitmap* pDL)
-{
-	if(texture->getBinding() == GL_TEXTURE_2D)
-		glTexSubImage2D(texture->getBinding(), 0, 0, 0, pDL->getWidth(0), pDL->getHeight(0), GFXGLTextureFormat[pDL->getFormat()], GFXGLTextureType[pDL->getFormat()], pDL->getBits(0));
-	else
-		glTexSubImage1D(texture->getBinding(), 0, 0, (pDL->getWidth(0) > 1 ? pDL->getWidth(0) : pDL->getHeight(0)), GFXGLTextureFormat[pDL->getFormat()], GFXGLTextureType[pDL->getFormat()], pDL->getBits(0));
+   if (texture->getBinding() == GL_TEXTURE_2D)
+      glTexSubImage2D(texture->getBinding(), mip, 0, 0, width, height, GFXGLTextureFormat[fmt], GFXGLTextureType[fmt], NULL);
+   else
+      glTexSubImage1D(texture->getBinding(), mip, 0, (width > 1 ? width : height), GFXGLTextureFormat[fmt], GFXGLTextureType[fmt], NULL);
+
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
 bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *pDL)
@@ -284,14 +276,10 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, GBitmap *pDL)
    PRESERVE_TEXTURE(texture->getBinding());
    glBindTexture(texture->getBinding(), texture->getHandle());
 
-   texture->mFormat = pDL->getFormat();
-   if(pDL->getFormat() == GFXFormatR8G8B8A8 || pDL->getFormat() == GFXFormatR8G8B8X8 || pDL->getFormat() == GFXFormatR8G8B8A8_SRGB)
-      _fastTextureLoad(texture, pDL);
-   else
-      _slowTextureLoad(texture, pDL);
+  _textureUpload(pDL->getWidth(),pDL->getHeight(),pDL->getBytesPerPixel(),texture,pDL->getFormat(), pDL->getBits(), 0);
 
-   if(texture->getMipLevels() != 1)
-      glGenerateMipmap(texture->getBinding());
+  if(!ImageUtil::isCompressedFormat(pDL->getFormat()))
+   glGenerateMipmap(texture->getBinding());
    
    return true;
 }
@@ -309,6 +297,7 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
    PRESERVE_TEXTURE(texture->getBinding());
    glBindTexture(texture->getBinding(), texture->getHandle());
    U32 numMips = dds->mSurfaces[0]->mMips.size();
+   const GFXFormat fmt = texture->mFormat;
 
    for(U32 i = 0; i < numMips; i++)
    {
@@ -319,15 +308,21 @@ bool GFXGLTextureManager::_loadTexture(GFXTextureObject *aTexture, DDSFile *dds)
          if((!isPow2(dds->getWidth()) || !isPow2(dds->getHeight())) && GFX->getCardProfiler()->queryProfile("GL::Workaround::noCompressedNPoTTextures"))
          {
             U8* uncompressedTex = new U8[dds->getWidth(i) * dds->getHeight(i) * 4];
-            ImageUtil::decompress(dds->mSurfaces[0]->mMips[i],uncompressedTex, dds->getWidth(i), dds->getHeight(i), texture->mFormat);
+            ImageUtil::decompress(dds->mSurfaces[0]->mMips[i],uncompressedTex, dds->getWidth(i), dds->getHeight(i), fmt);
             glTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GL_RGBA, GL_UNSIGNED_BYTE, uncompressedTex);
             delete[] uncompressedTex;
          }
          else
-            glCompressedTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureInternalFormat[texture->mFormat], dds->getSurfaceSize(dds->getHeight(), dds->getWidth(), i), dds->mSurfaces[0]->mMips[i]);
+            glCompressedTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureInternalFormat[fmt], dds->getSurfaceSize(dds->getHeight(), dds->getWidth(), i), dds->mSurfaces[0]->mMips[i]);
       }
       else
-         glTexSubImage2D(texture->getBinding(), i, 0, 0, dds->getWidth(i), dds->getHeight(i), GFXGLTextureFormat[texture->mFormat], GFXGLTextureType[texture->mFormat], dds->mSurfaces[0]->mMips[i]);
+      {
+         Swizzle<U8, 4> *pSwizzle = NULL;
+         if (fmt == GFXFormatR8G8B8A8 || fmt == GFXFormatR8G8B8X8 || fmt == GFXFormatR8G8B8A8_SRGB || fmt == GFXFormatR8G8B8A8_LINEAR_FORCE || fmt == GFXFormatB8G8R8A8)
+            pSwizzle = &Swizzles::bgra;
+
+         _textureUpload(dds->getWidth(i), dds->getHeight(i),dds->mBytesPerPixel, texture, fmt, dds->mSurfaces[0]->mMips[i],i, pSwizzle);
+      }
    }
 
    if(numMips !=1 && !ImageUtil::isCompressedFormat(texture->mFormat))
