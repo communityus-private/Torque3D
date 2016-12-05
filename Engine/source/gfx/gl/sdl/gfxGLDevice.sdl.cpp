@@ -107,6 +107,10 @@ void GFXGLDevice::enumerateAdapters( Vector<GFXAdapter*> &adapterList )
        AssertFatal(0, err );
    }
 
+   // Init GL
+   loadGLCore();
+   loadGLExtensions(tempContext);
+
    //check minimun Opengl 3.2
    int major, minor;
    glGetIntegerv(GL_MAJOR_VERSION, &major);
@@ -115,8 +119,6 @@ void GFXGLDevice::enumerateAdapters( Vector<GFXAdapter*> &adapterList )
    {
       return;
    }
-
-   loadGLCore();
     
    GFXAdapter *toAdd = new GFXAdapter;
    toAdd->mIndex = 0;
@@ -164,7 +166,7 @@ void GFXGLDevice::init( const GFXVideoMode &mode, PlatformWindow *window )
     PlatformGL::MakeCurrentGL( sdlWindow, mContext );
         
     loadGLCore();
-    loadGLExtensions(0);
+    loadGLExtensions(mContext);
     
     // It is very important that extensions be loaded before we call initGLState()
     initGLState();
