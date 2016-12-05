@@ -170,7 +170,12 @@ void GFXGLDevice::initGLState()
    }
 #endif
 
+   //set vysnc
    PlatformGL::setVSync(smDisableVSync ? 0 : 1);
+   
+   //install vsync callback
+   Con::NotifyDelegate clbk( this, &GFXGLDevice::vsyncCallback );
+   Con::addVariableNotify( "$pref::Video::disableVerticalSync", clbk );
 
    //OpenGL 3 need a binded VAO for render
    GLuint vao;
@@ -179,6 +184,11 @@ void GFXGLDevice::initGLState()
 
    //enable sRGB
    glEnable(GL_FRAMEBUFFER_SRGB);
+}
+
+void GFXGLDevice::vsyncCallback()
+{
+   PlatformGL::setVSync(smDisableVSync ? 0 : 1);
 }
 
 GFXGLDevice::GFXGLDevice(U32 adapterIndex) :
@@ -230,6 +240,7 @@ GFXGLDevice::GFXGLDevice(U32 adapterIndex) :
       mModelViewProjSC[i] = NULL;
 
    mOpenglStateCache = new GFXGLStateCache;
+
 }
 
 GFXGLDevice::~GFXGLDevice()
