@@ -279,7 +279,8 @@ U32 GFXDrawUtil::drawTextN( GFont *font, const Point2I &ptDraw, const UTF16 *in_
       }
 
       // Queue char for rendering..
-      mFontRenderBatcher->queueChar(c, ptX, mBitmapModulation.toLinear());
+      GFXVertexColor color = mBitmapModulation.toLinear();
+      mFontRenderBatcher->queueChar(c, ptX, color);
    }
 
 
