@@ -176,6 +176,9 @@ void GFXGLDevice::initGLState()
    GLuint vao;
    glGenVertexArrays(1, &vao);
    glBindVertexArray(vao);
+
+   //enable sRGB
+   glEnable(GL_FRAMEBUFFER_SRGB);
 }
 
 GFXGLDevice::GFXGLDevice(U32 adapterIndex) :
