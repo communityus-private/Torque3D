@@ -152,11 +152,17 @@ void TerrainCellMaterial::_updateDefaultAnisotropy()
          } // for ( U32 m=0; m < pass.materials.size(); m++ )
 
          // Set the updated stateblock.
+         desc.setCullMode( GFXCullCCW );
          pass.stateBlock = GFX->createStateBlock( desc );
+
+         //reflection
+         desc.setCullMode( GFXCullCW );
+         pass.reflectionStateBlock = GFX->createStateBlock(desc);
 
          // Create the wireframe state blocks.
          GFXStateBlockDesc wireframe( desc );
          wireframe.fillMode = GFXFillWireframe;
+         wireframe.setCullMode( GFXCullCCW );
          pass.wireframeStateBlock = GFX->createStateBlock( wireframe );
 
       } // for ( U32 p=0; i < (*iter)->mPasses.size(); p++ )
@@ -666,15 +672,17 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    if ( deferredMat )
       desc.addDesc( RenderDeferredMgr::getOpaqueStenciWriteDesc( false ) );
 
-   // Shut off culling for deferred materials (reflection support).
-   if ( deferredMat )
-      desc.setCullMode( GFXCullNone );
+   desc.setCullMode( GFXCullCCW );
+   pass->stateBlock = GFX->createStateBlock(desc);
 
-   pass->stateBlock = GFX->createStateBlock( desc );
+   //reflection stateblock
+   desc.setCullMode( GFXCullCW );
+   pass->reflectionStateBlock = GFX->createStateBlock(desc);
 
    // Create the wireframe state blocks.
    GFXStateBlockDesc wireframe( desc );
    wireframe.fillMode = GFXFillWireframe;
+   wireframe.setCullMode( GFXCullCCW );
    pass->wireframeStateBlock = GFX->createStateBlock( wireframe );
 
    return true;
@@ -774,6 +782,8 @@ bool TerrainCellMaterial::setupPass(   const SceneRenderState *state,
 
    if ( sceneData.wireframe )
       GFX->setStateBlock( pass.wireframeStateBlock );
+   else if ( state->isReflectPass( ))
+      GFX->setStateBlock( pass.reflectionStateBlock );
    else
       GFX->setStateBlock( pass.stateBlock );
 
