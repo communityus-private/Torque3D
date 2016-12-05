@@ -214,15 +214,14 @@ function processBenchmark()
          return;
       }
       //work out averages
-      %avgFps = 0;%avgMspf = 0; %avgDraws=0;
+      %avgFps = 0;%avgDraws=0;
       for (%i=$BenchSkipFrames; %i < %arrayCount; %i++)
       {
          %avgFps += $BenchResults[0,%i];
          %avgDraws += $BenchResults[2,%i];
-         %avgMspf += %mspfResults[%i];
       }
       %avgFps = %avgFps / %arrayCount;
-      %avgMspf = %avgMspf / %arrayCount;
+      %avgMspf = 1000 / %avgFps;
       %avgDraws = %avgDraws / %arrayCount;
 
       //work out min/max
