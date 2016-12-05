@@ -28,7 +28,6 @@ TORQUE_UNIFORM_SAMPLER2D(sceneTex, 0);
 TORQUE_UNIFORM_SAMPLER2D(luminanceTex, 1);
 TORQUE_UNIFORM_SAMPLER2D(bloomTex, 2);
 TORQUE_UNIFORM_SAMPLER1D(colorCorrectionTex, 3);
-TORQUE_UNIFORM_SAMPLER2D(deferredTex, 4);
 
 uniform float2 texSize0;
 uniform float2 texSize2;

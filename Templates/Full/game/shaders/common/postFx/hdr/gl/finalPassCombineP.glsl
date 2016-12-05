@@ -29,7 +29,6 @@ uniform sampler2D sceneTex;
 uniform sampler2D luminanceTex;
 uniform sampler2D bloomTex;
 uniform sampler1D colorCorrectionTex;
-uniform sampler2D deferredTex;
 
 uniform vec2 texSize0;
 uniform vec2 texSize2;
