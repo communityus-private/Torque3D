@@ -254,6 +254,13 @@ void TSShapeConstructor::initPersistFields()
       "not be imported (unless it matches the alwaysImportMesh list.\n"
       "@see alwaysImportMesh" );
 
+   addField("neverImportMat", TypeRealString, Offset(mOptions.neverImportMat, TSShapeConstructor),
+      "TAB separated patterns of materials to ignore on loading. No effect for DTS files.\n"
+      "Torque allows unwanted materials in COLLADA (.dae) files to to be ignored "
+      "during import. This field contains a TAB separated list of patterns to "
+      "match material names. Any material that matches one of the patterns in the list will "
+      "not be imported");
+
    addField( "ignoreNodeScale", TypeBool, Offset(mOptions.ignoreNodeScale, TSShapeConstructor),
       "Ignore <scale> elements inside COLLADA <node>s. No effect for DTS files.\n"
       "This field is a workaround for certain exporters that generate bad node "

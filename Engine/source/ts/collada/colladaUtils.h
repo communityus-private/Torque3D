@@ -63,6 +63,7 @@
 #include "dom/domCOLLADA.h"
 
 #include "platform/tmm_on.h"
+#include "core/strings/findMatch.h"
 
 namespace ColladaUtils
 {
@@ -85,6 +86,7 @@ namespace ColladaUtils
       String         neverImport;      // List of node names (with wildcards) to ignore on loading
       String         alwaysImportMesh; // List of mesh names (with wildcards) to import, even if in the neverImportMesh list
       String         neverImportMesh;  // List of mesh names (with wildcards) to ignore on loading
+      String         neverImportMat;   // List of material names (with wildcards) to ignore on loading
       bool           ignoreNodeScale;  // Ignore <scale> elements in <node>s
       bool           adjustCenter;     // Translate model so origin is at the center
       bool           adjustFloor;      // Translate model so origin is at the bottom
@@ -107,6 +109,7 @@ namespace ColladaUtils
          neverImport = String(Con::getVariable("$TSShapeConstructor::neverImport"));
          alwaysImportMesh = "";
          neverImportMesh = String(Con::getVariable("$TSShapeConstructor::neverImportMesh"));
+         neverImportMat = String(Con::getVariable("$TSShapeConstructor::neverImportMat"));
          ignoreNodeScale = false;
          adjustCenter = false;
          adjustFloor = false;
@@ -500,7 +503,7 @@ public:
 
    /// Most primitives can use these common implementations
    const char* getElementName() { return primitive->getElementName(); }
-   const char* getMaterial() { return primitive->getMaterial(); }
+   const char* getMaterial() { return (FindMatch::isMatchMultipleExprs(ColladaUtils::getOptions().neverImportMat, primitive->getMaterial(), false)) ? NULL : primitive->getMaterial(); }
    const domInputLocalOffset_Array& getInputs() { return primitive->getInput_array(); }
    S32 getStride() const { return stride; }
 
