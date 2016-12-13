@@ -1289,9 +1289,9 @@ function ColladaImportDlg::showDialog(%this, %shapePath, %cmd)
       %this-->singleDetailSize.setText("2");
       %this-->materialPrefix.setText("");
       %this-->alwaysImport.setText("");
-      %this-->neverImport.setText("");
+      %this-->neverImport.setText($TSShapeConstructor::neverImport);
       %this-->alwaysImportMesh.setText("");
-      %this-->neverImportMesh.setText("");
+      %this-->neverImportMesh.setText($TSShapeConstructor::neverImportMesh);
       %this-->ignoreNodeScale.setStateOn(0);
       %this-->adjustCenter.setStateOn(0);
       %this-->adjustFloor.setStateOn(0);

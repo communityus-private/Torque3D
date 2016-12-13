@@ -135,6 +135,8 @@ IMPLEMENT_CONOBJECT(TSShapeConstructor);
 TSShapeConstructor::TSShapeConstructor()
  : mShapePath(""), mLoadingShape(false)
 {
+   mOptions.neverImport = String(Con::getVariable("$TSShapeConstructor::neverImport"));
+   mOptions.neverImportMesh = String(Con::getVariable("$TSShapeConstructor::neverImportMesh"));
    mShape = NULL;
 }
 

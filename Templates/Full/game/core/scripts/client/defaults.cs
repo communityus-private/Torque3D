@@ -221,6 +221,9 @@ $pref::windEffectRadius = 25;
 /// AutoDetect graphics quality levels the next startup.
 $pref::Video::autoDetect = 1;
 
+/// global filter for nodes to skip importing
+$TSShapeConstructor::neverImport = "EnvironmentAmbientLight" TAB "null*";
+$TSShapeConstructor::neverImportMesh = "EnvironmentAmbientLight" TAB "null*";
 //-----------------------------------------------------------------------------
 // Graphics Quality Groups
 //-----------------------------------------------------------------------------
