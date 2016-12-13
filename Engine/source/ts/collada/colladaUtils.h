@@ -104,9 +104,9 @@ namespace ColladaUtils
          singleDetailSize = 2;
          matNamePrefix = "";
          alwaysImport = "";
-         neverImport = "";
+         neverImport = String(Con::getVariable("$TSShapeConstructor::neverImport"));
          alwaysImportMesh = "";
-         neverImportMesh = "";
+         neverImportMesh = String(Con::getVariable("$TSShapeConstructor::neverImportMesh"));
          ignoreNodeScale = false;
          adjustCenter = false;
          adjustFloor = false;
