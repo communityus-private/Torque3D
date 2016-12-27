@@ -471,7 +471,6 @@ singleton PostEffect( HDRPostFX )
       texture[1] = "#adaptedLum";            
       texture[2] = "#bloomFinal";
       texture[3] = $HDRPostFX::colorCorrectionRamp;
-      texture[4] = "#prepass";
       target = "$backBuffer";
    };
 };

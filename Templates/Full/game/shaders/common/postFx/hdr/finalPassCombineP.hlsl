@@ -28,7 +28,6 @@ TORQUE_UNIFORM_SAMPLER2D(sceneTex, 0);
 TORQUE_UNIFORM_SAMPLER2D(luminanceTex, 1);
 TORQUE_UNIFORM_SAMPLER2D(bloomTex, 2);
 TORQUE_UNIFORM_SAMPLER1D(colorCorrectionTex, 3);
-TORQUE_UNIFORM_SAMPLER2D(prepassTex, 4);
 
 uniform float2 texSize0;
 uniform float2 texSize2;
@@ -40,7 +39,6 @@ uniform float g_fEnableBlueShift;
 
 uniform float3 g_fBlueShiftColor;
 uniform float g_fBloomScale;
-
 uniform float g_fOneOverGamma;
 uniform float Brightness;
 uniform float Contrast;
@@ -49,7 +47,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
    float4 sample = hdrDecode( TORQUE_TEX2D( sceneTex, IN.uv0 ) );
    float adaptedLum = TORQUE_TEX2D( luminanceTex, float2( 0.5f, 0.5f ) ).r;
-   float4 bloom = pow(TORQUE_TEX2D( bloomTex, IN.uv0 ),2.2);
+   float4 bloom = TORQUE_TEX2D( bloomTex, IN.uv0 );
 
    // For very low light conditions, the rods will dominate the perception
    // of light, and therefore color will be desaturated and shifted
