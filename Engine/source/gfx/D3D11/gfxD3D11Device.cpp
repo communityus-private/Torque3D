@@ -37,6 +37,7 @@
 #include "windowManager/platformWindow.h"
 #include "gfx/D3D11/screenshotD3D11.h"
 #include "materials/shaderData.h"
+#include <d3d9.h> //ok now stressing out folks, this is just for debug events(D3DPER) :)
 
 #ifdef TORQUE_DEBUG
 #include "d3d11sdklayers.h"
@@ -79,6 +80,32 @@ GFXDevice *GFXD3D11Device::createInstance(U32 adapterIndex)
    return dev;
 }
 
+class GFXPCD3D11RegisterDevice
+{
+public:
+   GFXPCD3D11RegisterDevice()
+   {
+      GFXInit::getRegisterDeviceSignal().notify(&GFXD3D11Device::enumerateAdapters);
+   }
+};
+
+static GFXPCD3D11RegisterDevice pPCD3D11RegisterDevice;
+
+//-----------------------------------------------------------------------------
+/// Parse command line arguments for window creation
+//-----------------------------------------------------------------------------
+static void sgPCD3D11DeviceHandleCommandLine(S32 argc, const char **argv)
+{
+   // useful to pass parameters by command line for d3d (e.g. -dx9 -dx11)
+   for (U32 i = 1; i < argc; i++)
+   {
+      argv[i];
+   }
+}
+
+// Register the command line parsing hook
+static ProcessRegisterCommandLine sgCommandLine(sgPCD3D11DeviceHandleCommandLine);
+
 GFXD3D11Device::GFXD3D11Device(U32 index)
 {
    mDeviceSwizzle32 = &Swizzles::bgra;
@@ -88,10 +115,6 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
 
    mAdapterIndex = index;
    mD3DDevice = NULL;
-   mD3DDeviceContext = NULL;
-   mD3DDevice1 = NULL;
-   mD3DDeviceContext1 = NULL;
-   mUserAnnotation = NULL;
    mVolatileVB = NULL;
 
    mCurrentPB = NULL;
@@ -107,6 +130,9 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
 
    mPixVersion = 0.0;
 
+   mVertexShaderTarget = String::EmptyString;
+   mPixelShaderTarget = String::EmptyString;
+
    mDrawInstancesCount = 0;
 
    mCardProfiler = NULL;
@@ -121,7 +147,6 @@ GFXD3D11Device::GFXD3D11Device(U32 index)
    mCurrentConstBuffer = NULL;
 
    mOcclusionQuerySupported = false;
-   mCbufferPartialSupported = false;
 
    mDebugLayers = false;
 
@@ -149,7 +174,7 @@ GFXD3D11Device::~GFXD3D11Device()
 
    // Free the vertex declarations.
    VertexDeclMap::Iterator iter = mVertexDecls.begin();
-   for (; iter != mVertexDecls.end(); ++iter)
+   for (; iter != mVertexDecls.end(); iter++)
       delete iter->value;
 
    // Forcibly clean up the pools
@@ -161,8 +186,6 @@ GFXD3D11Device::~GFXD3D11Device()
    SAFE_RELEASE(mDeviceBackBufferView);
    SAFE_RELEASE(mDeviceDepthStencil);
    SAFE_RELEASE(mDeviceBackbuffer);
-   SAFE_RELEASE(mUserAnnotation);
-   SAFE_RELEASE(mD3DDeviceContext1);
    SAFE_RELEASE(mD3DDeviceContext);
 
    SAFE_DELETE(mCardProfiler);
@@ -180,7 +203,6 @@ GFXD3D11Device::~GFXD3D11Device()
 #endif
 
    SAFE_RELEASE(mSwapChain);
-   SAFE_RELEASE(mD3DDevice1);
    SAFE_RELEASE(mD3DDevice);
 }
 
@@ -317,10 +339,47 @@ void GFXD3D11Device::enumerateAdapters(Vector<GFXAdapter*> &adapterList)
          toAdd->mAvailableModes.push_back(vmAdd);
       }
 
+      //Check adapater can handle feature level 10
+      D3D_FEATURE_LEVEL deviceFeature;
+      ID3D11Device *pTmpDevice = nullptr;
+      // Create temp Direct3D11 device.
+      bool suitable = true;
+      UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+      hr = D3D11CreateDevice(EnumAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, createDeviceFlags, NULL, 0, D3D11_SDK_VERSION, &pTmpDevice, &deviceFeature, NULL);
+
+      if (FAILED(hr))
+         suitable = false;
+
+      if (deviceFeature < D3D_FEATURE_LEVEL_10_0)
+         suitable = false;
+
+      //double check we support required bgra format for LEVEL_10_0 & LEVEL_10_1
+      if (deviceFeature == D3D_FEATURE_LEVEL_10_0 || deviceFeature == D3D_FEATURE_LEVEL_10_1)
+      {
+         U32 formatSupported = 0;
+         pTmpDevice->CheckFormatSupport(DXGI_FORMAT_B8G8R8A8_UNORM, &formatSupported);
+         U32 flagsRequired = D3D11_FORMAT_SUPPORT_RENDER_TARGET | D3D11_FORMAT_SUPPORT_DISPLAY;
+         if (!(formatSupported && flagsRequired))
+         {
+            Con::printf("DXGI adapter: %s does not support BGRA", Description.c_str());
+            suitable = false;
+         }
+      }
+
       delete[] displayModes;
+      SAFE_RELEASE(pTmpDevice);
       SAFE_RELEASE(pOutput);
       SAFE_RELEASE(EnumAdapter);
-      adapterList.push_back(toAdd);
+
+      if (suitable)
+      {
+         adapterList.push_back(toAdd);
+      }
+      else
+      {
+         Con::printf("DXGI adapter: %s does not support D3D11 feature level 10 or better", Description.c_str());
+         delete toAdd;
+      }
    }
 
    SAFE_RELEASE(DXGIFactory);
@@ -395,8 +454,8 @@ void GFXD3D11Device::enumerateVideoModes()
 void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
 {
    AssertFatal(window, "GFXD3D11Device::init - must specify a window!");
-
-   HWND winHwnd = (HWND)window->getSystemWindow( PlatformWindow::WindowSystem_Windows );
+   HWND hwnd = (HWND)window->getSystemWindow(PlatformWindow::WindowSystem_Windows);
+   SetFocus(hwnd);//ensure window has focus
 
    UINT createDeviceFlags = D3D11_CREATE_DEVICE_SINGLETHREADED | D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #ifdef TORQUE_DEBUG
@@ -404,89 +463,74 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    mDebugLayers = true;
 #endif
 
-   DXGI_SWAP_CHAIN_DESC d3dpp = setupPresentParams(mode, winHwnd);
-
-   D3D_FEATURE_LEVEL deviceFeature;
-   // TODO support at least feature level 10 to match GL
-   D3D_FEATURE_LEVEL pFeatureLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0 };
-   U32 nFeatureCount = ARRAYSIZE(pFeatureLevels);
    D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;// use D3D_DRIVER_TYPE_REFERENCE for reference device
-   // create a device, device context and swap chain using the information in the d3dpp struct
-   HRESULT hres = D3D11CreateDeviceAndSwapChain(NULL,
-                                 driverType,
-                                 NULL,
-                                 createDeviceFlags,
-											pFeatureLevels,
-                                 nFeatureCount,
-                                 D3D11_SDK_VERSION,
-                                 &d3dpp,
-                                 &mSwapChain,
-                                 &mD3DDevice,
-                                 &deviceFeature,
-                                 &mD3DDeviceContext);
-
+   // create a device & device context
+   HRESULT hres = D3D11CreateDevice(NULL,
+                                    driverType,
+                                    NULL,
+                                    createDeviceFlags,
+                                    NULL,
+                                    0,
+                                    D3D11_SDK_VERSION,
+                                    &mD3DDevice,
+                                    &mFeatureLevel,
+                                    &mD3DDeviceContext);
    
    if(FAILED(hres))
    {
       #ifdef TORQUE_DEBUG
-      //try again without debug device layer enabled
-      createDeviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
-      hres = D3D11CreateDeviceAndSwapChain(NULL, driverType,NULL,createDeviceFlags,NULL, 0,
-         D3D11_SDK_VERSION,
-         &d3dpp,
-         &mSwapChain,
-         &mD3DDevice,
-         &deviceFeature,
-         &mD3DDeviceContext);
-      //if we failed again than we definitely have a problem
-      if (FAILED(hres))
-         AssertFatal(false, "GFXD3D11Device::init - D3D11CreateDeviceAndSwapChain failed!");
+         //try again without debug device layer enabled
+         createDeviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
+         hres = D3D11CreateDevice(NULL,
+                                  driverType,
+                                  NULL,
+                                  createDeviceFlags,
+                                  NULL,
+                                  0,
+                                  D3D11_SDK_VERSION,
+                                  &mD3DDevice,
+                                  &mFeatureLevel,
+                                  &mD3DDeviceContext);
+         //if we failed again than we definitely have a problem
+         if (FAILED(hres))
+            AssertFatal(false, "GFXD3D11Device::init - D3D11CreateDeviceAndSwapChain failed!");
 
-      Con::warnf("GFXD3D11Device::init - Debug layers not detected!");
-      mDebugLayers = false;
+         Con::warnf("GFXD3D11Device::init - Debug layers not detected!");
+         mDebugLayers = false;
       #else
-      AssertFatal(false, "GFXD3D11Device::init - D3D11CreateDeviceAndSwapChain failed!");
+         AssertFatal(false, "GFXD3D11Device::init - D3D11CreateDeviceAndSwapChain failed!");
       #endif
    }
 
-   // Grab DX 11.1 device and context if available and also ID3DUserDefinedAnnotation
-   hres = mD3DDevice->QueryInterface(__uuidof(ID3D11Device1), reinterpret_cast<void**>(&mD3DDevice1));
-   if (SUCCEEDED(hres))
-   {
-      //11.1 context
-      mD3DDeviceContext->QueryInterface(__uuidof(ID3D11DeviceContext1), reinterpret_cast<void**>(&mD3DDeviceContext1));
-      // ID3DUserDefinedAnnotation
-      mD3DDeviceContext->QueryInterface(IID_PPV_ARGS(&mUserAnnotation));
-      //Check what is supported, windows 7 supports very little from 11.1
-      D3D11_FEATURE_DATA_D3D11_OPTIONS options;
-      mD3DDevice1->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &options,
-         sizeof(D3D11_FEATURE_DATA_D3D11_OPTIONS));
-
-      //Cbuffer partial updates
-      if (options.ConstantBufferOffsetting && options.ConstantBufferPartialUpdate)
-         mCbufferPartialSupported = true;
-   }
-
-
-
-   //set the fullscreen state here if we need to
-   if(mode.fullScreen)
-   {
-      hres = mSwapChain->SetFullscreenState(TRUE, NULL);
-      if(FAILED(hres))
-      {
-         AssertFatal(false, "GFXD3D11Device::init- Failed to set fullscreen state!");
-      }
-   }
+#ifdef TORQUE_DEBUG
+   _suppressDebugMessages();
+#endif
 
    mTextureManager = new GFXD3D11TextureManager();
 
    // Now reacquire all the resources we trashed earlier
    reacquireDefaultPoolResources();
-   if (deviceFeature >= D3D_FEATURE_LEVEL_11_0)
+   //set vert/pixel shader targets
+   switch (mFeatureLevel)
+   {
+   case D3D_FEATURE_LEVEL_11_0:
+      mVertexShaderTarget = "vs_5_0";
+      mPixelShaderTarget = "ps_5_0";
       mPixVersion = 5.0f;
-   else
-      AssertFatal(false, "GFXD3D11Device::init - We don't support anything below feature level 11.");
+      break;
+   case D3D_FEATURE_LEVEL_10_1:
+      mVertexShaderTarget = "vs_4_1";
+      mPixelShaderTarget = "ps_4_1";
+      mPixVersion = 4.1f;
+      break;
+   case D3D_FEATURE_LEVEL_10_0:
+      mVertexShaderTarget = "vs_4_0";
+      mPixelShaderTarget = "ps_4_0";
+      mPixVersion = 4.0f;
+      break;
+   default:
+      AssertFatal(false, "GFXD3D11Device::init - We don't support this feature level");
+   }
 
    D3D11_QUERY_DESC queryDesc;
    queryDesc.Query = D3D11_QUERY_OCCLUSION;
@@ -503,68 +547,6 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    
    mCardProfiler = new GFXD3D11CardProfiler();
    mCardProfiler->init();
-
-   D3D11_TEXTURE2D_DESC desc;
-   desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-   desc.CPUAccessFlags = 0;
-   desc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
-   desc.MipLevels = 1;
-   desc.ArraySize = 1;
-   desc.Usage = D3D11_USAGE_DEFAULT;
-   desc.Width = mode.resolution.x;
-   desc.Height = mode.resolution.y;
-   desc.SampleDesc.Count =1;
-   desc.SampleDesc.Quality =0;
-   desc.MiscFlags = 0;
-
-   HRESULT hr = mD3DDevice->CreateTexture2D(&desc, NULL, &mDeviceDepthStencil);
-   if(FAILED(hr)) 
-   {
-      AssertFatal(false, "GFXD3D11Device::init - couldn't create device's depth-stencil surface.");
-   }
-
-   D3D11_DEPTH_STENCIL_VIEW_DESC depthDesc;
-   depthDesc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
-   depthDesc.Flags =0 ;
-   depthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-   depthDesc.Texture2D.MipSlice = 0;
-
-   hr = mD3DDevice->CreateDepthStencilView(mDeviceDepthStencil, &depthDesc, &mDeviceDepthStencilView);
-
-   if(FAILED(hr))
-   {
-      AssertFatal(false, "GFXD3D11Device::init - couldn't create depth stencil view");
-   }
-
-   hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&mDeviceBackbuffer);
-   if(FAILED(hr))
-     AssertFatal(false, "GFXD3D11Device::init - coudln't retrieve backbuffer ref");
-
-   //create back buffer view
-   D3D11_RENDER_TARGET_VIEW_DESC RTDesc;
-
-   RTDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-   RTDesc.Texture2D.MipSlice = 0;
-   RTDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-
-   hr = mD3DDevice->CreateRenderTargetView(mDeviceBackbuffer, &RTDesc, &mDeviceBackBufferView);
-
-   if(FAILED(hr))
-       AssertFatal(false, "GFXD3D11Device::init - couldn't create back buffer target view");
-
-#ifdef TORQUE_DEBUG
-   String backBufferName = "MainBackBuffer";
-   String depthSteniclName = "MainDepthStencil";
-   String backBuffViewName = "MainBackBuffView";
-   String depthStencViewName = "MainDepthView";
-   mDeviceBackbuffer->SetPrivateData(WKPDID_D3DDebugObjectName, backBufferName.size(), backBufferName.c_str());
-   mDeviceDepthStencil->SetPrivateData(WKPDID_D3DDebugObjectName, depthSteniclName.size(), depthSteniclName.c_str());
-   mDeviceDepthStencilView->SetPrivateData(WKPDID_D3DDebugObjectName, depthStencViewName.size(), depthStencViewName.c_str());
-   mDeviceBackBufferView->SetPrivateData(WKPDID_D3DDebugObjectName, backBuffViewName.size(), backBuffViewName.c_str());
-
-   _suppressDebugMessages();
-
-#endif
 
    gScreenShot = new ScreenShotD3D11;
 
@@ -615,14 +597,35 @@ GFXWindowTarget * GFXD3D11Device::allocWindowTarget(PlatformWindow *window)
 {
    AssertFatal(window,"GFXD3D11Device::allocWindowTarget - no window provided!");
 
-   // Allocate the device.
-   init(window->getVideoMode(), window);
-
    // Set up a new window target...
    GFXD3D11WindowTarget *gdwt = new GFXD3D11WindowTarget();
    gdwt->mWindow = window;
    gdwt->mSize = window->getClientExtent();
-   gdwt->initPresentationParams();
+   
+   if (!mInitialized)
+   {
+      gdwt->mSecondaryWindow = false;
+      // Allocate the device.
+      init(window->getVideoMode(), window);
+      gdwt->initPresentationParams();
+      gdwt->createSwapChain();
+      gdwt->createBuffersAndViews();
+
+      mSwapChain = gdwt->getSwapChain();
+      mDeviceBackbuffer = gdwt->getBackBuffer();
+      mDeviceDepthStencil = gdwt->getDepthStencil();
+      mDeviceBackBufferView = gdwt->getBackBufferView();
+      mDeviceDepthStencilView = gdwt->getDepthStencilView();
+
+   }
+   else //additional window/s
+   {
+      gdwt->mSecondaryWindow = true;
+      gdwt->initPresentationParams();
+      gdwt->createSwapChain();
+      gdwt->createBuffersAndViews();
+   }
+   
    gdwt->registerResourceWithDevice(this);
 
    return gdwt;
@@ -636,12 +639,14 @@ GFXTextureTarget* GFXD3D11Device::allocRenderToTextureTarget()
    return targ;
 }
 
-void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
+void GFXD3D11Device::beginReset()
 {
    if (!mD3DDevice)
       return;
 
    mInitialized = false;
+
+   releaseDefaultPoolResources();
 
    // Clean up some commonly dangling state. This helps prevents issues with
    // items that are destroyed by the texture manager callbacks and recreated
@@ -653,117 +658,26 @@ void GFXD3D11Device::reset(DXGI_SWAP_CHAIN_DESC &d3dpp)
 
    mD3DDeviceContext->ClearState();
 
-   DXGI_MODE_DESC displayModes;
-   displayModes.Format = d3dpp.BufferDesc.Format;
-   displayModes.Height = d3dpp.BufferDesc.Height;
-   displayModes.Width = d3dpp.BufferDesc.Width;
-   displayModes.RefreshRate = d3dpp.BufferDesc.RefreshRate;
-   displayModes.Scaling = d3dpp.BufferDesc.Scaling;
-   displayModes.ScanlineOrdering = d3dpp.BufferDesc.ScanlineOrdering;
-
-   HRESULT hr;
-   if (!d3dpp.Windowed)
-   {
-      hr = mSwapChain->ResizeTarget(&displayModes);
-
-      if (FAILED(hr))
-      {
-         AssertFatal(false, "D3D11Device::reset - failed to resize target!");
-      }
-   }
-
-   // First release all the stuff we allocated from D3DPOOL_DEFAULT
-   releaseDefaultPoolResources();
-
-   //release the backbuffer, depthstencil, and their views
-   SAFE_RELEASE(mDeviceBackBufferView);
-   SAFE_RELEASE(mDeviceBackbuffer);
+   //release old buffers and views
    SAFE_RELEASE(mDeviceDepthStencilView);
+   SAFE_RELEASE(mDeviceBackBufferView);
    SAFE_RELEASE(mDeviceDepthStencil);
+   SAFE_RELEASE(mDeviceBackbuffer);
+}
 
-   hr = mSwapChain->ResizeBuffers(d3dpp.BufferCount, d3dpp.BufferDesc.Width, d3dpp.BufferDesc.Height, d3dpp.BufferDesc.Format, d3dpp.Windowed ? 0 : DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
-
-   if (FAILED(hr))
-   {
-      AssertFatal(false, "D3D11Device::reset - failed to resize back buffer!");
-   }
-
-   //recreate backbuffer view. depth stencil view and texture
-   D3D11_TEXTURE2D_DESC desc;
-   desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-   desc.CPUAccessFlags = 0;
-   desc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
-   desc.MipLevels = 1;
-   desc.ArraySize = 1;
-   desc.Usage = D3D11_USAGE_DEFAULT;
-   desc.Width = d3dpp.BufferDesc.Width;
-   desc.Height = d3dpp.BufferDesc.Height;
-   desc.SampleDesc.Count = 1;
-   desc.SampleDesc.Quality = 0;
-   desc.MiscFlags = 0;
-
-   hr = mD3DDevice->CreateTexture2D(&desc, NULL, &mDeviceDepthStencil);
-   if (FAILED(hr))
-   {
-      AssertFatal(false, "GFXD3D11Device::reset - couldn't create device's depth-stencil surface.");
-   }
-
-   D3D11_DEPTH_STENCIL_VIEW_DESC depthDesc;
-   depthDesc.Format = GFXD3D11TextureFormat[GFXFormatD24S8];
-   depthDesc.Flags = 0;
-   depthDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-   depthDesc.Texture2D.MipSlice = 0;
-
-   hr = mD3DDevice->CreateDepthStencilView(mDeviceDepthStencil, &depthDesc, &mDeviceDepthStencilView);
-
-   if (FAILED(hr))
-   {
-      AssertFatal(false, "GFXD3D11Device::reset - couldn't create depth stencil view");
-   }
-
-   hr = mSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&mDeviceBackbuffer);
-   if (FAILED(hr))
-      AssertFatal(false, "GFXD3D11Device::reset - coudln't retrieve backbuffer ref");
-
-   //create back buffer view
-   D3D11_RENDER_TARGET_VIEW_DESC RTDesc;
-
-   RTDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-   RTDesc.Texture2D.MipSlice = 0;
-   RTDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-
-   hr = mD3DDevice->CreateRenderTargetView(mDeviceBackbuffer, &RTDesc, &mDeviceBackBufferView);
-
-   if (FAILED(hr))
-      AssertFatal(false, "GFXD3D11Device::reset - couldn't create back buffer target view");
+void GFXD3D11Device::endReset(GFXD3D11WindowTarget *windowTarget)
+{
+   //grab new references
+   mDeviceBackbuffer = windowTarget->getBackBuffer();
+   mDeviceDepthStencil = windowTarget->getDepthStencil();
+   mDeviceBackBufferView = windowTarget->getBackBufferView();
+   mDeviceDepthStencilView = windowTarget->getDepthStencilView();
 
    mD3DDeviceContext->OMSetRenderTargets(1, &mDeviceBackBufferView, mDeviceDepthStencilView);
 
-   hr = mSwapChain->SetFullscreenState(!d3dpp.Windowed, NULL);
-
-   if (FAILED(hr))
-   {
-      AssertFatal(false, "D3D11Device::reset - failed to change screen states!");
-   }
-
-   //Microsoft recommend this, see DXGI documentation
-   if (!d3dpp.Windowed)
-   {
-      displayModes.RefreshRate.Numerator = 0;
-      displayModes.RefreshRate.Denominator = 0;
-      hr = mSwapChain->ResizeTarget(&displayModes);
-
-      if (FAILED(hr))
-      {
-         AssertFatal(false, "D3D11Device::reset - failed to resize target!");
-      }
-   }
-
-   mInitialized = true;
-
-   // Now re aquire all the resources we trashed earlier
+   // Now reacquire all the resources we trashed earlier
    reacquireDefaultPoolResources();
-
+   mInitialized = true;
    // Mark everything dirty and flush to card, for sanity.
    updateStates(true);
 }
@@ -775,11 +689,12 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
    if(mGenericShader[GSColor] == NULL)
    {
       ShaderData *shaderData;
-
+      //shader model 4.0 is enough for the generic shaders
+      const char* shaderModel = "4.0";
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/colorV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/colorP.hlsl");
-      shaderData->setField("pixVersion", "5.0");
+      shaderData->setField("pixVersion", shaderModel);
       shaderData->registerObject();
       mGenericShader[GSColor] =  shaderData->getShader();
       mGenericShaderBuffer[GSColor] = mGenericShader[GSColor]->allocConstBuffer();
@@ -789,7 +704,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/modColorTextureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/modColorTextureP.hlsl");
-      shaderData->setField("pixVersion", "5.0");
+      shaderData->setField("pixVersion", shaderModel);
       shaderData->registerObject();
       mGenericShader[GSModColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSModColorTexture] = mGenericShader[GSModColorTexture]->allocConstBuffer();
@@ -799,7 +714,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/addColorTextureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/addColorTextureP.hlsl");
-      shaderData->setField("pixVersion", "5.0");
+      shaderData->setField("pixVersion", shaderModel);
       shaderData->registerObject();
       mGenericShader[GSAddColorTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSAddColorTexture] = mGenericShader[GSAddColorTexture]->allocConstBuffer();
@@ -809,7 +724,7 @@ void GFXD3D11Device::setupGenericShaders(GenericShaderType type)
       shaderData = new ShaderData();
       shaderData->setField("DXVertexShaderFile", "shaders/common/fixedFunction/textureV.hlsl");
       shaderData->setField("DXPixelShaderFile", "shaders/common/fixedFunction/textureP.hlsl");
-      shaderData->setField("pixVersion", "5.0");
+      shaderData->setField("pixVersion", shaderModel);
       shaderData->registerObject();
       mGenericShader[GSTexture] = shaderData->getShader();
       mGenericShaderBuffer[GSTexture] = mGenericShader[GSTexture]->allocConstBuffer();
@@ -1778,32 +1693,30 @@ GFXCubemap * GFXD3D11Device::createCubemap()
    return cube;
 }
 
-// Debug events
 //------------------------------------------------------------------------------
 void GFXD3D11Device::enterDebugEvent(ColorI color, const char *name)
 {
-   if (mUserAnnotation)
-   {
-      WCHAR  eventName[260];
-      MultiByteToWideChar(CP_ACP, 0, name, -1, eventName, 260);
-      mUserAnnotation->BeginEvent(eventName);
-   }
+   // BJGFIX
+   WCHAR  eventName[260];
+   MultiByteToWideChar(CP_ACP, 0, name, -1, eventName, 260);
+
+   D3DPERF_BeginEvent(D3DCOLOR_ARGB(color.alpha, color.red, color.green, color.blue),
+      (LPCWSTR)&eventName);
 }
 
 //------------------------------------------------------------------------------
 void GFXD3D11Device::leaveDebugEvent()
 {
-   if (mUserAnnotation)
-      mUserAnnotation->EndEvent();
+   D3DPERF_EndEvent();
 }
 
 //------------------------------------------------------------------------------
 void GFXD3D11Device::setDebugMarker(ColorI color, const char *name)
 {
-   if (mUserAnnotation)
-   {
-      WCHAR  eventName[260];
-      MultiByteToWideChar(CP_ACP, 0, name, -1, eventName, 260);
-      mUserAnnotation->SetMarker(eventName);
-   }
+   // BJGFIX
+   WCHAR  eventName[260];
+   MultiByteToWideChar(CP_ACP, 0, name, -1, eventName, 260);
+
+   D3DPERF_SetMarker(D3DCOLOR_ARGB(color.alpha, color.red, color.green, color.blue),
+      (LPCWSTR)&eventName);
 }

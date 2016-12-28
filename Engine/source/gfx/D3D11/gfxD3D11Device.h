@@ -143,6 +143,11 @@ protected:
 
    F32 mPixVersion;
 
+   D3D_FEATURE_LEVEL mFeatureLevel;
+   // Shader Model targers
+   String mVertexShaderTarget;
+   String mPixelShaderTarget;
+
    bool mDebugLayers;
 
    DXGI_SAMPLE_DESC mMultisampleDesc;
@@ -160,7 +165,7 @@ protected:
 
    virtual GFXD3D11VertexBuffer* findVBPool( const GFXVertexFormat *vertexFormat, U32 numVertsNeeded );
    virtual GFXD3D11VertexBuffer* createVBPool( const GFXVertexFormat *vertexFormat, U32 vertSize );
-   
+
    // State overrides
    // {
 
@@ -294,7 +299,8 @@ public:
    ID3D11Device1* getDevice1() { return mD3DDevice1; }
 
    /// Reset
-   void reset( DXGI_SWAP_CHAIN_DESC &d3dpp );
+   void beginReset();
+   void endReset(GFXD3D11WindowTarget *windowTarget);
 
    virtual void setupGenericShaders( GenericShaderType type  = GSColor );
 
@@ -308,9 +314,15 @@ public:
    // Default multisample parameters
    DXGI_SAMPLE_DESC getMultisampleType() const { return mMultisampleDesc; }
 
+   // Get feature level this gfx device supports
+   D3D_FEATURE_LEVEL getFeatureLevel() const { mFeatureLevel; }
+   // Shader Model targers
+   const String &getVertexShaderTarget() const { return mVertexShaderTarget; }
+   const String &getPixelShaderTarget() const { return mPixelShaderTarget; }
+
    // grab the sampler map
    const SamplerMap &getSamplersMap() const { return mSamplersMap; }
-   SamplerMap &getSamplersMap(){ return mSamplersMap; }
+   SamplerMap &getSamplersMap() { return mSamplersMap; }
 };
 
 #endif

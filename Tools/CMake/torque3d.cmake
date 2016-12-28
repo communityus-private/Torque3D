@@ -83,32 +83,29 @@ option(TORQUE_HIFI "HIFI? support" OFF)
 mark_as_advanced(TORQUE_HIFI)
 option(TORQUE_EXTENDED_MOVE "Extended move support" OFF)
 mark_as_advanced(TORQUE_EXTENDED_MOVE)
+
 if(WIN32)
-	option(TORQUE_SDL "Use SDL for window and input" OFF)
+	option(TORQUE_SDL "Use SDL for window and input" ON)
 else()
 	set(TORQUE_SDL ON) # we need sdl to work on Linux/Mac
 endif()
+
 if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
+	option(TORQUE_OPENGL "Allow OpenGL render" ON)
 	#mark_as_advanced(TORQUE_OPENGL)
 else()
 	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
 endif()
 
 if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
-	#mark_as_advanced(TORQUE_OPENGL)
-else()
-	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
-	option(TORQUE_DEDICATED "Torque dedicated" OFF)
-endif()
-
-if(WIN32)
-	option(TORQUE_D3D11 "Allow Direct3D 11 render" OFF)
+	option(TORQUE_D3D11 "Allow Direct3D 11 render" ON)
 endif()
 
 option(TORQUE_EXPERIMENTAL_EC "Experimental Entity/Component systems" OFF)
 mark_as_advanced(TORQUE_EXPERIMENTAL_EC)
+
+option(TORQUE_DEDICATED "Torque dedicated" OFF)
+mark_as_advanced(TORQUE_DEDICATED)
 
 ###############################################################################
 # options
@@ -618,7 +615,7 @@ endif()
 
 if(WIN32)
     # copy pasted from T3D build system, some might not be needed
-    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WSOCK32.LIB;vfw32.lib;Imm32.lib;d3d9.lib;d3dx9.lib;DxErr.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
+    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WS2_32.LIB;vfw32.lib;Imm32.lib;d3d9.lib;d3dx9.lib;DxErr.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
     mark_as_advanced(TORQUE_EXTERNAL_LIBS)
     addLib("${TORQUE_EXTERNAL_LIBS}")
 
