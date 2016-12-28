@@ -296,13 +296,13 @@ void main()
                                     normalize( -lightDirection ),
                                     viewSpacePos,
                                     normal,
-                                    1.0-matInfo.b*0.9, //slightly compress roughness to allow for non-baked lighting
+                                    1.0-matInfo.b,
                                     matInfo.a );
    vec3 lightColorOut = real_specular.rgb * lightBrightness * shadowed;
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   
-   vec4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-vsEyeRay), normal)) );
+   float Sat_NdotV = saturate(dot(normalize(-vsEyeRay), normal));   
+   vec4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * Sat_NdotV );
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
@@ -314,5 +314,5 @@ void main()
       lightColorOut = debugColor;
    #endif
 
-   OUT_col = matInfo.g*(vec4(lightColorOut+subsurface*(1.0-Sat_NL_Att),real_specular.a)*Sat_NL_Att+addToResult);
+   OUT_col = vec4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a);
 }

@@ -61,7 +61,7 @@ void main()
    vec3 diffuseColor = colorBuffer - (colorBuffer * metalness);
    vec3 reflectColor = indirectLighting*colorBuffer;
    colorBuffer = diffuseColor+lerp(reflectColor,indirectLighting,frez);
-   colorBuffer *= directLighting.rgb; 
+   colorBuffer *= max(directLighting.rgb,vec3(0,0,0)); 
    
    OUT_col =  hdrEncode(vec4(colorBuffer,1.0));
 }
