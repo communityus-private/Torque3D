@@ -1620,7 +1620,7 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
    }
 
    // Open context menu if this is a SimGroup
-   else if( %obj.class $=  "SimGroup" )
+   else if( %obj.isMemberOfClass("SimGroup" ))
    {
       %popup = ETSimGroupContextPopup;
       if( !isObject( %popup ) )
@@ -1647,42 +1647,28 @@ function EditorTree::onRightMouseUp( %this, %itemId, %mouse, %obj )
          
       if(%obj.isMemberOfClass("Entity"))
       {
+         
          if( !isObject( GameObjectPopup ) )
-            new PopupMenu( GameObjectPopup )
+            %popup = new PopupMenu( GameObjectPopup : ETSimGroupContextPopup )
             {
-               superClass = "MenuBuilder";
-               isPopup = "1";
-
-               item[ 0 ] = "Convert to Game Object" TAB "" TAB "EWorldEditor.createGameObject( %this.object );";
-               item[ 1 ] = "Duplicate Game Object" TAB "" TAB "EWorldEditor.duplicateGameObject( %this.object );";
-               item[ 2 ] = "Show in Asset Browser" TAB "" TAB "EWorldEditor.showGameObjectInAssetBrowser( %this.object );";
+               item[ 12 ] = "-";
+               item[ 13 ] = "Convert to Game Object" TAB "" TAB "EWorldEditor.createGameObject( %this.object );";
+               item[ 14 ] = "Duplicate Game Object" TAB "" TAB "EWorldEditor.duplicateGameObject( %this.object );";
+               item[ 15 ] = "Show in Asset Browser" TAB "" TAB "EWorldEditor.showGameObjectInAssetBrowser( %this.object );";
             };
             
          if(!isObject(AssetDatabase.acquireAsset(%obj.gameObjectAsset)))
          {
-            GameObjectPopup.enableItem(0, true);
-            GameObjectPopup.enableItem(1, false);
-            GameObjectPopup.enableItem(2, false);
+            GameObjectPopup.enableItem(13, true);
+            GameObjectPopup.enableItem(14, false);
+            GameObjectPopup.enableItem(15, false);
          }
          else
          {
-            GameObjectPopup.enableItem(0, false);
-            GameObjectPopup.enableItem(1, true);
-            GameObjectPopup.enableItem(2, true);
+            GameObjectPopup.enableItem(14, false);
+            GameObjectPopup.enableItem(15, true);
+            GameObjectPopup.enableItem(16, true);
          }
-            
-         %popup = ETEntityContextPopup;      
-         if( !isObject( %popup ) )
-            %popup = new PopupMenu( ETEntityContextPopup : ETSimGroupContextPopup )
-            {
-               superClass = "MenuBuilder";
-               isPopup = "1";
-
-               item[ 12 ] = "-";
-               //item[ 13 ] = "Convert to Game Object" TAB "" TAB "EWorldEditor.createGameObject( %this.object );";
-            };
-            
-         %popup.insertSubmenu(13, "Game Object", GameObjectPopup);
       }
 
       %popup.object = %obj;

@@ -1,0 +1,6 @@
+<StateMachineAsset
+    canSave="true"
+    canSaveDynamicFields="true"
+    AssetName="TestStateMachine"
+    stateMachineFile="modules/TestModule/stateMachines/TestStateMachine.xml"
+    VersionId="1" />

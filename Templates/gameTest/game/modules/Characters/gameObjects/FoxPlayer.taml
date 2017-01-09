@@ -51,7 +51,7 @@
         networked="true"
         Enabled="true"
         internalName="MeshComponent"
-        MeshAsset="@asset=Characters:Red_Guy" />
+        MeshAsset="@asset=Characters:playerBox" />
     <Component
         networked="false"
         Enabled="true"
@@ -108,7 +108,7 @@
         networked="false"
         Enabled="true"
         internalName="StateMachineComponent"
-        stateMachineFile="modules/Characters/StateMachines/testSM.xml" />
+        StateMachineAsset="Weapons:TestSM" />
     <Component
         networked="false"
         Enabled="true"

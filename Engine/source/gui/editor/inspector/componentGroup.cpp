@@ -94,6 +94,8 @@ bool GuiInspectorComponentGroup::inspectGroup()
    if (!mTargetComponent)
       return false;
 
+   mParent->setComponentGroupTargetId(mTargetComponent->getId());
+
    //first, relevent static fields
    AbstractClassRep::FieldList& fieldList = mTargetComponent->getClassRep()->mFieldList;
    for (AbstractClassRep::FieldList::iterator itr = fieldList.begin();

@@ -1,0 +1,15 @@
+<StateMachine>
+    <Fields />
+    <States>
+        <State name="StartState" scriptFunction="onStartState" pos="-4 -89" />
+        <State name="EchoState" scriptFunction="onEchoState" pos="1 31" />
+    </States>
+    <Transitions>
+        <Transition ownerState="0" stateTarget="1">
+            <Rule fieldId="stateTime" comparitor="GreaterThan" value="500" />
+        </Transition>
+        <Transition ownerState="1" stateTarget="0">
+            <Rule fieldId="stateTime" comparitor="GreaterThan" value="500" />
+        </Transition>
+    </Transitions>
+</StateMachine>

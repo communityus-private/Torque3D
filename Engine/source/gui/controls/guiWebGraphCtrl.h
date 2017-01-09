@@ -58,6 +58,14 @@ class guiWebGraphCtrl : public GuiButtonBaseCtrl
       ColorI overrideColor;
       bool useOverrideColor;
 
+      struct field
+      {
+         String fieldName;
+         String fieldValue;
+      };
+
+      Vector<field> fields;
+
       Node() : overrideColor(ColorI::BLACK), useOverrideColor(false), error(false) {}
    };
 
@@ -125,11 +133,16 @@ public:
    void onMiddleMouseDown(const GuiEvent &event);
    void onMiddleMouseDragged(const GuiEvent &event);
    void onMiddleMouseUp(const GuiEvent &event);
+
+   virtual bool onKeyDown(const GuiEvent& event);
+   virtual bool onKeyUp(const GuiEvent& event);
    //
 
    void addFolder(String nodeName);
    S32 addNode(String nodeName);
    S32 addConnection(S32 startNodeIdx, S32 endNodeIdx);
+
+   void deleteNode(S32 nodeIdx);
 
    RectI getNodeBounds(S32 nodeIdx);
    RectI getFolderBounds(S32 folderIdx);
@@ -150,6 +163,12 @@ public:
 
    String getNodeName(S32 nodeIdx);
    void setNodeName(S32 nodeIdx, String newName);
+
+   String getNodeField(S32 nodeIdx, String fieldName);
+   void setNodeField(S32 nodeIdx, String fieldName, String value);
+
+   String getNodeFieldName(S32 nodeIdx, S32 fieldIdx);
+   S32 getNodeFieldCount(S32 nodeIdx);
    //
 
    void setNodeError(S32 nodeIdx, bool error)

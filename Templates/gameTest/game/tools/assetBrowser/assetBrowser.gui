@@ -1043,7 +1043,7 @@
                profile = "ToolsGuiButtonProfile";
                visible = "1";
                active = "1";
-               command = "AssetBrowser.selectMaterial( AssetBrowser.selectedMaterial );";
+               command = "AssetBrowser.selectAsset( AssetBrowser.selectedAsset );";
                tooltipProfile = "GuiToolTipProfile";
                hovertime = "1000";
                isContainer = "0";

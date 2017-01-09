@@ -1,0 +1,9 @@
+<GameObjectAsset
+    canSave="true"
+    canSaveDynamicFields="true"
+    AssetName="TestGameObject"
+    gameObjectName="TestGameObject"
+    scriptFilePath="modules/TestModule/gameObjects/TestGameObject.cs"
+    TAMLFilePath="modules/TestModule/gameObjects/TestGameObject.taml"
+    assetId="TestGameObjectAsset"
+    VersionId="1" />

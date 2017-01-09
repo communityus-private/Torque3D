@@ -43,6 +43,15 @@ function AssetBrowser::onWake(%this)
 
 function AssetBrowser::buildPopupMenus(%this)
 {
+   if( !isObject( AddNewModulePopup ) )
+      new PopupMenu( AddNewModulePopup )
+      {
+         superClass = "MenuBuilder";
+         isPopup = true;
+         
+         item[ 0 ] = "Create New Module" TAB "" TAB "Canvas.pushDialog(AssetBrowser_AddPackage); AssetBrowser_addPackageWindow.selectWindow();";
+      };
+      
    if( !isObject( EditAssetPopup ) )
       new PopupMenu( EditAssetPopup )
       {
@@ -52,6 +61,7 @@ function AssetBrowser::buildPopupMenus(%this)
          item[ 0 ] = "Edit Asset" TAB "" TAB "AssetBrowser.editAsset();";
          item[ 1 ] = "Rename Asset" TAB "" TAB "AssetBrowser.renameAsset();";
          item[ 2 ] = "Refresh Asset" TAB "" TAB "AssetBrowser.refreshAsset();";
+         item[ 3 ] = "Asset Properties" TAB "" TAB "AssetBrowser.editAssetInfo();";
 
          jumpFileName = "";
          jumpLineNumber = "";
@@ -66,9 +76,9 @@ function AssetBrowser::buildPopupMenus(%this)
          item[ 0 ] = "Create Component" TAB "" TAB "Canvas.pushDialog(AssetBrowser_newComponentAsset); AssetBrowser_newComponentAsset-->NewComponentPackageList.setText(AssetBrowser.selectedModule);";
 
          //item[ 0 ] = "Create Component" TAB "" TAB "AssetBrowser.createNewComponentAsset(\"NewComponent\");";
-         item[ 1 ] = "Create Material" TAB "" TAB "AssetBrowser.editAssetInfo();";
-         item[ 2 ] = "Create State Machine" TAB "" TAB "AssetBrowser.editAssetInfo();";
-         item[ 3 ] = "Create Shape" TAB "" TAB "AssetBrowser.editAssetInfo();";
+         item[ 1 ] = "Create Material" TAB "" TAB "createNewMaterialAsset(\"NewMaterial\", AssetBrowser.selectedModule);";
+         item[ 2 ] = "Create State Machine" TAB "" TAB "createNewStateMachineAsset(\"NewStateMachine\", AssetBrowser.selectedModule);";
+         item[ 3 ] = "Create Shape" TAB "" TAB "AssetBrowser.createNewAsset(\"Shape\", AssetBrowser.selectedModule);";
       };
       
    if( !isObject( AddNewComponentAssetPopup ) )
@@ -84,61 +94,24 @@ function AssetBrowser::buildPopupMenus(%this)
 
 //Drag-Drop functionality
 
-/*function AssetBrowser::selectMaterial( %this, %material )
+function AssetBrowser::selectAsset( %this, %asset )
 {
-   %name = "";
-   
-   if( AssetBrowser.terrainMaterials )
-   {
-      %name = %material;
-      %material = TerrainMaterialSet.findObjectByInternalName( %material );
-   }
-   else
-   {
-      %name = %material.getName();
-   }
-   
    // The callback function should be ready to intake the returned material
    //eval("materialEd_previewMaterial." @ %propertyField @ " = " @ %value @ ";");
    if( AssetBrowser.returnType $= "name" )
-      eval( "" @ AssetBrowser.selectCallback @ "(" @ %name  @ ");");
-   else if( AssetBrowser.returnType $= "index" )
    {
-      %index = -1;
-      if( AssetBrowser.terrainMaterials )
-      {
-         // Obtain the index into the terrain's material list
-         %mats = ETerrainEditor.getMaterials();
-         for(%i = 0; %i < getRecordCount( %mats ); %i++)
-         {
-            %matInternalName = getRecord( %mats, %i );
-            if( %matInternalName $= %name )
-            {
-               %index = %i;
-               break;
-            }
-         }
-      }
-      else
-      {
-         // Obtain the index into the material set
-         for(%i = 0; %i < materialSet.getCount(); %i++)
-         {
-            %obj = materialSet.getObject(%i);
-            if( %obj.getName() $= %name )
-            {
-               %index = %i;
-               break;
-            }
-         }
-      }
-      
-      eval( "" @ AssetBrowser.selectCallback @ "(" @ %index  @ ");");
+      eval( "" @ AssetBrowser.selectCallback @ "(" @ %name  @ ");");
    }
    else
-      eval( "" @ AssetBrowser.selectCallback @ "(" @ %material.getId()  @ ");");
+   {
+      %command = "" @ AssetBrowser.selectCallback @ "(\"" @ %asset  @ "\");";
+      eval(%command);
+   }
+   
+   Inspector.refresh();
+   
    AssetBrowser.hideDialog();
-}*/
+}
 
 function AssetBrowser::showDialog( %this, %AssetTypeFilter, %selectCallback, %targetObj, %fieldName, %returnType)
 {
@@ -202,15 +175,6 @@ function AssetBrowser::buildPreviewArray( %this, %asset, %moduleName )
       isContainer = "1";
       assetName = %assetName;
       moduleName = %moduleName;
-      
-      new GuiTextEditCtrl(){
-         position = 0 SPC %previewSize.y + %previewBounds - 16;
-         profile = "ToolsGuiTextEditCenterProfile";
-         extent = %previewSize.x + %previewBounds SPC 16;
-         text = %assetName;
-         internalName = "AssetNameLabel";
-         class = "AssetNameField";
-      };
    };
    
    %assetType = AssetDatabase.getAssetType(%asset);
@@ -291,7 +255,8 @@ function AssetBrowser::buildPreviewArray( %this, %asset, %moduleName )
    }
    else
    {
-      %previewButton = new GuiBitmapButtonCtrl(){
+      %previewButton = new GuiBitmapButtonCtrl()
+      {
          internalName = %assetName;
          HorizSizing = "right";
          VertSizing = "bottom";
@@ -304,7 +269,8 @@ function AssetBrowser::buildPreviewArray( %this, %asset, %moduleName )
          text = "Loading...";
          useStates = false;
          
-         new GuiBitmapButtonCtrl(){
+         new GuiBitmapButtonCtrl()
+         {
                HorizSizing = "right";
                VertSizing = "bottom";
                profile = "ToolsGuiButtonProfile";
@@ -380,8 +346,20 @@ function AssetBrowser::buildPreviewArray( %this, %asset, %moduleName )
          text = "";
    };
    
+   %previewNameCtrl = new GuiTextEditCtrl(){
+         position = 0 SPC %previewSize.y + %previewBounds - 16;
+         profile = "ToolsGuiTextEditCenterProfile";
+         extent = %previewSize.x + %previewBounds SPC 16;
+         text = %assetName;
+         originalAssetName = %assetName; //special internal field used in renaming assets
+         internalName = "AssetNameLabel";
+         class = "AssetNameField";
+         active = false;
+      };
+   
    %container.add(%previewButton);  
    %container.add(%previewBorder); 
+   %container.add(%previewNameCtrl);
    
    // add to the gui control array
    AssetBrowser-->materialSelection.add(%container);
@@ -773,6 +751,14 @@ function AssetBrowserFilterTree::onSelect(%this, %itemId)
 	if(%itemId == 1)
 		//can't select root
 		return;
+		
+   //Make sure we have an actual module selected!
+   %parentId = %this.getParentItem(%itemId);
+      
+   if(%parentId != 1)
+      AssetBrowser.selectedModule = %this.getItemText(%parentId);//looks like we have one of the categories selected, not the module. Nab the parent so we have the correct thing!
+   else
+      AssetBrowser.selectedModule = %this.getItemText(%itemId);
 	
 	//alright, we have a module or sub-filter selected, so now build our asset list based on that filter!
 	echo("Asset Browser Filter Tree selected filter #:" @ %itemId);
@@ -900,6 +886,10 @@ function AssetBrowserFilterTree::onRightMouseDown(%this, %itemId)
             
          }
       }
+   }
+   else if( %this.getSelectedItemsCount() > 0 && %itemId == 1)
+   {
+      AddNewModulePopup.showPopup(Canvas); 
    }
 }
 

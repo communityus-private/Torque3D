@@ -71,8 +71,14 @@ public:
    StringTableEntry getComponentName() { return mComponentName; }
    StringTableEntry getComponentClass() { return mComponentClass; }
    StringTableEntry getFriendlyName() { return mFriendlyName; }
-   StringTableEntry getFriendlyType() { return mComponentType; }
+   StringTableEntry getComponentType() { return mComponentType; }
    StringTableEntry getDescription() { return mDescription; }
+
+   void setComponentName(StringTableEntry name) { mComponentName = name; }
+   void setComponentClass(StringTableEntry name) { mComponentClass = name; }
+   void setFriendlyName(StringTableEntry name) { mFriendlyName = name; }
+   void setComponentType(StringTableEntry typeName) { mComponentType = typeName; }
+   void setDescription(StringTableEntry description) { mDescription = description; }
 
 protected:
    virtual void            initializeAsset(void){}

@@ -3,4 +3,6 @@
     canSaveDynamicFields="true"
     AssetName="Red"
     imageFile="modules/Characters/Images/Red.png"
+    useMips="true"
+    isHDRImage="false"
     VersionId="1" />

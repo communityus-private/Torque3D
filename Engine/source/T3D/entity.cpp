@@ -117,6 +117,7 @@ Entity::Entity()
 
    mInitialized = false;
 
+   mGameObjectAssetId = StringTable->insert("");
 }
 
 Entity::~Entity()
@@ -143,6 +144,11 @@ void Entity::initPersistFields()
    addField("LocalRotation", TypeMatrixRotation, Offset(mMount.xfm, Entity), "Rotation we are mounted at ( object space of our mount object ).");
 
    endGroup("Transform");
+
+   addGroup("GameObject");
+   addProtectedField("gameObjectName", TypeGameObjectAssetPtr, Offset(mGameObjectAsset, Entity), &_setGameObject, &defaultProtectedGetFn,
+      "The asset Id used for the game object this entity is based on.");
+   endGroup("GameObject");
 }
 
 //
@@ -238,6 +244,8 @@ void Entity::onRemove()
 
    onDataSet.removeAll();
 
+   mGameObjectAsset.clear();
+
    Parent::onRemove();
 }
 
@@ -253,6 +261,16 @@ void Entity::onPostAdd()
 
    if (isMethod("onAdd"))
       Con::executef(this, "onAdd");
+}
+
+bool Entity::_setGameObject(void *object, const char *index, const char *data)
+{
+   Entity *e = static_cast<Entity*>(object);
+
+   // Sanity!
+   AssertFatal(data != NULL, "Cannot use a NULL asset Id.");
+
+   return true; //rbI->setMeshAsset(data);
 }
 
 void Entity::setDataField(StringTableEntry slotName, const char *array, const char *value)

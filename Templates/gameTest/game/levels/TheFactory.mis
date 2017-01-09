@@ -1,0 +1,461 @@
+//--- OBJECT WRITE BEGIN ---
+new SimGroup(MissionGroup) {
+   canSave = "1";
+   canSaveDynamicFields = "1";
+      cdTrack = "2";
+      CTF_scoreLimit = "5";
+      enabled = "1";
+      musicTrack = "lush";
+
+   new LevelInfo(theLevelInfo) {
+      nearClip = "0.1";
+      visibleDistance = "1000";
+      visibleGhostDistance = "0";
+      decalBias = "0.0015";
+      fogColor = "0.6 0.6 0.7 1";
+      fogDensity = "0";
+      fogDensityOffset = "700";
+      fogAtmosphereHeight = "0";
+      canvasClearColor = "0 0 0 255";
+      ambientLightBlendPhase = "1";
+      ambientLightBlendCurve = "0 0 -1 -1";
+      soundAmbience = "AudioAmbienceDefault";
+      soundDistanceModel = "Linear";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+         advancedLightmapSupport = "0";
+         enabled = "1";
+         levelName = "The Factory";
+   };
+   new Entity(PlayerSpawnPoint) {
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "0 0 1.17632";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new Component() {
+         componentType = "Spawner";
+         friendlyName = "Player Spawner";
+         networked = "0";
+         enabled = "1";
+         internalName = "PlayerSpawner";
+         class = "PlayerSpawner";
+         gameObjectName = "SpectatorObject";
+      };
+   };
+   new GroundPlane() {
+      squareSize = "128";
+      scaleU = "12";
+      scaleV = "12";
+      Material = "Grid512_Grey_Mat";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+         enabled = "1";
+         position = "0 0 0";
+         rotation = "1 0 0 0";
+         scale = "1 1 1";
+   };
+   new SimGroup(probes) {
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new ScatterSky() {
+      skyBrightness = "25";
+      sunSize = "1";
+      colorizeAmount = "0";
+      colorize = "0.996078 0.988235 0.988235 1";
+      rayleighScattering = "0.0035";
+      sunScale = "0.996078 0.988235 0.988235 1";
+      ambientScale = "0.996078 0.988235 0.988235 1";
+      fogScale = "1 1 1 1";
+      exposure = "1";
+      zOffset = "0";
+      azimuth = "-5";
+      elevation = "35";
+      moonAzimuth = "0";
+      moonElevation = "45";
+      castShadows = "1";
+      staticRefreshFreq = "250";
+      dynamicRefreshFreq = "8";
+      brightness = "1";
+      flareScale = "1";
+      nightColor = "0.0196078 0.0117647 0.109804 1";
+      nightFogColor = "0.0196078 0.0117647 0.109804 1";
+      moonEnabled = "1";
+      moonMat = "Moon_Glow_Mat";
+      moonScale = "0.2";
+      moonLightColor = "0.192157 0.192157 0.192157 1";
+      useNightCubemap = "1";
+      nightCubemap = "NightCubemap";
+      attenuationRatio = "0 1 1";
+      shadowType = "PSSM";
+      texSize = "1024";
+      overDarkFactor = "4000 2000 500 100";
+      shadowDistance = "200";
+      shadowSoftness = "0.19";
+      numSplits = "4";
+      logWeight = "0.92";
+      fadeStartDistance = "150";
+      lastSplitTerrainOnly = "0";
+      representedInLightmap = "0";
+      shadowDarkenColor = "0 0 0 -1";
+      includeLightmappedGeometryInShadow = "0";
+      position = "86.2682 -5.50359 22.3829";
+      rotation = "1 0 0 0";
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+         mieScattering = "0.0045";
+   };
+   new MeshRoom() {
+      textureLength = "2";
+      breakAngle = "180";
+      widthSubdivisions = "0";
+      position = "-10 -21 0";
+      rotation = "1 0 0 0";
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+
+      Material = "Grid512_Grey_Mat";
+      Material = "Grid512_Grey_Mat";
+      Material = "Grid512_Grey_Mat";
+      Material = "Grid512_Grey_Mat";
+      Material = "Grid512_Grey_Mat";
+      Material = "Grid512_Grey_Mat";
+      Material = "Grid512_Grey_Mat";
+      Material = "Grid512_Grey_Mat";
+
+      Node = "-10 -21 0 10 3 -0 -0 -1";
+      Node = "-10 -11 0 10 3 -0 -0 -1";
+      Node = "-5 -11 0 10 3 -0 -0 -1";
+      Node = "-3 -11 0 10 3 -0 -0 -1";
+      Node = "0 -11 0 10 3 -0 -0 -1";
+      Node = "0 -21 0 10 3 -0 -0 -1";
+      Node = "-10 -21 0 10 5 -0 -0 -1";
+   };
+   new WallClipperShape() {
+      position = "-4.1475 -11.067 1.00509";
+      rotation = "1 0 0 0";
+      scale = "1 1 2.05793";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+         allowPlayerStep = "0";
+         alphaFadeEnable = "0";
+         alphaFadeEnd = "150";
+         alphaFadeInverse = "0";
+         alphaFadeStart = "100";
+         CollisionType = "Collision Mesh";
+         DecalType = "Collision Mesh";
+         forceDetail = "-1";
+         meshCulling = "0";
+         originSort = "0";
+         playAmbient = "1";
+         renderNormals = "0";
+         shapeName = "art/shapes/cube/cube.dae";
+   };
+   new MeshRoom(MeshRoom3) {
+      textureLength = "2";
+      breakAngle = "180";
+      widthSubdivisions = "0";
+      position = "-3 -10.9744 0";
+      rotation = "1 0 0 0";
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+
+      Material = "";
+      Material = "";
+      Material = "";
+      Material = "";
+      Material = "";
+      Material = "";
+
+      Node = "-3 -10.9744 0 10 3 -0 -0 -1";
+      Node = "-5 -10.9744 0 10 3 -0 -0 -1";
+      Node = "-5 -8.97437 0 10 3 -0 -0 -1";
+      Node = "-3 -8.97437 0 10 3 -0 -0 -1";
+      Node = "-3 -10.9744 0 10 3 -0 -0 -1";
+   };
+   new SpotLight() {
+      range = "10";
+      innerAngle = "40";
+      outerAngle = "45";
+      isEnabled = "1";
+      color = "1 1 1 1";
+      brightness = "1";
+      castShadows = "1";
+      staticRefreshFreq = "250";
+      dynamicRefreshFreq = "8";
+      priority = "1";
+      animate = "1";
+      animationPeriod = "1";
+      animationPhase = "1";
+      flareScale = "1";
+      attenuationRatio = "0 1 1";
+      shadowType = "Spot";
+      texSize = "1024";
+      overDarkFactor = "2000 1000 500 100";
+      shadowDistance = "400";
+      shadowSoftness = "0.15";
+      numSplits = "1";
+      logWeight = "0.91";
+      fadeStartDistance = "0";
+      lastSplitTerrainOnly = "0";
+      representedInLightmap = "0";
+      shadowDarkenColor = "0 0 0 -1";
+      includeLightmappedGeometryInShadow = "0";
+      position = "-2.96463 -19.5927 2.00405";
+      rotation = "0.663987 -0.217576 -0.715389 17.1731";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new PointLight() {
+      radius = "12";
+      isEnabled = "1";
+      color = "1 1 1 1";
+      brightness = "0.25";
+      castShadows = "0";
+      staticRefreshFreq = "250";
+      dynamicRefreshFreq = "8";
+      priority = "1";
+      animate = "1";
+      animationPeriod = "1";
+      animationPhase = "1";
+      flareScale = "1";
+      attenuationRatio = "0 1 1";
+      shadowType = "DualParaboloidSinglePass";
+      texSize = "512";
+      overDarkFactor = "2000 1000 500 100";
+      shadowDistance = "400";
+      shadowSoftness = "0.15";
+      numSplits = "1";
+      logWeight = "0.91";
+      fadeStartDistance = "0";
+      lastSplitTerrainOnly = "0";
+      representedInLightmap = "0";
+      shadowDarkenColor = "0 0 0 -1";
+      includeLightmappedGeometryInShadow = "0";
+      position = "-4.32891 -12.6577 0.860266";
+      rotation = "-1 0 -0 55.3962";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new Entity() {
+      scale = "0.8 0.8 0.8";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-3.66558 -11.0086 -4.85778e-05";
+      rotation = "0 -0 -90";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+         MeshAsset = "TheFactory:door";
+      };
+   };
+   new Entity() {
+      scale = "0.5 0.5 0.5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-10.0155 -14.7913 2.83958";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+         MeshAsset = "TheFactory:sprinkler_02";
+      };
+   };
+   new Entity() {
+      scale = "0.5 0.5 0.5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-9.98748 -13.9619 2.84199";
+      rotation = "0 -0 -90";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+         MeshAsset = "TheFactory:pipes_05";
+      };
+   };
+   new Entity() {
+      scale = "0.5 0.5 0.5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-3.5645 -17.9748 2.54089";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+         MeshAsset = "TheFactory:hvac_duct_straight";
+      };
+   };
+   new Entity() {
+      scale = "0.5 0.5 0.5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-8.06586 -17.9748 2.54089";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+         MeshAsset = "TheFactory:hvac_duct_straight";
+      };
+   };
+   new TSStatic() {
+      shapeName = "modules/TheFactory/Shapes/hvac_duct_T.DAE";
+      playAmbient = "1";
+      meshCulling = "0";
+      originSort = "0";
+      CollisionType = "Collision Mesh";
+      DecalType = "Collision Mesh";
+      allowPlayerStep = "0";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
+      renderNormals = "0";
+      forceDetail = "-1";
+      position = "-4.0656 -17.9777 2.53324";
+      rotation = "0 0 -1 90";
+      scale = "0.5 0.5 0.5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new Entity() {
+      scale = "0.5 0.5 0.5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-4.06845 -13.9817 2.54089";
+      rotation = "0 -0 90";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+         MeshAsset = "TheFactory:hvac_duct_straight";
+      };
+   };
+   new Entity() {
+      scale = "0.5 0.5 0.5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-4.06845 -10.4853 2.54089";
+      rotation = "0 -0 90";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+         MeshAsset = "TheFactory:hvac_duct_straight";
+      };
+   };
+   new Entity() {
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "-4.24111 3.16322 21.176";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new Component() {
+         networked = "0";
+         enabled = "1";
+         class = "GameInfoComponent";
+      };
+   };
+   new Entity() {
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "2.21043 12.8073 21.8687";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+         MeshAsset = "Characters:Red_Guy";
+
+      new StateMachineComponent() {
+         componentType = "Game";
+         friendlyName = "State Machine";
+         description = "A generic state machine.";
+         networked = "0";
+         enabled = "1";
+         class = "WeaponStateMachine";
+      };
+      new MeshComponent() {
+         componentType = "Render";
+         friendlyName = "Mesh Component";
+         description = "Causes the object to render a non-animating 3d shape using the file provided.";
+         networked = "1";
+         enabled = "1";
+         BatchingMode = "Individual";
+      };
+   };
+   new Entity() {
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      position = "2.9806 -3.7981 2.88568";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
+
+      new StateMachineComponent() {
+         componentType = "Game";
+         friendlyName = "State Machine";
+         description = "A generic state machine.";
+         networked = "0";
+         enabled = "1";
+         class = "TestSMComponent";
+      };
+   };
+};
+//--- OBJECT WRITE END ---

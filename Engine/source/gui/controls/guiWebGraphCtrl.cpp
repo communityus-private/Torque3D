@@ -242,6 +242,8 @@ void guiWebGraphCtrl::onMouseDown(const GuiEvent &event)
    if (!mActive)
       return;
 
+   setFirstResponder();
+
    mMovingNode = false;
    //mDraggingConnection = false;
    mMouseDownPosition = event.mousePoint;
@@ -511,6 +513,63 @@ void guiWebGraphCtrl::onMiddleMouseUp(const GuiEvent &event)
    //sendMouseEvent("onMiddleMouseUp", event);
 }
 
+bool guiWebGraphCtrl::onKeyDown(const GuiEvent& event)
+{
+   // Otherwise, let the parent have the event...
+   return Parent::onKeyDown(event);
+}
+
+bool guiWebGraphCtrl::onKeyUp(const GuiEvent& event)
+{
+   //only cut/copy work with this control...
+   /*if (event.modifier & SI_COPYPASTE)
+   {
+      switch (event.keyCode)
+      {
+         //copy
+      case KEY_C:
+      {
+         //make sure we actually have something selected
+         if (mSelectionActive)
+         {
+            copyToClipboard(mSelectionStart, mSelectionEnd);
+            setUpdate();
+         }
+         return true;
+      }
+
+      default:
+         break;
+      }
+   }*/
+
+   switch (event.keyCode)
+   {
+      case KEY_DELETE:
+      {
+         //Find out if we've selected anything, and if so, delete that crap
+         for (U32 i = 0; i < mSelectedNodes.size(); i++)
+         {
+            deleteNode(mSelectedNodes[i]);
+         }
+
+         mSelectedNodes.clear();
+
+         if (selectedConnection != -1)
+         {
+            mConnections.erase(selectedConnection);
+
+            selectedConnection = -1;
+         }
+      }
+
+      default:
+         break;
+   }
+
+   // Otherwise, let the parent have the event...
+   return Parent::onKeyUp(event);
+}
 //
 
 S32 guiWebGraphCtrl::addNode(String nodeName)
@@ -554,6 +613,23 @@ S32 guiWebGraphCtrl::addConnection(S32 startNodeIdx, S32 endNodeIdx)
    Con::executef(this, "onNewConnection", mConnections.size() - 1);
 
    return mConnections.size() - 1;
+}
+
+void guiWebGraphCtrl::deleteNode(S32 nodeIdx)
+{
+   if (nodeIdx >= 0 && mNodes.size() > nodeIdx)
+   {
+      for (U32 i = 0; i < mConnections.size(); i++)
+      {
+         if (mConnections[i].endNode == nodeIdx || mConnections[i].startNode == nodeIdx)
+         {
+            mConnections.erase(i);
+            i--;
+         }
+      }
+
+      mNodes.erase(nodeIdx);
+   }
 }
 
 RectI guiWebGraphCtrl::getNodeBounds(S32 nodeIdx)
@@ -606,6 +682,60 @@ void guiWebGraphCtrl::setNodeName(S32 nodeIdx, String newName)
 {
    //mNodes[nodeIdx]. = position;
    mNodes[nodeIdx].nodeTitle = newName;
+}
+
+String guiWebGraphCtrl::getNodeField(S32 nodeIdx, String fieldName)
+{
+   if (mNodes.size() > nodeIdx && nodeIdx >= 0)
+   {
+      for (U32 i = 0; i < mNodes[nodeIdx].fields.size(); i++)
+      {
+         if(mNodes[nodeIdx].fields[i].fieldName == fieldName)
+            return mNodes[nodeIdx].fields[i].fieldValue;
+      }
+   }
+
+   return "";
+}
+
+S32 guiWebGraphCtrl::getNodeFieldCount(S32 nodeIdx)
+{
+   if (mNodes.size() > nodeIdx && nodeIdx >= 0)
+      return mNodes[nodeIdx].fields.size();
+   else
+      return 0;
+}
+
+String guiWebGraphCtrl::getNodeFieldName(S32 nodeIdx, S32 fieldIdx)
+{
+   if (mNodes.size() > nodeIdx && nodeIdx >= 0 && mNodes[nodeIdx].fields.size() > fieldIdx && fieldIdx >= 0)
+   {
+      return mNodes[nodeIdx].fields[fieldIdx].fieldName;
+   }
+
+   return "";
+}
+
+void guiWebGraphCtrl::setNodeField(S32 nodeIdx, String fieldName, String value)
+{
+   if (mNodes.size() > nodeIdx && nodeIdx >= 0)
+   {
+      for (U32 i = 0; i < mNodes[nodeIdx].fields.size(); i++)
+      {
+         if (mNodes[nodeIdx].fields[i].fieldName == fieldName)
+         {
+            mNodes[nodeIdx].fields[i].fieldValue = value;
+            return;
+         }
+      }
+
+      Node::field newField;
+
+      newField.fieldName = fieldName;
+      newField.fieldValue = value;
+
+      mNodes[nodeIdx].fields.push_back(newField);
+   }
 }
 
 S32 guiWebGraphCtrl::getConnectionOwnerNode(S32 connIdx)
@@ -740,7 +870,7 @@ DefineEngineMethod(guiWebGraphCtrl, getConnectionEndNode, S32, (S32 connectionId
    return object->getConnectionEndNode(connectionIdx);
 }
 
-DefineEngineMethod(guiWebGraphCtrl, setNodeColor, void, (int nodeIdx, ColorI color), ,
+DefineEngineMethod(guiWebGraphCtrl, setNodeColor, void, (S32 nodeIdx, ColorI color), ,
    "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
    "matches this pattern are displayed.\n\n"
    "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
@@ -750,7 +880,7 @@ DefineEngineMethod(guiWebGraphCtrl, setNodeColor, void, (int nodeIdx, ColorI col
    object->setNodeColor(nodeIdx, color);
 }
 
-DefineEngineMethod(guiWebGraphCtrl, useNodeColor, void, (int nodeIdx, bool useOverride), ,
+DefineEngineMethod(guiWebGraphCtrl, useNodeColor, void, (S32 nodeIdx, bool useOverride), ,
    "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
    "matches this pattern are displayed.\n\n"
    "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
@@ -760,7 +890,7 @@ DefineEngineMethod(guiWebGraphCtrl, useNodeColor, void, (int nodeIdx, bool useOv
    object->useNodeColor(nodeIdx, useOverride);
 }
 
-DefineEngineMethod(guiWebGraphCtrl, getNodeName, String, (int nodeIdx), ,
+DefineEngineMethod(guiWebGraphCtrl, getNodeName, String, (S32 nodeIdx), ,
    "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
    "matches this pattern are displayed.\n\n"
    "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
@@ -770,7 +900,7 @@ DefineEngineMethod(guiWebGraphCtrl, getNodeName, String, (int nodeIdx), ,
    return object->getNodeName(nodeIdx);
 }
 
-DefineEngineMethod(guiWebGraphCtrl, setNodeName, void, (int nodeIdx, String newName), ,
+DefineEngineMethod(guiWebGraphCtrl, setNodeName, void, (S32 nodeIdx, String newName), ,
    "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
    "matches this pattern are displayed.\n\n"
    "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
@@ -779,6 +909,47 @@ DefineEngineMethod(guiWebGraphCtrl, setNodeName, void, (int nodeIdx, String newN
 {
    object->setNodeName(nodeIdx, newName);
 }
+
+DefineEngineMethod(guiWebGraphCtrl, setNodeField, void, (S32 nodeIdx, String fieldName, String value), ,
+   "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
+   "matches this pattern are displayed.\n\n"
+   "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
+   "@see getFilterText\n"
+   "@see clearFilterText")
+{
+   object->setNodeField(nodeIdx, fieldName, value);
+}
+
+DefineEngineMethod(guiWebGraphCtrl, getNodeField, String, (S32 nodeIdx, String fieldName), ,
+   "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
+   "matches this pattern are displayed.\n\n"
+   "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
+   "@see getFilterText\n"
+   "@see clearFilterText")
+{
+   return object->getNodeField(nodeIdx, fieldName);
+}
+
+DefineEngineMethod(guiWebGraphCtrl, getNodeFieldName, String, (S32 nodeIdx, S32 fieldIdx), ,
+   "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
+   "matches this pattern are displayed.\n\n"
+   "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
+   "@see getFilterText\n"
+   "@see clearFilterText")
+{
+   return object->getNodeFieldName(nodeIdx, fieldIdx);
+}
+
+DefineEngineMethod(guiWebGraphCtrl, getNodeFieldCount, S32, (S32 nodeIdx), ,
+   "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "
+   "matches this pattern are displayed.\n\n"
+   "@param pattern New pattern based on which visible items in the tree should be filtered.  If empty, all items become visible.\n\n"
+   "@see getFilterText\n"
+   "@see clearFilterText")
+{
+   return object->getNodeFieldCount(nodeIdx);
+}
+
 
 DefineEngineMethod(guiWebGraphCtrl, setConnectionError, void, (int connectionIdx, bool error), (true),
    "Set the pattern by which to filter items in the tree.  Only items in the tree whose text "

@@ -3,4 +3,6 @@
     canSaveDynamicFields="true"
     AssetName="BowMat"
     imageFile="modules/Weapons/Images/BowMat.png"
+    useMips="true"
+    isHDRImage="false"
     VersionId="1" />

@@ -594,6 +594,13 @@ void GuiInspector::refresh()
    //Entity inspector group
    if (mTargets.first()->getClassRep()->isSubclassOf("Entity"))
    {
+      //Put the GameObject group before everything that'd be gameobject-effecting, for orginazational purposes
+      GuiInspectorGroup *gameObject = new GuiInspectorGroup("GameObject", this);
+
+      gameObject->registerObject();
+      mGroups.push_back(gameObject);
+      addObject(gameObject);
+
       GuiInspectorEntityGroup *components = new GuiInspectorEntityGroup("Components", this);
       if (components != NULL)
       {

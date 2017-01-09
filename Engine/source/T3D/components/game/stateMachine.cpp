@@ -59,10 +59,15 @@ void StateMachine::loadStateMachineFile()
       if (!reader->pushFirstChildElement("StateMachine"))
          return;
 
+      mFields.clear();
+      mStates.clear();
+
       //Add a dummy field for the stateTime, since we special-case handle that, but need to hold the slot
       //because stateTime will always exist in the SM.
       StateField stateTimeField;
       stateTimeField.name = "stateTime";
+      stateTimeField.data.fieldType = Field::NumberType;
+
       mFields.push_back(stateTimeField);
 
       if (reader->pushFirstChildElement("Fields"))

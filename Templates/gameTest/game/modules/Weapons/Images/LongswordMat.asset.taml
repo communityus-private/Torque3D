@@ -3,4 +3,6 @@
     canSaveDynamicFields="true"
     AssetName="LongswordMat"
     imageFile="modules/Weapons/Images/LongswordMat.png"
+    useMips="true"
+    isHDRImage="false"
     VersionId="1" />

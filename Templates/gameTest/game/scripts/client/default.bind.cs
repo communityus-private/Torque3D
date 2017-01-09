@@ -544,9 +544,18 @@ function mouseWheelWeaponCycle(%val)
       commandToServer('cycleWeapon', "prev");
 }
 
+function adjustSpeedScalar(%val)
+{
+   if (%val > 0)
+      commandToServer('speedScalarUp');
+   else if (%val < 0)
+      commandToServer('speedScalarDown');
+}
+
 moveMap.bind(keyboard, q, nextWeapon);
 moveMap.bind(keyboard, "ctrl q", prevWeapon);
-moveMap.bind(mouse, "zaxis", mouseWheelWeaponCycle);
+//moveMap.bind(mouse, "zaxis", mouseWheelWeaponCycle);
+moveMap.bind(mouse, "zaxis", adjustSpeedScalar);
 
 //------------------------------------------------------------------------------
 // Message HUD functions

@@ -3,4 +3,6 @@
     canSaveDynamicFields="true"
     AssetName="SkinComposite"
     imageFile="modules/Characters/Images/SkinComposite.png"
+    useMips="true"
+    isHDRImage="false"
     VersionId="1" />

@@ -3,4 +3,6 @@
     canSaveDynamicFields="true"
     AssetName="SkinAlbedo"
     imageFile="modules/Characters/Images/SkinAlbedo.png"
+    useMips="true"
+    isHDRImage="false"
     VersionId="1" />

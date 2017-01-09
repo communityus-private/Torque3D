@@ -169,7 +169,8 @@ function FPSControls_jump(%val)
 
 function FPSControls_flashLight(%val)
 {
-   $mvTriggerCount3++;
+   if(%val)
+      commandToServer('ToggleFirstPerson');
 }
 
 function FPSControls_interact(%val)

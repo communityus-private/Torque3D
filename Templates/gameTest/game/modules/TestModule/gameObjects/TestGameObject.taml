@@ -1,0 +1,28 @@
+<Entity
+    scale="1 1 1"
+    class="TestGameObject"
+    canSave="true"
+    canSaveDynamicFields="true"
+    position="8 -1 4"
+    rotation="0 -0 -0"
+    LocalPosition="0 0 0"
+    LocalRotation="1 0 0 0"
+    GameObjectAsset="TestGameObject">
+    <MeshComponent
+        componentType="Render"
+        friendlyName="Mesh Component"
+        description="Causes the object to render a non-animating 3d shape using the file provided."
+        networked="true"
+        enabled="true"
+        BatchingMode="Individual"
+        MeshAsset="@asset=Placeholder:cube" />
+    <CollisionComponent
+        friendlyName="Collision(Component)"
+        networked="false"
+        enabled="true"
+        CollisionType="Bounds"
+        LineOfSightType="Bounds"
+        DecalType="Bounds"
+        CollisionMeshPrefix="Collision"
+        BlockCollisions="true" />
+</Entity>

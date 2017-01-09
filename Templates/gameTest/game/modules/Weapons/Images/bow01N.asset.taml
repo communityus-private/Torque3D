@@ -3,4 +3,6 @@
     canSaveDynamicFields="true"
     AssetName="bow01N"
     imageFile="modules/Weapons/Images/bow01N.jpg"
+    useMips="true"
+    isHDRImage="false"
     VersionId="1" />

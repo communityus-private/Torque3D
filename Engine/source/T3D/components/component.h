@@ -32,6 +32,9 @@
 #ifndef CORE_INTERFACES_H
 #include "T3D/components/coreInterfaces.h"
 #endif
+#ifndef COMPONENT_ASSET_H
+#include "T3D/assets/ComponentAsset.h"
+#endif
 
 class Entity;
 class Namespace;

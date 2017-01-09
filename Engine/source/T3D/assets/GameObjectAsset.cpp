@@ -132,3 +132,82 @@ void GameObjectAsset::copyTo(SimObject* object)
    // Call to parent.
    Parent::copyTo(object);
 }
+
+
+//-----------------------------------------------------------------------------
+// GuiInspectorTypeAssetId
+//-----------------------------------------------------------------------------
+
+IMPLEMENT_CONOBJECT(GuiInspectorTypeGameObjectAssetPtr);
+
+ConsoleDocClass(GuiInspectorTypeGameObjectAssetPtr,
+   "@brief Inspector field type for Game Objects\n\n"
+   "Editor use only.\n\n"
+   "@internal"
+);
+
+void GuiInspectorTypeGameObjectAssetPtr::consoleInit()
+{
+   Parent::consoleInit();
+
+   ConsoleBaseType::getType(TypeGameObjectAssetPtr)->setInspectorFieldType("GuiInspectorTypeGameObjectAssetPtr");
+}
+
+GuiControl* GuiInspectorTypeGameObjectAssetPtr::constructEditControl()
+{
+   // Create base filename edit controls
+   GuiControl *retCtrl = Parent::constructEditControl();
+   if (retCtrl == NULL)
+      return retCtrl;
+
+   // Change filespec
+   char szBuffer[512];
+   dSprintf(szBuffer, sizeof(szBuffer), "AssetBrowser.showDialog(\"GameObjectAsset\", \"AssetBrowser.changeAsset\", %d, %s);",
+      mInspector->getComponentGroupTargetId(), mCaption);
+   mBrowseButton->setField("Command", szBuffer);
+
+   // Create "Open in ShapeEditor" button
+   mSMEdButton = new GuiBitmapButtonCtrl();
+
+   dSprintf(szBuffer, sizeof(szBuffer), "echo(\"Game Object Editor not implemented yet!\");", retCtrl->getId());
+   mSMEdButton->setField("Command", szBuffer);
+
+   char bitmapName[512] = "tools/worldEditor/images/toolbar/shape-editor";
+   mSMEdButton->setBitmap(bitmapName);
+
+   mSMEdButton->setDataField(StringTable->insert("Profile"), NULL, "GuiButtonProfile");
+   mSMEdButton->setDataField(StringTable->insert("tooltipprofile"), NULL, "GuiToolTipProfile");
+   mSMEdButton->setDataField(StringTable->insert("hovertime"), NULL, "1000");
+   mSMEdButton->setDataField(StringTable->insert("tooltip"), NULL, "Open this file in the State Machine Editor");
+
+   mSMEdButton->registerObject();
+   addObject(mSMEdButton);
+
+   return retCtrl;
+}
+
+bool GuiInspectorTypeGameObjectAssetPtr::updateRects()
+{
+   S32 dividerPos, dividerMargin;
+   mInspector->getDivider(dividerPos, dividerMargin);
+   Point2I fieldExtent = getExtent();
+   Point2I fieldPos = getPosition();
+
+   mCaptionRect.set(0, 0, fieldExtent.x - dividerPos - dividerMargin, fieldExtent.y);
+   mEditCtrlRect.set(fieldExtent.x - dividerPos + dividerMargin, 1, dividerPos - dividerMargin - 34, fieldExtent.y);
+
+   bool resized = mEdit->resize(mEditCtrlRect.point, mEditCtrlRect.extent);
+   if (mBrowseButton != NULL)
+   {
+      mBrowseRect.set(fieldExtent.x - 32, 2, 14, fieldExtent.y - 4);
+      resized |= mBrowseButton->resize(mBrowseRect.point, mBrowseRect.extent);
+   }
+
+   if (mSMEdButton != NULL)
+   {
+      RectI shapeEdRect(fieldExtent.x - 16, 2, 14, fieldExtent.y - 4);
+      resized |= mSMEdButton->resize(shapeEdRect.point, shapeEdRect.extent);
+   }
+
+   return resized;
+}

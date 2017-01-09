@@ -3,4 +3,6 @@
     canSaveDynamicFields="true"
     AssetName="FlatNormal"
     imageFile="modules/Characters/Images/FlatNormal.png"
+    useMips="true"
+    isHDRImage="false"
     VersionId="1" />

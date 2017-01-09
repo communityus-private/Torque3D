@@ -34,6 +34,9 @@ function FoxPlayer::onAdd(%this)
    %this.aimedMaxPitch = 90;
    %this.aimedMinPitch = -90;
    
+   %this.speedScalar = 1;
+   %this.speedScalarAdjust = 0.1;
+   
    //Set our initial pose
    %this.animation.playThread(0, "ReadyIdle");
 }
@@ -54,7 +57,7 @@ function FoxPlayer::moveVectorEvent(%this)
 
     %moveVec = VectorAdd(VectorScale(%cameraRight, %moveVector.x), VectorScale(%cameraForward, %moveVector.y));
 
-   if(%this.aiming || %this.firstPerson)
+   if(%this.aiming)
    {
       %forMove = "0 0 0";
       
@@ -101,6 +104,8 @@ function FoxPlayer::moveVectorEvent(%this)
    
    if(%this.crouch)
       %this.phys.inputVelocity = VectorScale(%this.phys.inputVelocity, %this.crouchSpeedMod);
+      
+   %this.phys.inputVelocity = VectorScale(%this.phys.inputVelocity, %this.speedScalar);
 }
 
 function FoxPlayer::moveYawEvent(%this)
@@ -109,7 +114,7 @@ function FoxPlayer::moveYawEvent(%this)
 
     %camOrb = %this.getComponent("CameraOrbiterComponent");
     
-    if(%this.aiming || %this.firstPerson)
+    if(%this.aiming)
     {
       %this.rotation.z += %moveRotation.z * 10;
       
@@ -338,4 +343,51 @@ function FoxPlayer::onCrouchRoot(%this)
 function FoxPlayer::onCrouchForward(%this)
 {
    //%this.animation.playThread(0, "JogF");
+}
+
+function serverCmdToggleFirstPerson(%client)
+{
+   %obj = %client.getControlObject();
+   %obj.firstPerson = !%obj.firstPerson;
+   
+   if(%obj.firstPerson)
+   {
+      %obj.rotation.z = %obj.cam.rotationOffset.z;
+      %obj.camArm.orbitDistance = 0;
+      %obj.camArm.maxPitchAngle = %obj.aimedMaxPitch;
+      %obj.camArm.minPitchAngle = %obj.aimedMinPitch;
+
+      %obj.cam.positionOffset = "0 0 0";
+      %obj.cam.rotationOffset = "0 0 0";
+   }
+   else if(%obj.aiming)
+   {
+      %obj.camArm.orbitDistance = %obj.aimOrbitDist;
+
+      %obj.camArm.maxPitchAngle = %obj.aimedMaxPitch;
+      %obj.camArm.minPitchAngle = %obj.aimedMinPitch;
+   }
+   else
+   {
+      %obj.camArm.orbitDistance = %obj.regularOrbitDist;
+
+      %obj.camArm.maxPitchAngle = %obj.regularOrbitMaxPitch;
+      %obj.camArm.minPitchAngle = %obj.regularOrbitMinPitch;
+   }
+}
+
+function serverCmdspeedScalarUp(%client)
+{
+   %obj = %client.getControlObject();
+   %obj.speedScalar += %obj.speedScalarAdjust;
+   if(%obj.speedScalar > 1)
+      %obj.speedScalar = 1;
+}
+
+function serverCmdspeedScalarDown(%client)
+{
+   %obj = %client.getControlObject();
+   %obj.speedScalar -= %obj.speedScalarAdjust;
+   if(%obj.speedScalar < 0.1)
+      %obj.speedScalar = 0.1;
 }

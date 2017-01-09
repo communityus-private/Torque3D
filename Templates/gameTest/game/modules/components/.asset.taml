@@ -1,0 +1,9 @@
+<ComponentAsset
+    canSave="true"
+    canSaveDynamicFields="true"
+    componentClass="Component"
+    friendlyName="Fake GI Spot Light"
+    componentType="Lighting"
+    description="A spotlight that fakes GI by using raycasts to position secondary lights to simulate bouncing."
+    scriptFile="modules//components/.cs"
+    VersionId="1" />

@@ -35,6 +35,12 @@
 #ifndef _CONTAINERQUERY_H_
 #include "T3D/containerQuery.h"
 #endif
+#ifndef _ASSET_PTR_H_
+#include "assets/assetPtr.h"
+#endif 
+#ifndef GAME_OBJECT_ASSET_H
+#include "T3D/assets/GameObjectAsset.h"
+#endif
 
 class Component;
 
@@ -55,6 +61,9 @@ private:
    Vector<Component*>         mToLoadComponents;
 
    bool                       mStartComponentUpdate;
+
+   StringTableEntry		      mGameObjectAssetId;
+   AssetPtr<GameObjectAsset>  mGameObjectAsset;
 
    ContainerQueryInfo containerInfo;
 
@@ -143,6 +152,8 @@ public:
 
    static bool _setRotation(void *object, const char *index, const char *data);
    static const char * _getRotation(void* obj, const char* data);
+
+   static bool _setGameObject(void *object, const char *index, const char *data);
 
    virtual void getMountTransform(S32 index, const MatrixF &xfm, MatrixF *outMat);
    virtual void getRenderMountTransform(F32 delta, S32 index, const MatrixF &xfm, MatrixF *outMat);

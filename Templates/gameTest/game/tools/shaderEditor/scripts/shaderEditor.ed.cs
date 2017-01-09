@@ -12,8 +12,7 @@ function ShaderEditorGraph::onDoubleClickNode(%this, %nodeIdx)
 function ShaderEditorGraph::onRightMouseDown(%this, %mousePoint)
 {
     %this.lastRMBClickPos = %mousePoint;
-    
-    echo("WE RIGHT CLICKED!");
+
     %popup = ShaderGenPopup;      
     if( !isObject( %popup ) )
     {

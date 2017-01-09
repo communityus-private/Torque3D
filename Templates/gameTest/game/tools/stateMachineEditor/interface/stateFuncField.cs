@@ -29,24 +29,5 @@ function StateMachineInspector::createStateFunctionField(%this, %parentGroup, %n
 
 function SMFuncField::onReturn(%this)
 {
-   StateMachineGraph.setNodeName(StateMachineGraph.selectedNode, %this.getText());
-   
-   StateMachineGraph.setNodeError(StateMachineGraph.selectedNode, false);
-   
-   //sanity check the node!
-   for(%i=0; %i < StateMachineGraph.getNodeCount(); %i++)
-   {
-      if(%i == StateMachineGraph.selectedNode)
-         continue;
-         
-      if(%this.getText() $= StateMachineGraph.getNodeName(%i))
-      {
-         StateMachineGraph.setNodeError(StateMachineGraph.selectedNode, true); 
-         StateMachineGraph.setNodeError(%i, true); 
-      }
-      else
-      { 
-         StateMachineGraph.setNodeError(%i, false); 
-      }
-   }
+   StateMachineGraph.setNodeField(StateMachineGraph.selectedNode, "scriptFunction", %this.getText());
 }

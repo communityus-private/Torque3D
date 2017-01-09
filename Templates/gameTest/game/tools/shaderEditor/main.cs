@@ -99,8 +99,6 @@ function ShaderEditorGraph::onRightMouseDown(%this, %mousePoint, %nodeIdx)
     
     %this.lastRMBClickNode = %nodeIdx;
     
-    echo("WE RIGHT CLICKED");
-    
     %popup = StateMachinePopup;      
     if( !isObject( %popup ) )
     {

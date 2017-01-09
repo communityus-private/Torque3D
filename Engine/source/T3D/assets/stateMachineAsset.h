@@ -39,6 +39,8 @@
 #include "assets/assetFieldTypes.h"
 #endif
 
+#include "gui/editor/guiInspectorTypes.h"
+
 //-----------------------------------------------------------------------------
 class StateMachineAsset : public AssetBase
 {
@@ -70,6 +72,23 @@ protected:
 };
 
 DefineConsoleType(TypeStateMachineAssetPtr, StateMachineAsset)
+
+//-----------------------------------------------------------------------------
+// TypeAssetId GuiInspectorField Class
+//-----------------------------------------------------------------------------
+class GuiInspectorTypeStateMachineAssetPtr : public GuiInspectorTypeFileName
+{
+   typedef GuiInspectorTypeFileName Parent;
+public:
+
+   GuiBitmapButtonCtrl  *mSMEdButton;
+
+   DECLARE_CONOBJECT(GuiInspectorTypeStateMachineAssetPtr);
+   static void consoleInit();
+
+   virtual GuiControl* constructEditControl();
+   virtual bool updateRects();
+};
 
 #endif
 

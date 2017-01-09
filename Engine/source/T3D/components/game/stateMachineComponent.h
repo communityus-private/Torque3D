@@ -29,6 +29,12 @@
 #ifndef STATE_MACHINE_H
 #include "T3D/components/game/stateMachine.h"
 #endif
+#ifndef _ASSET_PTR_H_
+#include "assets/assetPtr.h"
+#endif 
+#ifndef STATE_MACHINE_ASSET_H
+#include "T3D/assets/stateMachineAsset.h"
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 /// 
@@ -44,6 +50,9 @@ public:
 protected:
    StringTableEntry		mStateMachineFile;
 
+   StringTableEntry       mSMAssetId;
+   AssetPtr<StateMachineAsset>   mSMAsset;
+
 public:
    StateMachineComponent();
    virtual ~StateMachineComponent();
@@ -56,6 +65,7 @@ public:
    virtual void onComponentAdd();
    virtual void onComponentRemove();
 
+   bool setStateMachineAsset(const char* assetName);
    void _onResourceChanged(const Torque::Path &path);
 
    virtual U32 packUpdate(NetConnection *con, U32 mask, BitStream *stream);

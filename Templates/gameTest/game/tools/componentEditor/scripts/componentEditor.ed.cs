@@ -258,6 +258,7 @@ function GuiInspectorComponentGroup::onRightMouseUp(%this, %point)
          item[ 0 ] = "View in Asset Browser" TAB "" TAB "AssetBrowser.editAsset();";
          item[ 1 ] = "Delete Component" TAB "" TAB "schedule(10, 0, ComponentEditorRemoveComponent, InspectComponentPopup.componentOwner, InspectComponentPopup.component);";
          item[ 2 ] = "Edit Script" TAB "" TAB "AssetBrowser.editAsset();";
+         item[ 3 ] = "";
       };
       
    %comp = %this.getComponent();

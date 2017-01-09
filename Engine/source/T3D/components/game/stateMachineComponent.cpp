@@ -55,6 +55,9 @@ StateMachineComponent::StateMachineComponent() : Component()
 
    mStateMachineFile = "";
 
+   mSMAssetId = StringTable->insert("");
+   mSMAsset = StringTable->insert("");
+
    //doesn't need to be networked
    mNetworked = false;
    mNetFlags.clear();
@@ -80,7 +83,6 @@ bool StateMachineComponent::onAdd()
 
    // Register for the resource change signal.
    ResourceManager::get().getChangedSignal().notify(this, &StateMachineComponent::_onResourceChanged);
-
    mStateMachine.onStateChanged.notify(this, &StateMachineComponent::onStateChanged);
 
    return true;
@@ -106,6 +108,8 @@ void StateMachineComponent::unpackUpdate(NetConnection *con, BitStream *stream)
 void StateMachineComponent::onComponentAdd()
 {
    Parent::onComponentAdd();
+
+   loadStateMachineFile();
 }
 
 void StateMachineComponent::onComponentRemove()
@@ -117,22 +121,39 @@ void StateMachineComponent::initPersistFields()
 {
    Parent::initPersistFields();
 
-   addProtectedField("stateMachineFile", TypeFilename, Offset(mStateMachineFile, StateMachineComponent), 
-      &_setSMFile, &defaultProtectedGetFn, "The sim time of when we started this state");
+   addProtectedField("StateMachineAsset", TypeStateMachineAssetPtr, Offset(mSMAsset, StateMachineComponent), &_setSMFile, &defaultProtectedGetFn,
+      "The asset Id used for the state machine.", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
 }
 
 bool StateMachineComponent::_setSMFile(void *object, const char *index, const char *data)
 {
    StateMachineComponent* smComp = static_cast<StateMachineComponent*>(object);
-   if (smComp)
-   {
-      smComp->setStateMachineFile(data);
-      smComp->loadStateMachineFile();
 
-      return true;
+   // Sanity!
+   AssertFatal(data != NULL, "Cannot use a NULL asset Id.");
+
+   return smComp->setStateMachineAsset(data);
+}
+
+bool StateMachineComponent::setStateMachineAsset(const char* assetName)
+{
+   // Fetch the asset Id.
+   mSMAssetId = StringTable->insert(assetName);
+
+   mSMAsset = mSMAssetId;
+
+   if (mSMAsset.isNull())
+   {
+      Con::errorf("[StateMachineComponent] Failed to load state machine asset.");
+      return false;
    }
 
-   return false;
+   mSMAsset = mSMAssetId;
+
+   mStateMachineFile = mSMAsset->getStateMachineFileName();
+   loadStateMachineFile();
+
+   return true;
 }
 
 void StateMachineComponent::_onResourceChanged(const Torque::Path &path)
@@ -155,6 +176,7 @@ void StateMachineComponent::loadStateMachineFile()
    {
       mStateMachine.mStateMachineFile = mStateMachineFile;
       mStateMachine.mOwnerObject = this;
+
       mStateMachine.loadStateMachineFile();
 
       //now that it's loaded, we need to parse the SM's fields and set them as script vars on ourselves
@@ -196,6 +218,9 @@ void StateMachineComponent::onDynamicModified( const char* slotName, const char*
 {
    Parent::onDynamicModified(slotName, newValue);
 
+   if (!isServerObject() || !isActive())
+      return;
+
    StringTableEntry fieldName = StringTable->insert(slotName);
 
    mStateMachine.setField(fieldName, newValue);
@@ -206,6 +231,9 @@ void StateMachineComponent::onStaticModified( const char* slotName, const char* 
 {
    Parent::onStaticModified(slotName, newValue);
 
+   if (!isServerObject() || !isActive())
+      return;
+
    StringTableEntry fieldName = StringTable->insert(slotName);
 
    mStateMachine.setField(fieldName, newValue);
@@ -214,6 +242,9 @@ void StateMachineComponent::onStaticModified( const char* slotName, const char* 
 
 void StateMachineComponent::onStateChanged(StateMachine* sm, S32 stateIdx)
 {
+   if (!isServerObject() || !isActive())
+      return;
+
    //do a script callback, if we have one
    //check if we have a function for that, and then also check if our owner does
    StringTableEntry callbackName = mStateMachine.getCurrentState().callbackName;

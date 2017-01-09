@@ -10,6 +10,8 @@ function GameInfoComponent::onRemove(%this)
 
 function GameInfoComponent::onGameStart(%this)
 {
+   echo("Beginning Game!");
+   
    allocateGameObjects(ArrowProjectile, 100);
 }
 

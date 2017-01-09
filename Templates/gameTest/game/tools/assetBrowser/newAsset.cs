@@ -115,7 +115,8 @@ function CreateNewAsset()
 
 function createNewComponentAsset()
 {
-   %modulePath = "modules/" @ AssetBrowser_newComponentAssetWindow-->NewComponentPackageList.getText();
+   %moduleName = AssetBrowser_newComponentAssetWindow-->NewComponentPackageList.getText();
+   %modulePath = "modules/" @ %moduleName;
    
    if(%modulePath $= "")
       %modulePath = "modules/" @ AssetBrowser.selectedModule;
@@ -154,15 +155,25 @@ function createNewComponentAsset()
 	
 	Canvas.popDialog(AssetBrowser_newComponentAsset);
 	
+	%moduleDef = ModuleDatabase.findModule(%moduleName, 1);
+	AssetDatabase.addDeclaredAsset(%moduleDef, %tamlpath);
+
+	AssetBrowser.loadFilters();
+	
+	%treeItemId = AssetBrowserFilterTree.findItemByName(%moduleName);
+	%smItem = AssetBrowserFilterTree.findChildItemByName(%treeItemId, "Components");
+	
+	AssetBrowserFilterTree.onSelect(%smItem);
+	
 	return %tamlpath;
 }
 
-function createNewMaterialAsset(%assetName, %modulePath)
+function createNewMaterialAsset(%assetName, %moduleName)
 {
    %assetName = NewAssetName.getText();
    
-   %tamlpath = %modulePath @ "/materials/" @ %assetName @ ".asset.taml";
-   %sgfPath = %modulePath @ "/materials/" @ %assetName @ ".sgf";
+   %tamlpath = "modules/" @ %moduleName @ "/materials/" @ %assetName @ ".asset.taml";
+   %sgfPath = "modules/" @ %moduleName @ "/materials/" @ %assetName @ ".sgf";
    
    %asset = new MaterialAsset()
    {
@@ -174,15 +185,43 @@ function createNewMaterialAsset(%assetName, %modulePath)
    
    TamlWrite(%asset, %tamlpath);
    
+   %moduleDef = ModuleDatabase.findModule(%moduleName, 1);
+	AssetDatabase.addDeclaredAsset(%moduleDef, %tamlpath);
+
+	AssetBrowser.loadFilters();
+	
+	%treeItemId = AssetBrowserFilterTree.findItemByName(%moduleName);
+	%smItem = AssetBrowserFilterTree.findChildItemByName(%treeItemId, "Materials");
+	
+	AssetBrowserFilterTree.onSelect(%smItem);
+   
 	return %tamlpath;
 }
 
-function createNewStateMachineAsset(%assetName, %modulePath)
+function createNewStateMachineAsset(%assetName, %moduleName)
 {
-   %assetName = NewAssetName.getText();
+   if(%assetName $= "")
+      %assetName = NewAssetName.getText();
+      
+   %assetQuery = new AssetQuery();
    
-   %tamlpath = %modulePath @ "/stateMachines/" @ %assetName @ ".asset.taml";
-   %smFilePath = %modulePath @ "/stateMachines/" @ %assetName @ ".xml";
+   %matchingAssetCount = AssetDatabase.findAssetName(%assetQuery, %assetName);
+   
+   %i=1;
+   while(%matchingAssetCount > 0)
+   {
+      %newAssetName = %assetName @ %i;
+      %i++;
+      
+      %matchingAssetCount = AssetDatabase.findAssetName(%assetQuery, %newAssetName);
+   }
+   
+   %assetName = %newAssetName;
+   
+   %assetQuery.delete();
+   
+   %tamlpath = "modules/" @ %moduleName @ "/stateMachines/" @ %assetName @ ".asset.taml";
+   %smFilePath = "modules/" @ %moduleName @ "/stateMachines/" @ %assetName @ ".xml";
    
    %asset = new StateMachineAsset()
    {
@@ -191,7 +230,28 @@ function createNewStateMachineAsset(%assetName, %modulePath)
       stateMachineFile = %smFilePath;
    };
    
+   %xmlDoc = new SimXMLDocument();
+   %xmlDoc.saveFile(%smFilePath);
+   %xmlDoc.delete();
+   
    TamlWrite(%asset, %tamlpath);
+   
+   //Now write our XML file
+   %xmlFile = new FileObject();
+	%xmlFile.openForWrite(%smFilePath);
+	%xmlFile.writeLine("<StateMachine>");
+	%xmlFile.writeLine("</StateMachine>");
+	%xmlFile.close();
+   
+   %moduleDef = ModuleDatabase.findModule(%moduleName, 1);
+	AssetDatabase.addDeclaredAsset(%moduleDef, %tamlpath);
+
+	AssetBrowser.loadFilters();
+	
+	%treeItemId = AssetBrowserFilterTree.findItemByName(%moduleName);
+	%smItem = AssetBrowserFilterTree.findChildItemByName(%treeItemId, "StateMachines");
+	
+	AssetBrowserFilterTree.onSelect(%smItem);
    
 	return %tamlpath;
 }

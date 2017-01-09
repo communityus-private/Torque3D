@@ -23,7 +23,7 @@
       canMinimize = "0";
       canMaximize = "0";
       canCollapse = "0";
-      closeCommand = "Canvas.popDialog(AssetBrowser_newAsset);";
+      closeCommand = "Canvas.popDialog(AssetBrowser_newComponentAsset);";
       edgeSnap = "1";
       margin = "0 0 0 0";
       padding = "0 0 0 0";
@@ -31,7 +31,7 @@
       anchorBottom = "0";
       anchorLeft = "1";
       anchorRight = "0";
-      position = "351 238";
+      position = "328 250";
       extent = "368 268";
       minExtent = "48 92";
       horizSizing = "center";
@@ -92,10 +92,10 @@
          tooltipProfile = "GuiToolTipProfile";
          hovertime = "1000";
          isContainer = "1";
+         internalName = "NewComponentPackageList";
          class = "AssetBrowserPackageList";
          canSave = "1";
          canSaveDynamicFields = "0";
-         internalName = "NewComponentPackageList";
       };
       new GuiBitmapButtonCtrl() {
          bitmap = "tools/gui/images/iconAdd.png";
@@ -119,8 +119,8 @@
          tooltipProfile = "GuiToolTipProfile";
          hovertime = "1000";
          isContainer = "0";
-         class = "NewAssetPackageBtn";
          internalName = "NewComponentPackageBtn";
+         class = "NewAssetPackageBtn";
          canSave = "1";
          canSaveDynamicFields = "0";
       };
@@ -422,7 +422,7 @@
          profile = "ToolsGuiButtonProfile";
          visible = "1";
          active = "1";
-         command = "Canvas.popDialog(AssetBrowser_newAsset);";
+         command = "Canvas.popDialog(AssetBrowser_newComponentAsset);";
          tooltipProfile = "ToolsGuiToolTipProfile";
          hovertime = "1000";
          isContainer = "0";

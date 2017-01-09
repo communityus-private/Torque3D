@@ -19,6 +19,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+singleton GuiControlProfile( StateMachineEditorProfile )
+{
+   canKeyFocus = true;
+   opaque = true;
+   fillColor = "192 192 192 192";
+   category = "Editor";
+};
+
 function initializeStateMachineEditor()
 {
    echo(" % - Initializing State Machine Editor");  
@@ -98,9 +106,7 @@ function StateMachineGraph::onRightMouseDown(%this, %mousePoint, %nodeIdx)
     %this.lastRMBClickPos = %mousePoint;
     
     %this.lastRMBClickNode = %nodeIdx;
-    
-    echo("WE RIGHT CLICKED");
-    
+
     %popup = StateMachinePopup;      
     if( !isObject( %popup ) )
     {
@@ -139,6 +145,8 @@ function StateMachineGraph::addState(%this, %stateName, %statePos)
       %statePos = %this.lastRMBClickPos.x - %this.getGraphCenter().x SPC %this.lastRMBClickPos.y - %this.getGraphCenter().y;
    
    %this.setNodePosition(%newNode, %statePos);
+   
+   %this.setNodeField(%newNode, "scriptFunction", "on"@%stateName);
    
    //it's our first node!
    if(%newNode == 0)
@@ -216,7 +224,28 @@ function StateMachineGraph::onNodeSelected(%this, %nodeIdx)
    %field-->Field.setText(StateMachineGraph.getNodeName(StateMachineGraph.selectedNode));
    
    %field = StateMachineInspector.createStateFunctionField(%group, "Callback Name");
-   %field-->Field.setText("on" @ StateMachineGraph.getNodeName(StateMachineGraph.selectedNode));
+   
+   %callbackName = StateMachineGraph.getNodeField(StateMachineGraph.selectedNode, "scriptFunction");
+   if(%callbackName $= "")
+      %callbackName = "on" @ StateMachineGraph.getNodeName(StateMachineGraph.selectedNode);
+      
+   %field-->Field.setText(%callbackName);
+   
+   %stack = %group.getObject(0);
+   %ctrl = new GuiControl()
+   {
+      position = "0 0";
+      extent = %stack.extent.x SPC 20;
+      
+      new GuiBitmapButtonCtrl()
+      {
+         bitmap = "tools/gui/images/iconAdd";
+         position = %stack.extent.x - 20 SPC 0;
+         extent = "20 20";
+         command = StateMachineInspector @ ".createNodeField(" @ %group @ ", \"\");";
+      };
+   };
+   %stack.add(%ctrl);
    
    StateMachineGraph.selectedNode = %nodeIdx;
 }
@@ -420,10 +449,11 @@ function SaveStateMachineBtn::onClick(%this)
       {
          %nodeName = StateMachineGraph.getNodeName(%n);
          %nodePos = StateMachineGraph.getNodePosition(%n);
+         %nodeCallback = StateMachineGraph.getNodeField(%n, "scriptFunction");
          
          %xmlDoc.pushNewElement("State");
          %xmlDoc.setAttribute("name", %nodeName);
-         %xmlDoc.setAttribute("scriptFunction", "");
+         %xmlDoc.setAttribute("scriptFunction", %nodeCallback);
          %xmlDoc.setAttribute("pos", %nodePos);
          
          //
@@ -468,6 +498,11 @@ function SaveStateMachineBtn::onClick(%this)
    %xmlDoc.popElement();
    
    %xmlDoc.saveFile(StateMachineEditor.loadedFile);
+   
+   if(StateMachineGraph.loadedAsset !$= "")
+   {
+      StateMachineGraph.loadedAsset.notifyAssetChanged();
+   }
 }
 
 function LoadStateMachineBtn::onClick(%this)
@@ -498,6 +533,13 @@ function LoadStateMachineBtn::onClick(%this)
    StateMachineEditor.loadStateMachineFile(%fullPath);
 }
 
+function StateMachineEditor::loadStateMachineAsset(%this, %asset)
+{
+   StateMachineGraph.loadedAsset = AssetDatabase.acquireAsset(%asset);
+   %file = StateMachineGraph.loadedAsset.stateMachineFile;
+   %this.loadStateMachineFile(%file);
+}
+
 function StateMachineEditor::loadStateMachineFile(%this, %file)
 {
    StateMachineGraph.clear();
@@ -509,15 +551,13 @@ function StateMachineEditor::loadStateMachineFile(%this, %file)
    //we had a real file, time to parse it and load our shader graph
    %xmlDoc = new SimXMLDocument();
    
-   if(%xmlDoc.loadFile(%file))
-   {
+   if(isFile(%file))
       StateMachineEditor.loadedFile = %file;
       
+   if(%xmlDoc.loadFile(%file))
+   {
       //StateMachine element
       %xmlDoc.pushChildElement(0);
-      
-      //Fields
-      %xmlDoc.pushFirstChildElement("Fields");
       
       //We *always* have a state timeout field
       StateMachineGraph.stateVarsArray.add("stateTime", "0");
@@ -529,85 +569,93 @@ function StateMachineEditor::loadStateMachineFile(%this, %file)
       %field.getObject(2).active = false;
       %field.getObject(2).hidden = true;
       
-      %fieldCount = 0;
-      while(%xmlDoc.pushChildElement(%fieldCount))
+      //Fields
+      if(%xmlDoc.pushFirstChildElement("Fields"))
       {
-         %fieldName = %xmlDoc.attribute("name");
-         %fieldDefaultVal = %xmlDoc.attribute("defaultValue");
-         
-         %field = StateMachineInspector.createSMField(StateMachinePropertiesGroup, %fieldName, %fieldDefaultVal);
-         
-         StateMachineGraph.stateVarsArray.add(%fieldName, %fieldDefaultVal);
-         
-         %xmlDoc.popElement();
-         %fieldCount++;
-      }
-      
-      %xmlDoc.popElement();
-      
-      //States
-      %xmlDoc.pushFirstChildElement("States");
-      
-      %stateCount = 0;
-      while(%xmlDoc.pushChildElement(%stateCount))
-      {
-         %stateName = %xmlDoc.attribute("name");
-         %scriptFunc = %xmlDoc.attribute("scriptFunction");
-         %statePos = %xmlDoc.attribute("pos");
-         
-         StateMachineGraph.addState(%stateName, %statePos);
-         
-         %isStarting = %xmlDoc.attribute("starting");
-         if(%isStarting !$= "")
+         %fieldCount = 0;
+         while(%xmlDoc.pushChildElement(%fieldCount))
          {
-            //set it as starting state! 
-            if(StateMachineGraph.rootNode !$= "")
-            {
-               StateMachineGraph.useNodeColor(StateMachineGraph.rootNode, false);
-            }
+            %fieldName = %xmlDoc.attribute("name");
+            %fieldDefaultVal = %xmlDoc.attribute("defaultValue");
             
-            StateMachineGraph.setNodeColor(%stateCount, "0 180 0");
-            StateMachineGraph.useNodeColor(%stateCount, true);
-            StateMachineGraph.rootNode = %stateCount;
-         }
-         
-         %xmlDoc.popElement();
-         %stateCount++;         
-      }
-      %xmlDoc.popElement();
-      
-      %xmlDoc.pushFirstChildElement("Transitions");
-      
-      %transitionCount = 0;
-      while(%xmlDoc.pushChildElement(%transitionCount))
-      {
-         %ownerState = %xmlDoc.attribute("ownerState");
-         %stateTarget = %xmlDoc.attribute("stateTarget");
-         
-         %connectionIdx = StateMachineGraph.addConnection(%ownerState, %stateTarget);
-         
-         %ruleList = StateMachineGraph.transitions.getValue(%connectionIdx);
-         
-         %ruleCount = 0;
-         while(%xmlDoc.pushChildElement(%ruleCount))
-         {
-            %fieldId = %xmlDoc.attribute("fieldId");
-            %comparitor = %xmlDoc.attribute("comparitor");
-            %value = %xmlDoc.attribute("value");
+            %field = StateMachineInspector.createSMField(StateMachinePropertiesGroup, %fieldName, %fieldDefaultVal);
             
-            %ruleList.add(%ruleCount, %fieldId TAB %comparitor TAB %value);
-            
-            StateMachineGraph.setConnectionError(%connectionIdx, false);
+            StateMachineGraph.stateVarsArray.add(%fieldName, %fieldDefaultVal);
             
             %xmlDoc.popElement();
-            %ruleCount++;
+            %fieldCount++;
          }
-
+         
          %xmlDoc.popElement();
-         %transitionCount++;
       }
       
-      %xmlDoc.popElement();
+      //States
+      if(%xmlDoc.pushFirstChildElement("States"))
+      {
+         %stateCount = 0;
+         while(%xmlDoc.pushChildElement(%stateCount))
+         {
+            %stateName = %xmlDoc.attribute("name");
+            %scriptFunc = %xmlDoc.attribute("scriptFunction");
+            %statePos = %xmlDoc.attribute("pos");
+            
+            StateMachineGraph.addState(%stateName, %statePos);
+            
+            %isStarting = %xmlDoc.attribute("starting");
+            if(%isStarting !$= "")
+            {
+               //set it as starting state! 
+               if(StateMachineGraph.rootNode !$= "")
+               {
+                  StateMachineGraph.useNodeColor(StateMachineGraph.rootNode, false);
+               }
+               
+               StateMachineGraph.setNodeColor(%stateCount, "0 180 0");
+               StateMachineGraph.useNodeColor(%stateCount, true);
+               StateMachineGraph.rootNode = %stateCount;
+            }
+            
+            StateMachineGraph.setNodeField(%stateCount, "scriptFunction", %scriptFunc);
+            
+            %xmlDoc.popElement();
+            %stateCount++;         
+         }
+         %xmlDoc.popElement();
+      }
+      
+      if(%xmlDoc.pushFirstChildElement("Transitions"))
+      {      
+         %transitionCount = 0;
+         while(%xmlDoc.pushChildElement(%transitionCount))
+         {
+            %ownerState = %xmlDoc.attribute("ownerState");
+            %stateTarget = %xmlDoc.attribute("stateTarget");
+            
+            %connectionIdx = StateMachineGraph.addConnection(%ownerState, %stateTarget);
+            
+            %ruleList = StateMachineGraph.transitions.getValue(%connectionIdx);
+            
+            %ruleCount = 0;
+            while(%xmlDoc.pushChildElement(%ruleCount))
+            {
+               %fieldId = %xmlDoc.attribute("fieldId");
+               %comparitor = %xmlDoc.attribute("comparitor");
+               %value = %xmlDoc.attribute("value");
+               
+               %ruleList.add(%ruleCount, %fieldId TAB %comparitor TAB %value);
+               
+               StateMachineGraph.setConnectionError(%connectionIdx, false);
+               
+               %xmlDoc.popElement();
+               %ruleCount++;
+            }
+
+            %xmlDoc.popElement();
+            %transitionCount++;
+         }
+         
+         %xmlDoc.popElement();
+      }
    }
    
    %xmlDoc.popElement();
