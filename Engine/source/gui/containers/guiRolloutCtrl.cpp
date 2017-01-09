@@ -176,7 +176,6 @@ void GuiRolloutCtrl::removeObject( SimObject *obj )
 
 void GuiRolloutCtrl::onMouseDown( const GuiEvent &event )
 {
-   Point2I localPoint = globalToLocalCoord( event.mousePoint );
    mouseLock();
 }
 
@@ -189,7 +188,7 @@ bool GuiRolloutCtrl::_onMouseUp( const GuiEvent &event, bool lockedMouse )
    {
       // If Ctrl/Cmd-clicking a header, collapse all sibling GuiRolloutCtrls.
       
-      if(    ( mAutoCollapseSiblings && !mIsExpanded && !( event.modifier & SI_PRIMARY_CTRL )
+      if( (( mAutoCollapseSiblings && !mIsExpanded && !( event.modifier & SI_PRIMARY_CTRL ))
           || ( !mAutoCollapseSiblings && event.modifier & SI_PRIMARY_CTRL ) ) )
       {
          for( SimSet::iterator iter = getParent()->begin(); iter != getParent()->end(); ++ iter )
