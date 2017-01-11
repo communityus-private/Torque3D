@@ -838,7 +838,7 @@ void NavMesh::buildNextTile()
          ctx->stopTimer(RC_TIMER_TOTAL);
          if(getEventManager())
          {
-            String str = String::ToString("%d %.3f", getId(), ctx->getAccumulatedTime(RC_TIMER_TOTAL) / 1000.0f);
+            String str = String::ToString("%d", getId());
             getEventManager()->postEvent("NavMeshUpdate", str.c_str());
             setMaskBits(LoadFlag);
          }
@@ -1143,9 +1143,10 @@ void NavMesh::buildLinks()
       // Iterate over links
       for(U32 j = 0; j < mLinkIDs.size(); j++)
       {
+			if (mLinksUnsynced[j])
+			{
          if(tile.box.isContained(getLinkStart(j)) ||
-            tile.box.isContained(getLinkEnd(j)) &&
-            mLinksUnsynced[j])
+					tile.box.isContained(getLinkEnd(j)))
          {
             // Mark tile for build.
             mDirtyTiles.push_back_unique(i);
@@ -1160,6 +1161,7 @@ void NavMesh::buildLinks()
          }
       }
    }
+	}
    if(mDirtyTiles.size())
       ctx->startTimer(RC_TIMER_TOTAL);
 }

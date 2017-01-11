@@ -61,6 +61,7 @@ void AbstractPolyList::addBox(const Box3F &box, BaseMatInstance* material)
       S32 v3 = base + PolyFace[i][2];
       S32 v4 = base + PolyFace[i][3];
 
+      // First triangle
       begin(material, i);
       vertex(v1);
       vertex(v2);
@@ -68,6 +69,7 @@ void AbstractPolyList::addBox(const Box3F &box, BaseMatInstance* material)
       plane(v1, v2, v3);
       end();
 
+      // Second triangle
       begin(material, i);
       vertex(v3);
       vertex(v4);

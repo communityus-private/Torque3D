@@ -452,7 +452,7 @@ GuiControl* GuiInspectorTypeCheckBox::constructEditControl()
       button->setField("Command", szBuffer );
 
       return retCtrl;
-   } 
+   }
    else 
    {
       GuiControl* retCtrl = new GuiCheckBoxCtrl();
@@ -1319,9 +1319,9 @@ void GuiInspectorTypeS32::setValue( StringTableEntry newValue )
 //-----------------------------------------------------------------------------
 
 GuiInspectorTypeBitMask32::GuiInspectorTypeBitMask32()
- : mRollout( NULL ),
-   mArrayCtrl( NULL ),
-   mHelper( NULL )
+ : mHelper( NULL ),
+   mRollout( NULL ),
+   mArrayCtrl( NULL )
 {
 }
 

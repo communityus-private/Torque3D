@@ -593,14 +593,14 @@ IMPLEMENT_CO_NETOBJECT_V1(River);
 
 
 River::River()
- : mMetersPerSegment(10.0f),
-   mSegmentsPerBatch(10),
+ : mSegmentsPerBatch(10),
+   mMetersPerSegment(10.0f),
    mDepthScale(1.0f),
+   mFlowMagnitude(1.0f),
+   mLodDistance( 50.0f ),
    mMaxDivisionSize(2.5f),
    mMinDivisionSize(0.25f),
-	mColumnCount(5),
-   mFlowMagnitude(1.0f),
-   mLodDistance( 50.0f )   
+   mColumnCount(5)   
 {   
    mNetFlags.set( Ghostable | ScopeAlways );
 
@@ -1592,8 +1592,6 @@ void River::_generateSlices()
       }
    }
 
-   Point3F pos = getPosition();
-
    mWorldBox = box;
    //mObjBox.minExtents -= pos;
    //mObjBox.maxExtents -= pos;
@@ -2160,8 +2158,8 @@ void River::_makeRenderBatches( const Point3F &cameraPos )
 
          F32 dist = getMin( dist0, dist1 );
          highDetail = ( dist < lodDistSquared );
-         if ( highDetail && lastDetail == 0 ||
-            !highDetail && lastDetail == 1 )
+         if ( (highDetail && lastDetail == 0) ||
+            (!highDetail && lastDetail == 1) )
          {
             // We hit a segment with a different lod than the previous.
             // Save what we have so far...
