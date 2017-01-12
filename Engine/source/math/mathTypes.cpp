@@ -1033,6 +1033,7 @@ DefineConsoleFunction( VectorLerp, VectorF, ( VectorF a, VectorF b, F32 t ),,
 }
 
 DefineConsoleFunction(VectorReflect, VectorF, (VectorF vec, VectorF normal), ,
+
    "Compute the reflection of a vector based on a normal.\n"
    "@param a The vector.\n"
    "@param b The normal.\n"

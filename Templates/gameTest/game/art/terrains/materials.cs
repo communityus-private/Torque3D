@@ -189,7 +189,7 @@ new TerrainMaterial()
 // Sample sand
 // ----------------------------------------------------------------------------
 
-singleton Material()
+singleton Material(TerrainFX_sand)
 {
    mapTo = "sand";
    footstepSoundId = "3";

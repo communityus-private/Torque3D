@@ -2523,17 +2523,3 @@ function MaterialEditorGui::saveCompositeMap(%this)
     saveCompositeTexture(%roughMap,%aoMap,%metalMap,"",%channelKey, %saveAs);
     %dlg.delete();
 }
-
-singleton Material(grass_wip2_grass_texture_mat)
-{
-   mapTo = "unmapped_mat";
-   diffuseMap[0] = "grass_wip2_grass_texture";
-   pixelSpecular0 = "0";
-};
-
-singleton Material(MedGrass1m_grass_replace_me_mat4)
-{
-   mapTo = "unmapped_mat";
-   diffuseMap[0] = "MedGrass1m_grass_replace_me";
-   pixelSpecular0 = "0";
-};

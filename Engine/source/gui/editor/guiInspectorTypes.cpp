@@ -453,7 +453,7 @@ GuiControl* GuiInspectorTypeCheckBox::constructEditControl()
 
       return retCtrl;
    }
-   else
+   else 
    {
       GuiControl* retCtrl = new GuiCheckBoxCtrl();
 

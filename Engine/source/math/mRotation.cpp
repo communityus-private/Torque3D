@@ -374,15 +374,6 @@ DefineConsoleStaticMethod(rotation, LookAt, RotationF, (Point3F origin, Point3F 
    return result;
 }
 
-DefineConsoleStaticMethod(rotation, getDirection, Point3F, (RotationF rot),,
-"Takes the angles of the provided rotation and returns a direction vector.\n"
-"@param rot Our rotation."
-"@returns v Direction vector result."
-"@ingroup Math")
-{
-   return rot.getDirection();
-}
-
 DefineConsoleStaticMethod(rotation, setRightVector, RotationF, (RotationF a, VectorF rightVec), ,
    "Subtracts two rotations.\n"
    "@param a Rotation one."
@@ -433,4 +424,13 @@ DefineConsoleStaticMethod(rotation, getUpVector, VectorF, (RotationF a), ,
    "@ingroup Math")
 {
    return a.asMatrixF().getUpVector();
+}
+
+DefineConsoleStaticMethod(rotation, getDirection, Point3F, (RotationF rot),,
+"Takes the angles of the provided rotation and returns a direction vector.\n"
+"@param rot Our rotation."
+"@returns v Direction vector result."
+"@ingroup Math")
+{
+   return rot.getDirection();
 }

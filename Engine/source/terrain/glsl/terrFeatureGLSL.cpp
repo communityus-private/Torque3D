@@ -1081,7 +1081,6 @@ void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    Var *color = NULL;
-
    Var *normal = NULL;
    if (fd.features[MFT_isDeferred])
    {

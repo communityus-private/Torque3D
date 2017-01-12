@@ -346,6 +346,30 @@ DefineConsoleFunction( mIsPow2, bool, ( S32 v ),,
    return isPow2( v );
 }
 
+DefineConsoleStaticMethod(DebugDrawing, drawLine, void, (Point3F start, Point3F end, ColorF color, S32 time), ,
+   "Adds two rotations together.\n"
+   "@param a Rotation one."
+   "@param b Rotation two."
+   "@returns v sum of both rotations."
+   "@ingroup Math")
+{
+   DebugDrawer *ddraw = DebugDrawer::get();
+   ddraw->drawLine(start, end, color);
+   ddraw->setLastTTL(time);
+}
+
+DefineConsoleStaticMethod(DebugDrawing, drawBox, void, (Point3F position, F32 size, ColorF color, S32 time), ,
+   "Adds two rotations together.\n"
+   "@param a Rotation one."
+   "@param b Rotation two."
+   "@returns v sum of both rotations."
+   "@ingroup Math")
+{
+   DebugDrawer *ddraw = DebugDrawer::get();
+   ddraw->drawBox(position - (Point3F(size, size, size) / 2), position + (Point3F(size, size, size) / 2), color);
+   ddraw->setLastTTL(time);
+}
+
 DefineConsoleFunction( mRandomDir, Point3F, (Point3F axis, F32 angleMin, F32 angleMax),,
    "Returns a randomized direction based on a starting axis and the min/max angles.\n"
    "@param axis Main axis to deviate the direction from."
@@ -374,28 +398,4 @@ DefineConsoleFunction( mGetAngleBetweenVectors, F32, (VectorF vecA, VectorF vecB
    "@ingroup Math")
 {
    return MathUtils::getAngleBetweenVectors(vecA, vecB);
-}
-
-DefineConsoleStaticMethod(DebugDrawing, drawLine, void, (Point3F start, Point3F end, ColorF color, S32 time), ,
-   "Adds two rotations together.\n"
-   "@param a Rotation one."
-   "@param b Rotation two."
-   "@returns v sum of both rotations."
-   "@ingroup Math")
-{
-   DebugDrawer *ddraw = DebugDrawer::get();
-   ddraw->drawLine(start, end, color);
-   ddraw->setLastTTL(time);
-}
-
-DefineConsoleStaticMethod(DebugDrawing, drawBox, void, (Point3F position, F32 size, ColorF color, S32 time), ,
-   "Adds two rotations together.\n"
-   "@param a Rotation one."
-   "@param b Rotation two."
-   "@returns v sum of both rotations."
-   "@ingroup Math")
-{
-   DebugDrawer *ddraw = DebugDrawer::get();
-   ddraw->drawBox(position - (Point3F(size, size, size) / 2), position + (Point3F(size, size, size) / 2), color);
-   ddraw->setLastTTL(time);
 }

@@ -10,8 +10,9 @@
 <Folder>levels</Folder>
 <Folder>shaders</Folder>
 <Folder>tools</Folder>
+<Folder>modules</Folder>
 </Mods>
-<ScannerExts>cs; gui</ScannerExts>
+<ScannerExts>cs; gui; taml</ScannerExts>
 <Configs>
 <Config>
 <Name>Release</Name>

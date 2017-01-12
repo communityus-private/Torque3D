@@ -19,8 +19,6 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-%what = 1;
-%thebutt = "10 11 12";
 
 // Set the name of our application
 $appName = "Full";
