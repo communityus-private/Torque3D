@@ -123,6 +123,8 @@ void VRCameraComponent::onComponentAdd()
 {
    Parent::onComponentAdd();
 
+#ifdef TORQUE_OPENVR
+
    if (isClientObject())
    {
       //check if VR is enabled
@@ -240,6 +242,8 @@ void VRCameraComponent::onComponentAdd()
       $Video::VREnabled = OpenVR::isDeviceActive();
       */
    }
+
+#endif
 }
 
 void VRCameraComponent::setupVR()
@@ -247,6 +251,7 @@ void VRCameraComponent::setupVR()
    if (vrInitialized)
       return;
 
+#ifdef TORQUE_OPENVR
    //check if VR is enabled
    if (!ManagedSingleton<OpenVRProvider>::instanceOrNull())
    {
@@ -313,6 +318,7 @@ void VRCameraComponent::setupVR()
    Con::setBoolVariable("$Video::VREnabled", OPENVR->isEnabled());
 
    vrInitialized = true;
+#endif
 }
 
 void VRCameraComponent::onComponentRemove()

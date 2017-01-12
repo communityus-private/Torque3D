@@ -20,8 +20,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-#ifndef COMPONENT_ASSET_H
-#define COMPONENT_ASSET_H
+#ifndef SOUND_ASSET_H
+#define SOUND_ASSET_H
 
 #ifndef _ASSET_BASE_H_
 #include "assets/assetBase.h"
@@ -40,7 +40,7 @@
 #endif
 
 //-----------------------------------------------------------------------------
-class ComponentAsset : public AssetBase
+class SoundAsset : public AssetBase
 {
    typedef AssetBase Parent;
 
@@ -49,35 +49,23 @@ class ComponentAsset : public AssetBase
    AssetDefinition*        mpAssetDefinition;
    U32                     mAcquireReferenceCount;
 
-   StringTableEntry mComponentName;
-   StringTableEntry mComponentClass;
-   StringTableEntry mFriendlyName;
-   StringTableEntry mComponentType;
-   StringTableEntry mDescription;
-
 public:
-   ComponentAsset();
-   virtual ~ComponentAsset();
+   SoundAsset();
+   virtual ~SoundAsset();
 
    /// Engine.
    static void initPersistFields();
    virtual void copyTo(SimObject* object);
 
    /// Declare Console Object.
-   DECLARE_CONOBJECT(ComponentAsset);
-
-   StringTableEntry getComponentName() { return mComponentName; }
-   StringTableEntry getComponentClass() { return mComponentClass; }
-   StringTableEntry getFriendlyName() { return mFriendlyName; }
-   StringTableEntry getFriendlyType() { return mComponentType; }
-   StringTableEntry getDescription() { return mDescription; }
+   DECLARE_CONOBJECT(SoundAsset);
 
 protected:
    virtual void            initializeAsset(void) {}
    virtual void            onAssetRefresh(void) {}
 };
 
-DefineConsoleType(TypeComponentAssetPtr, ComponentAsset)
+DefineConsoleType(TypeSoundAssetPtr, SoundAsset)
 
 #endif // _ASSET_BASE_H_
 

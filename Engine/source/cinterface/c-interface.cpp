@@ -1,5 +1,6 @@
 #include "c-interface.h"
 
+/*
 CInterface& CInterface::GetCInterface()
 {
    static CInterface INSTANCE;
@@ -75,7 +76,7 @@ const char* CInterface::GetMarshallableString(const char* str)
    strcpy(pszReturn, str);
    // Return pszReturn.
    return pszReturn;*/
-}
+/*}
 
 const char* CInterface::GetMarshallableString(int size)
 {
@@ -85,11 +86,11 @@ const char* CInterface::GetMarshallableString(int size)
    char* pszReturn = (char*)::CoTaskMemAlloc(ulSize);
    // Return pszReturn.
    return pszReturn;*/
-}
+/*}
 
 void SetCallbacks(void* ptr, void* methodPtr, void* isMethodPtr, void* mainPtr) {
    CInterface::GetCInterface().SetCallFunctionCallback(ptr);
    CInterface::GetCInterface().SetCallMethodCallback(methodPtr);
    CInterface::GetCInterface().SetCallIsMethodCallback(isMethodPtr);
    CInterface::GetCInterface().SetMainCallback(mainPtr);
-}
+}*/

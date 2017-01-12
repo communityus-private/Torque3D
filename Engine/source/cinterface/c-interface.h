@@ -8,6 +8,8 @@
 #include <math/mPoint4.h>
 #include <core/color.h>
 
+/*
+
 extern "C" {
    DLL_DECL void SetCallbacks(void* ptr, void* methodPtr, void* isMethodPtr, void *mainPtr);
 }
@@ -182,6 +184,6 @@ public:
          return RectI(point, extent);
       }
    };
-};
+};*/
 
 #endif // C-INTERFACE_H
