@@ -28,10 +28,10 @@
 #include "T3D/components/component.h"
 #endif
 
-//////////////////////////////////////////////////////////////////////////
-/// 
-/// 
-//////////////////////////////////////////////////////////////////////////
+//ExampleComponent
+//A basic example of the various functions you can utilize to make your own component!
+//This example doesn't really DO anything, persay, but you can readily copy it as a base
+//and use it as a starting point for your own.
 class ExampleComponent : public Component, public EditorInspectInterface
 {
    typedef Component Parent;
@@ -51,8 +51,15 @@ public:
    virtual void onComponentRemove();
    virtual void onComponentAdd();
 
+   virtual void componentAddedToOwner(Component *comp);
+   virtual void componentRemovedFromOwner(Component *comp);
+
    virtual void onInspect();
    virtual void onEndInspect();
+
+   virtual void processTick();
+   virtual void advanceTime(F32 dt);
+   virtual void interpolateTick(F32 delta);
 };
 
 #endif

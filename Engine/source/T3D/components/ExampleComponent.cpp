@@ -28,14 +28,18 @@
 //////////////////////////////////////////////////////////////////////////
 ExampleComponent::ExampleComponent() : Component()
 {
+   //These flags inform that, in this particular component, we network down to the client, which enables the pack/unpackData functions to operate
    mNetworked = true;
    mNetFlags.set(Ghostable | ScopeAlways);
 }
 
-ExampleComponent::~ExampleComponent() {}
+ExampleComponent::~ExampleComponent() 
+{
+}
 
 IMPLEMENT_CO_NETOBJECT_V1(ExampleComponent);
 
+//Standard onAdd function, for when the component is created
 bool ExampleComponent::onAdd()
 {
    if (!Parent::onAdd())
@@ -44,21 +48,43 @@ bool ExampleComponent::onAdd()
    return true;
 }
 
+//Standard onRemove function, when the component object is deleted
 void ExampleComponent::onRemove()
 {
    Parent::onRemove();
 }
 
+//This is called when the component has been added to an entity
 void ExampleComponent::onComponentAdd()
 {
    Parent::onComponentAdd();
+
+   Con::printf("We were added to an entity! ExampleComponent reporting in for owner entity %g", mOwner->getId());
 }
 
+//This is called when the component has been removed from an entity
 void ExampleComponent::onComponentRemove()
 {
    Parent::onComponentRemove();
+
+   Con::printf("We were removed from our entity! ExampleComponent signing off for owner entity %g", mOwner->getId());
 }
 
+//This is called any time a component is added to an entity. Every component currently owned by the entity is informed of the event. 
+//This allows you to do dependency behavior, like collisions being aware of a mesh component, etc
+void ExampleComponent::componentAddedToOwner(Component *comp)
+{
+   Con::printf("Our owner entity has a new component being added! ExampleComponent welcomes component %g of type %s", comp->getId(), comp->getClassRep()->getNameSpace());
+}
+
+//This is called any time a component is removed from an entity. Every component current owned by the entity is informed of the event.
+//This allows cleanup and dependency management.
+void ExampleComponent::componentRemovedFromOwner(Component *comp)
+{
+   Con::printf("Our owner entity has a removed a component! ExampleComponent waves farewell to component %g of type %s", comp->getId(), comp->getClassRep()->getNameSpace());
+}
+
+//Regular init persist fields function to set up static fields.
 void ExampleComponent::initPersistFields()
 {
    Parent::initPersistFields();
@@ -76,10 +102,30 @@ void ExampleComponent::unpackUpdate(NetConnection *con, BitStream *stream)
    Parent::unpackUpdate(con, stream);
 }
 
+//This allows custom behavior in the event the owner is being edited
 void ExampleComponent::onInspect()
 {
 }
 
+//This allows cleanup of the custom editor behavior if our owner stopped being edited
 void ExampleComponent::onEndInspect()
 {
+}
+
+//Process tick update function, natch
+void ExampleComponent::processTick()
+{
+   Parent::processTick();
+}
+
+//Client-side advance function
+void ExampleComponent::advanceTime(F32 dt)
+{
+
+}
+
+//Client-side interpolation function
+void ExampleComponent::interpolateTick(F32 delta)
+{
+
 }
