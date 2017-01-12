@@ -162,15 +162,13 @@ vec4 EvalBDRF( vec3 baseColor, vec3 lightColor, vec3 toLight, vec3 position, vec
 	vec3 Fr_dielec    = D * F_dielec * Vis; 
 	vec3 Fr_conductor = D * F_conductor * Vis; 
 	
-	float FR = Fr_DisneyDiffuse( NdotV , NdotL , LdotH , visLinAlpha ) / M_PI_F;
-	vec3 Fd = vec3(FR);
-	
+	vec3 Fd = vec3(Fr_DisneyDiffuse( NdotV , NdotL , LdotH , visLinAlpha ) / M_PI_F);
     vec3 specular = ( 1.0f - metal ) * Fr_dielec + metal * Fr_conductor;
 	vec3 diffuse  = ( 1.0f - metal ) * Fd * f0;
+   
+    vec3 ret = ( diffuse + specular + lightColor) * vec3(NdotL);
 	
-	// cancel out base color multiplication of specular at high grazing angles
-	// see deferredShadingP
-    vec3 ret = ( diffuse + specular+lightColor) * NdotL;
+	float FR = saturate(length(specular));
 	return vec4(ret,FR);
 }
 
