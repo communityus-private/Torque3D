@@ -135,7 +135,6 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
    }
 
    //A couple of checks to determine if color blend
-   //A couple of checks to determine if color blend
    if (c1 == colorWhite && c3 == colorAlpha && c4 == colorBlack)
    {
       //Color
@@ -207,6 +206,7 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
       PrimBuild::end();
    }
 }
+
 
 //--------------------------------------------------------------------------
 /// Function to draw a set of boxes blending throughout an array of colors
