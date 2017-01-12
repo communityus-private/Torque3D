@@ -259,12 +259,12 @@ bool ConvexShape::protectedSetSurfaceTexture(void *object, const char *index, co
 }
 
 ConvexShape::ConvexShape()
- : mMaterialInst( NULL ),   
-   mNormalLength( 0.3f ),
-   //mVertCount( 0 ),
-   //mPrimCount( 0 ),
-   mMaterialName( "Grid512_OrangeLines_Mat" ),
-   mPhysicsRep( NULL )
+ : mMaterialName( "Grid512_OrangeLines_Mat" ),
+   mMaterialInst( NULL ),
+   mVertCount( 0 ),
+   mPrimCount( 0 ),
+   mPhysicsRep( NULL ),
+   mNormalLength( 0.3f )
 {   
    mNetFlags.set( Ghostable | ScopeAlways );
    
@@ -1328,21 +1328,20 @@ void ConvexShape::_updateGeometry(bool updateCollision)
 
             const Point3F binormal = mCross(face.normal, face.tangent);
 
-            for (S32 j = 0; j < triangles.size(); j++)
-            {
-               for (S32 k = 0; k < 3; k++)
-               {
-                  pVert->normal = face.normal;
-                  pVert->tangent = face.tangent;
-                  pVert->color = faceColor;
-                  pVert->point = pointList[facePntMap[triangles[j][k]]];
-                  pVert->texCoord = face.texcoords[triangles[j][k]];
+		for ( S32 j = 0; j < triangles.size(); j++ )
+		{
+			for ( S32 k = 0; k < 3; k++ )
+			{
+				pVert->normal = face.normal;
+				pVert->tangent = face.tangent;
+				pVert->color = faceColor;			
+				pVert->point = pointList[ facePntMap[ triangles[j][k] ] ];
+				pVert->texCoord = face.texcoords[ triangles[j][k] ];
 
-                  pVert++;
-               }
-            }
-         }
-      }
+				pVert++;
+			}
+		}		
+	}	
 
       mVertexBuffer.unlock();
 
