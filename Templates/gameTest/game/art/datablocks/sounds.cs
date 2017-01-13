@@ -25,3 +25,10 @@ datablock SFXProfile(WeaponFireSound)
    description = AudioClose3D;
    preload = true;
 };
+
+datablock SFXProfile(WeaponFireLoopSound)
+{
+   filename = "art/sound/weapons/wpn_lurker_fire";
+   description = AudioCloseLoop3D;
+   preload = true;
+};

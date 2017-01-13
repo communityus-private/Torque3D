@@ -110,11 +110,11 @@ void SoundComponent::componentRemovedFromOwner(Component *comp)
 //Regular init persist fields function to set up static fields.
 void SoundComponent::initPersistFields()
 {
-   addArray("Sounds", MaxSoundThreads);
+   //addArray("Sounds", MaxSoundThreads);
    addField("mSoundFile", TypeSFXTrackName, Offset(mSoundFile, SoundComponent), MaxSoundThreads, "If the text will not fit in the control, the deniedSound is played.");
    addProtectedField("mPreviewSound", TypeBool, Offset(mPreviewSound, SoundComponent),
       &_previewSound, &defaultProtectedGetFn, MaxSoundThreads, "Preview Sound", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors);
-   endArray("Sounds");
+   //endArray("Sounds");
    Parent::initPersistFields();
 }
 
@@ -122,8 +122,12 @@ bool SoundComponent::_previewSound(void *object, const char *index, const char *
 {
    U32 slotNum = (index != NULL) ? dAtoui(index) : 0;
    SoundComponent* component = reinterpret_cast< SoundComponent* >(object);
-   component->mPreviewSound[0] = true;
-   component->playAudio(slotNum, component->mSoundFile[slotNum]);
+   component->mPreviewSound[slotNum] = !component->mPreviewSound[slotNum];
+   if (!component->mPreviewSound[slotNum])
+      component->playAudio(slotNum, component->mSoundFile[slotNum]);
+   else
+      component->stopAudio(slotNum);
+
    return false;
 }
 
@@ -156,10 +160,7 @@ U32 SoundComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 void SoundComponent::unpackUpdate(NetConnection *con, BitStream *stream)
 {
    Parent::unpackUpdate(con, stream);
-
-   if (!stream->readFlag())
-      return;
-
+   
    if (stream->readFlag())
    {
       for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
