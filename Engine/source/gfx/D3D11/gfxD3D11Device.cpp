@@ -80,32 +80,6 @@ GFXDevice *GFXD3D11Device::createInstance(U32 adapterIndex)
    return dev;
 }
 
-class GFXPCD3D11RegisterDevice
-{
-public:
-   GFXPCD3D11RegisterDevice()
-   {
-      GFXInit::getRegisterDeviceSignal().notify(&GFXD3D11Device::enumerateAdapters);
-   }
-};
-
-static GFXPCD3D11RegisterDevice pPCD3D11RegisterDevice;
-
-//-----------------------------------------------------------------------------
-/// Parse command line arguments for window creation
-//-----------------------------------------------------------------------------
-static void sgPCD3D11DeviceHandleCommandLine(S32 argc, const char **argv)
-{
-   // useful to pass parameters by command line for d3d (e.g. -dx9 -dx11)
-   for (U32 i = 1; i < argc; i++)
-   {
-      argv[i];
-   }
-}
-
-// Register the command line parsing hook
-static ProcessRegisterCommandLine sgCommandLine(sgPCD3D11DeviceHandleCommandLine);
-
 GFXD3D11Device::GFXD3D11Device(U32 index)
 {
    mDeviceSwizzle32 = &Swizzles::bgra;
