@@ -60,7 +60,7 @@ GFXGLStateBlock::GFXGLStateBlock(const GFXStateBlockDesc& desc) :
 		   glSamplerParameteri(id, GL_TEXTURE_WRAP_R, GFXGLTextureAddress[ssd.addressModeW]);
          //compare modes
          const bool comparison = ssd.samplerFunc != GFXCmpNever;
-         glSamplerParameteri(id, GL_TEXTURE_COMPARE_MODE, comparison ? GL_COMPARE_R_TO_TEXTURE : GL_NONE );
+         glSamplerParameteri(id, GL_TEXTURE_COMPARE_MODE, comparison ? GL_COMPARE_R_TO_TEXTURE_ARB : GL_NONE);
          glSamplerParameteri(id, GL_TEXTURE_COMPARE_FUNC, GFXGLCmpFunc[ssd.samplerFunc]);
 
          if (static_cast< GFXGLDevice* >(GFX)->supportsAnisotropic())
