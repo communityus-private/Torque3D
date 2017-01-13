@@ -23,7 +23,7 @@
 #ifndef _GFXD3D11DEVICE_H_
 #define _GFXD3D11DEVICE_H_
 
-#include <d3d11.h>
+#include <d3d11_1.h>
 
 #include "platform/tmm_off.h"
 #include "platformWin32/platformWin32.h"
@@ -39,6 +39,9 @@
 #define D3D11 static_cast<GFXD3D11Device*>(GFX)
 #define D3D11DEVICE D3D11->getDevice()
 #define D3D11DEVICECONTEXT D3D11->getDeviceContext()
+// DX 11.1 - always check these are not NULL, dodgy support with win 7
+#define D3D11DEVICE1 D3D11->getDevice1()
+#define D3D11DEVICECONTEXT1 D3D11->getDeviceContext1()
 
 class PlatformWindow;
 class GFXD3D11ShaderConstBuffer;
@@ -126,6 +129,10 @@ protected:
    IDXGISwapChain *mSwapChain;
    ID3D11Device* mD3DDevice;
    ID3D11DeviceContext* mD3DDeviceContext;
+   // DX 11.1
+   ID3D11Device1* mD3DDevice1;
+   ID3D11DeviceContext1* mD3DDeviceContext1;
+   ID3DUserDefinedAnnotation* mUserAnnotation;
 
    GFXShader* mCurrentShader;
    GFXShaderRef mGenericShader[GS_COUNT];
@@ -148,6 +155,7 @@ protected:
    DXGI_SAMPLE_DESC mMultisampleDesc;
 
    bool mOcclusionQuerySupported;
+   bool mCbufferPartialSupported;
 
    U32 mDrawInstancesCount;   
 
@@ -249,10 +257,7 @@ public:
    virtual void setClipRect( const RectI &rect );
    virtual const RectI& getClipRect() const { return mClipRect; }
 
-   // }
-
-
-   
+   // }   
    /// @name Render Targets
    /// @{
    virtual void _updateRenderTargets();
@@ -290,6 +295,10 @@ public:
 
    ID3D11DeviceContext* getDeviceContext(){ return mD3DDeviceContext; }
    ID3D11Device* getDevice(){ return mD3DDevice; }
+   IDXGISwapChain* getSwapChain() { return mSwapChain; }
+   //DX 11.1
+   ID3D11DeviceContext1* getDeviceContext1() { return mD3DDeviceContext1; }
+   ID3D11Device1* getDevice1() { return mD3DDevice1; }
 
    /// Reset
    void beginReset();

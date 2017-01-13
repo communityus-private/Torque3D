@@ -66,7 +66,8 @@ public:
 	void updateFaces();
 
 protected:
-   GFXTexHandle mCubeFace[6];
+   FileName mCubeMapFile;
+   FileName mCubeFaceFile[6];
 
    GFXTexHandle mDepthBuff;
    GFXTextureTargetRef mRenderTarget;

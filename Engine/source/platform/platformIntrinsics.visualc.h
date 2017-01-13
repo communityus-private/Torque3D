@@ -26,13 +26,8 @@
 /// @file
 /// Compiler intrinsics for Visual C++.
 
-#if defined(TORQUE_OS_XENON)
-#  include <Xtl.h>
-#  define _InterlockedExchangeAdd InterlockedExchangeAdd
-#  define _InterlockedExchangeAdd64 InterlockedExchangeAdd64
-#else
-#	include <intrin.h>
-#endif
+
+#include <intrin.h>
 
 // Fetch-And-Add
 //
@@ -47,14 +42,6 @@ inline void dFetchAndAdd( volatile S32& ref, S32 val )
 {
    _InterlockedExchangeAdd( ( volatile long* ) &ref, val );
 }
-
-#if defined(TORQUE_OS_XENON)
-// Not available on x86
-inline void dFetchAndAdd( volatile U64& ref, U64 val )
-{
-   _InterlockedExchangeAdd64( ( volatile __int64* ) &ref, val );
-}
-#endif
 
 // Compare-And-Swap
 

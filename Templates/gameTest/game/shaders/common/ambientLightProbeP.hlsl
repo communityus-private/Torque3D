@@ -1,6 +1,5 @@
-#include "shadergen:/autogenConditioners.h"
+#include "shaderModelAutoGen.hlsl"
 #include "torque.hlsl"
-
 struct Conn
 {
    float4 position : POSITION;
@@ -8,7 +7,7 @@ struct Conn
    float3 wsEyeRay : TEXCOORD1;
 };
 
-uniform sampler2D prePassBuffer : register(S0);
+TORQUE_UNIFORM_SAMPLER2D(prePassBuffer,0);
 
 uniform float3 eyePosWorld;
 uniform float3 volumeStart;
@@ -19,11 +18,11 @@ uniform float4 GroundColor;
 uniform float Intensity;
 
 uniform float useCubemap;
-uniform samplerCUBE  cubeMap : register(S1);
+TORQUE_UNIFORM_SAMPLERCUBE(cubeMap,1);
 
 float4 main( Conn IN ) : COLOR0
 { 
-   float4 prepassSample = prepassUncondition( prePassBuffer, IN.uv0 );
+   float4 prepassSample = TORQUE_DEFERRED_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
    float depth = prepassSample.a;
 
@@ -64,7 +63,7 @@ float4 main( Conn IN ) : COLOR0
    {
       float3 reflectionVec = reflect(IN.wsEyeRay, wsNormal);
 
-      color = texCUBElod(cubeMap, float4(reflectionVec, 0.1));
+      color = TORQUE_TEXCUBELOD(cubeMap, float4(reflectionVec, 0.1));
       color.a = 1;
 
       color *= Intensity;

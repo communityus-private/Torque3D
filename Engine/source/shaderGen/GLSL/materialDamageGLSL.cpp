@@ -54,7 +54,7 @@ void AlbedoDamageFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
    }
 
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "vec2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "vec2", componentList);
 
    Var *damage = new Var("materialDamage", "float");
    damage->uniform = true;
@@ -86,14 +86,8 @@ void AlbedoDamageFeatGLSL::processPix(Vector<ShaderComponent*> &componentList,
 
 
    LangElement *statement = NULL;
-   if (fd.features[MFT_Imposter])
-   {
-      statement = new GenOp("texture(@, @)", albedoDamage, texCoord);
-   }
-   else
-   {
-      statement = new GenOp("toLinear(texture(@, @))", albedoDamage, texCoord);
-   }
+   statement = new GenOp("texture(@, @)", albedoDamage, texCoord);
+
 
    meta->addStatement(new GenOp("   @ = mix(@,@,@);\r\n", targ, targ, statement, damageResult));
    output = meta;
@@ -128,7 +122,6 @@ void AlbedoDamageFeatGLSL::processVert(Vector<ShaderComponent*> &componentList,
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
       "vec2",
-      true,
       fd.features[MFT_TexAnim],
       meta,
       componentList);
@@ -142,7 +135,7 @@ void CompositeDamageFeatGLSL::processPix(Vector<ShaderComponent*> &componentList
    const MaterialFeatureData &fd)
 {
    // Get the texture coord.
-   Var *texCoord = getInTexCoord("texCoord", "vec2", true, componentList);
+   Var *texCoord = getInTexCoord("texCoord", "vec2", componentList);
 
    Var *damage = (Var*)LangElement::find("materialDamage");
    if (!damage){
@@ -266,7 +259,6 @@ void CompositeDamageFeatGLSL::processVert(Vector<ShaderComponent*> &componentLis
    MultiLine *meta = new MultiLine;
    getOutTexCoord("texCoord",
       "vec2",
-      true,
       fd.features[MFT_TexAnim],
       meta,
       componentList);

@@ -183,7 +183,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    //if ( radiusDepth.x < 1.0 / targetSize.x )
    //   return color;      
    //radiusDepth.xyz = 0.0009;
-   
+   [unroll]
    for ( i = 0; i < sSampleCount; i++ )
    {
       baseRay = reflect( ptSphere[i], reflectNormal );
@@ -232,7 +232,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    //if ( radiusDepth.x < 1.0 / targetSize.x )
    //   return color;      
    //radiusDepth.xyz = 0.0009;   
-   
+   [unroll]
    for ( i = sSampleCount; i < totalSampleCount; i++ )
    {
       baseRay = reflect( ptSphere[i], reflectNormal );

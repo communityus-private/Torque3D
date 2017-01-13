@@ -397,7 +397,11 @@ void ProcessedMaterial::_setStageData()
       // DiffuseMap
       if( mMaterial->mDiffuseMapFilename[i].isNotEmpty() )
       {
-         mStages[i].setTex( MFT_DiffuseMap, _createTexture( mMaterial->mDiffuseMapFilename[i], &GFXDefaultStaticDiffuseProfile ) );
+         GFXTextureProfile *profile = &GFXDefaultStaticDiffuseProfile;
+         if (mMaterial->mDiffuseMapSRGB[i])
+            profile = &GFXDefaultStaticDiffuseSRGBProfile;
+
+         mStages[i].setTex( MFT_DiffuseMap, _createTexture( mMaterial->mDiffuseMapFilename[i], profile) );
          if (!mStages[i].getTex( MFT_DiffuseMap ))
          {
             //If we start with a #, we're probably actually attempting to hit a named target and it may not get a hit on the first pass. So we'll
@@ -407,7 +411,7 @@ void ProcessedMaterial::_setStageData()
             
             // Load a debug texture to make it clear to the user 
             // that the texture for this stage was missing.
-            mStages[i].setTex( MFT_DiffuseMap, _createTexture( GFXTextureManager::getMissingTexturePath().c_str(), &GFXDefaultStaticDiffuseProfile ) );
+            mStages[i].setTex( MFT_DiffuseMap, _createTexture( GFXTextureManager::getMissingTexturePath().c_str(), profile) );
          }
       }
 
@@ -484,7 +488,11 @@ void ProcessedMaterial::_setStageData()
       // DamageMap -Albedo
       if (mMaterial->mAlbedoDamageMapFilename[i].isNotEmpty())
       {
-         mStages[i].setTex(MFT_AlbedoDamage, _createTexture(mMaterial->mAlbedoDamageMapFilename[i], &GFXDefaultStaticDiffuseProfile));
+         GFXTextureProfile *profile = &GFXDefaultStaticDiffuseProfile;
+         if(mMaterial->mAlbedoDamageMapSRGB[i])
+            profile = &GFXDefaultStaticDiffuseSRGBProfile;
+
+         mStages[i].setTex(MFT_AlbedoDamage, _createTexture(mMaterial->mAlbedoDamageMapFilename[i], profile));
          if (!mStages[i].getTex(MFT_AlbedoDamage))
             mMaterial->logError("Failed to load albedo damage map %s for stage %i", _getTexturePath(mMaterial->mAlbedoDamageMapFilename[i]).c_str(), i);
       }

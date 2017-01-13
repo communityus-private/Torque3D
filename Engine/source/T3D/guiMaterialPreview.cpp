@@ -34,6 +34,8 @@
 #include "scene/sceneManager.h"
 #include "scene/sceneRenderState.h"
 
+extern GFXCubemap * gLevelEnvMap;
+
 // GuiMaterialPreview
 GuiMaterialPreview::GuiMaterialPreview()
 :  mMouseState(None),
@@ -383,7 +385,7 @@ void GuiMaterialPreview::renderWorld(const RectI &updateRect)
    // Set up our TS render state here.
    TSRenderState rdata;
    rdata.setSceneState( &state );
-
+   rdata.setCubemap(gLevelEnvMap);
    // We might have some forward lit materials
    // so pass down a query to gather lights.
    LightQuery query;

@@ -39,7 +39,6 @@ public:
    ///
    Var* getOutTexCoord( const char *name,
                         const char *type,
-                        bool mapsToSampler,
                         bool useTexAnim,
                         MultiLine *meta,
                         Vector<ShaderComponent*> &componentList );
@@ -48,7 +47,6 @@ public:
    /// to the input connector if it doesn't exist.
    static Var* getInTexCoord( const char *name,
                               const char *type,
-                              bool mapsToSampler,
                               Vector<ShaderComponent*> &componentList );
 
    static Var* getInColor( const char *name,
@@ -671,5 +669,4 @@ public:
 
    virtual String getName() { return "Hardware Skinning"; }
 };
-
 #endif // _SHADERGEN_GLSL_SHADERFEATUREGLSL_H_

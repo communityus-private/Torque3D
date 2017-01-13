@@ -46,14 +46,6 @@
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
 
-GFXAdapter::CreateDeviceInstanceDelegate GFXD3D11Device::mCreateDeviceInstance(GFXD3D11Device::createInstance);
-
-GFXDevice *GFXD3D11Device::createInstance(U32 adapterIndex)
-{
-   GFXD3D11Device* dev = new GFXD3D11Device(adapterIndex);
-   return dev;
-}
-
 class GFXPCD3D11RegisterDevice
 {
 public:
@@ -79,6 +71,14 @@ static void sgPCD3D11DeviceHandleCommandLine(S32 argc, const char **argv)
 
 // Register the command line parsing hook
 static ProcessRegisterCommandLine sgCommandLine(sgPCD3D11DeviceHandleCommandLine);
+
+GFXAdapter::CreateDeviceInstanceDelegate GFXD3D11Device::mCreateDeviceInstance(GFXD3D11Device::createInstance);
+
+GFXDevice *GFXD3D11Device::createInstance(U32 adapterIndex)
+{
+   GFXD3D11Device* dev = new GFXD3D11Device(adapterIndex);
+   return dev;
+}
 
 GFXD3D11Device::GFXD3D11Device(U32 index)
 {
@@ -450,7 +450,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
                                     &mD3DDevice,
                                     &mFeatureLevel,
                                     &mD3DDeviceContext);
-
+   
    if(FAILED(hres))
    {
       #ifdef TORQUE_DEBUG
@@ -1354,15 +1354,12 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
    //make shader
    mainBodyData.append("VertOut main(VertIn IN){VertOut OUT;");
 
-   bool addedPadding = false;
    for (U32 i = 0; i < elemCount; i++)
    {
       const GFXVertexElement &element = vertexFormat->getElement(i);
       String semantic = element.getSemantic();
       String semanticOut = semantic;
       String type;
-
-      AssertFatal(!(addedPadding && !element.isSemantic(GFXSemantic::PADDING)), "Padding added before data");
 
       if (element.isSemantic(GFXSemantic::POSITION))
       {
@@ -1398,11 +1395,6 @@ String GFXD3D11Device::_createTempShaderInternal(const GFXVertexFormat *vertexFo
       {
          semantic = String::ToString("BLENDWEIGHT%d", element.getSemanticIndex());
          semanticOut = semantic;
-      }
-      else if (element.isSemantic(GFXSemantic::PADDING))
-      {
-         addedPadding = true;
-         continue;
       }
       else
       {
@@ -1564,12 +1556,6 @@ GFXVertexDecl* GFXD3D11Device::allocVertexDecl( const GFXVertexFormat *vertexFor
       {
          vd[i].SemanticName = "BLENDINDICES";
          vd[i].SemanticIndex = element.getSemanticIndex();
-      }
-      else if (element.isSemantic(GFXSemantic::PADDING))
-      {
-         i--;
-         elemCount--;
-         continue;
       }
       else
       {

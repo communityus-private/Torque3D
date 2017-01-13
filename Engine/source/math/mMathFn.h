@@ -479,5 +479,4 @@ inline F64 mSquared( F64 n )
    return n * n;
 }
 
-
 #endif //_MMATHFN_H_

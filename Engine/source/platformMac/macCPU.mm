@@ -43,7 +43,6 @@
 #ifndef CPUFAMILY_INTEL_MEROM
 #define CPUFAMILY_INTEL_MEROM		0x426f69ef
 #endif
-
 // Original code by Sean O'Brien (http://www.garagegames.com/community/forums/viewthread/81815).
 
 

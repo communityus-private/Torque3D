@@ -39,6 +39,7 @@ const F32 gOneOverGamma = 1.f / 2.2f;
 
 class ColorI;
 
+class ColorI;
 
 class ColorF
 {
@@ -1003,3 +1004,4 @@ inline ColorI::operator ColorF() const
 }
 
 #endif //_COLOR_H_
+

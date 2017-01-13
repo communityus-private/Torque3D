@@ -21,7 +21,6 @@
 //-----------------------------------------------------------------------------
 
 #include "gfx/bitmap/bitmapUtils.h"
-
 #include "platform/platform.h"
 
 
