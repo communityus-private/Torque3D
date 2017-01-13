@@ -1186,9 +1186,9 @@ bool Entity::removeComponent(Component *comp, bool deleteComponent)
 
       onComponentRemoved.trigger(comp);
 
-      comp->setOwner(NULL);
 
       comp->onComponentRemove(); //in case the behavior needs to do cleanup on the owner
+      comp->setOwner(NULL);
 
       if (deleteComponent)
          comp->safeDeleteObject();

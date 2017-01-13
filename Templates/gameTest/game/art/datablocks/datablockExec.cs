@@ -28,3 +28,5 @@ exec("./lights.cs");
 
 // Do the various effects next -- later scripts/datablocks may need them
 exec("./particles.cs");
+
+exec("./sounds.cs");

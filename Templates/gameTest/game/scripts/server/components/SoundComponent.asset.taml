@@ -1,0 +1,8 @@
+<ComponentAsset
+    canSave="true"
+    canSaveDynamicFields="true"
+    AssetName="SoundComponentAsset"
+    componentClass="SoundComponent"
+    friendlyName="Sound(Component)"
+    componentType="Sound"
+    description="Stores up to 4 sounds for playback." />
