@@ -67,11 +67,10 @@ public:
 
 protected:
    FileName mCubeMapFile;
-   FileName mCubeFaceFile[6];
+   GFXTexHandle mCubeFace[6];
 
    GFXTexHandle mDepthBuff;
    GFXTextureTargetRef mRenderTarget;
 };
 
 #endif // CUBEMAPDATA
-

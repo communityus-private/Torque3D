@@ -38,7 +38,7 @@ float4 main( Conn IN ) : COLOR0
    }
 
    // Need world-space normal.
-   float3 wsNormal = mul(normal, invViewMat);
+   float3 wsNormal = mul(normal, invViewMat).xyz;
 
    float4 color = float4(1, 1, 1, 1);
 
@@ -63,7 +63,7 @@ float4 main( Conn IN ) : COLOR0
    {
       float3 reflectionVec = reflect(IN.wsEyeRay, wsNormal);
 
-      color = TORQUE_TEXCUBELOD(cubeMap, float4(reflectionVec, 0.1));
+      color = TORQUE_TEXCUBELOD(cubeMap, reflectionVec, 1.0);
       color.a = 1;
 
       color *= Intensity;

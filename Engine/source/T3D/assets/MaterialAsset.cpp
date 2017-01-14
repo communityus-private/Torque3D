@@ -205,16 +205,16 @@ void MaterialAsset::initializeAsset()
    /*mShader = NULL;
    mShaderConstBuffer = NULL;
 
-   //mPrepassTarget = NULL;
+   //mDeferredTarget = NULL;
 
    // Need depth from pre-pass, so get the macros
    Vector<GFXShaderMacro> macros;
 
-   if (!mPrepassTarget)
-      mPrepassTarget = NamedTexTarget::find("prepass");
+   if (!mDeferredTarget)
+      mDeferredTarget = NamedTexTarget::find("deferred");
 
-   if (mPrepassTarget)
-      mPrepassTarget->getShaderMacros(&macros);
+   if (mDeferredTarget)
+      mDeferredTarget->getShaderMacros(&macros);
 
    ShaderData *shaderData;
 
