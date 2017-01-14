@@ -89,42 +89,24 @@ new SimGroup(MissionGroup) {
          scale = "1 1 1";
          tile = "0";
    };
-   new SimGroup(PlayerDropPoints) {
+   new Entity(PlayerSpawnPoint) {
+      scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
-         Enabled = "1";
+      position = "10.6162 11.6627 242.995";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
 
-      new SpawnSphere() {
-         autoSpawn = "0";
-         spawnTransform = "0";
-         radius = "1";
-         sphereWeight = "1";
-         indoorWeight = "1";
-         outdoorWeight = "1";
-         isAIControlled = "0";
-         dataBlock = "SpawnSphereMarker";
-         position = "0 0 241.772";
-         Rotation = "1 0 0 0.0395647";
-         scale = "1 1 1";
-         canSave = "1";
-         canSaveDynamicFields = "1";
-            Enabled = "1";
-            homingCount = "0";
-            lockCount = "0";
+      new Component() {
+         componentType = "Spawner";
+         friendlyName = "Player Spawner";
+         networked = "0";
+         enabled = "1";
+         internalName = "PlayerSpawner";
+         class = "PlayerSpawner";
+         gameObjectName = "SpectatorObject";
       };
-   };
-   new AmbientLightProbe() {
-      useCubemap = "1";
-      cubemap = "DesertSkyCubemap";
-      OverrideSkyColor = "0";
-      SkyColor = "0.5 0.5 1 1";
-      GroundColor = "0.8 0.7 0.5 1";
-      Intensity = "1";
-      position = "-11.7303 -7.00049 245.191";
-      Rotation = "1 0 0 0.0395647";
-      scale = "101.379 101.379 101.379";
-      canSave = "1";
-      canSaveDynamicFields = "1";
    };
    new TSStatic() {
       shapeName = "art/shapes/station/station01.dts";

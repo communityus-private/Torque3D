@@ -24,9 +24,9 @@ new SimGroup(MissionGroup) {
       canSave = "1";
       canSaveDynamicFields = "1";
          advancedLightmapSupport = "0";
-         desc0 = "A blank room ready to be populated with Torque objects.\n\nGuns, anyone?";
+         desc0 = "Test level with a town and radar station.";
          enabled = "1";
-         levelName = "Blank Room";
+         levelName = "Radar Level Test";
    };
    new CloudLayer() {
       texture = "art/skies/clouds/clouds_normal_displacement";

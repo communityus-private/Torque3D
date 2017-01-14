@@ -38,28 +38,23 @@ new SimGroup(MissionGroup) {
       canSave = "1";
       canSaveDynamicFields = "1";
    };
-   new SimGroup(PlayerDropPoints) {
+   new Entity(PlayerSpawnPoint) {
+      scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
-         Enabled = "1";
+      position = "0 0 241.462";
+      rotation = "0 -0 -0";
+      LocalPosition = "0 0 0";
+      LocalRotation = "1 0 0 0";
 
-      new SpawnSphere() {
-         autoSpawn = "0";
-         spawnTransform = "0";
-         radius = "1";
-         sphereWeight = "1";
-         indoorWeight = "1";
-         outdoorWeight = "1";
-         isAIControlled = "0";
-         dataBlock = "SpawnSphereMarker";
-         position = "0 0 241.772";
-         rotation = "1 0 0 0";
-         scale = "1 1 1";
-         canSave = "1";
-         canSaveDynamicFields = "1";
-            Enabled = "1";
-            homingCount = "0";
-            lockCount = "0";
+      new Component() {
+         componentType = "Spawner";
+         friendlyName = "Player Spawner";
+         networked = "0";
+         enabled = "1";
+         internalName = "PlayerSpawner";
+         class = "PlayerSpawner";
+         gameObjectName = "SpectatorObject";
       };
    };
    new TSStatic() {
