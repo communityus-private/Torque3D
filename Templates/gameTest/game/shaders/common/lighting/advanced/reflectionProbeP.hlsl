@@ -108,17 +108,17 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
       float w = Hi * (1.0 + dot(SkyDirection, normal));
       color = (w * Sc + (1.0 - w) * Gc) * color;
+
+      color *= Intensity;
    }
    else
    {
       float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),1)).rgb;
-      float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 1.0);//bump up to 8 for finalization
+      float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
       float4 ref = float4(reflectionVec, smoothness);
       color = TORQUE_TEXCUBELOD(cubeMap, ref);
       //color = TORQUE_TEXCUBE(cubeMap, reflectionVec);
       color.a = 1;
-
-      color *= Intensity;
    }
    //return hdrEncode(float4(color.rgb, 0.0));
 
