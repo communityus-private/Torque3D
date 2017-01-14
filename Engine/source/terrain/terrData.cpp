@@ -189,7 +189,7 @@ TerrainBlock::TerrainBlock()
    mDetailsDirty( false ),
    mLayerTexDirty( false ),
    mBaseTexSize( 1024 ),
-   mBaseTexFormat( TerrainBlock::JPG ),
+   mBaseTexFormat( TerrainBlock::DDS ),
    mCell( NULL ),
    mBaseMaterial( NULL ),
    mDefaultMatInst( NULL ),
@@ -966,7 +966,7 @@ bool TerrainBlock::onAdd()
          _updateBaseTexture( true );
 
       // The base texture should have been cached by now... so load it.
-      mBaseTex.set( baseCachePath, &GFXDefaultStaticDiffuseProfile, "TerrainBlock::mBaseTex" );
+      mBaseTex.set( baseCachePath, &GFXDefaultStaticDiffuseSRGBProfile, "TerrainBlock::mBaseTex" );
 
       GFXTextureManager::addEventDelegate( this, &TerrainBlock::_onTextureEvent );
       MATMGR->getFlushSignal().notify( this, &TerrainBlock::_onFlushMaterials );

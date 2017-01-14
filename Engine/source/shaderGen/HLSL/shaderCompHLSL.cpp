@@ -28,9 +28,9 @@
 #include "gfx/gfxDevice.h"
 
 
-Var * ShaderConnectorHLSL::getElement( RegisterType type, 
-                                       U32 numElements, 
-                                       U32 numRegisters )
+Var * ShaderConnectorHLSL::getElement(RegisterType type,
+   U32 numElements,
+   U32 numRegisters)
 {
    Var *ret = NULL;
    
@@ -48,9 +48,9 @@ Var * ShaderConnectorHLSL::getElement( RegisterType type,
    }
 
    // Adjust texture offset if this is a texcoord type
-   if( type == RT_TEXCOORD )
+   if (type == RT_TEXCOORD)
    {
-      if ( numRegisters != -1 )
+      if (numRegisters != -1)
          mCurTexElem += numRegisters;
       else
          mCurTexElem += numElements;
@@ -73,132 +73,130 @@ Var * ShaderConnectorHLSL::getElement( RegisterType type,
    return ret;
 }
 
-Var * ShaderConnectorHLSL::getIndexedElement( U32 index, RegisterType type, U32 numElements /*= 1*/, U32 numRegisters /*= -1 */ )
+Var * ShaderConnectorHLSL::getIndexedElement(U32 index, RegisterType type, U32 numElements /*= 1*/, U32 numRegisters /*= -1 */)
 {
-   switch( type )
-   { 
+   switch (type)
+   {
    case RT_POSITION:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "POSITION" );
-         newVar->rank = 0;
-         return newVar;
-      }
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("POSITION");
+      newVar->rank = 0;
+      return newVar;
+   }
 
    case RT_VPOS:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back(newVar);
-         newVar->setConnectName("VPOS");
-         newVar->rank = 0;
-         return newVar;
-      }
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("VPOS");
+      newVar->rank = 0;
+      return newVar;
+   }
 
    case RT_SVPOSITION:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back(newVar);
-         newVar->setConnectName("SV_Position");
-         newVar->rank = 0;
-         return newVar;
-      }
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("SV_Position");
+      newVar->rank = 0;
+      return newVar;
+   }
 
    case RT_NORMAL:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "NORMAL" );
-         newVar->rank = 1;
-         return newVar;
-      }
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("NORMAL");
+      newVar->rank = 1;
+      return newVar;
+   }
 
    case RT_BINORMAL:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "BINORMAL" );
-         newVar->rank = 2;
-         return newVar;
-      }
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("BINORMAL");
+      newVar->rank = 2;
+      return newVar;
+   }
 
    case RT_TANGENT:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "TANGENT" );
-         newVar->rank = 3;
-         return newVar;
-      }
-      
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("TANGENT");
+      newVar->rank = 3;
+      return newVar;
+   }
+
    case RT_COLOR:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
-         newVar->setConnectName( "COLOR" );
-         newVar->rank = 4;
-         return newVar;
-      }
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
+      newVar->setConnectName("COLOR");
+      newVar->rank = 4;
+      return newVar;
+   }
 
    case RT_TEXCOORD:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
 
-         // This was needed for hardware instancing, but
-         // i don't really remember why right now.
-         if ( index > mCurTexElem )
-            mCurTexElem = index + 1;
+      // This was needed for hardware instancing, but
+      // i don't really remember why right now.
+      if (index > mCurTexElem)
+         mCurTexElem = index + 1;
 
-         char out[32];
-         dSprintf( (char*)out, sizeof(out), "TEXCOORD%d", index );
-         newVar->setConnectName( out );
-         newVar->constNum = index;
-         newVar->arraySize = numElements;
-         newVar->rank = 5 + index;
+      char out[32];
+      dSprintf((char*)out, sizeof(out), "TEXCOORD%d", index);
+      newVar->setConnectName(out);
+      newVar->constNum = index;
+      newVar->arraySize = numElements;
+      newVar->rank = 5 + index;
 
-         return newVar;
-      }
+      return newVar;
+   }
 
    case RT_BLENDINDICES:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
 
-         // This was needed for hardware instancing, but
-         // i don't really remember why right now.
-         if ( index > mCurBlendIndicesElem )
-            mCurBlendIndicesElem = index + 1;
+      // This was needed for hardware instancing, but
+      // i don't really remember why right now.
+      if (index > mCurBlendIndicesElem)
+         mCurBlendIndicesElem = index + 1;
 
-         char out[32];
-         dSprintf( (char*)out, sizeof(out), "BLENDINDICES%d", index );
-         newVar->setConnectName( out );
-         newVar->constNum = index;
-         newVar->arraySize = numElements;
+      char out[32];
+      dSprintf((char*)out, sizeof(out), "BLENDINDICES%d", index);
+      newVar->setConnectName(out);
+      newVar->constNum = index;
+      newVar->arraySize = numElements;
 
-         return newVar;
-      }
+      return newVar;
+   }
 
    case RT_BLENDWEIGHT:
-      {
-         Var *newVar = new Var;
-         mElementList.push_back( newVar );
+   {
+      Var *newVar = new Var;
+      mElementList.push_back(newVar);
 
-         // This was needed for hardware instancing, but
-         // i don't really remember why right now.
-         if ( index > mCurBlendWeightsElem )
-            mCurBlendWeightsElem = index + 1;
+      // This was needed for hardware instancing, but
+      // i don't really remember why right now.
+      if (index > mCurBlendWeightsElem)
+         mCurBlendWeightsElem = index + 1;
 
-         char out[32];
-         dSprintf( (char*)out, sizeof(out), "BLENDWEIGHT%d", index );
-         newVar->setConnectName( out );
-         newVar->constNum = index;
-         newVar->arraySize = numElements;
+      char out[32];
+      dSprintf((char*)out, sizeof(out), "BLENDWEIGHT%d", index);
+      newVar->setConnectName(out);
+      newVar->constNum = index;
+      newVar->arraySize = numElements;
 
-         return newVar;
-      }
-
-
+      return newVar;
+   }
 
    default:
       break;
@@ -228,50 +226,50 @@ void ShaderConnectorHLSL::sortVars()
    return;
 }
 
-void ShaderConnectorHLSL::setName( char *newName )
+void ShaderConnectorHLSL::setName(char *newName)
 {
-   dStrcpy( (char*)mName, newName );
+   dStrcpy((char*)mName, newName);
 }
 
 void ShaderConnectorHLSL::reset()
 {
-   for( U32 i=0; i<mElementList.size(); i++ )
+   for (U32 i = 0; i<mElementList.size(); i++)
    {
       mElementList[i] = NULL;
    }
 
-   mElementList.setSize( 0 );
+   mElementList.setSize(0);
    mCurTexElem = 0;
    mCurBlendIndicesElem = 0;
    mCurBlendWeightsElem = 0;
 }
 
-void ShaderConnectorHLSL::print( Stream &stream, bool isVertexShader )
+void ShaderConnectorHLSL::print(Stream &stream, bool isVertexShader)
 {
    const char * header = "struct ";
    const char * header2 = "\r\n{\r\n";
    const char * footer = "};\r\n\r\n\r\n";
 
-   stream.write( dStrlen(header), header );
-   stream.write( dStrlen((char*)mName), mName );
-   stream.write( dStrlen(header2), header2 );
+   stream.write(dStrlen(header), header);
+   stream.write(dStrlen((char*)mName), mName);
+   stream.write(dStrlen(header2), header2);
 
 
    // print out elements
-   for( U32 i=0; i<mElementList.size(); i++ )
+   for (U32 i = 0; i<mElementList.size(); i++)
    {
       U8 output[256];
 
       Var *var = mElementList[i];
       if (var->arraySize <= 1)
-         dSprintf( (char*)output, sizeof(output), "   %s %-15s : %s;\r\n", var->type, var->name, var->connectName );
+         dSprintf((char*)output, sizeof(output), "   %s %-15s : %s;\r\n", var->type, var->name, var->connectName);
       else
-         dSprintf( (char*)output, sizeof(output), "   %s %s[%d] : %s;\r\n", var->type, var->name, var->arraySize, var->connectName );
+         dSprintf((char*)output, sizeof(output), "   %s %s[%d] : %s;\r\n", var->type, var->name, var->arraySize, var->connectName);
 
-      stream.write( dStrlen((char*)output), output );
+      stream.write(dStrlen((char*)output), output);
    }
 
-   stream.write( dStrlen(footer), footer );
+   stream.write(dStrlen(footer), footer);
 }
 
 void ParamsDefHLSL::assignConstantNumbers()
@@ -281,17 +279,17 @@ void ParamsDefHLSL::assignConstantNumbers()
    // by their update frequency.
 
    U32 mCurrConst = 0;
-   for (U32 bin = cspUninit+1; bin < csp_Count; bin++)
-   {   
+   for (U32 bin = cspUninit + 1; bin < csp_Count; bin++)
+   {
       // Find all the uniform variables that are part of this group and assign constant numbers
-      for( U32 i=0; i<LangElement::elementList.size(); i++)
+      for (U32 i = 0; i<LangElement::elementList.size(); i++)
       {
          Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
-         if( var )
-         {            
+         if (var)
+         {
             bool shaderConst = var->uniform && !var->sampler && !var->texture;
             AssertFatal((!shaderConst) || var->constSortPos != cspUninit, "Const sort position has not been set, variable will not receive a constant number!!");
-            if( shaderConst && var->constSortPos == bin)
+            if (shaderConst && var->constSortPos == bin)
             {
                var->constNum = mCurrConst;
                // Increment our constant number based on the variable type
@@ -323,64 +321,64 @@ void ParamsDefHLSL::assignConstantNumbers()
    }
 }
 
-void VertexParamsDefHLSL::print( Stream &stream, bool isVerterShader )
+void VertexParamsDefHLSL::print(Stream &stream, bool isVerterShader)
 {
    assignConstantNumbers();
 
    const char *opener = "ConnectData main( VertData IN";
-   stream.write( dStrlen(opener), opener );
+   stream.write(dStrlen(opener), opener);
 
    // find all the uniform variables and print them out
-   for( U32 i=0; i<LangElement::elementList.size(); i++)
+   for (U32 i = 0; i<LangElement::elementList.size(); i++)
    {
       Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
-      if( var )
+      if (var)
       {
-         if( var->uniform )
+         if (var->uniform)
          {
             const char* nextVar = ",\r\n                  ";
-            stream.write( dStrlen(nextVar), nextVar );            
+            stream.write(dStrlen(nextVar), nextVar);
 
             U8 varNum[64];
-            dSprintf( (char*)varNum, sizeof(varNum), "register(C%d)", var->constNum );
+            dSprintf((char*)varNum, sizeof(varNum), "register(C%d)", var->constNum);
 
             U8 output[256];
             if (var->arraySize <= 1)
-               dSprintf( (char*)output, sizeof(output), "uniform %-8s %-15s : %s", var->type, var->name, varNum );
+               dSprintf((char*)output, sizeof(output), "uniform %-8s %-15s : %s", var->type, var->name, varNum);
             else
-               dSprintf( (char*)output, sizeof(output), "uniform %-8s %s[%d] : %s", var->type, var->name, var->arraySize, varNum );
+               dSprintf((char*)output, sizeof(output), "uniform %-8s %s[%d] : %s", var->type, var->name, var->arraySize, varNum);
 
-            stream.write( dStrlen((char*)output), output );
+            stream.write(dStrlen((char*)output), output);
          }
       }
    }
 
    const char *closer = "\r\n)\r\n{\r\n   ConnectData OUT;\r\n\r\n";
-   stream.write( dStrlen(closer), closer );
+   stream.write(dStrlen(closer), closer);
 }
 
-void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
+void PixelParamsDefHLSL::print(Stream &stream, bool isVerterShader)
 {
    assignConstantNumbers();
 
    const char * opener = "Fragout main( ConnectData IN";
-   stream.write( dStrlen(opener), opener );
+   stream.write(dStrlen(opener), opener);
 
    // find all the sampler & uniform variables and print them out
-   for( U32 i=0; i<LangElement::elementList.size(); i++)
+   for (U32 i = 0; i<LangElement::elementList.size(); i++)
    {
       Var *var = dynamic_cast<Var*>(LangElement::elementList[i]);
-      if( var )
+      if (var)
       {
-         if( var->uniform )
+         if (var->uniform)
          {
-            WRITESTR( ",\r\n              " );
+            WRITESTR(",\r\n              ");
 
             U8 varNum[32];
 
-            if( var->sampler )
+            if (var->sampler)
             {
-               dSprintf( (char*)varNum, sizeof(varNum), ": register(S%d)", var->constNum );
+               dSprintf((char*)varNum, sizeof(varNum), ": register(S%d)", var->constNum);
             }
             else if (var->texture)
             {
@@ -388,20 +386,20 @@ void PixelParamsDefHLSL::print( Stream &stream, bool isVerterShader )
             }
             else
             {
-               dSprintf( (char*)varNum, sizeof(varNum), ": register(C%d)", var->constNum );
+               dSprintf((char*)varNum, sizeof(varNum), ": register(C%d)", var->constNum);
             }
 
             U8 output[256];
             if (var->arraySize <= 1)
-               dSprintf( (char*)output, sizeof(output), "uniform %-9s %-15s %s", var->type, var->name, varNum );
+               dSprintf((char*)output, sizeof(output), "uniform %-9s %-15s %s", var->type, var->name, varNum);
             else
-               dSprintf( (char*)output, sizeof(output), "uniform %-9s %s[%d] %s", var->type, var->name, var->arraySize, varNum );
+               dSprintf((char*)output, sizeof(output), "uniform %-9s %s[%d] %s", var->type, var->name, var->arraySize, varNum);
 
-            WRITESTR( (char*) output );
+            WRITESTR((char*)output);
          }
       }
    }
 
    const char *closer = "\r\n)\r\n{\r\n   Fragout OUT;\r\n\r\n";
-   stream.write( dStrlen(closer), closer );
+   stream.write(dStrlen(closer), closer);
 }

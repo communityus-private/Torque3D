@@ -82,7 +82,7 @@ AmbientLightProbe::AmbientLightProbe()
    mWorldToObj.identity();
 
    mLightInfoTarget = NULL;
-   mPrepassTarget = NULL;
+   mDeferredTarget = NULL;
    mMatInfoTarget = NULL;
    mProbeShader = NULL;
    mProbeShaderConsts = NULL;
@@ -104,7 +104,7 @@ AmbientLightProbe::AmbientLightProbe()
 AmbientLightProbe::~AmbientLightProbe()
 {
    mLightInfoTarget = NULL;
-   mPrepassTarget = NULL;
+   mDeferredTarget = NULL;
    mMatInfoTarget = NULL;
    mProbeShader = NULL;
    mProbeShaderConsts = NULL;
@@ -292,16 +292,16 @@ void AmbientLightProbe::_initShaders()
 {
    mProbeShader = NULL;
    mProbeShaderConsts = NULL;
-   mPrepassTarget = NULL;
+   mDeferredTarget = NULL;
 
    // Need depth from pre-pass, so get the macros
    Vector<GFXShaderMacro> macros;
 
-   if (!mPrepassTarget)
-      mPrepassTarget = NamedTexTarget::find("prepass");
+   if (!mDeferredTarget)
+      mDeferredTarget = NamedTexTarget::find("deferred");
 
-   if (mPrepassTarget)
-      mPrepassTarget->getShaderMacros(&macros);
+   if (mDeferredTarget)
+      mDeferredTarget->getShaderMacros(&macros);
 
    ShaderData *shaderData;
 
@@ -362,11 +362,11 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
       mRenderTarget->attachTexture(GFXTextureTarget::Color0, texObject);
 
       // We also need to sample from the depth buffer.
-      if (!mPrepassTarget)
-         mPrepassTarget = NamedTexTarget::find("deferred");
+      if (!mDeferredTarget)
+         mDeferredTarget = NamedTexTarget::find("deferred");
 
-      GFXTextureObject *prepassTexObject = mPrepassTarget->getTexture();
-      if (!prepassTexObject) return;
+      GFXTextureObject *deferredTexObject = mDeferredTarget->getTexture();
+      if (!deferredTexObject) return;
 
       // -- Setup screenspace quad to render (postfx) --
       Frustum frustum = sceneState->getCameraFrustum();
@@ -445,7 +445,7 @@ void AmbientLightProbe::_handleBinEvent(RenderBinManager *bin,
       GFX->setShaderConstBuffer(mProbeShaderConsts);
 
       // Setup Textures
-      GFX->setTexture(0, prepassTexObject);
+      GFX->setTexture(0, deferredTexObject);
 
       // Draw the screenspace quad.
       GFX->drawPrimitive(GFXTriangleStrip, 0, 2);

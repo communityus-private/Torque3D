@@ -251,6 +251,9 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
       case GFXSCT_Float3x3 : 
          csize = 44; //This takes up 16+16+12
          break;
+      case GFXSCT_Float4x3:
+         csize = 48;
+         break;
       default:
          AssertFatal(false, "Unhandled case!");
          return false;
@@ -267,6 +270,10 @@ bool GFXD3D11ConstBufferLayout::setMatrix(const ParamDesc& pd, const GFXShaderCo
          if (dMemcmp(currDestPointer, currSourcePointer, csize) != 0)
          {
             dMemcpy(currDestPointer, currSourcePointer, csize);            
+            ret = true;
+         }
+         else if (pd.constType == GFXSCT_Float4x3)
+         {
             ret = true;
          }
 
@@ -302,6 +309,8 @@ GFXD3D11ShaderConstBuffer::GFXD3D11ShaderConstBuffer( GFXD3D11Shader* shader,
     
     mPixelConstBufferLayout = pixelLayout;
     mPixelConstBuffer = new GenericConstBuffer(pixelLayout);
+
+    mDeviceContext = D3D11DEVICECONTEXT;
 
     _createBuffers();
 	
@@ -654,8 +663,6 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
       }      
    }
 
-   ID3D11DeviceContext* devCtx = D3D11DEVICECONTEXT;
-
    D3D11_MAPPED_SUBRESOURCE pConstData;
    ZeroMemory(&pConstData, sizeof(D3D11_MAPPED_SUBRESOURCE));
    
@@ -664,17 +671,17 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    if(mVertexConstBuffer->isDirty())
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mVertexConstBufferLayout->getSubBufferDesc();
-      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: This is not very efficient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
       // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mVertexConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
+         mDeviceContext->UpdateSubresource(mConstantBuffersV[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
-      devCtx->VSSetConstantBuffers(0, nbBuffers, mConstantBuffersV);
+      mDeviceContext->VSSetConstantBuffers(0, nbBuffers, mConstantBuffersV);
    }
 
    nbBuffers = 0;
@@ -682,17 +689,17 @@ void GFXD3D11ShaderConstBuffer::activate( GFXD3D11ShaderConstBuffer *prevShaderB
    if(mPixelConstBuffer->isDirty())    
    {
       const Vector<ConstSubBufferDesc> &subBuffers = mPixelConstBufferLayout->getSubBufferDesc();
-      // TODO: This is not very effecient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
+      // TODO: This is not very efficient updating the whole lot, re-implement the dirty system to work with multiple constant buffers.
       // TODO: Implement DX 11.1 UpdateSubresource1 which supports updating ranges with constant buffers
       buf = mPixelConstBuffer->getEntireBuffer();
       for (U32 i = 0; i < subBuffers.size(); ++i)
       {
          const ConstSubBufferDesc &desc = subBuffers[i];
-         devCtx->UpdateSubresource(mConstantBuffersP[i], 0, NULL, buf + desc.start, desc.size, 0);
+         mDeviceContext->UpdateSubresource(mConstantBuffersP[i], 0, NULL, buf + desc.start, desc.size, 0);
          nbBuffers++;
       }
 
-      devCtx->PSSetConstantBuffers(0, nbBuffers, mConstantBuffersP);
+      mDeviceContext->PSSetConstantBuffers(0, nbBuffers, mConstantBuffersP);
    }
 
    #ifdef TORQUE_DEBUG
@@ -877,13 +884,15 @@ bool GFXD3D11Shader::_compileShader( const Torque::Path &filePath,
    ID3DBlob* errorBuff = NULL;
    ID3D11ShaderReflection* reflectionTable = NULL;
 
-#ifdef TORQUE_DEBUG
-	U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-#else
-   U32 flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3; //TODO double check load times with D3DCOMPILE_OPTIMIZATION_LEVEL3
-   //recommended flags for NSight, uncomment to use. NSight should be used in release mode only. *Still works with above flags however
-   //flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PREFER_FLOW_CONTROL | D3DCOMPILE_SKIP_OPTIMIZATION;
+#ifdef TORQUE_GFX_VISUAL_DEBUG //for use with NSight, GPU Perf studio, VS graphics debugger
+	U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_PREFER_FLOW_CONTROL | D3DCOMPILE_SKIP_OPTIMIZATION;
+#elif defined(TORQUE_DEBUG) //debug build
+   U32 flags = D3DCOMPILE_DEBUG | D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
+#else //release build
+   U32 flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_OPTIMIZATION_LEVEL3;
 #endif
+
+
 
 #ifdef D3D11_DEBUG_SPEW
    Con::printf( "Compiling Shader: '%s'", filePath.getFullPath().c_str() );

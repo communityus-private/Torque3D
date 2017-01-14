@@ -35,6 +35,8 @@ bool Platform::displaySplashWindow( String path )
 {
    if(path.isEmpty())
       return false;
+   // TODO: Fix splash screen on macOS.
+   // SDL_Renderer forces GL context to be 2.1 even when using SDL_RENDERER_SOFTWARE
 
    gSplashImage = SDL_LoadBMP(path);
 
@@ -61,6 +63,7 @@ bool Platform::closeSplashWindow()
    SDL_DestroyTexture(gSplashTexture);
    SDL_FreeSurface(gSplashImage);
    SDL_DestroyRenderer(gSplashRenderer);
+   SDL_DestroyWindow(gSplashWindow);
    SDL_DestroyWindow(gSplashWindow);
 
    return true;

@@ -115,7 +115,7 @@ Material::Material()
    for( U32 i=0; i<MAX_STAGES; i++ )
    {
       mDiffuse[i].set( 1.0f, 1.0f, 1.0f, 1.0f );
-
+      mDiffuseMapSRGB[i] = true;
       msmoothness[i] = 0.0f;
       mMetalness[i] = 0.0f;
       mPixelSpecular[i] = false;
@@ -174,7 +174,12 @@ Material::Material()
       mAOMapFilename[i].clear();
       mMetalMapFilename[i].clear();
 
+      // Damage
       mMaterialDamageMin[i] = 0.0f;
+      mAlbedoDamageMapFilename[i].clear();
+      mAlbedoDamageMapSRGB[i] = true;
+      mNormalDamageMapFilename[i].clear();
+      mCompositeDamageMapFilename[i].clear();
    }
 
    dMemset(mCellIndex, 0, sizeof(mCellIndex));
@@ -235,6 +240,9 @@ void Material::initPersistFields()
 
       addField("diffuseMap", TypeImageFilename, Offset(mDiffuseMapFilename, Material), MAX_STAGES,
          "The diffuse color texture map." );
+
+      addField("diffuseMapSRGB", TypeBool, Offset(mDiffuseMapSRGB, Material), MAX_STAGES,
+         "Enable sRGB for the diffuse color texture map.");
 
       addField("overlayMap", TypeImageFilename, Offset(mOverlayMapFilename, Material), MAX_STAGES,
          "A secondary diffuse color texture map which will use the second texcoord of a mesh." );
@@ -414,14 +422,16 @@ void Material::initPersistFields()
    addGroup("Damage");
 
    addField("albedoDamageMap", TypeImageFilename, Offset(mAlbedoDamageMapFilename, Material), MAX_STAGES,
-      "Prepacked specular map texture. The RGB channels of this texture provide per-pixel reference values for: "
-      "smoothness (R), Ambient Occlusion (G), and metalness(B)");
+      "Albedo damage map");
+
+   addField("albedoDamageSRGB", TypeBool, Offset(mAlbedoDamageMapSRGB, Material), MAX_STAGES,
+      "Enable sRGB for the albedo damage map");
 
    addField("normalDamageMap", TypeImageFilename, Offset(mNormalDamageMapFilename, Material), MAX_STAGES,
-      "smoothness map. will be packed into the R channel of a packed 'specular' map");
+      "Normal damage map");
 
    addField("compositeDamageMap", TypeImageFilename, Offset(mCompositeDamageMapFilename, Material), MAX_STAGES,
-      "Ambient Occlusion map. will be packed into the G channel of a packed 'specular' map");
+      "Composite damage map");
 
    addField("minDamage", TypeF32, Offset(mMaterialDamageMin, Material), MAX_STAGES,
       "The minimum ammount of blended damage.");

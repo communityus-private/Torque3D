@@ -39,6 +39,10 @@ GFX_ImplementTextureProfile(GFXDefaultStaticDiffuseProfile,
                             GFXTextureProfile::DiffuseMap, 
                             GFXTextureProfile::Static, 
                             GFXTextureProfile::NONE);
+GFX_ImplementTextureProfile(GFXDefaultStaticDiffuseSRGBProfile,
+                            GFXTextureProfile::DiffuseMap,
+                            GFXTextureProfile::Static | GFXTextureProfile::SRGB,
+                            GFXTextureProfile::NONE);
 GFX_ImplementTextureProfile(GFXDefaultStaticNormalMapProfile, 
                             GFXTextureProfile::NormalMap, 
                             GFXTextureProfile::Static, 
@@ -46,7 +50,7 @@ GFX_ImplementTextureProfile(GFXDefaultStaticNormalMapProfile,
 GFX_ImplementTextureProfile(GFXDefaultStaticDXT5nmProfile, 
                             GFXTextureProfile::NormalMap, 
                             GFXTextureProfile::Static, 
-                            GFXTextureProfile::DXT5);
+                            GFXTextureProfile::BC3);
 GFX_ImplementTextureProfile(GFXDefaultPersistentProfile,
                             GFXTextureProfile::DiffuseMap, 
                             GFXTextureProfile::PreserveSize | GFXTextureProfile::Static | GFXTextureProfile::KeepBitmap, 
