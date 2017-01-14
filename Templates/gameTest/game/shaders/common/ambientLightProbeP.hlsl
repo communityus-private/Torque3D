@@ -20,7 +20,7 @@ uniform float Intensity;
 uniform float useCubemap;
 TORQUE_UNIFORM_SAMPLERCUBE(cubeMap,1);
 
-float4 main( Conn IN ) : COLOR0
+float4 main( Conn IN ) : TORQUE_TARGET0
 { 
    float4 prepassSample = TORQUE_DEFERRED_UNCONDITION( prePassBuffer, IN.uv0 );
    float3 normal = prepassSample.rgb;
@@ -38,7 +38,7 @@ float4 main( Conn IN ) : COLOR0
    }
 
    // Need world-space normal.
-   float3 wsNormal = mul(normal, invViewMat).xyz;
+   float3 wsNormal = mul(float4(normal,1.0), invViewMat).xyz;
 
    float4 color = float4(1, 1, 1, 1);
 
@@ -63,7 +63,7 @@ float4 main( Conn IN ) : COLOR0
    {
       float3 reflectionVec = reflect(IN.wsEyeRay, wsNormal);
 
-      color = TORQUE_TEXCUBELOD(cubeMap, reflectionVec, 1.0);
+      color = TORQUE_TEXCUBELOD(cubeMap, float4(reflectionVec, 1.0));
       color.a = 1;
 
       color *= Intensity;
