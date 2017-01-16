@@ -368,7 +368,7 @@ namespace PlatformNetState
       if (requiredFamily == AF_INET)
       {
          sockaddr_in ipAddr;
-         int len = sizeof(ipAddr);
+         socklen_t len = sizeof(ipAddr);
          if (getsockname(socketFd, (struct sockaddr*)&ipAddr, &len) >= 0)
          {
             IPSocketToNetAddress(&ipAddr, outAddress);
@@ -382,7 +382,7 @@ namespace PlatformNetState
       else if (requiredFamily == AF_INET6)
       {
          sockaddr_in6 ipAddr;
-         int len = sizeof(ipAddr);
+         socklen_t len = sizeof(ipAddr);
          if (getsockname(socketFd, (struct sockaddr*)&ipAddr, &len) >= 0)
          {
             IPSocket6ToNetAddress(&ipAddr, outAddress);
@@ -491,11 +491,10 @@ template<class T> T ReservedSocketList<T>::resolve(NetSocket socketToResolve)
    EntryType &entry = mSocketList[socketToResolve.getHandle()];
    return entry.used ? entry.value : -1;
 }
-
-static ConnectionNotifyEvent*   smConnectionNotify = NULL;
-static ConnectionAcceptedEvent* smConnectionAccept = NULL;
-static ConnectionReceiveEvent*  smConnectionReceive = NULL;
-static PacketReceiveEvent*      smPacketReceive = NULL;
+ConnectionNotifyEvent*   Net::smConnectionNotify = NULL;
+ConnectionAcceptedEvent* Net::smConnectionAccept = NULL;
+ConnectionReceiveEvent*  Net::smConnectionReceive = NULL;
+PacketReceiveEvent*      Net::smPacketReceive = NULL;
 
 ConnectionNotifyEvent& Net::getConnectionNotifyEvent()
 {
