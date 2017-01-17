@@ -272,11 +272,11 @@ SimObjectPtr<SimSet> DecalRoad::smServerDecalRoadSet = NULL;
 // Constructors
 
 DecalRoad::DecalRoad()
- : mLoadRenderData( true ),
-   mBreakAngle( 3.0f ),
+ : mBreakAngle( 3.0f ),
    mSegmentsPerBatch( 10 ),
    mTextureLength( 5.0f ),
    mRenderPriority( 10 ),
+   mLoadRenderData( true ),
    mMaterial( NULL ),
    mMatInst( NULL ),
    mUpdateEventId( -1 ),
@@ -1580,8 +1580,6 @@ void DecalRoad::_captureVerts()
       else      
          box.intersect( batch.bounds );               
    }
-
-   Point3F pos = getPosition();
 
    mWorldBox = box;
    resetObjectBox();

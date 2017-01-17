@@ -28,9 +28,15 @@ if(UNIX)
     endif()
     #set(CXX_FLAG32 "-m32") #uncomment for build x32 on OSx64
 
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors -Wno-return-type-c-linkage -Wno-unused-local-typedef ${TORQUE_ADDITIONAL_LINKER_FLAGS}")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors -Wno-return-type-c-linkage -Wno-unused-local-typedef ${TORQUE_ADDITIONAL_LINKER_FLAGS}")
+    else()
     # default compiler flags
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors ${TORQUE_ADDITIONAL_LINKER_FLAGS} -Wl,-rpath,'$$ORIGIN'")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CXX_FLAG32} -Wundef -msse -pipe -Wfatal-errors ${TORQUE_ADDITIONAL_LINKER_FLAGS} -Wl,-rpath,'$$ORIGIN'")
+
+   endif()    
 
 	# for asm files
 	SET (CMAKE_ASM_NASM_OBJECT_FORMAT "elf")
@@ -59,37 +65,47 @@ else()
 	set(TORQUE_SFX_DirectX OFF)
 endif()
 option(TORQUE_SFX_OPENAL "OpenAL Sound" ON)
+#windows uses openal-soft
+if(WIN32)
+#disable a few things that are not required
+set(ALSOFT_TESTS OFF CACHE BOOL "Build and install test programs" FORCE)
+set(ALSOFT_UTILS OFF CACHE BOOL "Build and install utility programs" FORCE)
+set(ALSOFT_EXAMPLES OFF CACHE BOOL "Build and install example programs" FORCE)
+set(ALSOFT_CONFIG OFF CACHE BOOL "Install alsoft.conf sample configuration file" FORCE)
+set(ALSOFT_INSTALL OFF CACHE BOOL "Install headers and libraries" FORCE)
+set(ALSOFT_NO_CONFIG_UTIL OFF CACHE BOOL "Disable building the alsoft-config utility" FORCE)
+set(ALSOFT_HRTF_DEFS OFF CACHE BOOL "Install HRTF definition files" FORCE)
+set(ALSOFT_AMBDEC_PRESETS OFF CACHE BOOL "Install AmbDec presets" FORCE)
+add_subdirectory( ${libDir}/openal-soft ${CMAKE_CURRENT_BINARY_DIR}/openal-soft)
+endif()
 mark_as_advanced(TORQUE_SFX_OPENAL)
 option(TORQUE_HIFI "HIFI? support" OFF)
 mark_as_advanced(TORQUE_HIFI)
 option(TORQUE_EXTENDED_MOVE "Extended move support" OFF)
 mark_as_advanced(TORQUE_EXTENDED_MOVE)
+
 if(WIN32)
-	option(TORQUE_SDL "Use SDL for window and input" OFF)
+	option(TORQUE_SDL "Use SDL for window and input" ON)
 else()
 	set(TORQUE_SDL ON) # we need sdl to work on Linux/Mac
 endif()
+
 if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
+	option(TORQUE_OPENGL "Allow OpenGL render" ON)
 	#mark_as_advanced(TORQUE_OPENGL)
 else()
 	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
 endif()
 
 if(WIN32)
-	option(TORQUE_OPENGL "Allow OpenGL render" OFF)
-	#mark_as_advanced(TORQUE_OPENGL)
-else()
-	set(TORQUE_OPENGL ON) # we need OpenGL to render on Linux/Mac
-	option(TORQUE_DEDICATED "Torque dedicated" OFF)
-endif()
-
-if(WIN32)
-	option(TORQUE_D3D11 "Allow Direct3D 11 render" OFF)
+	option(TORQUE_D3D11 "Allow Direct3D 11 render" ON)
 endif()
 
 option(TORQUE_EXPERIMENTAL_EC "Experimental Entity/Component systems" OFF)
 mark_as_advanced(TORQUE_EXPERIMENTAL_EC)
+
+option(TORQUE_DEDICATED "Torque dedicated" OFF)
+mark_as_advanced(TORQUE_DEDICATED)
 
 ###############################################################################
 # options
@@ -326,7 +342,7 @@ if(TORQUE_SFX_OPENAL AND NOT TORQUE_DEDICATED)
     addPath("${srcDir}/sfx/openal")
     if(WIN32)
 	     addPath("${srcDir}/sfx/openal/win32")
-		   addInclude("${libDir}/openal/win32")
+		 addInclude("${libDir}/openal-soft/include")
     endif()
 	  if(UNIX AND NOT APPLE)
 		   addPath("${srcDir}/sfx/openal/linux")
@@ -594,12 +610,12 @@ addLib(collada)
 addLib(pcre)
 addLib(convexDecomp)
 if (TORQUE_OPENGL)
-   addLib(epoxy)
+   addLib(glad)
 endif()
 
 if(WIN32)
     # copy pasted from T3D build system, some might not be needed
-    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WSOCK32.LIB;vfw32.lib;Imm32.lib;d3d9.lib;d3dx9.lib;DxErr.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
+    set(TORQUE_EXTERNAL_LIBS "COMCTL32.LIB;COMDLG32.LIB;USER32.LIB;ADVAPI32.LIB;GDI32.LIB;WINMM.LIB;WS2_32.LIB;vfw32.lib;Imm32.lib;d3d9.lib;d3dx9.lib;DxErr.lib;ole32.lib;shell32.lib;oleaut32.lib;version.lib" CACHE STRING "external libs to link against")
     mark_as_advanced(TORQUE_EXTERNAL_LIBS)
     addLib("${TORQUE_EXTERNAL_LIBS}")
 
@@ -704,8 +720,7 @@ if(TORQUE_SDL)
    addInclude("${libDir}/nativeFileDialogs/include")
 endif()
 if(TORQUE_OPENGL)
-	addInclude("${libDir}/epoxy/include")
-	addInclude("${libDir}/epoxy/src")
+	addInclude("${libDir}/glad/include")
 endif()
 
 if(UNIX AND NOT APPLE)

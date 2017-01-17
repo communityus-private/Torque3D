@@ -118,11 +118,11 @@ ConsoleDocClass( LightFlareData,
 );
 
 LightFlareData::LightFlareData()
- : mFlareEnabled( true ),
-   mElementCount( 0 ),
-   mScale( 1.0f ),
+ : mScale( 1.0f ),
+   mFlareEnabled( true ),
    mOcclusionRadius( 0.0f ),
-   mRenderReflectPass( true )
+   mRenderReflectPass( true ),
+   mElementCount( 0 )
 {
    dMemset( mElementRect, 0, sizeof( RectF ) * MAX_ELEMENTS );   
    dMemset( mElementScale, 0, sizeof( F32 ) * MAX_ELEMENTS );
@@ -440,7 +440,7 @@ void LightFlareData::prepRender(SceneRenderState *state, LightFlareState *flareS
    // We can only skip rendering if the light is not 
    // visible, and it has elapsed the fade out time.
    if (mIsZero(occlusionFade) ||
-      !lightVisible && visDelta > FadeOutTime)
+      (!lightVisible && visDelta > FadeOutTime))
       return;
 
    const RectI &viewport = GFX->getViewport();

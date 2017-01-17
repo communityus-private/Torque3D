@@ -1743,8 +1743,6 @@ void MeshRoad::_generateSlices()
       }
    }
 
-   Point3F pos = getPosition();
-
    mWorldBox = box;
    resetObjectBox();
 

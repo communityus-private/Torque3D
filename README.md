@@ -2,6 +2,12 @@
 
 MIT Licensed Open Source version of [Torque 3D](http://torque3d.org) from [GarageGames](http://www.garagegames.com)
 
+[![GitHub tag](https://img.shields.io/github/tag/GarageGames/Torque3D.svg)](https://github.com/GarageGames/Torque3D/tags)
+[![GitHub release](https://img.shields.io/github/release/GarageGames/Torque3D.svg)](https://github.com/GarageGames/Torque3D/releases/latest)
+[![Github All Releases](https://img.shields.io/github/downloads/GarageGames/Torque3D/total.svg)](https://github.com/GarageGames/Torque3D/releases/latest)
+
+[![IRC](https://img.shields.io/badge/irc-%23garagegames-green.svg)](https://kiwiirc.com/client/irc.maxgaming.net/?nick=wiki_user|?#garagegames)
+
 ## More Information
 
 * [Homepage](http://torque3d.org)
@@ -17,7 +23,6 @@ They are available from the [downloads](http://wiki.torque3d.org/main:downloads)
 
 ## Related repositories
 
-* [Torque 3D main repository](https://github.com/GarageGames/Torque3D) (you are here!)
 * [Project Manager repository](https://github.com/GarageGames/Torque3D-ProjectManager)
 * [Offline documentation repository](https://github.com/GarageGames/Torque3D-Documentation)
 
@@ -70,3 +75,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
+=======
+# License 
+
+All assets and code are under the [![license](https://img.shields.io/github/license/GarageGames/Torque3D.svg)](https://github.com/GarageGames/Torque3D/blob/master/LICENSE.md)
