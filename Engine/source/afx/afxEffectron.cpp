@@ -1081,7 +1081,7 @@ DefineEngineMethod(afxEffectron, activate, void, (),,
 }
 
 DefineEngineFunction(startEffectron, S32, (afxEffectronData* datablock, const char* constraintSource, const char* constraintName, SimObject* extra),
-                     (NULL, NULL, NULL, NULL),
+                     (nullAsType<afxEffectronData*>(), nullAsType<const char*>(), nullAsType<const char*>(), nullAsType<SimObject*>()),
                      "Instantiates the effectron defined by datablock.\n\n"
                      "@ingroup AFX")
 {
