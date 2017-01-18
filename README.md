@@ -47,7 +47,7 @@ They are available from the [downloads](http://wiki.torque3d.org/main:downloads)
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
     IN THE SOFTWARE.
-=======
+================
 Torque 3D v3.6.3 Plus ArcaneFX
 ================
 
@@ -75,7 +75,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 IN THE SOFTWARE.
-=======
 # License 
 
 All assets and code are under the [![license](https://img.shields.io/github/license/GarageGames/Torque3D.svg)](https://github.com/GarageGames/Torque3D/blob/master/LICENSE.md)
