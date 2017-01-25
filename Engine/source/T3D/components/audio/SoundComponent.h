@@ -78,7 +78,7 @@ public:
    Sound mSoundThread[MaxSoundThreads];
    SFXTrack* mSoundFile[MaxSoundThreads];
    bool mPreviewSound[MaxSoundThreads];
-   bool mPlayOnAdd[MaxSoundThreads];
+   bool mPlay[MaxSoundThreads];
    /// @}
 
    SoundComponent();
@@ -89,6 +89,7 @@ public:
    virtual void onRemove();
    static void initPersistFields();
    static bool _previewSound(void *object, const char *index, const char *data);
+   static bool _autoplay(void *object, const char *index, const char *data);
 
    virtual U32 packUpdate(NetConnection *con, U32 mask, BitStream *stream);
    virtual void unpackUpdate(NetConnection *con, BitStream *stream);

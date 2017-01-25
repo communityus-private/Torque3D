@@ -60,11 +60,11 @@ SoundComponent::SoundComponent() : Component()
 
       mSoundFile[slotNum] = NULL;
       mPreviewSound[slotNum] = false;
-      mPlayOnAdd[slotNum] = false;
+      mPlay[slotNum] = false;
    }
 }
 
-SoundComponent::~SoundComponent() 
+SoundComponent::~SoundComponent()
 {
 }
 
@@ -76,13 +76,8 @@ bool SoundComponent::onAdd()
    if (!Parent::onAdd())
       return false;
 
-   for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
-   {
-      if (mPlayOnAdd[slotNum])
-      {
-         playAudio(slotNum, mSoundFile[slotNum]);
-      }
-   }
+   for (U32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
+      mPreviewSound[slotNum] = false;
 
    return true;
 }
@@ -112,6 +107,13 @@ void SoundComponent::onComponentRemove()
 //This allows you to do dependency behavior, like collisions being aware of a mesh component, etc
 void SoundComponent::componentAddedToOwner(Component *comp)
 {
+   for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
+   {
+      if (mPlay[slotNum])
+      {
+         playAudio(slotNum, mSoundFile[slotNum]);
+      }
+   }
    Con::printf("Our owner entity has a new component being added! SoundComponent welcomes component %g of type %s", comp->getId(), comp->getClassRep()->getNameSpace());
 }
 
@@ -129,8 +131,8 @@ void SoundComponent::initPersistFields()
    addField("mSoundFile", TypeSFXTrackName, Offset(mSoundFile, SoundComponent), MaxSoundThreads, "If the text will not fit in the control, the deniedSound is played.");
    addProtectedField("mPreviewSound", TypeBool, Offset(mPreviewSound, SoundComponent),
       &_previewSound, &defaultProtectedGetFn, MaxSoundThreads, "Preview Sound", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors);
-   addField("playOnAdd", TypeBool, Offset(mPlayOnAdd, SoundComponent), MaxSoundThreads,
-      "Whether playback of the emitter's sound should start as soon as the emitter object is added to the level.\n"
+   addProtectedField("play", TypeBool, Offset(mPlay, SoundComponent),
+      &_autoplay, &defaultProtectedGetFn, MaxSoundThreads, "Whether playback of the emitter's sound should start as soon as the emitter object is added to the level.\n"
       "If this is true, the emitter will immediately start to play when the level is loaded.");
    //endArray("Sounds");
    Parent::initPersistFields();
@@ -149,6 +151,19 @@ bool SoundComponent::_previewSound(void *object, const char *index, const char *
    return false;
 }
 
+bool SoundComponent::_autoplay(void *object, const char *index, const char *data)
+{
+   U32 slotNum = (index != NULL) ? dAtoui(index) : 0;
+   SoundComponent* component = reinterpret_cast< SoundComponent* >(object);
+   component->mPlay[slotNum] = dAtoui(data);
+   if (component->mPlay[slotNum])
+      component->playAudio(slotNum, component->mSoundFile[slotNum]);
+   else
+      component->stopAudio(slotNum);
+
+   return false;
+}
+
 U32 SoundComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 {
    U32 retMask = Parent::packUpdate(con, mask, stream);
@@ -163,10 +178,7 @@ U32 SoundComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
    }
 
    for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
-   {
-      stream->writeFlag(mPlayOnAdd[slotNum]);
       stream->writeFlag(mPreviewSound[slotNum]);
-   }
 
    if (stream->writeFlag(mask & SoundMask)) {
       for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++) {
@@ -186,18 +198,7 @@ void SoundComponent::unpackUpdate(NetConnection *con, BitStream *stream)
    Parent::unpackUpdate(con, stream);
 
    for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
-   {
-      bool playstate = stream->readFlag();
-      if (mPlayOnAdd[slotNum] != playstate)
-      {
-         if (playstate)
-            playAudio(slotNum, mSoundFile[slotNum]);
-         else
-            stopAudio(slotNum);
-      }
-      mPlayOnAdd[slotNum] = playstate;
       mPreviewSound[slotNum] = stream->readFlag();
-   }
 
    if (stream->readFlag())
    {
@@ -375,7 +376,7 @@ void SoundComponent::updateAudioPos()
 }
 
 //----------------------------------------------------------------------------
-DefineEngineMethod(SoundComponent, playAudio, bool, (S32 slot, SFXTrack* track), (0,NULL),
+DefineEngineMethod(SoundComponent, playAudio, bool, (S32 slot, SFXTrack* track), (0, NULL),
    "@brief Attach a sound to this shape and start playing it.\n\n"
 
    "@param slot Audio slot index for the sound (valid range is 0 - 3)\n" // 3 = ShapeBase::MaxSoundThreads-1
