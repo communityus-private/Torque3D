@@ -31,8 +31,14 @@
 
 #include "sfx/sfxTrack.h"
 #include "sfx/sfxTypes.h"
+
+#include "renderInstance/renderPassManager.h"
+#include "gfx/gfxDrawUtil.h"
+
 // Timeout for non-looping sounds on a channel
 static SimTime sAudioTimeout = 500;
+
+extern bool gEditingMission;
 
 //////////////////////////////////////////////////////////////////////////
 // Constructor/Destructor
@@ -54,6 +60,7 @@ SoundComponent::SoundComponent() : Component()
 
       mSoundFile[slotNum] = NULL;
       mPreviewSound[slotNum] = false;
+      mPlayOnAdd[slotNum] = false;
    }
 }
 
@@ -68,6 +75,14 @@ bool SoundComponent::onAdd()
 {
    if (!Parent::onAdd())
       return false;
+
+   for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
+   {
+      if (mPlayOnAdd[slotNum])
+      {
+         playAudio(slotNum, mSoundFile[slotNum]);
+      }
+   }
 
    return true;
 }
@@ -114,6 +129,9 @@ void SoundComponent::initPersistFields()
    addField("mSoundFile", TypeSFXTrackName, Offset(mSoundFile, SoundComponent), MaxSoundThreads, "If the text will not fit in the control, the deniedSound is played.");
    addProtectedField("mPreviewSound", TypeBool, Offset(mPreviewSound, SoundComponent),
       &_previewSound, &defaultProtectedGetFn, MaxSoundThreads, "Preview Sound", AbstractClassRep::FieldFlags::FIELD_ButtonInInspectors);
+   addField("playOnAdd", TypeBool, Offset(mPlayOnAdd, SoundComponent), MaxSoundThreads,
+      "Whether playback of the emitter's sound should start as soon as the emitter object is added to the level.\n"
+      "If this is true, the emitter will immediately start to play when the level is loaded.");
    //endArray("Sounds");
    Parent::initPersistFields();
 }
@@ -122,11 +140,11 @@ bool SoundComponent::_previewSound(void *object, const char *index, const char *
 {
    U32 slotNum = (index != NULL) ? dAtoui(index) : 0;
    SoundComponent* component = reinterpret_cast< SoundComponent* >(object);
-   component->mPreviewSound[slotNum] = !component->mPreviewSound[slotNum];
    if (!component->mPreviewSound[slotNum])
       component->playAudio(slotNum, component->mSoundFile[slotNum]);
    else
       component->stopAudio(slotNum);
+   component->mPreviewSound[slotNum] = !component->mPreviewSound[slotNum];
 
    return false;
 }
@@ -142,6 +160,12 @@ U32 SoundComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       for (slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
          if (!mSoundThread[slotNum].play)
             mask &= ~(SoundMaskN << slotNum);
+   }
+
+   for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
+   {
+      stream->writeFlag(mPlayOnAdd[slotNum]);
+      stream->writeFlag(mPreviewSound[slotNum]);
    }
 
    if (stream->writeFlag(mask & SoundMask)) {
@@ -160,7 +184,21 @@ U32 SoundComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 void SoundComponent::unpackUpdate(NetConnection *con, BitStream *stream)
 {
    Parent::unpackUpdate(con, stream);
-   
+
+   for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
+   {
+      bool playstate = stream->readFlag();
+      if (mPlayOnAdd[slotNum] != playstate)
+      {
+         if (playstate)
+            playAudio(slotNum, mSoundFile[slotNum]);
+         else
+            stopAudio(slotNum);
+      }
+      mPlayOnAdd[slotNum] = playstate;
+      mPreviewSound[slotNum] = stream->readFlag();
+   }
+
    if (stream->readFlag())
    {
       for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
@@ -208,6 +246,54 @@ void SoundComponent::advanceTime(F32 dt)
 void SoundComponent::interpolateTick(F32 delta)
 {
 
+}
+
+void SoundComponent::prepRenderImage(SceneRenderState *state)
+{
+   if (!mEnabled || !mOwner || !gEditingMission)
+      return;
+   ObjectRenderInst* ri = state->getRenderPass()->allocInst< ObjectRenderInst >();
+
+   ri->renderDelegate.bind(this, &SoundComponent::_renderObject);
+   ri->type = RenderPassManager::RIT_Editor;
+   ri->defaultKey = 0;
+   ri->defaultKey2 = 0;
+
+   state->getRenderPass()->addInst(ri);
+}
+
+void SoundComponent::_renderObject(ObjectRenderInst *ri,
+   SceneRenderState *state,
+   BaseMatInstance *overrideMat)
+{
+   if (overrideMat)
+      return;
+
+   GFXStateBlockDesc desc;
+   desc.setBlend(true);
+
+   MatrixF camera = GFX->getWorldMatrix();
+   camera.inverse();
+   Point3F pos = mOwner->getPosition();
+
+   for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
+   {
+      if (mPreviewSound[slotNum])
+      {
+         Sound& st = mSoundThread[slotNum];
+         if (st.sound && st.sound->getDescription())
+         {
+            F32 minRad = st.sound->getDescription()->mMinDistance;
+            F32 falloffRad = st.sound->getDescription()->mMaxDistance;
+            SphereF sphere(pos, falloffRad);
+            if (sphere.isContained(camera.getPosition()))
+               desc.setCullMode(GFXCullNone);
+
+            GFX->getDrawUtil()->drawSphere(desc, minRad, pos, ColorI(255, 0, 255, 64));
+            GFX->getDrawUtil()->drawSphere(desc, falloffRad, pos, ColorI(128, 0, 128, 64));
+         }
+      }
+   }
 }
 
 void SoundComponent::playAudio(U32 slotNum, SFXTrack* _profile)
