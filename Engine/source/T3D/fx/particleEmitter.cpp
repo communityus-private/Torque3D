@@ -429,7 +429,7 @@ void ParticleEmitterData::packData(BitStream* stream)
 #if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
    if (stream->writeFlag(pool_datablock))
    {
-     stream->writeRangedU32(packed ? SimObjectId(pool_datablock) : pool_datablock->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
+     stream->writeRangedU32(packed ? SimObjectId((uintptr_t)pool_datablock) : pool_datablock->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
      stream->write(pool_index);
      stream->writeFlag(pool_depth_fade);
      stream->writeFlag(pool_radial_fade);
@@ -699,7 +699,7 @@ bool ParticleEmitterData::preload(bool server, String &errorStr)
 #if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
       if (do_pool_id_convert)
       {
-        SimObjectId db_id = (SimObjectId)pool_datablock;
+        SimObjectId db_id = (SimObjectId)(uintptr_t)pool_datablock;
         if (db_id != 0)
         {
           // try to convert id to pointer
