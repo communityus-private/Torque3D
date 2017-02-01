@@ -330,6 +330,7 @@ public:
    /// @see mFootstepSoundCustom
    S32 mFootstepSoundId;
    S32 mImpactSoundId;
+   S32 mImpactFXIndex;
 
    /// Sound effect to play when walking on surface with this material.
    /// If defined, overrides mFootstepSoundId.

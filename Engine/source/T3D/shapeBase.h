@@ -82,6 +82,7 @@ class SFXProfile;
 
 typedef void* Light;
 
+#define MAX_MAT_FX 32
 
 //--------------------------------------------------------------------------
 
@@ -642,6 +643,12 @@ public:
    virtual void unpackData(BitStream* stream);
    /// @}
 
+   ExplosionData* mFX[MAX_MAT_FX];
+   S32 mFXId[MAX_MAT_FX];
+
+   ParticleEmitterData* SparkEmitter;
+   S32 SparkEmitterId;
+
    /// @name Callbacks
    /// @{
    DECLARE_CALLBACK( void, onEnabled, ( ShapeBase* obj, const char* lastState ) );
@@ -1173,6 +1180,9 @@ public:
    bool onNewDataBlock( GameBaseData *dptr, bool reload );
 
    /// @}
+
+   virtual void playFX(const Point3F& p, const Point3F& n, S32 matFxIndex);
+   void ShapeBase::processFX();
 
    /// @name Name & Skin tags
    /// @{

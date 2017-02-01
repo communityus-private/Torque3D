@@ -205,6 +205,7 @@ Material::Material()
    dMemset( mEffectColor,     0, sizeof( mEffectColor ) );
 
    mFootstepSoundId = -1;     mImpactSoundId = -1;
+   mImpactFXIndex = -1;
    mFootstepSoundCustom = 0;  mImpactSoundCustom = 0;
    mFriction = 0.0;
    
@@ -462,7 +463,11 @@ void Material::initPersistFields()
       addField( "impactSoundId", TypeS32, Offset( mImpactSoundId, Material ),
          "What sound to play from the PlayerData sound list when the player impacts on the surface with a velocity equal or greater "
          "than PlayerData::groundImpactMinSpeed.\n\n"
-         "For a list of IDs, see #footstepSoundId" );
+         "For a list of IDs, see #footstepSoundId");
+      addField("ImpactFXIndex", TypeS32, Offset(mImpactFXIndex, Material),
+         "What FX to play from the PlayerData sound list when the player impacts on the surface with a velocity equal or greater "
+         "than PlayerData::groundImpactMinSpeed.\n\n"
+         "For a list of IDs, see #impactFXId");
       addField( "customImpactSound", TypeSFXTrackName,    Offset( mImpactSoundCustom, Material ),
          "The sound to play when the player impacts on the surface with a velocity equal or greater than PlayerData::groundImpactMinSpeed.  "
          "If this is set, it overrides #impactSoundId.  This field is useful for directly assigning custom impact sounds to materials "

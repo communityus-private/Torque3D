@@ -1201,12 +1201,14 @@ void ShapeBase::onImpact(SceneObject* obj, const VectorF& vec)
 {
    if (!isGhost())
       mDataBlock->onImpact_callback( this, obj, vec, vec.len() );
+   else processFX();
 }
 
 void ShapeBase::onImpact(const VectorF& vec)
 {
    if (!isGhost())
       mDataBlock->onImpact_callback( this, NULL, vec, vec.len() );
+   else processFX();
 }
 
 
@@ -4944,4 +4946,64 @@ DefineEngineMethod( ShapeBase, getModelFile, const char *, (),,
 
    const char *fieldName = StringTable->insert( String("shapeFile") );
    return datablock->getDataField( fieldName, NULL );
+}
+
+//==============================================================================
+//---------------------- Start FX Implementation ------------------------
+//==============================================================================
+void ShapeBase::playFX(const Point3F& p, const Point3F& n, S32 matFxIndex)
+{
+   Explosion* pFX = NULL;
+
+   if (mDataBlock->mFX[matFxIndex])
+   {
+      pFX = new Explosion;
+      pFX->onNewDataBlock(mDataBlock->mFX[matFxIndex],false);
+   }
+   if (pFX)
+   {
+      MatrixF xform(true);
+      xform.setPosition(p);
+      pFX->setTransform(xform);
+      pFX->setInitialState(p, n);
+      pFX->setCollideType(STATIC_COLLISION_TYPEMASK);
+      if (pFX->registerObject() == false)
+      {
+         Con::errorf(ConsoleLogEntry::General, "Projectile(%s)::playFX: couldn't register FX",
+            mDataBlock->getName());
+         delete pFX;
+         pFX = NULL;
+      }
+   }
+}
+
+void ShapeBase::processFX()
+{
+   if (!isClientObject()) return;
+
+   this->disableCollision();
+   RayInfo rayInfo;
+
+   for (CollisionTimeout* ptr = mTimeoutList; ptr; ptr = ptr->next)
+   {
+      GameBase* obj = static_cast<GameBase*>(Sim::findObject(ptr->objectNumber));
+      if (obj != NULL)
+      {
+         Point3F startPos, endPos;
+         startPos = this->getPosition();
+         endPos = obj->getPosition();
+
+         if (getContainer()->castRay(startPos, endPos, GameBaseObjectType, &rayInfo))
+         {
+            Material* matInst = (rayInfo.material ? dynamic_cast< Material* >(rayInfo.material->getMaterial()) : 0);
+            if (matInst != NULL)
+            {
+               Con::errorf("Tex: %s", matInst->getName());
+               playFX(rayInfo.point, rayInfo.normal, matInst->mImpactFXIndex);
+            }
+         }
+      }
+   }
+
+   this->enableCollision();
 }
