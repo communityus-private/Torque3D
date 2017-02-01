@@ -82,7 +82,7 @@ class SFXProfile;
 
 typedef void* Light;
 
-#define MAX_MAT_FX 32
+#define MAX_MAT_FX 8
 
 //--------------------------------------------------------------------------
 
@@ -645,9 +645,6 @@ public:
 
    ExplosionData* mFX[MAX_MAT_FX];
    S32 mFXId[MAX_MAT_FX];
-
-   ParticleEmitterData* SparkEmitter;
-   S32 SparkEmitterId;
 
    /// @name Callbacks
    /// @{

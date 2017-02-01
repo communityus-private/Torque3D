@@ -194,6 +194,8 @@ ShapeBaseData::ShapeBaseData()
    inheritEnergyFromMount( false )
 {      
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
+   for (U32 i = 0; i < MAX_MAT_FX; i++)
+      mFX[i] = NULL;
 }
 
 struct ShapeBaseDataProto
@@ -257,6 +259,19 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
          }
          AssertFatal(!(underwaterExplosion && ((underwaterExplosionID < DataBlockObjectIdFirst) || (underwaterExplosionID > DataBlockObjectIdLast))),
             "ShapeBaseData::preload: invalid underwaterExplosion data");
+      }
+
+      for (U32 i = 0; i < MAX_MAT_FX; i++)
+      {
+         if (!mFX[i] && mFXId[i] != 0)
+         {
+            if (Sim::findObject(mFXId[i], mFX[i]) == false)
+            {
+               Con::errorf(ConsoleLogEntry::General, "ShapeBaseData::preload: Invalid packet, bad datablockId(FXId[%i]): 0x%x", i, mFXId[i]);
+            }
+            AssertFatal(!(mFX[i] && ((mFXId[i] < DataBlockObjectIdFirst) || (mFXId[i] > DataBlockObjectIdLast))),
+               "ShapeBaseData::preload: invalid mFXId data");
+         }
       }
 
       if( !debris && debrisID != 0 )
@@ -481,7 +496,8 @@ void ShapeBaseData::initPersistFields()
 
       addField( "shapeFile", TypeShapeFilename, Offset(shapeName, ShapeBaseData),
          "The DTS or DAE model to use for this object." );
-
+      addField("FX", TYPEID< ExplosionData >(), Offset(mFX, ShapeBaseData), MAX_MAT_FX,
+         "%Generic Effect (sound/particle).");
    endGroup( "Render" );
 
    addGroup( "Destruction", "Parameters related to the destruction effects of this object." );
@@ -724,6 +740,14 @@ void ShapeBaseData::packData(BitStream* stream)
       stream->writeRangedU32( underwaterExplosion->getId(), DataBlockObjectIdFirst,  DataBlockObjectIdLast );
    }
 
+   for (U32 i = 0; i < MAX_MAT_FX; i++)
+   {
+      if (stream->writeFlag(mFX[i] != NULL))
+      {
+         stream->writeRangedU32(mFX[i]->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
+      }
+   }
+   
    stream->writeFlag(inheritEnergyFromMount);
    stream->writeFlag(firstPersonOnly);
    stream->writeFlag(useEyePoint);
@@ -823,6 +847,14 @@ void ShapeBaseData::unpackData(BitStream* stream)
    if( stream->readFlag() )
    {
       underwaterExplosionID = stream->readRangedU32( DataBlockObjectIdFirst, DataBlockObjectIdLast );
+   }
+
+   for (U32 i = 0; i < MAX_MAT_FX; i++)
+   {
+      if (stream->readFlag())
+      {
+         mFXId[i] = stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
+      }
    }
 
    inheritEnergyFromMount = stream->readFlag();
@@ -4954,11 +4986,12 @@ DefineEngineMethod( ShapeBase, getModelFile, const char *, (),,
 void ShapeBase::playFX(const Point3F& p, const Point3F& n, S32 matFxIndex)
 {
    Explosion* pFX = NULL;
-
+   
+   Con::errorf("mDataBlock->mFX[%i] = %i", matFxIndex, mDataBlock->mFX[matFxIndex]);
    if (mDataBlock->mFX[matFxIndex])
    {
       pFX = new Explosion;
-      pFX->onNewDataBlock(mDataBlock->mFX[matFxIndex],false);
+      pFX->setDataBlock(mDataBlock->mFX[matFxIndex]);
    }
    if (pFX)
    {
@@ -4983,6 +5016,7 @@ void ShapeBase::processFX()
 
    this->disableCollision();
    RayInfo rayInfo;
+   rayInfo.generateTexCoord = true;
 
    for (CollisionTimeout* ptr = mTimeoutList; ptr; ptr = ptr->next)
    {
@@ -4993,12 +5027,13 @@ void ShapeBase::processFX()
          startPos = this->getPosition();
          endPos = obj->getPosition();
 
-         if (getContainer()->castRay(startPos, endPos, GameBaseObjectType, &rayInfo))
+         if (getContainer()->castRay(startPos, endPos, GameBaseObjectType | STATIC_COLLISION_TYPEMASK | TerrainObjectType, &rayInfo))
          {
             Material* matInst = (rayInfo.material ? dynamic_cast< Material* >(rayInfo.material->getMaterial()) : 0);
             if (matInst != NULL)
             {
                Con::errorf("Tex: %s", matInst->getName());
+               if (matInst->mImpactFXIndex> -1)
                playFX(rayInfo.point, rayInfo.normal, matInst->mImpactFXIndex);
             }
          }

@@ -40,6 +40,6 @@ new Material(Structure_plate)
 {
    mapTo = "plate";
    diffuseMap[0] = "art/shapes/station/plate";
-   //emissive[0] = true;
+   ImpactFXIndex = 0;
 };
 

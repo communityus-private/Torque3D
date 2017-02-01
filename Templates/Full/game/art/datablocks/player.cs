@@ -560,7 +560,7 @@ datablock PlayerData(DefaultPlayerData)
    recoverDelay = 0;
    recoverRunForceScale = 0;
 
-   minImpactSpeed = 10;
+   minImpactSpeed = 1.0;
    minLateralImpactSpeed = 20;
    speedDamageScale = 0.4;
 
@@ -640,7 +640,9 @@ datablock PlayerData(DefaultPlayerData)
    //impactWaterMedium    = ImpactLightWaterMediumSound;
    //impactWaterHard      = ImpactLightWaterHardSound;
 
-   groundImpactMinSpeed    = "45";
+   FX[0] = RocketLauncherExplosion;
+   
+   groundImpactMinSpeed    = 45;
    groundImpactShakeFreq   = "4.0 4.0 4.0";
    groundImpactShakeAmp    = "1.0 1.0 1.0";
    groundImpactShakeDuration = 0.8;
@@ -670,4 +672,12 @@ datablock PlayerData(DefaultPlayerData)
 
    // available skins (see materials.cs in model folder)
    availableSkins =  "base	DarkBlue	DarkGreen	LightGreen	Orange	Red	Teal	Violet	Yellow";
+   maxInvProxMine = "5";
+   maxInvLurkerGrenadeAmmo = "20";
+   maxInvLurkerClip = "20";
+   maxInvDeployableTurret = "5";
+   maxInvRyder = "1";
+   maxInvLurkerGrenadeLauncher = "1";
+   maxInvRyderClip = "10";
+   maxInvLurker = "1";
 };

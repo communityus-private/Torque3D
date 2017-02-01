@@ -4949,8 +4949,7 @@ F32 Player::_doCollisionImpact( const Collision *collision, bool fallingCollisio
    if ( ((bd > mDataBlock->minImpactSpeed && fallingCollision) || bd > mDataBlock->minLateralImpactSpeed) 
       && !mMountPending )
    {
-      if ( isGhost() )
-         onImpact( collision->object, collision->normal * bd );
+      onImpact( collision->object, collision->normal * bd );
 
       if (mDamageState == Enabled && mState != RecoverState) 
       {
@@ -4988,8 +4987,7 @@ F32 Player::_doCollisionImpact( const Collision *collision, bool fallingCollisio
 void Player::_handleCollision( const Collision &collision )
 {
    // Track collisions
-   if (  !isGhost() && 
-         collision.object && 
+   if (  collision.object && 
          collision.object != mContactInfo.contactObject )
       queueCollision( collision.object, mVelocity - collision.object->getVelocity() );
 }
