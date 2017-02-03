@@ -189,7 +189,7 @@ ShapeBaseImageData::ShapeBaseImageData()
    lightRadius = 10.f;
    lightBrightness = 1.0f;
 
-   shapeName = "";
+   shapeName = "core/art/shapes/noshape.dts";
    shapeNameFP = "";
    imageAnimPrefix = "";
    imageAnimPrefixFP = "";
@@ -2641,7 +2641,7 @@ void ShapeBase::setImageState(U32 imageSlot, U32 newState,bool force)
       F32 randomPos = Platform::getRandom();
       for (U32 i=0; i<ShapeBaseImageData::MaxShapes; ++i)
       {
-         if (!image.dataBlock->shapeIsValid[i] || i != imageShapeIndex && !image.doAnimateAllShapes)
+         if (!image.dataBlock->shapeIsValid[i] || (i != imageShapeIndex && !image.doAnimateAllShapes))
             continue;
 
          if (image.animThread[i] && image.state->sequence[i] != -1 && image.state->flashSequence[i]) {
@@ -2782,7 +2782,7 @@ void ShapeBase::setImageState(U32 imageSlot, U32 newState,bool force)
    updateAnimThread(imageSlot, imageShapeIndex, lastState);
    for (U32 i=0; i<ShapeBaseImageData::MaxShapes; ++i)
    {
-      if (!image.dataBlock->shapeIsValid[i] || i != imageShapeIndex && !image.doAnimateAllShapes)
+      if (!image.dataBlock->shapeIsValid[i] || (i != imageShapeIndex && !image.doAnimateAllShapes))
          continue;
 
       // Start spin thread
@@ -2837,7 +2837,7 @@ void ShapeBase::updateAnimThread(U32 imageSlot, S32 imageShapeIndex, ShapeBaseIm
    F32 randomPos = Platform::getRandom();
    for (U32 i=0; i<ShapeBaseImageData::MaxShapes; ++i)
    {
-      if (!image.dataBlock->shapeIsValid[i] || i != imageShapeIndex && !image.doAnimateAllShapes)
+      if (!image.dataBlock->shapeIsValid[i] || (i != imageShapeIndex && !image.doAnimateAllShapes))
          continue;
 
       if (image.animThread[i] && stateData.sequence[i] != -1) 
@@ -3079,7 +3079,7 @@ TICKAGAIN:
    U32 imageShapeIndex = getImageShapeIndex(image);
    for (U32 i=0; i<ShapeBaseImageData::MaxShapes; ++i)
    {
-      if (!image.dataBlock->shapeIsValid[i] || i != imageShapeIndex && !image.doAnimateAllShapes)
+      if (!image.dataBlock->shapeIsValid[i] || (i != imageShapeIndex && !image.doAnimateAllShapes))
          continue;
 
       if (image.spinThread[i])
@@ -3134,7 +3134,7 @@ void ShapeBase::updateImageAnimation(U32 imageSlot, F32 dt)
    // Advance animation threads
    for (U32 i=0; i<ShapeBaseImageData::MaxShapes; ++i)
    {
-      if (!image.dataBlock->shapeIsValid[i] || i != imageShapeIndex && !image.doAnimateAllShapes)
+      if (!image.dataBlock->shapeIsValid[i] || (i != imageShapeIndex && !image.doAnimateAllShapes))
          continue;
 
       if (image.ambientThread[i])
