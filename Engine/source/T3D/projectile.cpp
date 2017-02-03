@@ -1195,6 +1195,10 @@ void Projectile::simulate( F32 dt )
             if (matInst->mImpactFXIndex > -1)
                playFX(rInfo.point, rInfo.normal, matInst->mImpactFXIndex);
          }
+         else if (rInfo.object->getTypeMask() & PlayerObjectType)
+               playFX(rInfo.point, rInfo.normal, 0);
+         else if (rInfo.object->getTypeMask() & VehicleObjectType)
+               playFX(rInfo.point, rInfo.normal, 2);
       }
 
       onCollision( rInfo.point, rInfo.normal, rInfo.object );
