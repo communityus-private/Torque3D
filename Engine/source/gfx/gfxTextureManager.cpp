@@ -26,7 +26,7 @@
 #include "gfx/gfxDevice.h"
 #include "gfx/gfxCardProfile.h"
 #include "gfx/gfxStringEnumTranslate.h"
-#include "gfx/bitmap/ddsUtils.h"
+#include "gfx/bitmap/imageUtils.h"
 #include "core/strings/stringFunctions.h"
 #include "core/util/safeDelete.h"
 #include "core/resourceManager.h"
@@ -370,9 +370,9 @@ GFXTextureObject *GFXTextureManager::_createTexture(  GBitmap *bmp,
    }
 
    // If _validateTexParams kicked back a different format, than there needs to be
-   // a conversion
+   // a conversion unless it's a sRGB format
    DDSFile *bmpDDS = NULL;
-   if( realBmp->getFormat() != realFmt )
+   if( realBmp->getFormat() != realFmt && !profile->isSRGB() )
    {
       const GFXFormat oldFmt = realBmp->getFormat();
 
@@ -390,22 +390,20 @@ GFXTextureObject *GFXTextureManager::_createTexture(  GBitmap *bmp,
             // This shouldn't live here, I don't think
             switch( realFmt )
             {
-               case GFXFormatDXT1:
-               case GFXFormatDXT2:
-               case GFXFormatDXT3:
-               case GFXFormatDXT4:
-               case GFXFormatDXT5:
+               case GFXFormatBC1:
+               case GFXFormatBC2:
+               case GFXFormatBC3:
                   // If this is a Normal Map profile, than the data needs to be conditioned
                   // to use the swizzle trick
                   if( ret->mProfile->getType() == GFXTextureProfile::NormalMap )
                   {
                      PROFILE_START(DXT_DXTNMSwizzle);
                      static DXT5nmSwizzle sDXT5nmSwizzle;
-                     DDSUtil::swizzleDDS( bmpDDS, sDXT5nmSwizzle );
+                     ImageUtil::swizzleDDS( bmpDDS, sDXT5nmSwizzle );
                      PROFILE_END();
                   }
 
-                  convSuccess = DDSUtil::squishDDS( bmpDDS, realFmt );
+                  convSuccess = ImageUtil::ddsCompress( bmpDDS, realFmt );
                   break;
                default:
                   AssertFatal(false, "Attempting to convert to a non-DXT format");
@@ -534,7 +532,7 @@ GFXTextureObject *GFXTextureManager::_createTexture(  DDSFile *dds,
    GFXFormat fmt = dds->mFormat;
    _validateTexParams( dds->getHeight(), dds->getWidth(), profile, numMips, fmt );
 
-   if( fmt != dds->mFormat )
+   if( fmt != dds->mFormat && !profile->isSRGB())
    {
       Con::errorf( "GFXTextureManager - failed to validate texture parameters for DDS file '%s'", fileName );
       return NULL;
@@ -743,7 +741,7 @@ GFXTextureObject *GFXTextureManager::createTexture( U32 width, U32 height, GFXFo
    GFXFormat checkFmt = format;
    _validateTexParams( localWidth, localHeight, profile, numMips, checkFmt );
 
-   AssertFatal( checkFmt == format, "Anonymous texture didn't get the format it wanted." );
+//   AssertFatal( checkFmt == format, "Anonymous texture didn't get the format it wanted." );
 
    GFXTextureObject *outTex = NULL;
 
@@ -1058,7 +1056,7 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(const Torque::Path &
 void GFXTextureManager::saveCompositeTexture(const Torque::Path &pathR, const Torque::Path &pathG, const Torque::Path &pathB, const Torque::Path &pathA, U32 inputKey[4],
    const Torque::Path &saveAs,GFXTextureProfile *profile)
 {
-   PROFILE_SCOPE(GFXTextureManager_createCompositeTexture);
+   PROFILE_SCOPE(GFXTextureManager_saveCompositeTexture);
 
    String inputKeyStr = String::ToString("%d%d%d%d", inputKey[0], inputKey[1], inputKey[2], inputKey[3]);
 
@@ -1093,7 +1091,10 @@ void GFXTextureManager::saveCompositeTexture(const Torque::Path &pathR, const To
 
    retTexObj = createCompositeTexture(bitmap, inputKey, resourceTag, profile, false);
    if (retTexObj != NULL)
+   {
       retTexObj->dumpToDisk("png", saveAs.getFullPath());
+      retTexObj->destroySelf();
+   }
    return;
 }
 
@@ -1107,7 +1108,7 @@ DefineEngineFunction(saveCompositeTexture, void, (const char* pathR, const char*
    {
       dSscanf(inputKeyString, "%i %i %i %i", &inputKey[0], &inputKey[1], &inputKey[2], &inputKey[3]);
    }
-   GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXDefaultStaticDiffuseProfile);
+   GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXDefaultRenderTargetProfile);
 }
 
 GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
@@ -1300,6 +1301,26 @@ void GFXTextureManager::deleteTexture( GFXTextureObject *texture )
    freeTexture( texture );
 }
 
+GFXFormat GFXTextureManager::_toGammaFormat(GFXFormat fmt)
+{
+   switch (fmt)
+   {
+   case GFXFormatR8G8B8:
+      return GFXFormatR8G8B8_SRGB;
+   case GFXFormatR8G8B8X8:      
+   case GFXFormatR8G8B8A8:
+      return GFXFormatR8G8B8A8_SRGB;
+   case GFXFormatBC1:
+      return GFXFormatBC1_SRGB;
+   case GFXFormatBC2:
+      return GFXFormatBC2_SRGB;
+   case GFXFormatBC3:
+      return GFXFormatBC3_SRGB;
+   default:
+      return fmt;
+   };
+}
+
 void GFXTextureManager::_validateTexParams( const U32 width, const U32 height, 
                                           const GFXTextureProfile *profile, 
                                           U32 &inOutNumMips, GFXFormat &inOutFormat  )
@@ -1324,12 +1345,15 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
    GFXFormat testingFormat = inOutFormat;
    if( profile->getCompression() != GFXTextureProfile::NONE )
    {
-      const S32 offset = profile->getCompression() - GFXTextureProfile::DXT1;
-      testingFormat = GFXFormat( GFXFormatDXT1 + offset );
+      const S32 offset = profile->getCompression() - GFXTextureProfile::BC1;
+      testingFormat = GFXFormat( GFXFormatBC1 + offset );
 
       // No auto-gen mips on compressed textures
       autoGenSupp = false;
    }
+
+   if (profile->isSRGB())
+      testingFormat = _toGammaFormat(testingFormat);
 
    // inOutFormat is not modified by this method
    GFXCardProfiler* cardProfiler = GFX->getCardProfiler();
@@ -1379,6 +1403,7 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
          inOutNumMips = mFloor(mLog2(mMax(width, height))) + 1;
       }
    }
+
 }
 
 GFXCubemap* GFXTextureManager::createCubemap( const Torque::Path &path )
