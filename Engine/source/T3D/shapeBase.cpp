@@ -4994,7 +4994,7 @@ void ShapeBase::playFX(const Point3F& p, const Point3F& n, S32 matFxIndex)
    if (mDataBlock->mFX[matFxIndex])
    {
       pFX = new Explosion;
-      pFX->setDataBlock(mDataBlock->mFX[matFxIndex]);
+      pFX->onNewDataBlock(mDataBlock->mFX[matFxIndex], false);
    }
    if (pFX)
    {
