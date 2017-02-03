@@ -39,7 +39,7 @@
 #include "lighting/lightInfo.h"
 #endif
 
-
+#define MAX_MAT_FX 32
 class ExplosionData;
 class SplashData;
 class ShapeBase;
@@ -126,6 +126,9 @@ public:
    ParticleEmitterData* particleWaterEmitter;
    S32 particleWaterEmitterId;
 
+   ExplosionData* mFX[MAX_MAT_FX];
+   S32 mFXId[MAX_MAT_FX];
+
    ProjectileData();
 
    void packData(BitStream*);
@@ -208,7 +211,9 @@ public:
 
    /// What to do when this projectile explodes
    virtual void explode(const Point3F& p, const Point3F& n, const U32 collideType );
-      
+
+   virtual void playFX(const Point3F& p, const Point3F& n, S32 matFxIndex);
+
    bool pointInWater(const Point3F &point);
 
    void emitParticles(const Point3F&, const Point3F&, const Point3F&, const U32);

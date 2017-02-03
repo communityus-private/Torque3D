@@ -51,7 +51,7 @@
 #include "T3D/decal/decalData.h"
 #include "T3D/lightDescription.h"
 #include "console/engineAPI.h"
-
+#include "materials/baseMatInstance.h"
 
 IMPLEMENT_CO_DATABLOCK_V1(ProjectileData);
 
@@ -188,6 +188,12 @@ ProjectileData::ProjectileData()
 
    lightDesc = NULL;
    lightDescId = 0;
+
+   for (U32 i = 0; i < MAX_MAT_FX; i++)
+   {
+      mFX[i] = NULL;
+      mFXId[i] = 0;
+   }
 }
 
 //--------------------------------------------------------------------------
@@ -218,6 +224,9 @@ void ProjectileData::initPersistFields()
       "@brief Explosion datablock used when the projectile explodes outside of water.\n\n");
    addField("waterExplosion", TYPEID< ExplosionData >(), Offset(waterExplosion, ProjectileData),
       "@brief Explosion datablock used when the projectile explodes underwater.\n\n");
+
+   addField("FX", TYPEID< ExplosionData >(), Offset(mFX, ProjectileData), MAX_MAT_FX,
+      "%Generic Effect (sound/particle).");
 
    addField("splash", TYPEID< SplashData >(), Offset(splash, ProjectileData),
       "@brief Splash datablock used to create splash effects as the projectile enters or leaves water\n\n");
@@ -312,6 +321,19 @@ bool ProjectileData::preload(bool server, String &errorStr)
          if (Sim::findObject(waterExplosionId, waterExplosion) == false)
             Con::errorf(ConsoleLogEntry::General, "ProjectileData::preload: Invalid packet, bad datablockId(waterExplosion): %d", waterExplosionId);
 
+      for (U32 i = 0; i < MAX_MAT_FX; i++)
+      {
+         if (!mFX[i] && mFXId[i] != 0)
+         {
+            if (Sim::findObject(mFXId[i], mFX[i]) == false)
+            {
+               Con::errorf(ConsoleLogEntry::General, "ProjectileData::preload: Invalid packet, bad datablockId(FXId[%i]): 0x%x", i, mFXId[i]);
+            }
+            AssertFatal(!(mFX[i] && ((mFXId[i] < DataBlockObjectIdFirst) || (mFXId[i] > DataBlockObjectIdLast))),
+               "ProjectileData::preload: invalid mFXId data");
+         }
+      }
+
       if (!splash && splashId != 0)
          if (Sim::findObject(splashId, splash) == false)
             Con::errorf(ConsoleLogEntry::General, "ProjectileData::preload: Invalid packet, bad datablockId(splash): %d", splashId);
@@ -380,6 +402,14 @@ void ProjectileData::packData(BitStream* stream)
       stream->writeRangedU32(waterExplosion->getId(), DataBlockObjectIdFirst,
                                                       DataBlockObjectIdLast);
 
+   for (U32 i = 0; i < MAX_MAT_FX; i++)
+   {
+      if (stream->writeFlag(mFX[i] != NULL))
+      {
+         stream->writeRangedU32(mFX[i]->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
+      }
+   }
+
    if (stream->writeFlag(splash != NULL))
       stream->writeRangedU32(splash->getId(), DataBlockObjectIdFirst,
                                               DataBlockObjectIdLast);
@@ -442,7 +472,15 @@ void ProjectileData::unpackData(BitStream* stream)
 
    if (stream->readFlag())
       waterExplosionId = stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
-   
+
+   for (U32 i = 0; i < MAX_MAT_FX; i++)
+   {
+      if (stream->readFlag())
+      {
+         mFXId[i] = stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
+      }
+   }
+
    if (stream->readFlag())
       splashId = stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
 
@@ -1102,6 +1140,9 @@ void Projectile::simulate( F32 dt )
    // Raycast the abstract PhysicsWorld if a PhysicsPlugin exists.
    bool hit = false;
 
+   if (isClientObject())
+      rInfo.generateTexCoord = true;
+
    if ( mPhysicsWorld )
       hit = mPhysicsWorld->castRay( oldPosition, newPosition, &rInfo, Point3F( newPosition - oldPosition) * mDataBlock->impactForce );            
    else 
@@ -1144,6 +1185,18 @@ void Projectile::simulate( F32 dt )
       // during the next packet update, due to the ExplosionMask network bit being set.
       // onCollision will remain uncalled on the client however, therefore no client
       // specific code should be placed inside the function!
+
+      if (isClientObject())
+      {
+         Material* matInst = (rInfo.material ? dynamic_cast<Material*>(rInfo.material->getMaterial()) : 0);
+         if (matInst != NULL)
+         {
+            Con::errorf("Tex: %s", matInst->getName());
+            if (matInst->mImpactFXIndex > -1)
+               playFX(rInfo.point, rInfo.normal, matInst->mImpactFXIndex);
+         }
+      }
+
       onCollision( rInfo.point, rInfo.normal, rInfo.object );
       // Next order of business: do we explode on this hit?
       if ( mCurrTick > mDataBlock->armingDelay || mDataBlock->armingDelay == 0 )
@@ -1266,7 +1319,7 @@ void Projectile::interpolateTick(F32 delta)
 void Projectile::onCollision(const Point3F& hitPosition, const Point3F& hitNormal, SceneObject* hitObject)
 {
    // No client specific code should be placed or branched from this function
-   if(isClientObject())
+   if (isClientObject())
       return;
 
    if (hitObject != NULL && isServerObject())
@@ -1450,4 +1503,35 @@ DefineEngineMethod(Projectile, presimulate, void, (F32 seconds), (1.0f),
                                        "@note This function is not called if the SimObject::hidden is true.")
 {
 	object->simulate( seconds );
+}
+
+
+//==============================================================================
+//---------------------- Start FX Implementation ------------------------
+//==============================================================================
+void Projectile::playFX(const Point3F& p, const Point3F& n, S32 matFxIndex)
+{
+   Explosion* pFX = NULL;
+
+   Con::errorf("mDataBlock->mFX[%i] = %i", matFxIndex, mDataBlock->mFX[matFxIndex]);
+   if (mDataBlock->mFX[matFxIndex])
+   {
+      pFX = new Explosion;
+      pFX->setDataBlock(mDataBlock->mFX[matFxIndex]);
+   }
+   if (pFX)
+   {
+      MatrixF xform(true);
+      xform.setPosition(p);
+      pFX->setTransform(xform);
+      pFX->setInitialState(p, n);
+      pFX->setCollideType(STATIC_COLLISION_TYPEMASK);
+      if (pFX->registerObject() == false)
+      {
+         Con::errorf(ConsoleLogEntry::General, "Projectile(%s)::playFX: couldn't register FX",
+            mDataBlock->getName());
+         delete pFX;
+         pFX = NULL;
+      }
+   }
 }
