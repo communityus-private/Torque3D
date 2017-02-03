@@ -195,7 +195,10 @@ ShapeBaseData::ShapeBaseData()
 {      
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
    for (U32 i = 0; i < MAX_MAT_FX; i++)
+   {
       mFX[i] = NULL;
+      mFXId[i] = 0;
+   }
 }
 
 struct ShapeBaseDataProto
@@ -5020,7 +5023,7 @@ void ShapeBase::processFX()
 
    for (CollisionTimeout* ptr = mTimeoutList; ptr; ptr = ptr->next)
    {
-      GameBase* obj = static_cast<GameBase*>(Sim::findObject(ptr->objectNumber));
+      SceneObject* obj = static_cast<SceneObject*>(Sim::findObject(ptr->objectNumber));
       if (obj != NULL)
       {
          Point3F startPos, endPos;

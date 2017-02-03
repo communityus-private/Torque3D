@@ -82,7 +82,7 @@ class SFXProfile;
 
 typedef void* Light;
 
-#define MAX_MAT_FX 8
+#define MAX_MAT_FX 32
 
 //--------------------------------------------------------------------------
 
@@ -1179,7 +1179,7 @@ public:
    /// @}
 
    virtual void playFX(const Point3F& p, const Point3F& n, S32 matFxIndex);
-   void ShapeBase::processFX();
+   void processFX();
 
    /// @name Name & Skin tags
    /// @{
