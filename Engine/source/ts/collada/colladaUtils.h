@@ -117,6 +117,48 @@ namespace ColladaUtils
 
    ImportOptions& getOptions();
 
+   struct ExportData
+   {
+      struct detailLevel
+      {
+         OptimizedPolyList mesh;
+         S32 detailLevelId;
+         Map<int, int> materialRefList;
+      };
+
+      struct colMesh
+      {
+         OptimizedPolyList mesh;
+         String colMeshName;
+      };
+
+      Vector<detailLevel> detailLevels;
+      Vector<colMesh> colMeshes;
+      Vector<BaseMatInstance*> materials;
+
+      S32 hasDetailLevel(U32 dl)
+      {
+         for (U32 i = 0; i < detailLevels.size(); i++)
+         {
+            if (detailLevels[i].detailLevelId == dl)
+               return i;
+         }
+
+         return -1;
+      }
+
+      S32 hasMaterialInstance(BaseMatInstance* matInst)
+      {
+         for (U32 i = 0; i < materials.size(); i++)
+         {
+            if (materials[i] == matInst)
+               return i;
+         }
+
+         return -1;
+      }
+   };
+
    void convertTransform(MatrixF& m);
 
    void collapsePath(std::string& path);
@@ -139,8 +181,15 @@ namespace ColladaUtils
    void exportColladaMesh(TiXmlElement* rootNode, const OptimizedPolyList& mesh, const String& meshName, const Vector<String>& matNames);
    void exportColladaScene(TiXmlElement* rootNode, const String& meshName, const Vector<String>& matNames);
 
+   void exportColladaMaterials(TiXmlElement* rootNode, const ExportData& exportData, const Torque::Path& colladaFile);
+   void exportColladaMesh(TiXmlElement* rootNode, const ExportData& exportData, const String& meshName);
+   void exportColladaCollisionTriangles(TiXmlElement* meshNode, const ExportData& exportData, const U32 collisionIdx);
+   void exportColladaTriangles(TiXmlElement* meshNode, const ExportData& exportData, const U32 detailLevel, const String& meshName);
+   void exportColladaScene(TiXmlElement* rootNode, const ExportData& exportData, const String& meshName);
+
    // Export an OptimizedPolyList to a simple Collada file
    void exportToCollada(const Torque::Path& colladaFile, const OptimizedPolyList& mesh, const String& meshName = String::EmptyString);
+   void exportToCollada(const Torque::Path& colladaFile, const ExportData& exportData);
 };
 
 //-----------------------------------------------------------------------------

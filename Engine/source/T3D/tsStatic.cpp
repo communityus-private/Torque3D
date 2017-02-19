@@ -957,50 +957,172 @@ bool TSStatic::castRayRendered(const Point3F &start, const Point3F &end, RayInfo
 
 bool TSStatic::buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F &box, const SphereF &)
 {
-   if ( !mShapeInstance )
+   if (!mShapeInstance)
       return false;
 
    // This is safe to set even if we're not outputing 
-   polyList->setTransform( &mObjToWorld, mObjScale );
-   polyList->setObject( this );
+   polyList->setTransform(&mObjToWorld, mObjScale);
+   polyList->setObject(this);
 
-   if ( context == PLC_Export )
+   if (context == PLC_Export)
    {
       // Use highest detail level
       S32 dl = 0;
 
       // Try to call on the client so we can export materials
-      if ( isServerObject() && getClientObject() )
-         dynamic_cast<TSStatic*>(getClientObject())->mShapeInstance->buildPolyList( polyList, dl );
+      if (isServerObject() && getClientObject())
+         dynamic_cast<TSStatic*>(getClientObject())->mShapeInstance->buildPolyList(polyList, dl);
       else
-          mShapeInstance->buildPolyList( polyList, dl );
+         mShapeInstance->buildPolyList(polyList, dl);
    }
-   else if ( context == PLC_Selection )
+   else if (context == PLC_Selection)
    {
       // Use the last rendered detail level
       S32 dl = mShapeInstance->getCurrentDetail();
-      mShapeInstance->buildPolyListOpcode( dl, polyList, box );
+      mShapeInstance->buildPolyListOpcode(dl, polyList, box);
    }
    else
    {
       // Figure out the mesh type we're looking for.
-      MeshType meshType = ( context == PLC_Decal ) ? mDecalType : mCollisionType;
+      MeshType meshType = (context == PLC_Decal) ? mDecalType : mCollisionType;
 
-      if ( meshType == None )
+      if (meshType == None)
          return false;
-      else if ( meshType == Bounds )
-         polyList->addBox( mObjBox );
-      else if ( meshType == VisibleMesh )
-          mShapeInstance->buildPolyList( polyList, 0 );
+      else if (meshType == Bounds)
+         polyList->addBox(mObjBox);
+      else if (meshType == VisibleMesh)
+         mShapeInstance->buildPolyList(polyList, 0);
       else
       {
          // Everything else is done from the collision meshes
          // which may be built from either the visual mesh or
          // special collision geometry.
-         for ( U32 i = 0; i < mCollisionDetails.size(); i++ )
-            mShapeInstance->buildPolyListOpcode( mCollisionDetails[i], polyList, box );
+         for (U32 i = 0; i < mCollisionDetails.size(); i++)
+            mShapeInstance->buildPolyListOpcode(mCollisionDetails[i], polyList, box);
       }
    }
+
+   return true;
+}
+
+bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::ExportData* exportData, const Box3F &box, const SphereF &)
+{
+   if (!mShapeInstance)
+      return false;
+
+   if (mCollisionType == Bounds)
+   {
+      ColladaUtils::ExportData::colMesh* colMesh;
+      exportData->colMeshes.increment();
+      colMesh = &exportData->colMeshes.last();
+
+      colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
+      colMesh->mesh.setObject(this);
+
+      colMesh->mesh.addBox(mObjBox);
+
+      colMesh->colMeshName = String::ToString("Collision-%d", exportData->colMeshes.size());
+   }
+   else if (mCollisionType == VisibleMesh)
+   {
+      ColladaUtils::ExportData::colMesh* colMesh;
+      exportData->colMeshes.increment();
+      colMesh = &exportData->colMeshes.last();
+
+      colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
+      colMesh->mesh.setObject(this);
+
+      mShapeInstance->buildPolyList(&colMesh->mesh, 0);
+
+      colMesh->colMeshName = String::ToString("Collision-%d", exportData->colMeshes.size());
+   }
+   else if(mCollisionType == CollisionMesh)
+   {
+      // Everything else is done from the collision meshes
+      // which may be built from either the visual mesh or
+      // special collision geometry.
+      for (U32 i = 0; i < mCollisionDetails.size(); i++)
+      {
+         ColladaUtils::ExportData::colMesh* colMesh;
+         exportData->colMeshes.increment();
+         colMesh = &exportData->colMeshes.last();
+
+         colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
+         colMesh->mesh.setObject(this);
+
+         mShapeInstance->buildPolyListOpcode(mCollisionDetails[i], &colMesh->mesh, box);
+         
+         colMesh->colMeshName = String::ToString("Collision-%d", exportData->colMeshes.size());
+      }
+   }
+
+   //Next, process the LOD levels and materials.
+   if (isServerObject() && getClientObject())
+   {
+      TSStatic* clientShape = dynamic_cast<TSStatic*>(getClientObject());
+      U32 numDetails = clientShape->mShapeInstance->getNumDetails();
+
+      for (U32 i = 0; i < numDetails; i++)
+      {
+         TSShape::Detail detail = clientShape->mShapeInstance->getShape()->details[i];
+         String detailName = String::ToLower(clientShape->mShapeInstance->getShape()->getName(detail.nameIndex));
+
+         if(detailName.startsWith("collision") || detailName.startsWith("los"))
+            continue;
+
+         ColladaUtils::ExportData::detailLevel* curDetail;
+
+         S32 detailLevelIndex = exportData->hasDetailLevel(detail.size);
+         if (detailLevelIndex == -1)
+         {
+            exportData->detailLevels.increment();
+            curDetail = &exportData->detailLevels.last();
+            curDetail->detailLevelId = detail.size;
+         }
+         else
+         {
+            curDetail = &exportData->detailLevels[detailLevelIndex];
+         }
+
+         curDetail->mesh.setTransform(&mObjToWorld, mObjScale);
+         curDetail->mesh.setObject(this);
+
+         clientShape->mShapeInstance->buildPolyList(&curDetail->mesh, i);
+
+         //lastly, get material
+         for (U32 m = 0; m < curDetail->mesh.mMaterialList.size(); m++)
+         {
+            S32 matIdx = exportData->hasMaterialInstance(curDetail->mesh.mMaterialList[m]);
+
+            if (matIdx == -1)
+            {
+               //cool, haven't already got this material, so lets store it out
+               exportData->materials.push_back(curDetail->mesh.mMaterialList[m]);
+               curDetail->materialRefList.insert(m, exportData->materials.size() - 1);
+            }
+            else
+            {
+               curDetail->materialRefList.insert(m, matIdx);
+            }
+         }
+      }
+   }
+   else
+   {
+      /*U32 numDetails = mShapeInstance->getNumDetails();
+
+      for (U32 i = 0; i < numDetails; i++)
+      {
+         mShapeInstance->buildPolyList(polyList, i);
+      }*/
+   }
+
+   // Try to call on the client so we can export materials
+   /*if ( isServerObject() && getClientObject() )
+   dynamic_cast<TSStatic*>(getClientObject())->mShapeInstance->buildPolyList( polyList, dl );
+   else
+   mShapeInstance->buildPolyList( polyList, dl );*/
+   
 
    return true;
 }
