@@ -207,7 +207,6 @@ void GuiColorPickerCtrl::drawBlendBox(RectI &bounds, ColorF &c1, ColorF &c2, Col
    }
 }
 
-
 //--------------------------------------------------------------------------
 /// Function to draw a set of boxes blending throughout an array of colors
 void GuiColorPickerCtrl::drawBlendRangeBox(RectI &bounds, bool vertical, U8 numColors, ColorI *colors)

@@ -297,6 +297,8 @@ public:
 class GFXD3D11ShaderConstBuffer : public GFXShaderConstBuffer
 {
    friend class GFXD3D11Shader;
+   // Cache device context
+   ID3D11DeviceContext* mDeviceContext;
 
 public:
 

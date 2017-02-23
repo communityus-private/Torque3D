@@ -64,7 +64,7 @@ public:
 	void updateFaces();
 
 protected:
-
+   FileName mCubeMapFile;
    FileName mCubeFaceFile[6];
    GFXTexHandle mCubeFace[6];
 

@@ -51,14 +51,19 @@ GFXGLStateBlock::GFXGLStateBlock(const GFXStateBlockDesc& desc) :
       Map<GFXSamplerStateDesc, U32>::Iterator itr =  mSamplersMap.find(ssd);
       if(itr == mSamplersMap.end())
       {
-         glGenSamplers(1, &id);
+		   glGenSamplers(1, &id);
 
-         glSamplerParameteri(id, GL_TEXTURE_MIN_FILTER, minificationFilter(ssd.minFilter, ssd.mipFilter, 1) );
-         glSamplerParameteri(id, GL_TEXTURE_MAG_FILTER, GFXGLTextureFilter[ssd.magFilter]);
-         glSamplerParameteri(id, GL_TEXTURE_WRAP_S, GFXGLTextureAddress[ssd.addressModeU]);
-         glSamplerParameteri(id, GL_TEXTURE_WRAP_T, GFXGLTextureAddress[ssd.addressModeV]);
-         glSamplerParameteri(id, GL_TEXTURE_WRAP_R, GFXGLTextureAddress[ssd.addressModeW]);
-         if(static_cast< GFXGLDevice* >( GFX )->supportsAnisotropic() )
+		   glSamplerParameteri(id, GL_TEXTURE_MIN_FILTER, minificationFilter(ssd.minFilter, ssd.mipFilter, 1) );
+		   glSamplerParameteri(id, GL_TEXTURE_MAG_FILTER, GFXGLTextureFilter[ssd.magFilter]);
+		   glSamplerParameteri(id, GL_TEXTURE_WRAP_S, GFXGLTextureAddress[ssd.addressModeU]);
+		   glSamplerParameteri(id, GL_TEXTURE_WRAP_T, GFXGLTextureAddress[ssd.addressModeV]);
+		   glSamplerParameteri(id, GL_TEXTURE_WRAP_R, GFXGLTextureAddress[ssd.addressModeW]);
+         //compare modes
+         const bool comparison = ssd.samplerFunc != GFXCmpNever;
+         glSamplerParameteri(id, GL_TEXTURE_COMPARE_MODE, comparison ? GL_COMPARE_R_TO_TEXTURE_ARB : GL_NONE );
+         glSamplerParameteri(id, GL_TEXTURE_COMPARE_FUNC, GFXGLCmpFunc[ssd.samplerFunc]);
+
+         if (static_cast< GFXGLDevice* >(GFX)->supportsAnisotropic())
             glSamplerParameterf(id, GL_TEXTURE_MAX_ANISOTROPY_EXT, ssd.maxAnisotropy);
 
          mSamplersMap[ssd] = id;

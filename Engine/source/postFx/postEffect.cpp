@@ -144,6 +144,11 @@ GFX_ImplementTextureProfile( PostFxTextureProfile,
                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap,
                             GFXTextureProfile::NONE );
 
+GFX_ImplementTextureProfile( PostFxTextureSRGBProfile,
+                             GFXTextureProfile::DiffuseMap,
+                             GFXTextureProfile::Static | GFXTextureProfile::PreserveSize | GFXTextureProfile::NoMipmap | GFXTextureProfile::SRGB,
+                             GFXTextureProfile::NONE);
+
 GFX_ImplementTextureProfile( VRTextureProfile,
                             GFXTextureProfile::DiffuseMap,
                             GFXTextureProfile::PreserveSize |
@@ -306,6 +311,7 @@ PostEffect::PostEffect()
       mDeltaTimeSC( NULL ),
       mInvCameraMatSC( NULL )
 {
+   dMemset( mTexSRGB, 0, sizeof(bool) * NumTextures);
    dMemset( mActiveTextures, 0, sizeof( GFXTextureObject* ) * NumTextures );
    dMemset( mActiveNamedTarget, 0, sizeof( NamedTexTarget* ) * NumTextures );
    dMemset( mActiveTextureViewport, 0, sizeof( RectI ) * NumTextures );
@@ -357,6 +363,9 @@ void PostEffect::initPersistFields()
    addField( "texture", TypeImageFilename, Offset( mTexFilename, PostEffect ), NumTextures,
       "Input textures to this effect ( samplers ).\n"
       "@see PFXTextureIdentifiers" );
+
+   addField("textureSRGB", TypeBool, Offset(mTexSRGB, PostEffect), NumTextures,
+      "Set input texture to be sRGB");
 
    addField( "renderTime", TYPEID< PFXRenderTime >(), Offset( mRenderTime, PostEffect ),
       "When to process this effect during the frame." );
@@ -415,8 +424,11 @@ bool PostEffect::onAdd()
       if ( texFilename[0] != '/' )
          texFilename = scriptPath.getFullPath() + '/' + texFilename;
 
+      GFXTextureProfile *profile = &PostFxTextureProfile;
+      if (mTexSRGB[i])
+         profile = &PostFxTextureSRGBProfile;
       // Try to load the texture.
-      bool success = mTextures[i].set( texFilename, &PostFxTextureProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
+      bool success = mTextures[i].set( texFilename, profile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );
       if (!success)
          Con::errorf("Invalid Texture for PostEffect (%s), The Texture '%s' does not exist!", this->getName(), texFilename.c_str());
    }
@@ -670,15 +682,11 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
       Point2F offset((F32)viewport.point.x / (F32)targetSize.x, (F32)viewport.point.y / (F32)targetSize.y );
       Point2F scale((F32)viewport.extent.x / (F32)targetSize.x, (F32)viewport.extent.y / (F32)targetSize.y );
 
-      const bool hasTexelPixelOffset = GFX->getAdapterType() == Direct3D9;
-      const Point2F halfPixel(  hasTexelPixelOffset ? (0.5f / targetSize.x) : 0.0f, 
-                                hasTexelPixelOffset ? (0.5f / targetSize.y) : 0.0f );
-
       Point4F targetParams;
-      targetParams.x = offset.x + halfPixel.x;
-      targetParams.y = offset.y + halfPixel.y;
-      targetParams.z = offset.x + scale.x - halfPixel.x;
-      targetParams.w = offset.y + scale.y - halfPixel.y;
+      targetParams.x = offset.x;
+      targetParams.y = offset.y;
+      targetParams.z = offset.x + scale.x;
+      targetParams.w = offset.y + scale.y;
 
       mShaderConsts->set( mTargetViewportSC, targetParams );
    }
@@ -1184,18 +1192,6 @@ void PostEffect::process(  const SceneRenderState *state,
 
    if ( mTargetTex || mTargetDepthStencil )
    {
-
-#ifdef TORQUE_OS_XENON
-      // You may want to disable this functionality for speed reasons as it does
-      // add some overhead. The upside is it makes things "just work". If you
-      // re-work your post-effects properly, this is not needed.
-      //
-      // If this post effect doesn't alpha blend to the back-buffer, than preserve
-      // the active render target contents so they are still around the next time
-      // that render target activates
-      if(!mStateBlockData->getState().blendEnable)
-         GFX->getActiveRenderTarget()->preserve();
-#endif
 
       const RectI &oldViewport = GFX->getViewport();
       GFXTarget *oldTarget = GFX->getActiveRenderTarget();
