@@ -38,7 +38,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 
    float3 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb; //albedo
    float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0); //flags|smoothness|ao|metallic
-
+float3 glow = TORQUE_TEX2D( indirectLightingBuffer, IN.uv0 ).a*colorBuffer;
    bool emissive = getFlag(matInfo.r, 0);
    if (emissive)
    {
@@ -55,6 +55,6 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    float3 reflectColor = indirectLighting*colorBuffer;
    colorBuffer = diffuseColor+lerp(reflectColor,indirectLighting,frez);
    colorBuffer *= max(directLighting.rgb,float3(0,0,0));
-   
+   colorBuffer += glow;
    return hdrEncode( float4(colorBuffer.rgb, 1.0) );
 }

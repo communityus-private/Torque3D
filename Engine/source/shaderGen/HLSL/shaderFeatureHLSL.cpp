@@ -1932,11 +1932,17 @@ void ReflectCubeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList,
    Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget3));
    if (fd.features[MFT_isDeferred])
    {
+      Var *specularColor = (Var*)LangElement::find("specularColor");
+      if (!specularColor)
+      {
+         specularColor = new Var("specularColor", "float4");
+         meta->addStatement(new GenOp("   @ = float4(0,0,0,0);\r\n", new DecOp(specularColor)));
+      }
        //metalness: black(0) = color, white(1) = reflection
        if (fd.features[MFT_ToneMap])
-          meta->addStatement(new GenOp("   @ *= @;\r\n", targ, texCube));
+          meta->addStatement(new GenOp("   @ *= float4(@.rgb,@.a);\r\n", targ, texCube, specularColor));
        else
-          meta->addStatement(new GenOp("   @ = @;\r\n", targ, texCube));
+          meta->addStatement(new GenOp("   @ = float4(@.rgb,@.a);\r\n", targ, texCube, specularColor));
    }
    else
    {
