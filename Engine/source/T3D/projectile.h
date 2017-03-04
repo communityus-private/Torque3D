@@ -104,7 +104,7 @@ public:
    ExplosionData* waterExplosion;      // Water Explosion Datablock
    S32 waterExplosionId;               // Water Explosion ID
 
-   SplashData* splash;                 // Water Splash Datablock
+   ExplosionData* splash;              // Water Splash Datablock
    S32 splashId;                       // Water splash ID
 
    DecalData *decal;                   // (impact) Decal Datablock

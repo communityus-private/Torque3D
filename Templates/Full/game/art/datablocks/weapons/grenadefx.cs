@@ -261,34 +261,13 @@ datablock ParticleEmitterData(GrenadeSplashRingEmitter)
    particles = "GrenadeSplashRingParticle";
 };
 
-datablock SplashData(GrenadeSplash)
+datablock ExplosionData(GrenadeSplash)
 {
    // SplashData doesn't have a render function in the source, 
    // so everything but the emitter array is useless here.
    emitter[0] = GrenadeSplashEmitter;
    emitter[1] = GrenadeSplashMistEmitter;
    emitter[2] = GrenadeSplashRingEmitter;
-   
-    //numSegments = 15;
-    //ejectionFreq = 15;
-    //ejectionAngle = 40;
-    //ringLifetime = 0.5;
-    //lifetimeMS = 300;
-    //velocity = 4.0;
-    //startRadius = 0.0;
-    //acceleration = -3.0;
-    //texWrap = 5.0;
-    //texture = "art/images/particles//splash";
-
-    //colors[0] = "0.7 0.8 1.0 0.0";
-    //colors[1] = "0.7 0.8 1.0 0.3";
-    //colors[2] = "0.7 0.8 1.0 0.7";
-    //colors[3] = "0.7 0.8 1.0 0.0";
-
-    //times[0] = 0.0;
-    //times[1] = 0.4;
-    //times[2] = 0.8;
-    //times[3] = 1.0;
 };
 
 // ----------------------------------------------------------------------------

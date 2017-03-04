@@ -231,6 +231,7 @@ datablock ProjectileData( BulletProjectile )
    bounceFriction      = 0;
    isBallistic         = false;
    gravityMod          = 1;
+   splash = GrenadeSplash;
 };
 
 function BulletProjectile::onCollision(%this,%obj,%col,%fade,%pos,%normal)

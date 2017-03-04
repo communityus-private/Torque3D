@@ -219,7 +219,7 @@ void ProjectileData::initPersistFields()
    addField("waterExplosion", TYPEID< ExplosionData >(), Offset(waterExplosion, ProjectileData),
       "@brief Explosion datablock used when the projectile explodes underwater.\n\n");
 
-   addField("splash", TYPEID< SplashData >(), Offset(splash, ProjectileData),
+   addField("splash", TYPEID< ExplosionData >(), Offset(splash, ProjectileData),
       "@brief Splash datablock used to create splash effects as the projectile enters or leaves water\n\n");
 
    addField("decal", TYPEID< DecalData >(), Offset(decal, ProjectileData),
@@ -909,7 +909,7 @@ void Projectile::emitParticles(const Point3F& from, const Point3F& to, const Poi
          MatrixF trans = getTransform();
          trans.setPosition(rInfo.point);
 
-         Splash *splash = new Splash();
+         Explosion *splash = new Explosion();
          splash->onNewDataBlock(mDataBlock->splash, false);
          splash->setTransform(trans);
          splash->setInitialState(trans.getPosition(), Point3F(0.0, 0.0, 1.0));
@@ -937,7 +937,7 @@ void Projectile::emitParticles(const Point3F& from, const Point3F& to, const Poi
          MatrixF trans = getTransform();
          trans.setPosition(rInfo.point);
 
-         Splash *splash = new Splash();
+         Explosion *splash = new Explosion();
          splash->onNewDataBlock(mDataBlock->splash,false);
          splash->setTransform(trans);
          splash->setInitialState(trans.getPosition(), Point3F(0.0, 0.0, 1.0));
