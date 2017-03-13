@@ -39,7 +39,7 @@ public:
    virtual GFXFormat getFormat()
    {
       // TODO: Fix me!
-      return GFXFormatR8G8B8A8;
+      return GFXFormatR8G8B8A8_SRGB;
    }
    void makeActive();
    virtual bool present();

@@ -306,74 +306,77 @@ inline ColorF::ColorF(const F32 in_r,
 
 inline ColorF& ColorF::operator*=(const ColorF& in_mul)
 {
-   red   *= in_mul.red;
-   green *= in_mul.green;
-   blue  *= in_mul.blue;
-   alpha *= in_mul.alpha;
-
+   ColorF tmp = toLinear();
+   ColorF tmp1 = ColorF(in_mul).toLinear();
+   tmp.red   *= tmp1.red;
+   tmp.green *= tmp1.green;
+   tmp.blue  *= tmp1.blue;
+   tmp.alpha *= tmp1.alpha;
+   *this = tmp.toGamma();
    return *this;
 }
 
 inline ColorF ColorF::operator*(const ColorF& in_mul) const
 {
-   return ColorF(red   * in_mul.red,
-                 green * in_mul.green,
-                 blue  * in_mul.blue,
-                 alpha * in_mul.alpha);
+   ColorF tmp(*this);
+   tmp *= in_mul;
+   return tmp;
 }
 
 inline ColorF& ColorF::operator+=(const ColorF& in_rAdd)
 {
-   red   += in_rAdd.red;
-   green += in_rAdd.green;
-   blue  += in_rAdd.blue;
-   alpha += in_rAdd.alpha;
-
+   ColorF tmp = toLinear();
+   ColorF tmp1 = ColorF(in_rAdd).toLinear();
+   tmp.red += tmp1.red;
+   tmp.green += tmp1.green;
+   tmp.blue += tmp1.blue;
+   tmp.alpha += tmp1.alpha;
+   *this = tmp.toGamma();
    return *this;
 }
 
 inline ColorF ColorF::operator+(const ColorF& in_rAdd) const
 {
-   return ColorF(red   + in_rAdd.red,
-                  green + in_rAdd.green,
-                  blue  + in_rAdd.blue,
-                  alpha + in_rAdd.alpha);
+   ColorF temp(*this);
+   temp += in_rAdd;
+   return temp;
 }
 
 inline ColorF& ColorF::operator-=(const ColorF& in_rSub)
 {
-   red   -= in_rSub.red;
-   green -= in_rSub.green;
-   blue  -= in_rSub.blue;
-   alpha -= in_rSub.alpha;
-
+   ColorF tmp = toLinear();
+   ColorF tmp1 = ColorF(in_rSub).toLinear();
+   tmp.red -= tmp1.red;
+   tmp.green -= tmp1.green;
+   tmp.blue -= tmp1.blue;
+   tmp.alpha -= tmp1.alpha;
+   *this = tmp.toGamma();
    return *this;
 }
 
 inline ColorF ColorF::operator-(const ColorF& in_rSub) const
 {
-   return ColorF(red   - in_rSub.red,
-                 green - in_rSub.green,
-                 blue  - in_rSub.blue,
-                 alpha - in_rSub.alpha);
+   ColorF tmp(*this);
+   tmp -= in_rSub;
+   return tmp;
 }
 
 inline ColorF& ColorF::operator*=(const F32 in_mul)
 {
-   red   *= in_mul;
-   green *= in_mul;
-   blue  *= in_mul;
-   alpha *= in_mul;
-
+   ColorF tmp = toLinear();
+   tmp.red   *= in_mul;
+   tmp.green *= in_mul;
+   tmp.blue  *= in_mul;
+   tmp.alpha *= in_mul;
+   *this = tmp.toGamma();
    return *this;
 }
 
 inline ColorF ColorF::operator*(const F32 in_mul) const
 {
-   return ColorF(red   * in_mul,
-                  green * in_mul,
-                  blue  * in_mul,
-                  alpha * in_mul);
+   ColorF tmp(*this);
+   tmp *= in_mul;
+   return tmp;
 }
 
 inline ColorF& ColorF::operator/=(const F32 in_div)
@@ -381,11 +384,12 @@ inline ColorF& ColorF::operator/=(const F32 in_div)
    AssertFatal(in_div != 0.0f, "Error, div by zero...");
    F32 inv = 1.0f / in_div;
 
-   red   *= inv;
-   green *= inv;
-   blue  *= inv;
-   alpha *= inv;
-
+   ColorF tmp = toLinear();
+   tmp.red *= inv;
+   tmp.green *= inv;
+   tmp.blue *= inv;
+   tmp.alpha *= inv;
+   *this = tmp.toGamma();
    return *this;
 }
 
@@ -393,11 +397,9 @@ inline ColorF ColorF::operator/(const F32 in_div) const
 {
    AssertFatal(in_div != 0.0f, "Error, div by zero...");
    F32 inv = 1.0f / in_div;
-
-   return ColorF(red * inv,
-                  green * inv,
-                  blue  * inv,
-                  alpha * inv);
+   ColorF tmp(*this);
+   tmp /= inv;
+   return tmp;
 }
 
 inline ColorF ColorF::operator-() const
@@ -444,11 +446,15 @@ inline void ColorF::interpolate(const ColorF& in_rC1,
                     const ColorF& in_rC2,
                     const F32  in_factor)
 {
+   ColorF tmp = toLinear();
+   ColorF tmp2 = ColorF(in_rC1).toLinear();
+   ColorF tmp3 = ColorF(in_rC2).toLinear();
    F32 f2 = 1.0f - in_factor;
-   red   = (in_rC1.red   * f2) + (in_rC2.red   * in_factor);
-   green = (in_rC1.green * f2) + (in_rC2.green * in_factor);
-   blue  = (in_rC1.blue  * f2) + (in_rC2.blue  * in_factor);
-   alpha = (in_rC1.alpha * f2) + (in_rC2.alpha * in_factor);
+   tmp.red   = (tmp2.red   * f2) + (tmp3.red   * in_factor);
+   tmp.green = (tmp2.green * f2) + (tmp3.green * in_factor);
+   tmp.blue  = (tmp2.blue  * f2) + (tmp3.blue  * in_factor);
+   tmp.alpha = (tmp2.alpha * f2) + (tmp3.alpha * in_factor);
+   *this = tmp.toGamma();
 }
 
 inline void ColorF::clamp()
@@ -499,7 +505,8 @@ inline F32 ColorF::luminance()
    // ITU BT.709
    //return red * 0.2126f + green * 0.7152f + blue * 0.0722f;
    // ITU BT.601
-   return red * 0.3f + green * 0.59f + blue * 0.11f;
+   ColorF tmp = toLinear();
+   return tmp.red * 0.3f + tmp.green * 0.59f + tmp.blue * 0.11f;
 }
 
 //------------------------------------------------------------------------------
@@ -722,66 +729,64 @@ inline ColorI::ColorI(const ColorI& in_rCopy,
 
 inline ColorI& ColorI::operator*=(const F32 in_mul)
 {
-   red   = U8((F32(red)   * in_mul) + 0.5f);
-   green = U8((F32(green) * in_mul) + 0.5f);
-   blue  = U8((F32(blue)  * in_mul) + 0.5f);
-   alpha = U8((F32(alpha) * in_mul) + 0.5f);
-
+   ColorI tmp = toLinear();
+   tmp.red = U8((F32(tmp.red) * in_mul) + 0.5f);
+   tmp.green = U8((F32(tmp.green) * in_mul) + 0.5f);
+   tmp.blue = U8((F32(tmp.blue) * in_mul) + 0.5f);
+   tmp.alpha = U8((F32(tmp.alpha) * in_mul) + 0.5f);
+   *this = tmp.toGamma();
    return *this;
 }
 
 inline ColorI& ColorI::operator*=(const S32 in_mul)
 {
-   red   = red    * in_mul;
-   green = green  * in_mul;
-   blue  = blue   * in_mul;
-   alpha = alpha  * in_mul;
-
+   ColorI tmp = toLinear();
+   tmp.red = in_mul;
+   tmp.green *= in_mul;
+   tmp.blue *= in_mul;
+   tmp.alpha *= in_mul;
+   *this = tmp.toGamma();
    return *this;
 }
 
 inline ColorI& ColorI::operator/=(const S32 in_mul)
 {
    AssertFatal(in_mul != 0.0f, "Error, div by zero...");
-   red   = red    / in_mul;
-   green = green  / in_mul;
-   blue  = blue   / in_mul;
-   alpha = alpha  / in_mul;
-
+   ColorI tmp = toLinear();
+   tmp.red /= in_mul;
+   tmp.green /= in_mul;
+   tmp.blue /= in_mul;
+   tmp.alpha /= in_mul;
+   *this = tmp.toGamma();
    return *this;
 }
 
 inline ColorI ColorI::operator+(const ColorI &in_add) const
 {
-   ColorI tmp;
-
-   tmp.red   = red   + in_add.red;
-   tmp.green = green + in_add.green;
-   tmp.blue  = blue  + in_add.blue;
-   tmp.alpha = alpha + in_add.alpha;
-
+   ColorI tmp(*this);
+   tmp += in_add;
    return tmp;
 }
 
 inline ColorI ColorI::operator*(const F32 in_mul) const
 {
-   ColorI temp(*this);
-   temp *= in_mul;
-   return temp;
+   ColorI tmp(*this);
+   tmp *= in_mul;
+   return tmp;
 }
 
 inline ColorI ColorI::operator*(const S32 in_mul) const
 {
-   ColorI temp(*this);
-   temp *= in_mul;
-   return temp;
+   ColorI tmp(*this);
+   tmp *= in_mul;
+   return tmp;
 }
 
 inline ColorI ColorI::operator/(const S32 in_mul) const
 {
-   ColorI temp(*this);
-   temp /= in_mul;
-   return temp;
+   ColorI tmp(*this);
+   tmp /= in_mul;
+   return tmp;
 }
 
 inline bool ColorI::operator==(const ColorI& in_Cmp) const
@@ -796,11 +801,13 @@ inline bool ColorI::operator!=(const ColorI& in_Cmp) const
 
 inline ColorI& ColorI::operator+=(const ColorI& in_rAdd)
 {
-   red   += in_rAdd.red;
-   green += in_rAdd.green;
-   blue  += in_rAdd.blue;
-   alpha += in_rAdd.alpha;
-
+   ColorI tmp = toLinear();
+   ColorI tmp1 = ColorI(in_rAdd).toLinear();
+   tmp.red += tmp1.red;
+   tmp.green += tmp1.green;
+   tmp.blue += tmp1.blue;
+   tmp.alpha += tmp1.alpha;
+   *this = tmp.toGamma();
    return *this;
 }
 
@@ -808,11 +815,15 @@ inline void ColorI::interpolate(const ColorI& in_rC1,
                     const ColorI& in_rC2,
                     const F32  in_factor)
 {
+   ColorI tmp = toLinear();
+   ColorI tmp2 = ColorI(in_rC1).toLinear();
+   ColorI tmp3 = ColorI(in_rC2).toLinear();
    F32 f2= 1.0f - in_factor;
-   red   = U8(((F32(in_rC1.red)   * f2) + (F32(in_rC2.red)   * in_factor)) + 0.5f);
-   green = U8(((F32(in_rC1.green) * f2) + (F32(in_rC2.green) * in_factor)) + 0.5f);
-   blue  = U8(((F32(in_rC1.blue)  * f2) + (F32(in_rC2.blue)  * in_factor)) + 0.5f);
-   alpha = U8(((F32(in_rC1.alpha) * f2) + (F32(in_rC2.alpha) * in_factor)) + 0.5f);
+   tmp.red   = U8(((F32(tmp2.red)   * f2) + (F32(tmp3.red)   * in_factor)) + 0.5f);
+   tmp.green = U8(((F32(tmp2.green) * f2) + (F32(tmp3.green) * in_factor)) + 0.5f);
+   tmp.blue  = U8(((F32(tmp2.blue)  * f2) + (F32(tmp3.blue)  * in_factor)) + 0.5f);
+   tmp.alpha = U8(((F32(tmp2.alpha) * f2) + (F32(tmp3.alpha) * in_factor)) + 0.5f);
+   *this = tmp;
 }
 
 inline U32 ColorI::getARGBPack() const

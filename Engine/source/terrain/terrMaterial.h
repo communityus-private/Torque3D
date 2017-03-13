@@ -39,8 +39,6 @@ protected:
    ///
    FileName mDiffuseMap;
 
-   bool mDiffuseMapSRGB;
-
    /// The size of the diffuse base map in meters 
    /// used to generate its texture coordinates.
    F32 mDiffuseSize;
@@ -120,8 +118,6 @@ public:
    bool useSideProjection() const { return mSideProjection; }
 
    F32 getParallaxScale() const { return mParallaxScale; }
-
-   bool isBaseTextureSRGB() const { return mDiffuseMapSRGB; }
 
 };
 

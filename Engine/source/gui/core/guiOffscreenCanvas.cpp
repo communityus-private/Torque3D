@@ -89,7 +89,7 @@ void GuiOffscreenCanvas::_setupTargets()
    // Update color
    if (!mTargetTexture.isValid() || mTargetSize != mTargetTexture.getWidthHeight())
    {
-      mTargetTexture.set( mTargetSize.x, mTargetSize.y, mTargetFormat, &GFXDefaultRenderTargetProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ), 1, 0 );
+      mTargetTexture.set( mTargetSize.x, mTargetSize.y, mTargetFormat, &GFXRenderTargetSRGBProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ), 1, 0 );
    }
 
    // Update depth if needed

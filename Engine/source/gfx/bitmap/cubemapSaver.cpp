@@ -99,7 +99,7 @@ namespace CubemapSaver
       for (U32 i = 0; i < CubeFaces; i++)
       {
          pTextures[i].set(faceSize, faceSize, renderTargetFmt,
-            &GFXDefaultRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
+            &GFXRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
             1, GFXTextureManager::AA_MATCH_BACKBUFFER);
 
          pTarget->attachTexture(GFXTextureTarget::RenderSlot(GFXTextureTarget::Color0 + i), pTextures[i]);

@@ -251,9 +251,11 @@ GFXTextureObject *GFXTextureManager::_lookupTexture( const char *hashName, const
 {
    GFXTextureObject *ret = hashFind( hashName );
 
-   // TODO: Profile checking HERE
+   //compare just the profile flags and not the entire profile, names could be different but otherwise identical flags
+   if (ret && (ret->mProfile->compareFlags(*profile)))
+      return ret;
 
-   return ret;
+   return NULL;
 }
 
 GFXTextureObject *GFXTextureManager::_lookupTexture( const DDSFile *ddsFile, const GFXTextureProfile *profile )
@@ -1108,7 +1110,7 @@ DefineEngineFunction(saveCompositeTexture, void, (const char* pathR, const char*
    {
       dSscanf(inputKeyString, "%i %i %i %i", &inputKey[0], &inputKey[1], &inputKey[2], &inputKey[3]);
    }
-   GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXDefaultRenderTargetProfile);
+   GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXStaticTextureSRGBProfile);
 }
 
 GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
@@ -1301,26 +1303,6 @@ void GFXTextureManager::deleteTexture( GFXTextureObject *texture )
    freeTexture( texture );
 }
 
-GFXFormat GFXTextureManager::_toGammaFormat(GFXFormat fmt)
-{
-   switch (fmt)
-   {
-   case GFXFormatR8G8B8:
-      return GFXFormatR8G8B8_SRGB;
-   case GFXFormatR8G8B8X8:      
-   case GFXFormatR8G8B8A8:
-      return GFXFormatR8G8B8A8_SRGB;
-   case GFXFormatBC1:
-      return GFXFormatBC1_SRGB;
-   case GFXFormatBC2:
-      return GFXFormatBC2_SRGB;
-   case GFXFormatBC3:
-      return GFXFormatBC3_SRGB;
-   default:
-      return fmt;
-   };
-}
-
 void GFXTextureManager::_validateTexParams( const U32 width, const U32 height, 
                                           const GFXTextureProfile *profile, 
                                           U32 &inOutNumMips, GFXFormat &inOutFormat  )
@@ -1353,7 +1335,7 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
    }
 
    if (profile->isSRGB())
-      testingFormat = _toGammaFormat(testingFormat);
+      testingFormat = ImageUtil::toSRGBFormat(testingFormat);
 
    // inOutFormat is not modified by this method
    GFXCardProfiler* cardProfiler = GFX->getCardProfiler();

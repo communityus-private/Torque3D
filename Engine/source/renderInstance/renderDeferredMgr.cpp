@@ -155,46 +155,41 @@ bool RenderDeferredMgr::_updateTargets()
       // reload materials, the conditioner needs to alter the generated shaders
    }
 
-   GFXFormat colorFormat = mTargetFormat;
-
-   /*
-   bool independentMrtBitDepth = GFX->getCardProfiler()->queryProfile("independentMrtBitDepth", false);
-   //If independent bit depth on a MRT is supported than just use 8bit channels for the albedo color.
-   if(independentMrtBitDepth)
-      colorFormat = GFXFormatR8G8B8A8;
-   */
+   // TODO: these formats should be passed in and not hard-coded
+   const GFXFormat colorFormat = GFXFormatR8G8B8A8_SRGB;
+   const GFXFormat matInfoFormat = GFXFormatR8G8B8A8;
 
    // andrewmac: Deferred Shading Color Buffer
    if (mColorTex.getFormat() != colorFormat || mColorTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
    {
-           mColorTarget.release();
-           mColorTex.set(mTargetSize.x, mTargetSize.y, colorFormat,
-                   &GFXDefaultRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
-                   1, GFXTextureManager::AA_MATCH_BACKBUFFER);
-           mColorTarget.setTexture(mColorTex);
+      mColorTarget.release();
+      mColorTex.set(mTargetSize.x, mTargetSize.y, colorFormat,
+         &GFXRenderTargetSRGBProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
+         1, GFXTextureManager::AA_MATCH_BACKBUFFER);
+      mColorTarget.setTexture(mColorTex);
  
-           for (U32 i = 0; i < mTargetChainLength; i++)
-                   mTargetChain[i]->attachTexture(GFXTextureTarget::Color1, mColorTarget.getTexture());
+      for (U32 i = 0; i < mTargetChainLength; i++)
+         mTargetChain[i]->attachTexture(GFXTextureTarget::Color1, mColorTarget.getTexture());
    }
  
    // andrewmac: Deferred Shading Material Info Buffer
-   if (mMatInfoTex.getFormat() != colorFormat || mMatInfoTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
+   if (mMatInfoTex.getFormat() != matInfoFormat || mMatInfoTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
    {
-                mMatInfoTarget.release();
-                mMatInfoTex.set(mTargetSize.x, mTargetSize.y, colorFormat,
-                        &GFXDefaultRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
-                        1, GFXTextureManager::AA_MATCH_BACKBUFFER);
-                mMatInfoTarget.setTexture(mMatInfoTex);
+      mMatInfoTarget.release();
+      mMatInfoTex.set(mTargetSize.x, mTargetSize.y, matInfoFormat,
+         &GFXRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
+         1, GFXTextureManager::AA_MATCH_BACKBUFFER);
+         mMatInfoTarget.setTexture(mMatInfoTex);
  
-                for (U32 i = 0; i < mTargetChainLength; i++)
-                        mTargetChain[i]->attachTexture(GFXTextureTarget::Color2, mMatInfoTarget.getTexture());
+      for (U32 i = 0; i < mTargetChainLength; i++)
+         mTargetChain[i]->attachTexture(GFXTextureTarget::Color2, mMatInfoTarget.getTexture());
    }
 
-   if (mLightMapTex.getFormat() != colorFormat || mLightMapTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
+   if (mLightMapTex.getFormat() != mTargetFormat || mLightMapTex.getWidthHeight() != mTargetSize || GFX->recentlyReset())
    {
       mLightMapTarget.release();
-      mLightMapTex.set(mTargetSize.x, mTargetSize.y, colorFormat,
-         &GFXDefaultRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
+      mLightMapTex.set(mTargetSize.x, mTargetSize.y, mTargetFormat,
+         &GFXRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
          1, GFXTextureManager::AA_MATCH_BACKBUFFER);
       mLightMapTarget.setTexture(mLightMapTex);
 

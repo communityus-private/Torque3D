@@ -173,6 +173,7 @@ ImplementEnumType( GFXFormat,
 
    { GFXFormatR8G8B8, "GFXFormatR8G8B8" },
    { GFXFormatR8G8B8A8, "GFXFormatR8G8B8A8" },
+   { GFXFormatR8G8B8A8_SRGB, "GFXFormatR8G8B8A8_SRGB" },
    { GFXFormatR8G8B8X8, "GFXFormatR8G8B8X8" },
    { GFXFormatR32F, "GFXFormatR32F" },
    { GFXFormatR5G6B5, "GFXFormatR5G6B5" },
