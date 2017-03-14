@@ -37,7 +37,7 @@ GFX_ImplementTextureProfile( BackBufferDepthProfile,
 
 GFXGLWindowTarget::GFXGLWindowTarget(PlatformWindow *win, GFXDevice *d)
       : GFXWindowTarget(win), mDevice(d), mContext(NULL), mFullscreenContext(NULL)
-      , mCopyFBO(0), mBackBufferFBO(0), mSecondaryWindow(false)
+      , mCopyFBO(0), mBackBufferFBO(0)
 {      
    win->appEvent.notify(this, &GFXGLWindowTarget::_onAppSignal);
 }
@@ -52,14 +52,7 @@ GFXGLWindowTarget::~GFXGLWindowTarget()
 
 void GFXGLWindowTarget::resetMode()
 {
-   // Do some validation...
-   bool fullscreen = mWindow->getVideoMode().fullScreen;
-   if (fullscreen && mSecondaryWindow)
-   {
-      AssertFatal(false, "GFXGLWindowTarget::resetMode - Cannot go fullscreen with secondary window!");
-   }
-
-   if(fullscreen != mWindow->isFullscreen())
+   if(mWindow->getVideoMode().fullScreen != mWindow->isFullscreen())
    {
       _teardownCurrentMode();
       _setupNewMode();

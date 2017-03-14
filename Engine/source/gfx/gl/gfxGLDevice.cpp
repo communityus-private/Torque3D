@@ -177,10 +177,6 @@ void GFXGLDevice::initGLState()
    Con::NotifyDelegate clbk( this, &GFXGLDevice::vsyncCallback );
    Con::addVariableNotify( "$pref::Video::disableVerticalSync", clbk );
 
-   //install vsync callback
-   Con::NotifyDelegate clbk(this, &GFXGLDevice::vsyncCallback);
-   Con::addVariableNotify("$pref::Video::disableVerticalSync", clbk);
-
    //OpenGL 3 need a binded VAO for render
    GLuint vao;
    glGenVertexArrays(1, &vao);
@@ -188,11 +184,6 @@ void GFXGLDevice::initGLState()
 
    //enable sRGB
    glEnable(GL_FRAMEBUFFER_SRGB);
-}
-
-void GFXGLDevice::vsyncCallback()
-{
-   PlatformGL::setVSync(smDisableVSync ? 0 : 1);
 }
 
 void GFXGLDevice::vsyncCallback()
@@ -795,8 +786,8 @@ void GFXGLDevice::setupGenericShaders( GenericShaderType type )
       ShaderData *shaderData;
 
       shaderData = new ShaderData();
-      shaderData->setField("OGLVertexShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/colorV.glsl"));
-      shaderData->setField("OGLPixelShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/colorP.glsl"));
+      shaderData->setField("OGLVertexShaderFile", "shaders/common/fixedFunction/gl/colorV.glsl");
+      shaderData->setField("OGLPixelShaderFile", "shaders/common/fixedFunction/gl/colorP.glsl");
       shaderData->setField("pixVersion", "2.0");
       shaderData->registerObject();
       mGenericShader[GSColor] =  shaderData->getShader();
@@ -805,8 +796,8 @@ void GFXGLDevice::setupGenericShaders( GenericShaderType type )
       Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
-      shaderData->setField("OGLVertexShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/modColorTextureV.glsl"));
-      shaderData->setField("OGLPixelShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/modColorTextureP.glsl"));
+      shaderData->setField("OGLVertexShaderFile", "shaders/common/fixedFunction/gl/modColorTextureV.glsl");
+      shaderData->setField("OGLPixelShaderFile", "shaders/common/fixedFunction/gl/modColorTextureP.glsl");
       shaderData->setSamplerName("$diffuseMap", 0);
       shaderData->setField("pixVersion", "2.0");
       shaderData->registerObject();
@@ -816,8 +807,8 @@ void GFXGLDevice::setupGenericShaders( GenericShaderType type )
       Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
-      shaderData->setField("OGLVertexShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/addColorTextureV.glsl"));
-      shaderData->setField("OGLPixelShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/addColorTextureP.glsl"));
+      shaderData->setField("OGLVertexShaderFile", "shaders/common/fixedFunction/gl/addColorTextureV.glsl");
+      shaderData->setField("OGLPixelShaderFile", "shaders/common/fixedFunction/gl/addColorTextureP.glsl");
       shaderData->setSamplerName("$diffuseMap", 0);
       shaderData->setField("pixVersion", "2.0");
       shaderData->registerObject();
@@ -827,8 +818,8 @@ void GFXGLDevice::setupGenericShaders( GenericShaderType type )
       Sim::getRootGroup()->addObject(shaderData);
 
       shaderData = new ShaderData();
-      shaderData->setField("OGLVertexShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/textureV.glsl"));
-      shaderData->setField("OGLPixelShaderFile", String(Con::getVariable("$Core::CommonShaderPath")) + String("/fixedFunction/gl/textureP.glsl"));
+      shaderData->setField("OGLVertexShaderFile", "shaders/common/fixedFunction/gl/textureV.glsl");
+      shaderData->setField("OGLPixelShaderFile", "shaders/common/fixedFunction/gl/textureP.glsl");
       shaderData->setSamplerName("$diffuseMap", 0);
       shaderData->setField("pixVersion", "2.0");
       shaderData->registerObject();

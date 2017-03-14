@@ -95,7 +95,7 @@ void GuiOffscreenCanvas::_setupTargets()
    // Update depth if needed
    if (mUseDepth && (!mTargetDepth.isValid() || mTargetSize != mTargetDepth.getWidthHeight()))
    {
-      mTargetDepth.set( mTargetSize.x, mTargetSize.y, GFXFormatD24S8, &GFXDefaultZTargetProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ), 1, 0 );
+      mTargetDepth.set( mTargetSize.x, mTargetSize.y, GFXFormatD24S8, &GFXRenderTargetProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ), 1, 0 );
       mTarget->attachTexture( GFXTextureTarget::RenderSlot(GFXTextureTarget::DepthStencil), mTargetDepth );
    }
 

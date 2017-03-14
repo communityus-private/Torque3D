@@ -192,21 +192,19 @@ U32 GFXGLDevice::getTotalVideoMemory()
 
 GFXWindowTarget *GFXGLDevice::allocWindowTarget( PlatformWindow *window )
 {
-   GFXGLWindowTarget* ggwt = new GFXGLWindowTarget(window, this);
+    AssertFatal(!mContext, "This GFXGLDevice is already assigned to a window");
+    
+    GFXGLWindowTarget* ggwt = 0;
+    if( !mContext )
+    {
+        // no context, init the device now
+        init(window->getVideoMode(), window);
+        ggwt = new GFXGLWindowTarget(window, this);
+        ggwt->registerResourceWithDevice(this);
+        ggwt->mContext = mContext;
+    }
 
-   //first window
-   if (!mContext)
-   {
-      init(window->getVideoMode(), window);
-      ggwt->mSecondaryWindow = false;
-   }
-   else
-      ggwt->mSecondaryWindow = true;
-
-   ggwt->registerResourceWithDevice(this);
-   ggwt->mContext = mContext;
-
-   return ggwt;
+    return ggwt;
 }
 
 GFXFence* GFXGLDevice::_createPlatformSpecificFence()

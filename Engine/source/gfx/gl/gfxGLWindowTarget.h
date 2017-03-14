@@ -50,9 +50,6 @@ public:
    virtual void resolveTo(GFXTextureObject* obj);
    
    void _onAppSignal(WindowId wnd, S32 event);
-
-   // create pixel format for the window
-   void createPixelFormat();
    
 private:
    friend class GFXGLDevice;
@@ -61,8 +58,6 @@ private:
    GFXTexHandle mBackBufferColorTex, mBackBufferDepthTex;
    Point2I size;   
    GFXDevice* mDevice;
-   /// Is this a secondary window
-   bool mSecondaryWindow;
    void* mContext;
    void* mFullscreenContext;
    void _teardownCurrentMode();
@@ -71,7 +66,6 @@ private:
    void _WindowPresent();
    //set this windows context to be current
    void _makeContextCurrent();
-   
 };
 
 #endif
