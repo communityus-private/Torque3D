@@ -416,7 +416,14 @@ bool AIPlayer::getAIMove(Move *movePtr)
    {
       // Update the aim position if we're aiming for an object
       if (mAimObject)
-         mAimLocation = mAimObject->getPosition() + mAimOffset;
+      {
+         MountedImage& image = mMountedImageList[0];
+         Point3F interceptionOffset = Point3F::Zero;
+         if (image.dataBlock && image.dataBlock->projectile)
+            interceptionOffset = (mAimObject->getVelocity() * getTargetDistance(mAimObject, false) / image.dataBlock->projectile->muzzleVelocity);
+
+         mAimLocation = mAimObject->getPosition() + interceptionOffset + mAimOffset;
+      }
       else
          if (!mAimLocationSet)
             mAimLocation = mMoveDestination;
