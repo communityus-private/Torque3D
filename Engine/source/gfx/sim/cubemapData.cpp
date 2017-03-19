@@ -125,6 +125,7 @@ void CubemapData::createMap()
        if( initSuccess )
        {
            mCubemap = GFX->createCubemap();
+           if (mCubeFace == NULL || mCubeFace->isNull()) return;
            mCubemap->initStatic( mCubeFace );
        }
    }
