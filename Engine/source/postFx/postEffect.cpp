@@ -154,7 +154,6 @@ GFX_ImplementTextureProfile( VRTextureProfile,
 GFX_ImplementTextureProfile( VRDepthProfile,
                             GFXTextureProfile::DiffuseMap,
                             GFXTextureProfile::PreserveSize |
-                            GFXTextureProfile::RenderTarget |
                             GFXTextureProfile::NoMipmap |
                             GFXTextureProfile::ZTarget,
                             GFXTextureProfile::NONE );
@@ -411,10 +410,6 @@ bool PostEffect::onAdd()
             texFilename[0] == '$' ||
             texFilename[0] == '#' )
          continue;
-
-      // If '/', then path is specified, open normally
-      if ( texFilename[0] != '/' )
-         texFilename = scriptPath.getFullPath() + '/' + texFilename;
 
       // Try to load the texture.
       bool success = mTextures[i].set( texFilename, &PostFxTextureProfile, avar( "%s() - (line %d)", __FUNCTION__, __LINE__ ) );

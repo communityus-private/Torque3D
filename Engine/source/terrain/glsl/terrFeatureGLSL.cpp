@@ -70,7 +70,7 @@ MODULE_END;
 
 
 TerrainFeatGLSL::TerrainFeatGLSL()
-   : mTorqueDep( "shaders/common/gl/torque.glsl" )
+   : mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/torque.glsl" ))
    {      
    addDependency( &mTorqueDep );
    }
@@ -297,8 +297,8 @@ U32 TerrainBaseMapFeatGLSL::getOutputTargets( const MaterialFeatureData &fd ) co
 }
 
 TerrainDetailMapFeatGLSL::TerrainDetailMapFeatGLSL()
-   :  mTorqueDep( "shaders/common/gl/torque.glsl" ),
-      mTerrainDep( "shaders/common/terrain/terrain.glsl" )
+   :  mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/torque.glsl" )),
+      mTerrainDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/terrain/terrain.glsl" ))
       
 {
    addDependency( &mTorqueDep );
@@ -568,7 +568,7 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    }
 
    // Add to the blend total.
-   meta->addStatement( new GenOp( "   @ += @;\r\n", blendTotal, detailBlend ) );
+   meta->addStatement(new GenOp("   @ = max( @, @ );\r\n", blendTotal, blendTotal, detailBlend));
 
    // If we had a parallax feature... then factor in the parallax
    // amount so that it fades out with the layer blending.
@@ -667,8 +667,8 @@ U32 TerrainDetailMapFeatGLSL::getOutputTargets( const MaterialFeatureData &fd ) 
 
 
 TerrainMacroMapFeatGLSL::TerrainMacroMapFeatGLSL()
-   :  mTorqueDep( "shaders/common/gl/torque.glsl" ),
-      mTerrainDep( "shaders/common/terrain/terrain.glsl" )
+   :  mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/torque.glsl" )),
+      mTerrainDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/terrain/terrain.glsl" ))
       
 {
    addDependency( &mTorqueDep );
@@ -820,7 +820,7 @@ void TerrainMacroMapFeatGLSL::processPix(   Vector<ShaderComponent*> &componentL
    }
 
    // Add to the blend total.
-   meta->addStatement( new GenOp( "   @ += @;\r\n", blendTotal, detailBlend ) );
+   meta->addStatement(new GenOp("   @ = max( @, @ );\r\n", blendTotal, blendTotal, detailBlend));
 
    Var *detailColor = (Var*)LangElement::find( "macroColor" ); 
    if ( !detailColor )
@@ -1067,8 +1067,12 @@ void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    Var *color = NULL;
+   Var *normal = NULL;
    if (fd.features[MFT_DeferredTerrainDetailMap])
+   {
        color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::RenderTarget1) );
+       normal = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::DefaultTarget) );
+   }
    else
        color = (Var*) LangElement::find( getOutputTargetVarName(ShaderFeature::DefaultTarget) );
 
@@ -1080,6 +1084,8 @@ void TerrainAdditiveFeatGLSL::processPix( Vector<ShaderComponent*> &componentLis
 
    meta->addStatement( new GenOp( "   clip( @ - 0.0001 );\r\n", blendTotal ) );
    meta->addStatement( new GenOp( "   @.a = @;\r\n", color, blendTotal ) );
+   if (normal)
+	   meta->addStatement(new GenOp("   @.a = @;\r\n", normal, blendTotal));
 
    output = meta;
 }

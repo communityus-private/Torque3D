@@ -33,6 +33,7 @@
 #include "core/util/autoPtr.h"
 
 #include "lighting/advanced/advancedLightBinManager.h"
+#include "ts/tsShape.h"
 
 LangElement * ShaderFeatureHLSL::setupTexSpaceMat( Vector<ShaderComponent*> &, // componentList
                                                    Var **texSpaceMat )
@@ -66,8 +67,8 @@ LangElement * ShaderFeatureHLSL::setupTexSpaceMat( Vector<ShaderComponent*> &, /
    {
       if(dStricmp((char*)T->type, "float4") == 0)
          meta->addStatement( new GenOp( "   @[1] = cross( @, normalize(@) ) * @.w;\r\n", *texSpaceMat, T, N, T ) );
-      else if(tangentW)
-         meta->addStatement( new GenOp( "   @[1] = cross( @, normalize(@) ) * @;\r\n", *texSpaceMat, T, N, tangentW ) );
+      else if (tangentW)
+         meta->addStatement(new GenOp("   @[1] = cross( @, normalize(@) ) * @;\r\n", *texSpaceMat, T, N, tangentW));
       else
          meta->addStatement( new GenOp( "   @[1] = cross( @, normalize(@) );\r\n", *texSpaceMat, T, N ) );
    }
@@ -852,7 +853,7 @@ Var* ShaderFeatureHLSL::addOutDetailTexCoord(   Vector<ShaderComponent*> &compon
 //****************************************************************************
 
 DiffuseMapFeatHLSL::DiffuseMapFeatHLSL()
-: mTorqueDep("shaders/common/torque.hlsl")
+: mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/torque.hlsl"))
 {
 	addDependency(&mTorqueDep);
 }
@@ -2089,10 +2090,7 @@ void ReflectCubeFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    if (fd.features[MFT_isDeferred])
    {
       Var* targ = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::RenderTarget1));
-      if (fd.features[MFT_DeferredSpecMap])
-         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b));\r\n", targ, targ, texCube, lerpVal));
-      else
-         meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b*128/5));\r\n", targ, targ, texCube, lerpVal));
+      meta->addStatement(new GenOp("   @.rgb = lerp( @.rgb, (@).rgb, (@.b));\r\n", targ, targ, texCube, lerpVal));
    }
    else
        meta->addStatement( new GenOp( "   @;\r\n", assignColor( texCube, blendOp, lerpVal ) ) );         
@@ -2170,7 +2168,7 @@ void ReflectCubeFeatHLSL::setTexData(  Material::StageData &stageDat,
 //****************************************************************************
 
 RTLightingFeatHLSL::RTLightingFeatHLSL()
-   : mDep( "shaders/common/lighting.hlsl" )
+   : mDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/lighting.hlsl" ))
 {
    addDependency( &mDep );
 }
@@ -2385,7 +2383,7 @@ ShaderFeature::Resources RTLightingFeatHLSL::getResources( const MaterialFeature
 //****************************************************************************
 
 FogFeatHLSL::FogFeatHLSL()
-   : mFogDep( "shaders/common/torque.hlsl" )
+   : mFogDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/torque.hlsl" ))
 {
    addDependency( &mFogDep );
 }
@@ -2516,7 +2514,7 @@ ShaderFeature::Resources FogFeatHLSL::getResources( const MaterialFeatureData &f
 //****************************************************************************
 
 VisibilityFeatHLSL::VisibilityFeatHLSL()
-   : mTorqueDep( "shaders/common/torque.hlsl" )
+   : mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/torque.hlsl" ))
 {
    addDependency( &mTorqueDep );
 }
@@ -2683,7 +2681,7 @@ void RenderTargetZeroHLSL::processPix( Vector<ShaderComponent*> &componentList, 
 //****************************************************************************
 
 HDROutHLSL::HDROutHLSL()
-   : mTorqueDep( "shaders/common/torque.hlsl" )
+   : mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/torque.hlsl" ))
 {
    addDependency( &mTorqueDep );
 }
@@ -2704,7 +2702,7 @@ void HDROutHLSL::processPix(  Vector<ShaderComponent*> &componentList,
 #include "T3D/fx/groundCover.h"
 
 FoliageFeatureHLSL::FoliageFeatureHLSL()
-: mDep( "shaders/common/foliage.hlsl" )
+: mDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/foliage.hlsl" ))
 {
    addDependency( &mDep );
 }
@@ -2850,7 +2848,7 @@ void ParticleNormalFeatureHLSL::processVert(Vector<ShaderComponent*> &componentL
 //****************************************************************************
 
 ImposterVertFeatureHLSL::ImposterVertFeatureHLSL()
-   :  mDep( "shaders/common/imposter.hlsl" )
+   :  mDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/imposter.hlsl" ))
 {
    addDependency( &mDep );
 }
@@ -2994,16 +2992,66 @@ void ImposterVertFeatureHLSL::determineFeature( Material *material,
       outFeatureData->features.addFeature( MFT_ImposterVert );
 }
 
+//****************************************************************************
+// HardwareSkinningFeatureHLSL
+//****************************************************************************
 
-//****************************************************************************
-// Vertex position
-//****************************************************************************
-void DeferredSkyHLSL::processVert( Vector<ShaderComponent*> &componentList, 
-                                    const MaterialFeatureData &fd )
-{
-   Var *outPosition = (Var*)LangElement::find( "hpos" );
+void HardwareSkinningFeatureHLSL::processVert(   Vector<ShaderComponent*> &componentList, 
+                                             const MaterialFeatureData &fd )
+{      
    MultiLine *meta = new MultiLine;
-   //meta->addStatement( new GenOp( "   @.w = @.z;\r\n", outPosition, outPosition ) );
+
+   Var *inPosition = (Var*)LangElement::find( "inPosition" );
+   Var *inNormal = (Var*)LangElement::find( "inNormal" );
+
+   if ( !inPosition )
+      inPosition = (Var*)LangElement::find( "position" );
+
+   if ( !inNormal )
+      inNormal = (Var*)LangElement::find( "normal" );
+
+   Var* posePos = new Var("posePos", "float3");
+   Var* poseNormal = new Var("poseNormal", "float3");
+   Var* poseMat = new Var("poseMat", "float4x3");
+   Var* poseRotMat = new Var("poseRotMat", "float3x3");
+   Var* nodeTransforms = (Var*)LangElement::find("nodeTransforms");
+
+   if (!nodeTransforms)
+   {
+      nodeTransforms = new Var("nodeTransforms", "float4x3");
+      nodeTransforms->uniform = true;
+      nodeTransforms->arraySize = TSShape::smMaxSkinBones;
+      nodeTransforms->constSortPos = cspPotentialPrimitive;
+   }
+   
+   U32 numIndices = mVertexFormat->getNumBlendIndices();
+   meta->addStatement( new GenOp( "   @ = 0.0;\r\n", new DecOp( posePos ) ) );  
+   meta->addStatement( new GenOp( "   @ = 0.0;\r\n", new DecOp( poseNormal ) ) );
+   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( poseMat ) ) );
+   meta->addStatement(new GenOp("   @;\r\n   int i;\r\n", new DecOp(poseRotMat)));
+
+   for (U32 i=0; i<numIndices; i++)
+   {
+      // NOTE: To keep things simple, we assume all 4 bone indices are used in each element chunk.
+      LangElement* inIndices = (Var*)LangElement::find(String::ToString( "blendIndices%d", i ));
+      LangElement* inWeights = (Var*)LangElement::find(String::ToString( "blendWeight%d", i ));
+       
+      AssertFatal(inIndices && inWeights, "Something went wrong here");
+      AssertFatal(poseMat && nodeTransforms && posePos && inPosition && inWeights && poseNormal && inNormal && poseRotMat, "Something went REALLY wrong here");
+      
+      meta->addStatement( new GenOp( "   for (i=0; i<4; i++) {\r\n" ) );
+         meta->addStatement( new GenOp( "      int poseIdx = int(@[i]);\r\n", inIndices ) );
+         meta->addStatement( new GenOp( "      float poseWeight = @[i];\r\n", inWeights) );
+         meta->addStatement( new GenOp( "      @ = @[poseIdx];\r\n", poseMat, nodeTransforms) );
+         meta->addStatement( new GenOp( "      @ = (float3x3)@;\r\n", poseRotMat, poseMat) );
+         meta->addStatement( new GenOp( "      @ += (mul(float4(@, 1), @)).xyz * poseWeight;\r\n", posePos, inPosition, poseMat) );
+         meta->addStatement( new GenOp( "      @ += (mul(@,@) * poseWeight);\r\n", poseNormal, inNormal, poseRotMat) );
+      meta->addStatement( new GenOp( "   }\r\n" ) );
+   }
+   
+   // Assign new position and normal
+   meta->addStatement( new GenOp( "   @ = @;\r\n", inPosition, posePos ) );
+   meta->addStatement( new GenOp( "   @ = normalize(@);\r\n", inNormal, poseNormal ) );
 
    output = meta;
 }

@@ -361,6 +361,28 @@ void getVectorFromAngles( VectorF &vec, F32 yawAng, F32 pitchAng )
    vec = pnt;
 }
 
+F32 getAngleBetweenVectors(VectorF vecA, VectorF vecB)
+{
+   F32 dot = mDot(vecA, vecB);
+   F32 lenSq1 = vecA.lenSquared();
+   F32 lenSq2 = vecB.lenSquared();
+   F32 angle = mAcos(dot / mSqrt(lenSq1 * lenSq2));
+
+   return angle;
+}
+
+F32 getSignedAngleBetweenVectors(VectorF vecA, VectorF vecB, VectorF norm)
+{
+   // angle in 0-180
+   F32 angle = getAngleBetweenVectors(vecA, vecB);
+   F32 sign = mSign(mDot(norm, mCross(vecA, vecB)));
+
+   // angle in -179-180
+   F32 signed_angle = angle * sign;
+
+   return signed_angle;
+}
+
 //-----------------------------------------------------------------------------
 
 void transformBoundingBox(const Box3F &sbox, const MatrixF &mat, const Point3F scale, Box3F &dbox)

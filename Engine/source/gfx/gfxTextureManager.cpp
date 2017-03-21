@@ -42,9 +42,9 @@ using namespace Torque;
 
 S32 GFXTextureManager::smTextureReductionLevel = 0;
 
-String GFXTextureManager::smMissingTexturePath("core/art/missingTexture");
-String GFXTextureManager::smUnavailableTexturePath("core/art/unavailable");
-String GFXTextureManager::smWarningTexturePath("core/art/warnmat");
+String GFXTextureManager::smMissingTexturePath(Con::getVariable("$Core::MissingTexturePath"));
+String GFXTextureManager::smUnavailableTexturePath(Con::getVariable("$Core::UnAvailableTexturePath"));
+String GFXTextureManager::smWarningTexturePath(Con::getVariable("$Core::WarningTexturePath"));
 
 GFXTextureManager::EventSignal GFXTextureManager::smEventSignal;
 
@@ -1085,21 +1085,7 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
       // NOTE: Does this belong here?
       if( inOutNumMips == 0 && !autoGenSupp )
       {
-         U32 currWidth  = width;
-         U32 currHeight = height;
-
-         inOutNumMips = 1;
-         do 
-         {
-            currWidth  >>= 1;
-            currHeight >>= 1;
-            if( currWidth == 0 )
-               currWidth  = 1;
-            if( currHeight == 0 ) 
-               currHeight = 1;
-
-            inOutNumMips++;
-         } while ( currWidth != 1 && currHeight != 1 );
+         inOutNumMips = mFloor(mLog2(mMax(width, height))) + 1;
       }
    }
 }

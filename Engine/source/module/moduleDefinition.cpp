@@ -51,6 +51,7 @@ mModuleId(StringTable->EmptyString()),
     mSynchronized( false ),
     mDeprecated( false ),
     mCriticalMerge( false ),
+    mOverrideExitingObjects(false),
     mModuleDescription( StringTable->EmptyString() ),
     mAuthor(StringTable->EmptyString()),
     mModuleGroup(StringTable->EmptyString()),
@@ -87,10 +88,11 @@ void ModuleDefinition::initPersistFields()
     addProtectedField( "ModuleId", TypeString, Offset(mModuleId, ModuleDefinition), &setModuleId, &defaultProtectedGetFn, "A unique string Id for the module.  It can contain any characters except a comma or semi-colon (the asset scope character)." );
     addProtectedField( "VersionId", TypeS32, Offset(mVersionId, ModuleDefinition), &setVersionId, &defaultProtectedGetFn, "The version Id.  Breaking changes to a module should use a higher version Id." );
     addProtectedField( "BuildId", TypeS32, Offset(mBuildId, ModuleDefinition), &setBuildId, &defaultProtectedGetFn, &writeBuildId, "The build Id.  Non-breaking changes to a module should use a higher build Id.  Optional: If not specified then the build Id will be zero." );
-    addProtectedField( "Enabled", TypeBool, Offset(mEnabled, ModuleDefinition), &setEnabled, &defaultProtectedGetFn, &writeEnabled, "Whether the module is enabled or not.  When disabled, it is effectively ignored.  Optional: If not specified then the module is enabled." );
+    addProtectedField( "enabled", TypeBool, Offset(mEnabled, ModuleDefinition), &setEnabled, &defaultProtectedGetFn, &writeEnabled, "Whether the module is enabled or not.  When disabled, it is effectively ignored.  Optional: If not specified then the module is enabled." );
     addProtectedField( "Synchronized", TypeBool, Offset(mSynchronized, ModuleDefinition), &setSynchronized, &defaultProtectedGetFn, &writeSynchronized, "Whether the module should be synchronized or not.  Optional: If not specified then the module is not synchronized." );
     addProtectedField( "Deprecated", TypeBool, Offset(mDeprecated, ModuleDefinition), &setDeprecated, &defaultProtectedGetFn, &writeDeprecated, "Whether the module is deprecated or not.  Optional: If not specified then the module is not deprecated." );
     addProtectedField( "CriticalMerge", TypeBool, Offset(mCriticalMerge, ModuleDefinition), &setDeprecated, &defaultProtectedGetFn, &writeCriticalMerge, "Whether the merging of a module prior to a restart is critical or not.  Optional: If not specified then the module is not merge critical." );
+    addProtectedField( "OverrideExistingObjects", TypeBool, Offset(mOverrideExitingObjects, ModuleDefinition), &setOverrideExistingObjects, &defaultProtectedGetFn, &writeOverrideExistingObjects, "Controls if when this module is loaded and the create function is executed, it will replace existing objects that share names or not.");
     addProtectedField( "Description", TypeString, Offset(mModuleDescription, ModuleDefinition), &setModuleDescription, &defaultProtectedGetFn, &writeModuleDescription, "The description typically used for debugging purposes but can be used for anything." );
     addProtectedField( "Author", TypeString, Offset(mAuthor, ModuleDefinition), &setAuthor, &defaultProtectedGetFn, &writeAuthor, "The author of the module." );
     addProtectedField( "Group", TypeString, Offset(mModuleGroup, ModuleDefinition), &setModuleGroup, &defaultProtectedGetFn, "The module group used typically when loading modules as a group." );

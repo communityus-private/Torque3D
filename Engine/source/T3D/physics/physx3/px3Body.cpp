@@ -417,58 +417,33 @@ void Px3Body::applyImpulse( const Point3F &origin, const Point3F &force )
 
 }
 
+void Px3Body::applyTorque( const Point3F &torque )
+{
+   AssertFatal(mActor, "Px3Body::applyImpulse - The actor is null!");
+
+   mWorld->releaseWriteLock();
+   physx::PxRigidDynamic *actor = mActor->is<physx::PxRigidDynamic>();
+   if (mIsEnabled && isDynamic())
+      actor->addTorque( px3Cast<physx::PxVec3>(torque), physx::PxForceMode::eFORCE, true);
+}
+
+void Px3Body::applyForce( const Point3F &force )
+{
+   AssertFatal(mActor, "Px3Body::applyTorque - The actor is null!");
+
+   mWorld->releaseWriteLock();
+   physx::PxRigidDynamic *actor = mActor->is<physx::PxRigidDynamic>();
+   if (mIsEnabled && isDynamic())
+      actor->addForce( px3Cast<physx::PxVec3>(force), physx::PxForceMode::eFORCE, true);
+}
+
 void Px3Body::findContact(SceneObject **contactObject,
    VectorF *contactNormal,
    Vector<SceneObject*> *outOverlapObjects) const
 {
-   // Calculate the sweep motion...
-   F32 halfCapSize = mOriginOffset;
-   F32 halfSmallCapSize = halfCapSize * 0.8f;
-   F32 diff = halfCapSize - halfSmallCapSize;
+}
 
-   F32 distance = diff + mSkinWidth + 0.01f;
-   physx::PxVec3 dir(0, 0, -1);
-
-   physx::PxScene *scene = mWorld->getScene();
-   physx::PxHitFlags hitFlags(physx::PxHitFlag::eDEFAULT);
-   physx::PxQueryFilterData filterData(physx::PxQueryFlag::eDYNAMIC | physx::PxQueryFlag::eSTATIC);
-   filterData.data.word0 = PX3_DEFAULT;
-   physx::PxSweepHit sweepHit;
-   physx::PxRigidDynamic *actor = mController->getActor();
-   physx::PxU32 shapeIndex;
-
-   bool hit = physx::PxRigidBodyExt::linearSweepSingle(*actor, *scene, dir, distance, hitFlags, sweepHit, shapeIndex, filterData);
-   if (hit)
-   {
-      PhysicsUserData *data = PhysicsUserData::cast(sweepHit.actor->userData);
-      if (data)
-      {
-         *contactObject = data->getObject();
-         *contactNormal = px3Cast<Point3F>(sweepHit.normal);
-      }
-   }
-
-   // Check for overlapped objects ( triggers )
-
-   if (!outOverlapObjects)
-      return;
-
-   filterData.data.word0 = PX3_TRIGGER;
-
-   const physx::PxU32 bufferSize = 10;
-   physx::PxOverlapBufferN<bufferSize> hitBuffer;
-   hit = scene->overlap(mGeometry, actor->getGlobalPose(), hitBuffer, filterData);
-   if (hit)
-   {
-      for (U32 i = 0; i < hitBuffer.nbTouches; i++)
-      {
-         PhysicsUserData *data = PhysicsUserData::cast(hitBuffer.touches[i].actor->userData);
-         if (data)
-            outOverlapObjects->push_back(data->getObject());
-      }
-   }
-
-}void Px3Body::moveKinematicTo(const MatrixF &transform)
+void Px3Body::moveKinematicTo(const MatrixF &transform)
 {
    AssertFatal(mActor, "Px3Body::moveKinematicTo - The actor is null!");
 

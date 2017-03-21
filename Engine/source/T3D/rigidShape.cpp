@@ -187,8 +187,6 @@ IMPLEMENT_CALLBACK( RigidShape, onLeaveLiquid, void, ( const char* objId, const 
 
 namespace {
 
-   const U32 sMoveRetryCount = 3;
-
    // Client prediction
    const S32 sMaxWarpTicks = 3;           // Max warp duration in ticks
    const S32 sMaxPredictionTicks = 30;    // Number of ticks to predict
@@ -732,6 +730,8 @@ void RigidShape::onRemove()
 void RigidShape::processTick(const Move* move)
 {     
    Parent::processTick(move);
+   if ( isMounted() )
+      return;
 
    // Warp to catch up to server
    if (mDelta.warpCount < mDelta.warpTicks) 
@@ -795,6 +795,8 @@ void RigidShape::processTick(const Move* move)
 void RigidShape::interpolateTick(F32 dt)
 {     
    Parent::interpolateTick(dt);
+   if ( isMounted() )
+      return;
 
    if(dt == 0.0f)
       setRenderPosition(mDelta.pos, mDelta.rot[1]);
@@ -813,6 +815,9 @@ void RigidShape::advanceTime(F32 dt)
    Parent::advanceTime(dt);
 
    updateFroth(dt);
+
+   if ( isMounted() )
+      return;
 
    // Update 3rd person camera offset.  Camera update is done
    // here as it's a client side only animation.

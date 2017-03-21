@@ -129,10 +129,10 @@ PrecipitationData::PrecipitationData()
 {
    soundProfile      = NULL;
 
-   mDropName         = StringTable->insert("");
-   mDropShaderName   = StringTable->insert("");
-   mSplashName       = StringTable->insert("");
-   mSplashShaderName = StringTable->insert("");
+   mDropName         = StringTable->EmptyString();
+   mDropShaderName   = StringTable->EmptyString();
+   mSplashName       = StringTable->EmptyString();
+   mSplashShaderName = StringTable->EmptyString();
 
    mDropsPerSide     = 4;
    mSplashesPerSide  = 2;
@@ -298,6 +298,7 @@ Precipitation::Precipitation()
    mSplashShaderCameraPosSC = NULL;
    mSplashShaderAmbientSC = NULL;
 
+   mMaxVBDrops = 5000;
 }
 
 Precipitation::~Precipitation()
@@ -963,7 +964,7 @@ void Precipitation::initRenderObjects()
 
    // Create a volitile vertex buffer which
    // we'll lock and fill every frame.
-   mRainVB.set(GFX, mMaxVBDrops * 4, GFXBufferTypeVolatile);
+   mRainVB.set(GFX, mMaxVBDrops * 4, GFXBufferTypeDynamic);
 
    // Init the index buffer for rendering the
    // entire or a partially filled vb.

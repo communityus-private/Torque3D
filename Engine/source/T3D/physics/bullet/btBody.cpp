@@ -356,6 +356,35 @@ void BtBody::applyImpulse( const Point3F &origin, const Point3F &force )
       mActor->activate();
 }
 
+void BtBody::applyTorque( const Point3F &torque )
+{
+   AssertFatal(mActor, "BtBody::applyTorque - The actor is null!");
+   AssertFatal(isDynamic(), "BtBody::applyTorque - This call is only for dynamics!");
+
+   mActor->applyTorque( btCast<btVector3>(torque) );
+
+   if (!mActor->isActive())
+      mActor->activate();
+}
+
+void BtBody::applyForce( const Point3F &force )
+{
+   AssertFatal(mActor, "BtBody::applyForce - The actor is null!");
+   AssertFatal(isDynamic(), "BtBody::applyForce - This call is only for dynamics!");
+
+   if (mCenterOfMass)
+   {
+      Point3F relForce(force);
+      mCenterOfMass->mulV(relForce);
+      mActor->applyCentralForce(btCast<btVector3>(relForce));
+   }
+   else
+      mActor->applyCentralForce(btCast<btVector3>(force));
+
+   if (!mActor->isActive())
+      mActor->activate();
+}
+
 Box3F BtBody::getWorldBounds()
 {   
    btVector3 min, max;
@@ -383,64 +412,6 @@ void BtBody::findContact(SceneObject **contactObject,
    VectorF *contactNormal,
    Vector<SceneObject*> *outOverlapObjects) const
 {
-   AssertFatal(mActor, "BtPlayer::findContact - The controller is null!");
-
-   VectorF normal;
-   F32 maxDot = -1.0f;
-
-   // Go thru the contact points... get the first contact.
-   //mWorld->getDynamicsWorld()->computeOverlappingPairs();
-   btOverlappingPairCache *pairCache = mWorld->getDynamicsWorld()->getBroadphase()->getOverlappingPairCache();
-
-   btBroadphasePairArray& pairArray = pairCache->getOverlappingPairArray();
-   U32 numPairs = pairArray.size();
-   btManifoldArray manifoldArray;
-
-   for (U32 i = 0; i < numPairs; i++)
-   {
-      const btBroadphasePair &pair = pairArray[i];
-
-      btBroadphasePair *collisionPair = pairCache->findPair(pair.m_pProxy0, pair.m_pProxy1);
-      if (!collisionPair || !collisionPair->m_algorithm)
-         continue;
-
-      btCollisionObject *other = (btCollisionObject*)pair.m_pProxy0->m_clientObject;
-      if (other == mActor)
-         other = (btCollisionObject*)pair.m_pProxy1->m_clientObject;
-
-     // AssertFatal(!outOverlapObjects->contains(PhysicsUserData::getObject(other->getUserPointer())),
-      //   "Got multiple pairs of the same object!");
-      outOverlapObjects->push_back(PhysicsUserData::getObject(other->getUserPointer()));
-
-      if (other->getCollisionFlags() & btCollisionObject::CF_NO_CONTACT_RESPONSE)
-         continue;
-
-      manifoldArray.clear();
-      collisionPair->m_algorithm->getAllContactManifolds(manifoldArray);
-
-      for (U32 j = 0; j < manifoldArray.size(); j++)
-      {
-         btPersistentManifold *manifold = manifoldArray[j];
-         btScalar directionSign = manifold->getBody0() == mActor ? 1.0f : -1.0f;
-
-         for (U32 p = 0; p < manifold->getNumContacts(); p++)
-         {
-            const btManifoldPoint &pt = manifold->getContactPoint(p);
-
-            // Test the normal... is it the most vertical one we got?
-            normal = btCast<Point3F>(pt.m_normalWorldOnB * directionSign);
-            F32 dot = mDot(normal, VectorF(0, 0, 1));
-            if (dot > maxDot)
-            {
-               maxDot = dot;
-
-               btCollisionObject *colObject = (btCollisionObject*)collisionPair->m_pProxy0->m_clientObject;
-               *contactObject = PhysicsUserData::getObject(colObject->getUserPointer());
-               *contactNormal = normal;
-            }
-         }
-      }
-   }
 }
 
 void BtBody::moveKinematicTo(const MatrixF &transform)

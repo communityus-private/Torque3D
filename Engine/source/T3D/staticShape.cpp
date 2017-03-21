@@ -232,22 +232,6 @@ void StaticShape::processTick(const Move* move)
       setImageTriggerState(0,move->trigger[0]);
       setImageTriggerState(1,move->trigger[1]);
    }
-
-   if (isMounted()) {
-      MatrixF mat;
-      mMount.object->getMountTransform( mMount.node, mMount.xfm, &mat );
-      Parent::setTransform(mat);
-      Parent::setRenderTransform(mat);
-   }
-}
-
-void StaticShape::interpolateTick(F32 delta)
-{
-   if (isMounted()) {
-      MatrixF mat;
-      mMount.object->getRenderMountTransform( delta, mMount.node, mMount.xfm, &mat );
-      Parent::setRenderTransform(mat);
-   }
 }
 
 void StaticShape::setTransform(const MatrixF& mat)
@@ -256,7 +240,7 @@ void StaticShape::setTransform(const MatrixF& mat)
    setMaskBits(PositionMask);
 }
 
-void StaticShape::onUnmount(ShapeBase*,S32)
+void StaticShape::onUnmount(SceneObject*,S32)
 {
    // Make sure the client get's the final server pos.
    setMaskBits(PositionMask);
@@ -268,7 +252,7 @@ void StaticShape::onUnmount(ShapeBase*,S32)
 U32 StaticShape::packUpdate(NetConnection *connection, U32 mask, BitStream *bstream)
 {
    U32 retMask = Parent::packUpdate(connection,mask,bstream);
-   if (bstream->writeFlag(mask & PositionMask | ExtendedInfoMask))
+   if (bstream->writeFlag(mask & (PositionMask | ExtendedInfoMask)))
    {
 
       // Write the transform (do _not_ use writeAffineTransform.  Since this is a static
