@@ -226,7 +226,7 @@ void LightManager::registerGlobalLights( const Frustum *frustum, bool staticLigh
    {
       // Cull the lights using the frustum.
       getSceneManager()->getContainer()->findObjectList( *frustum, lightMask, &activeLights );
-
+      /* supress light culling filter until we can sort out why that's misbehaving with dynamic cube mapping
       for (U32 i = 0; i < activeLights.size(); ++i)
       {
          if (!getSceneManager()->mRenderedObjectsList.contains(activeLights[i]))
@@ -235,7 +235,7 @@ void LightManager::registerGlobalLights( const Frustum *frustum, bool staticLigh
             --i;
          }
       }
-
+      */
       // Store the culling position for sun placement
       // later... see setSpecialLight.
       mCullPos = frustum->getPosition();
