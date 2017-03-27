@@ -65,3 +65,5 @@ exec("./vehicles/cheetahCar.cs");
 
 // Physics objects
 exec("./physics.cs");
+exec("./vehicles/CustomCheetahCar.cs");
+exec("./WalkableShapes/StartTrigger.cs");

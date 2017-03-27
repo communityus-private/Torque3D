@@ -145,6 +145,9 @@ SceneObject::SceneObject()
 
    mAccuTex = NULL;
    mPathfindingIgnore = false;
+//Walkable Shapes
+   mAttachedToObj = NULL;
+//Walkable Shapes
 }
 
 //-----------------------------------------------------------------------------
@@ -1184,6 +1187,15 @@ void SceneObject::getRenderMountTransform( F32 delta, S32 index, const MatrixF &
    outMat->mul( mRenderObjToWorld, mountTransform );
 }
 
+//Walkable Shapes
+//-----------------------------------------------------------------------------
+
+void SceneObject::getRelativeOrientation(SceneObject *attachedObj, Point3F &relPos, Point3F &relRot)
+{
+   relPos = relRot = Point3F::Zero;
+}
+
+//Walkable Shapes
 //=============================================================================
 //    Console API.
 //=============================================================================

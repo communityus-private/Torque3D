@@ -78,3 +78,8 @@ if(isFile("./gameObjects/GameObjectManager.cs"))
    exec("./gameObjects/GameObjectManager.cs");
    execGameObjects();  
 }
+
+// Load scripts for walkable shapes
+exec("./tsPathShape.cs");
+exec("./walkables.cs");
+exec("./walkableDemo.cs");

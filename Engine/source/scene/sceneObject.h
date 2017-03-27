@@ -778,6 +778,25 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
    // Note: This was placed in SceneObject to both ShapeBase and TSStatic could support it.
    public:
       GFXTextureObject* mAccuTex;
+   //Walkable Shapes
+   /// mAttachedToObj is how attachable classes identify themselves to objects that are
+   /// attached. Player classes need this notification so they won't warp their position
+   /// while attached. This value does not need networked. The attachable class is
+   /// responsible for setting it on the server and clients.
+   protected:
+      SceneObject *mAttachedToObj;
+   public:
+      SceneObject *getAttachedToObj() { return mAttachedToObj; }
+      void setAttachedToObj(SceneObject *obj) { mAttachedToObj = obj; }
+
+      // Fills the position and rotation for an attached object relative to the object that
+      // it's attached to.
+      virtual void getRelativeOrientation(SceneObject *attachedObj, Point3F &relPos, Point3F &relRot);
+
+      // Flags that an attached object needs a relative position/rotation update. This reduces 
+      // backstepping on a local control object by only updating when it is out of synch with
+      // the server.
+      virtual void flagAttachedUpdate(SceneObject *attachedObj, bool doUpdate) {}
 };
 
 #endif  // _SCENEOBJECT_H_
