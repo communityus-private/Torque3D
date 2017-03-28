@@ -75,7 +75,7 @@ protected:
    void buildConvex(const Box3F& box, Convex* convex);
    
    bool _createShape();
-   void _createPhysics();
+   
    void _updatePhysics();
 
    void _renderNormals( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );

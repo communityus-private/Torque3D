@@ -218,7 +218,7 @@ bool TSDynamic::onAdd()
    ResourceManager::get().getChangedSignal().notify( this, &TSDynamic::_onResourceChanged );
 
    addToScene();
-   _createPhysics();
+
    _updateShouldTick();
 
    return true;
@@ -280,27 +280,6 @@ bool TSDynamic::_createShape()
    return true;
 }
 
-void TSDynamic::_createPhysics()
-{
-   SAFE_DELETE(mPhysicsRep);
-
-   if (!PHYSICSMGR)
-      return;
-
-   TSShape *shape = mShapeInstance->getShape();
-   PhysicsCollision *colShape = NULL;
-   colShape = shape->buildColShape(false, getScale());
-
-   if (colShape)
-   {
-      PhysicsWorld *world = PHYSICSMGR->getWorld(isServerObject() ? "server" : "client");
-      mPhysicsRep = PHYSICSMGR->createBody();
-      mPhysicsRep->init(colShape, 0, PhysicsBody::BF_KINEMATIC, this, world);
-      mPhysicsRep->setTransform(getTransform());
-   }
-}
-
-
 void TSDynamic::prepCollision()
 {
    // Let the client know that the collision was updated
@@ -344,7 +323,7 @@ void TSDynamic::_updatePhysics()
       PhysicsWorld *world = PHYSICSMGR->getWorld( isServerObject() ? "server" : "client" );
       mPhysicsRep = PHYSICSMGR->createBody();
       mPhysicsRep->init( colShape, 0, 0, this, world );
-      mPhysicsRep->moveKinematicTo(getTransform());
+      mPhysicsRep->setTransform( getTransform() );
    }
 }
 
