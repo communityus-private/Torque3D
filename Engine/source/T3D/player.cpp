@@ -2801,6 +2801,8 @@ void Player::updateMove(const Move* move)
 
    // Acceleration due to gravity
    VectorF acc(0.0f, 0.0f, mGravity * mGravityMod * TickSec);
+   if (mAttachedToObj)
+      acc = VectorF::Zero;
 
    // Determine ground contact normal. Only look for contacts if
    // we can move and aren't mounted.
