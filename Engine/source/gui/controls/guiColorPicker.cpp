@@ -403,7 +403,7 @@ void GuiColorPickerCtrl::onRender(Point2I offset, const RectI& updateRect)
          U32 buf_x = offset.x + mSelectorPos.x + 1;
          U32 buf_y = resolution.y - (extent.y - (offset.y + mSelectorPos.y + 1));
 
-         GFXTexHandle bb( resolution.x, resolution.y, GFXFormatR8G8B8A8, &GFXDynamicTextureProfile, avar("%s() - bb (line %d)", __FUNCTION__, __LINE__) );
+         GFXTexHandle bb(resolution.x, resolution.y, GFXFormatR8G8B8A8_SRGB, &GFXRenderTargetSRGBProfile, avar("%s() - bb (line %d)", __FUNCTION__, __LINE__));
 
          Point2I tmpPt(buf_x, buf_y);
 
