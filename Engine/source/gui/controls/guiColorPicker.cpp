@@ -231,7 +231,7 @@ void GuiColorPickerCtrl::drawBlendRangeBox(RectI &bounds, bool vertical, U8 numC
    else
    {
       for (U16 i = 0; i < numColors - 1; i++)
-         col[i] = colors[i].toGamma();
+         col[i] = ColorF(colors[i]).toGamma();
    }
 
 
