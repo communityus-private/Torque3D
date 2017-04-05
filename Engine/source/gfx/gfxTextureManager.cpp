@@ -1107,7 +1107,7 @@ DefineEngineFunction(saveCompositeTexture, void, (const char* pathR, const char*
    {
       dSscanf(inputKeyString, "%i %i %i %i", &inputKey[0], &inputKey[1], &inputKey[2], &inputKey[3]);
    }
-   GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXStaticTextureProfile);
+   GFX->getTextureManager()->saveCompositeTexture(pathR, pathG, pathB, pathA, inputKey, saveAs, &GFXTexturePersistentProfile);
 }
 
 GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 inputKey[4],
