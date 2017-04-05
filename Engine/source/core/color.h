@@ -94,8 +94,7 @@ class ColorF
    U32 getRGBAPack() const;
    U32 getABGRPack() const;
 
-   operator ColorI() const;
-   //nolikey ColorF& operator= (const ColorI t){ return ColorF(t); };
+   operator ColorI() const;   
 
    void interpolate(const ColorF& in_rC1,
                     const ColorF& in_rC2,
@@ -196,7 +195,6 @@ class ColorI
    S32 convertFromHex(const String& hex) const;
 
    operator ColorF() const;
-   //nolikey const ColorI operator= (ColorF t){ return ColorI(t); };
 
    operator const U8*() const { return &red; }
    
