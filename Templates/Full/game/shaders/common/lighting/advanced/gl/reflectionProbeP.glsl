@@ -76,7 +76,7 @@ void main()
    vec4 color = vec4(1, 1, 1, 1);
 
    // Need world-space normal.
-   vec3 wsNormal = vec3(0,0,0);//vec4(vec4(normal, 1) * invViewMat).rgb;
+   vec3 wsNormal = vec4(vec4(normal, 1) * invViewMat).rgb;
    //vec3 wsNormal = mul(normal, IN.wsEyeDir.rgb);
    //vec3 wsNormal = vec3(0, 0, 1);
 
@@ -101,7 +101,7 @@ void main()
    }
    else
    {
-      vec3 reflectionVec = vec3(0,0,0);//reflect(wsEyeDir, vec4(normalize(wsNormal),1)).rgb;
+      vec3 reflectionVec = reflect(wsEyeDir, vec4(normalize(wsNormal),1)).rgb;
       float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 1.0);//bump up to 8 for finalization
       vec4 ref = vec4(reflectionVec, smoothness);
       color = textureLod(cubeMap, ref, 1);
