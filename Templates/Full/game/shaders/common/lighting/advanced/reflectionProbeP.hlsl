@@ -83,15 +83,24 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    float atten = attenuate( lightColor, lightAttenuation, lenLightV );
    clip( atten - 1e-6 );
    
+   // Normalize lightVec
+   lightVec /= lenLightV;
+   
+   // If we can do dynamic branching then avoid wasting
+   // fillrate on pixels that are backfacing to the light.
+   float nDotL = dot( lightVec, normal );
+   
    float4 color = float4(1, 1, 1, 1);
 
+   float4 colorSample = float4(1, 1, 1, 1);
+   
    // Need world-space normal.
    float3 wsNormal = mul(float4(normal, 1), invViewMat).rgb;
    //float3 wsNormal = mul(normal, IN.wsEyeDir.rgb);
    //float3 wsNormal = float3(0, 0, 1);
 
    //color = float4(wsNormal, 1);
-   
+   float Sat_NL_Att = saturate( nDotL * atten ) * lightBrightness;
    if (!useCubemap)
    {
       // Set the direction to the sky
@@ -111,16 +120,13 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    }
    else
    {
-      float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),1)).rgb;
-      float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 1.0);//bump up to 8 for finalization
+      float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),nDotL)).rgb;
+      float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
       float4 ref = float4(reflectionVec, smoothness);
       color = TORQUE_TEXCUBELOD(cubeMap, ref);
-      //color = TORQUE_TEXCUBE(cubeMap, reflectionVec);
       color.a = 1;
-
       color *= Intensity;
    }
-   //return hdrEncode(float4(color.rgb, 0.0));
 
-   return saturate(toLinear(color));
+   return lerp(colorSample,color,Sat_NL_Att);
 }
