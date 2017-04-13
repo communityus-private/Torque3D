@@ -1,8 +1,11 @@
 #include "../../../gl/hlslCompat.glsl"
+#include "shadergen:/autogenConditioners.h"
+
 #include "farFrustumQuad.glsl"
 #include "lightingUtils.glsl"
 #include "../../../gl/lighting.glsl"
 #include "../../../gl/torque.glsl"
+#line 6
 
 in vec4 pos;
 in vec4 wsEyeDir;
@@ -35,7 +38,7 @@ uniform mat4 invViewMat;
 
 uniform vec4 SkyColor;
 uniform vec4 GroundColor;
-uniform bool useCubemap;
+uniform float useCubemap;
 uniform float Intensity;
 uniform samplerCube cubeMap;
 
@@ -103,9 +106,10 @@ void main()
    {
       vec3 reflectionVec = reflect(wsEyeDir, vec4(normalize(wsNormal),1)).rgb;
       float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 1.0);//bump up to 8 for finalization
-      vec4 ref = vec4(reflectionVec, smoothness);
-      color = textureLod(cubeMap, ref, 1);
-      //color = TORQUE_TEXCUBE(cubeMap, reflectionVec);
+      vec3 ref = vec4(reflectionVec, smoothness).rgb;
+      vec4 tmpColor = texture(cubeMap, ref); 
+      color = tmpColor;
+      //
       color.a = 1;
 
       color *= Intensity;
