@@ -14,9 +14,8 @@ struct ConvexConnectP
 };
 
 TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
-TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 1);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 2);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 3);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 1);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 2);
 
 uniform float4 rtParams0;
 uniform float4 lightColor;
@@ -92,7 +91,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    
    float4 color = float4(1, 1, 1, 1);
 
-   float4 colorSample = float4(1, 1, 1, 1);
+   float4 colorSample = float4(0, 0, 0, 0);
    
    // Need world-space normal.
    float3 wsNormal = mul(float4(normal, 1), invViewMat).rgb;
