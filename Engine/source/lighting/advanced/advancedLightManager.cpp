@@ -491,6 +491,24 @@ void AdvancedLightManager::unregisterAllLights()
       mLightBinManager->clearAllLights();
 }
 
+void AdvancedLightManager::addSphereReflectProbe(ReflectProbeInfo* probeInfo)
+{
+   //Parent::registerGlobalLight(light, obj);
+
+   // Pass the volume lights to the bin manager.
+   if (mLightBinManager)
+      mLightBinManager->addSphereReflectionProbe(probeInfo);
+}
+
+void AdvancedLightManager::addConvexReflectProbe(ReflectProbeInfo* probeInfo)
+{
+   //Parent::registerGlobalLight(light, obj);
+
+   // Pass the volume lights to the bin manager.
+   if (mLightBinManager)
+      mLightBinManager->addConvexReflectionProbe(probeInfo);
+}
+
 bool AdvancedLightManager::setTextureStage(  const SceneData &sgData,
                                              const U32 currTexFlag,
                                              const U32 textureSlot, 

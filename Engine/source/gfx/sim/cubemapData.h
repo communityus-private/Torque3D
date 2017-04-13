@@ -63,6 +63,8 @@ public:
    // Update a static cubemap @ pos
 	void updateFaces();
 
+   void setCubeFaceFile(U32 index, FileName newFaceFile);
+
 protected:
    FileName mCubeMapFile;
    FileName mCubeFaceFile[6];

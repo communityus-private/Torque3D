@@ -40,6 +40,7 @@
 #include "gfx/gfxDebugEvent.h"
 #include "math/util/matrixSet.h"
 #include "console/consoleTypes.h"
+#include "math/mPolyhedron.h"
 
 const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "directLighting" );
 const String AdvancedLightBinManager::smBufferName( "directLighting" );
@@ -112,6 +113,19 @@ ConsoleDocClass( AdvancedLightBinManager,
    "@ingroup Lighting"
 );
 
+S32 QSORT_CALLBACK AscendingReflectProbeInfluence(const void* a, const void* b)
+{
+   // Debug Profiling.
+   PROFILE_SCOPE(AdvancedLightBinManager_AscendingReflectProbeInfluence);
+
+   // Fetch asset definitions.
+   const AdvancedLightBinManager::ReflectProbeBinEntry* pReflectProbeA = (AdvancedLightBinManager::ReflectProbeBinEntry*)a;
+   const AdvancedLightBinManager::ReflectProbeBinEntry* pReflectProbeB = (AdvancedLightBinManager::ReflectProbeBinEntry*)b;
+
+   // Sort.
+   return pReflectProbeB->probeInfo->mRadius - pReflectProbeA->probeInfo->mRadius;
+}
+
 AdvancedLightBinManager::AdvancedLightBinManager( AdvancedLightManager *lm /* = NULL */, 
                                                  ShadowMapManager *sm /* = NULL */, 
                                                  GFXFormat lightBufferFormat /* = GFXFormatR8G8B8A8 */ )
@@ -131,6 +145,9 @@ AdvancedLightBinManager::AdvancedLightBinManager( AdvancedLightManager *lm /* = 
    mTargetSizeType = RenderTexTargetBinManager::WindowSize;
 
    mMRTLightmapsDuringDeferred = true;
+
+   mReflectProbeMaterial = nullptr;
+   mReflectProbeDiffuseMaterial = nullptr;
 
    Con::NotifyDelegate callback( this, &AdvancedLightBinManager::_deleteLightMaterials );
    Con::addVariableNotify( "$pref::Shadows::filterMode", callback );
@@ -221,13 +238,94 @@ void AdvancedLightBinManager::addLight( LightInfo *light )
       curBin.push_back( lEntry );
 }
 
+void AdvancedLightBinManager::addSphereReflectionProbe(ReflectProbeInfo *probeInfo)
+{
+   // Get the light type.
+   /*const LightInfo::Type lightType = light->getType();
+
+   AssertFatal(lightType == LightInfo::Point ||
+      lightType == LightInfo::Spot, "Bogus light type.");
+
+   // Find a shadow map for this light, if it has one
+   ShadowMapParams *lsp = light->getExtended<ShadowMapParams>();
+   LightShadowMap *lsm = lsp->getShadowMap();
+   LightShadowMap *dynamicShadowMap = lsp->getShadowMap(true);
+
+   // Get the right shadow type.
+   ShadowType shadowType = ShadowType_None;
+   if (light->getCastShadows() &&
+      lsm && lsm->hasShadowTex() &&
+      !ShadowMapPass::smDisableShadows)
+      shadowType = lsm->getShadowType();
+
+   // Add the entry
+   LightBinEntry lEntry;
+   lEntry.lightInfo = light;
+   lEntry.shadowMap = lsm;
+   lEntry.dynamicShadowMap = dynamicShadowMap;
+   lEntry.lightMaterial = _getLightMaterial(lightType, shadowType, lsp->hasCookieTex());
+
+   if (lightType == LightInfo::Spot)
+      lEntry.vertBuffer = mLightManager->getConeMesh(lEntry.numPrims, lEntry.primBuffer);
+   else
+      lEntry.vertBuffer = mLightManager->getSphereMesh(lEntry.numPrims, lEntry.primBuffer);
+
+   // If it's a point light, push front, spot 
+   // light, push back. This helps batches.
+   Vector<LightBinEntry> &curBin = mLightBin;
+   if (light->getType() == LightInfo::Point)
+      curBin.push_front(lEntry);
+   else
+      curBin.push_back(lEntry);*/
+
+   ReflectProbeBinEntry pEntry;
+
+   pEntry.vertBuffer = mLightManager->getSphereMesh(pEntry.numPrims, pEntry.primBuffer);
+   pEntry.probeInfo = probeInfo;
+   //pEntry.probeMaterial = _getReflectProbeMaterial();
+
+   if (!mReflectProbeMaterial)
+      mReflectProbeMaterial = _getReflectProbeMaterial();
+
+   if (!mReflectProbeDiffuseMaterial)
+      mReflectProbeDiffuseMaterial = _getReflectProbeDiffuseMaterial();
+   //
+
+   mReflectProbeBin.push_back(pEntry);
+}
+
+void AdvancedLightBinManager::addConvexReflectionProbe(ReflectProbeInfo *probeInfo)
+{
+   ReflectProbeBinEntry pEntry;
+
+   pEntry.vertBuffer = probeInfo->vertBuffer;
+   pEntry.primBuffer = probeInfo->primBuffer;
+   pEntry.numPrims = probeInfo->numPrims;
+
+   pEntry.probeInfo = probeInfo;
+   //pEntry.probeMaterial = _getReflectProbeMaterial();
+
+   if (!mReflectProbeMaterial)
+      mReflectProbeMaterial = _getReflectProbeMaterial();
+
+   if (!mReflectProbeDiffuseMaterial)
+      mReflectProbeDiffuseMaterial = _getReflectProbeDiffuseMaterial();
+   //
+
+   mReflectProbeBin.push_back(pEntry);
+}
+
 void AdvancedLightBinManager::clearAllLights()
 {
    Con::setIntVariable("lightMetrics::activeLights", mLightBin.size());
    Con::setIntVariable("lightMetrics::culledLights", mNumLightsCulled);
+   Con::setIntVariable("lightMetrics::activeReflectionProbes", mReflectProbeBin.size());
+   Con::setIntVariable("lightMetrics::culledReflectProbes", 0/*mNumLightsCulled*/);
 
    mLightBin.clear();
    mNumLightsCulled = 0;
+
+   mReflectProbeBin.clear();
 }
 
 void AdvancedLightBinManager::render( SceneRenderState *state )
@@ -352,6 +450,109 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
       lsp->getOcclusionQuery()->end();
    }
 
+   //Draw reflection probes
+   //These render out to the indirectLighting buffer, so we'll swap up on the active target
+   /*GFXTextureTargetRef indirectLightingTarget = new GFXTextureTargetRef();
+   indirectLightingTarget->attachTexture(GFXTextureTarget::DepthStencil, getRenderPass()->getDepthTargetTexture());
+
+   // Preserve contents
+   GFX->getActiveRenderTarget()->preserve();
+
+   GFX->pushActiveRenderTarget();
+   GFX->setActiveRenderTarget(indirectLightingTarget);*/
+   //GFX->setViewport(mNamedTarget.getViewport());
+
+   //Order the probes by size, biggest to smallest
+   PROFILE_START(AdvancedLightManager_ReflectProbeRender);
+   dQsort(mReflectProbeBin.address(), mReflectProbeBin.size(), sizeof(const ReflectProbeBinEntry), AscendingReflectProbeInfluence);
+
+   //Diffuse color contribution
+   /*for (ReflectProbeBinIterator itr = mReflectProbeBin.begin(); itr != mReflectProbeBin.end(); itr++)
+   {
+      ReflectProbeBinEntry& curEntry = *itr;
+
+      // Set geometry
+      GFX->setVertexBuffer(curEntry.vertBuffer);
+      GFX->setPrimitiveBuffer(curEntry.primBuffer);
+
+      MatrixF probeTrans = MatrixF::Identity;
+      probeTrans.setPosition(curEntry.probeInfo->getPosition());
+      probeTrans.scale(curEntry.probeInfo->mRadius * 1.01f);
+
+      sgData.objTrans = &probeTrans;
+
+      if (mReflectProbeDiffuseMaterial && mReflectProbeDiffuseMaterial->matInstance)
+      {
+         mReflectProbeDiffuseMaterial->setProbeParameters(curEntry.probeInfo, state, worldToCameraXfm);
+
+         while (mReflectProbeDiffuseMaterial->matInstance->setupPass(state, sgData))
+         {
+            // Set transforms
+            matrixSet.setWorld(*sgData.objTrans);
+            mReflectProbeDiffuseMaterial->matInstance->setTransforms(matrixSet, state);
+            mReflectProbeDiffuseMaterial->matInstance->setSceneInfo(state, sgData);
+
+            if (curEntry.primBuffer)
+               GFX->drawIndexedPrimitive(GFXTriangleList, 0, 0, curEntry.vertBuffer->mNumVerts, 0, curEntry.numPrims);
+            else
+               GFX->drawPrimitive(GFXTriangleList, 0, curEntry.numPrims);
+         }
+      }
+   }*/
+
+   NamedTexTarget* lightInfoTarget = NamedTexTarget::find("indirectLighting");
+
+   GFXTextureObject *indirectLightTexObject = lightInfoTarget->getTexture();
+   if (!indirectLightTexObject) return;
+
+   GFXTextureTargetRef indirectLightTarget = GFX->allocRenderToTextureTarget();
+
+   indirectLightTarget->attachTexture(GFXTextureTarget::Color0, indirectLightTexObject);
+
+   GFX->getActiveRenderTarget()->preserve();
+   GFX->pushActiveRenderTarget();
+   GFX->setActiveRenderTarget(indirectLightTarget);
+
+   for (ReflectProbeBinIterator itr = mReflectProbeBin.begin(); itr != mReflectProbeBin.end(); itr++)
+   {
+      ReflectProbeBinEntry& curEntry = *itr;
+
+      if (curEntry.numPrims == 0)
+         continue;
+
+      // Set geometry
+      GFX->setVertexBuffer(curEntry.vertBuffer);
+      GFX->setPrimitiveBuffer(curEntry.primBuffer);
+
+      MatrixF probeTrans = MatrixF::Identity;
+      probeTrans.setPosition(curEntry.probeInfo->getPosition());
+      probeTrans.scale(curEntry.probeInfo->mRadius * 1.01f);
+
+      sgData.objTrans = &probeTrans;
+
+      if (mReflectProbeMaterial && mReflectProbeMaterial->matInstance)
+      {
+         mReflectProbeMaterial->setProbeParameters(curEntry.probeInfo, state, worldToCameraXfm);
+
+         while (mReflectProbeMaterial->matInstance->setupPass(state, sgData))
+         {
+            // Set transforms
+            matrixSet.setWorld(*sgData.objTrans);
+            mReflectProbeMaterial->matInstance->setTransforms(matrixSet, state);
+            mReflectProbeMaterial->matInstance->setSceneInfo(state, sgData);
+
+            if (curEntry.primBuffer)
+               GFX->drawIndexedPrimitive(GFXTriangleList, 0, 0, curEntry.vertBuffer->mNumVerts, 0, curEntry.numPrims);
+            else
+               GFX->drawPrimitive(GFXTriangleList, 0, curEntry.numPrims);
+         }
+      }
+   }
+
+   indirectLightTarget->resolve();
+   GFX->popActiveRenderTarget();
+   PROFILE_END();
+
    // Set NULL for active shadow map (so nothing gets confused)
    mShadowManager->setLightShadowMap(NULL);
    mShadowManager->setLightDynamicShadowMap(NULL);
@@ -438,6 +639,37 @@ void AdvancedLightBinManager::_deleteLightMaterials()
    mLightMaterials.clear();
 }
 
+AdvancedLightBinManager::ReflectProbeMaterialInfo* AdvancedLightBinManager::_getReflectProbeMaterial()
+{
+   PROFILE_SCOPE(AdvancedLightBinManager_getReflectProbeMaterial);
+
+   //ReflectProbeMaterialInfo *info = NULL;
+
+   if (!mReflectProbeMaterial)
+
+   // Now create the material info object.
+      mReflectProbeMaterial = new ReflectProbeMaterialInfo("ReflectionProbeMaterial", 
+      getGFXVertexFormat<AdvancedLightManager::LightVertex>());
+
+   return mReflectProbeMaterial;
+}
+
+AdvancedLightBinManager::ReflectProbeMaterialInfo* AdvancedLightBinManager::_getReflectProbeDiffuseMaterial()
+{
+   PROFILE_SCOPE(AdvancedLightBinManager__getReflectProbeDiffuseMaterial);
+
+   //ReflectProbeMaterialInfo *info = NULL;
+
+   /*if (!mReflectProbeDiffuseMaterial)
+   {
+      // Now create the material info object.
+      mReflectProbeDiffuseMaterial = new ReflectProbeMaterialInfo("ReflectionProbeDiffuseMaterial",
+         getGFXVertexFormat<AdvancedLightManager::LightVertex>());
+   }*/
+
+   return mReflectProbeDiffuseMaterial;
+}
+
 void AdvancedLightBinManager::_setupPerFrameParameters( const SceneRenderState *state )
 {
    PROFILE_SCOPE( AdvancedLightBinManager_SetupPerFrameParameters );
@@ -494,6 +726,26 @@ void AdvancedLightBinManager::_setupPerFrameParameters( const SceneRenderState *
                                           frustum.getPosition(), 
                                           farPlane, 
                                           vsFarPlane);
+   }
+
+   MatrixSet &matrixSet = getRenderPass()->getMatrixSet();
+   //matrixSet.restoreSceneViewProjection();
+
+   const MatrixF &worldToCameraXfm = matrixSet.getWorldToCamera();
+
+   MatrixF inverseViewMatrix = worldToCameraXfm;
+   //inverseViewMatrix.fullInverse();
+   //inverseViewMatrix.transpose();
+
+   //MatrixF inverseViewMatrix = MatrixF::Identity;
+
+   if (mReflectProbeMaterial)
+   {
+      mReflectProbeMaterial->setViewParameters(frustum.getNearDist(),
+         frustum.getFarDist(),
+         frustum.getPosition(),
+         farPlane,
+         vsFarPlane, inverseViewMatrix);
    }
 }
 
@@ -802,15 +1054,18 @@ bool LightMatInstance::setupPass( SceneRenderState *state, const SceneData &sgDa
    else // Internal pass, this is the add-specular/multiply-darken-color pass
       GFX->setStateBlock(mLitState[StaticLightLMGeometry]);
 
+   //probes?
+   GFX->setStateBlock(mLitState[DynamicLight]);
+
    return bRetVal;
 }
 
-bool LightMatInstance::init( const FeatureSet &features, const GFXVertexFormat *vertexFormat )
+bool LightMatInstance::init(const FeatureSet &features, const GFXVertexFormat *vertexFormat)
 {
    bool success = Parent::init(features, vertexFormat);
-   
+
    // If the initialization failed don't continue.
-   if ( !success || !mProcessedMaterial || mProcessedMaterial->getNumPasses() == 0 )   
+   if (!success || !mProcessedMaterial || mProcessedMaterial->getNumPasses() == 0)
       return false;
 
    mLightMapParamsSC = getMaterialParameterHandle("$lightMapParams");
@@ -821,7 +1076,7 @@ bool LightMatInstance::init( const FeatureSet &features, const GFXVertexFormat *
    const RenderPassData *rpd = mProcessedMaterial->getPass(0);
    AssertFatal(rpd, "No render pass data!");
    AssertFatal(rpd->mRenderStates[0], "No render state 0!");
-   
+
    // Get state block desc for normal (not wireframe, not translucent, not glow, etc)
    // render state
    GFXStateBlockDesc litState = rpd->mRenderStates[0]->getDesc();
@@ -855,4 +1110,289 @@ bool LightMatInstance::init( const FeatureSet &features, const GFXVertexFormat *
    mLitState[StaticLightLMGeometry] = GFX->createStateBlock(litState);
 
    return true;
+}
+
+//
+AdvancedLightBinManager::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String &matName,
+   const GFXVertexFormat *vertexFormat)
+   : matInstance(NULL),
+   zNearFarInvNearFar(NULL),
+   farPlane(NULL),
+   vsFarPlane(NULL),
+   negFarPlaneDotEye(NULL),
+   lightPosition(NULL),
+   lightDirection(NULL),
+   lightColor(NULL),
+   lightAttenuation(NULL),
+   lightRange(NULL),
+   lightAmbient(NULL),
+   lightTrilight(NULL),
+   lightSpotParams(NULL),
+   invViewMat(NULL)
+{
+   Material *mat = MATMGR->getMaterialDefinitionByName(matName);
+   if (!mat)
+      return;
+
+   matInstance = new ReflectProbeMatInstance(*mat);
+
+   const Vector<GFXShaderMacro> &macros = Vector<GFXShaderMacro>();
+
+   for (U32 i = 0; i < macros.size(); i++)
+      matInstance->addShaderMacro(macros[i].name, macros[i].value);
+
+   matInstance->init(MATMGR->getDefaultFeatures(), vertexFormat);
+
+   lightDirection = matInstance->getMaterialParameterHandle("$lightDirection");
+   lightAmbient = matInstance->getMaterialParameterHandle("$lightAmbient");
+   lightTrilight = matInstance->getMaterialParameterHandle("$lightTrilight");
+   lightSpotParams = matInstance->getMaterialParameterHandle("$lightSpotParams");
+   lightAttenuation = matInstance->getMaterialParameterHandle("$lightAttenuation");
+   lightRange = matInstance->getMaterialParameterHandle("$lightRange");
+   lightPosition = matInstance->getMaterialParameterHandle("$lightPosition");
+   farPlane = matInstance->getMaterialParameterHandle("$farPlane");
+   vsFarPlane = matInstance->getMaterialParameterHandle("$vsFarPlane");
+   negFarPlaneDotEye = matInstance->getMaterialParameterHandle("$negFarPlaneDotEye");
+   zNearFarInvNearFar = matInstance->getMaterialParameterHandle("$zNearFarInvNearFar");
+   lightColor = matInstance->getMaterialParameterHandle("$lightColor");
+   lightBrightness = matInstance->getMaterialParameterHandle("$lightBrightness");
+
+   invViewMat = matInstance->getMaterialParameterHandle("$invViewMat");
+
+   skyColor = matInstance->getMaterialParameterHandle("$SkyColor");
+   groundColor = matInstance->getMaterialParameterHandle("$GroundColor");
+   intensity = matInstance->getMaterialParameterHandle("$Intensity");
+
+   useCubemap = matInstance->getMaterialParameterHandle("$useCubemap");
+
+   cubemap = matInstance->getMaterialParameterHandle("$cubeMap");
+}
+
+AdvancedLightBinManager::ReflectProbeMaterialInfo::~ReflectProbeMaterialInfo()
+{
+   SAFE_DELETE(matInstance);
+}
+
+
+void AdvancedLightBinManager::ReflectProbeMaterialInfo::setViewParameters(const F32 _zNear,
+   const F32 _zFar,
+   const Point3F &_eyePos,
+   const PlaneF &_farPlane,
+   const PlaneF &_vsFarPlane, const MatrixF &_inverseViewMatrix)
+{
+   MaterialParameters *matParams = matInstance->getMaterialParameters();
+
+   matParams->setSafe(farPlane, *((const Point4F *)&_farPlane));
+
+   matParams->setSafe(vsFarPlane, *((const Point4F *)&_vsFarPlane));
+
+   if (negFarPlaneDotEye->isValid())
+   {
+      // -dot( farPlane, eyePos )
+      const F32 negFarPlaneDotEyeVal = -(mDot(*((const Point3F *)&_farPlane), _eyePos) + _farPlane.d);
+      matParams->set(negFarPlaneDotEye, negFarPlaneDotEyeVal);
+   }
+
+   matParams->setSafe(zNearFarInvNearFar, Point4F(_zNear, _zFar, 1.0f / _zNear, 1.0f / _zFar));
+
+   matParams->setSafe(invViewMat, _inverseViewMatrix);
+}
+
+void AdvancedLightBinManager::ReflectProbeMaterialInfo::setProbeParameters(const ReflectProbeInfo *probeInfo, const SceneRenderState* renderState, const MatrixF &worldViewOnly)
+{
+   //Set up the params
+   MaterialParameters *matParams = matInstance->getMaterialParameters();
+
+   ColorI col = ColorI::WHITE;
+
+   matParams->setSafe(lightColor, ColorI::WHITE);
+   matParams->setSafe(lightBrightness, 1.0f);
+
+   matParams->setSafe(lightRange, probeInfo->mRadius);
+
+   Point3F lightPos;
+   worldViewOnly.mulP(probeInfo->getPosition(), &lightPos);
+   matParams->setSafe(lightPosition, lightPos);
+
+   // Get the attenuation falloff ratio and normalize it.
+   Point3F attenRatio = Point3F(0.0f, 1.0f, 1.0f);
+   F32 total = attenRatio.x + attenRatio.y + attenRatio.z;
+   if (total > 0.0f)
+      attenRatio /= total;
+
+   F32 radius = probeInfo->mRadius;
+
+   Point2F attenParams((1.0f / radius) * attenRatio.y,
+      (1.0f / (radius * radius)) * attenRatio.z);
+
+   matParams->setSafe(lightAttenuation, attenParams);
+
+   NamedTexTarget* deferredTexTarget = NamedTexTarget::find("deferred");
+
+   GFXTextureObject *deferredTexObject = deferredTexTarget->getTexture();
+   if (!deferredTexObject) return;
+
+   GFX->setTexture(0, deferredTexObject);
+
+   NamedTexTarget* matInfoTexTarget = NamedTexTarget::find("matinfo");
+
+   GFXTextureObject *matInfoTexObject = matInfoTexTarget->getTexture();
+   if (!matInfoTexObject) return;
+
+   GFX->setTexture(3, matInfoTexObject);
+
+   if (probeInfo->mUseCubemap && probeInfo->mCubemap)
+   {
+      matParams->setSafe(useCubemap, 1.0f);
+
+      GFX->setCubeTexture(4, probeInfo->mCubemap->mCubemap);
+   }
+   else
+   {
+      GFX->setCubeTexture(4, NULL);
+      matParams->setSafe(useCubemap, 0.0f);
+   }
+
+   matParams->setSafe(skyColor, probeInfo->mSkyColor);
+   matParams->setSafe(groundColor, probeInfo->mGroundColor);
+   matParams->setSafe(intensity, probeInfo->mIntensity);
+}
+
+
+bool ReflectProbeMatInstance::init(const FeatureSet &features, const GFXVertexFormat *vertexFormat)
+{
+   bool success = Parent::init(features, vertexFormat);
+
+   // If the initialization failed don't continue.
+   if (!success || !mProcessedMaterial || mProcessedMaterial->getNumPasses() == 0)
+      return false;
+
+   mProbeParamsSC = getMaterialParameterHandle("$lightMapParams");
+
+   /*mLightMapParamsSC = getMaterialParameterHandle("$lightMapParams");
+
+   // Grab the state block for the first render pass (since this mat instance
+   // inserts a pass after the first pass)
+   AssertFatal(mProcessedMaterial->getNumPasses() > 0, "No passes created! Ohnoes");
+   const RenderPassData *rpd = mProcessedMaterial->getPass(0);
+   AssertFatal(rpd, "No render pass data!");
+   AssertFatal(rpd->mRenderStates[0], "No render state 0!");
+
+   // Get state block desc for normal (not wireframe, not translucent, not glow, etc)
+   // render state
+   GFXStateBlockDesc litState = rpd->mRenderStates[0]->getDesc();
+
+   // Create state blocks for each of the 3 possible combos in setupPass
+
+   //DynamicLight State: This will effect lightmapped and non-lightmapped geometry
+   // in the same way.
+   litState.separateAlphaBlendDefined = true;
+   litState.separateAlphaBlendEnable = false;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
+   mLitState[DynamicLight] = GFX->createStateBlock(litState);
+
+   // StaticLightNonLMGeometry State: This will treat non-lightmapped geometry
+   // in the usual way, but will not effect lightmapped geometry.
+   litState.separateAlphaBlendDefined = true;
+   litState.separateAlphaBlendEnable = false;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask;
+   mLitState[StaticLightNonLMGeometry] = GFX->createStateBlock(litState);
+
+   // StaticLightLMGeometry State: This will add specular information (alpha) but
+   // multiply-darken color information. 
+   litState.blendDest = GFXBlendSrcColor;
+   litState.blendSrc = GFXBlendZero;
+   litState.stencilMask = RenderDeferredMgr::OpaqueStaticLitMask;
+   litState.separateAlphaBlendDefined = true;
+   litState.separateAlphaBlendEnable = true;
+   litState.separateAlphaBlendSrc = GFXBlendOne;
+   litState.separateAlphaBlendDest = GFXBlendOne;
+   litState.separateAlphaBlendOp = GFXBlendOpAdd;
+   mLitState[StaticLightLMGeometry] = GFX->createStateBlock(litState);*/
+
+   return true;
+}
+
+bool ReflectProbeMatInstance::setupPass(SceneRenderState *state, const SceneData &sgData)
+{
+   // Go no further if the material failed to initialize properly.
+   if (!mProcessedMaterial ||
+      mProcessedMaterial->getNumPasses() == 0)
+      return false;
+
+   // Fetch the lightmap params
+   /*const LightMapParams *lmParams = sgData.lights[0]->getExtended<LightMapParams>();
+
+   // If no Lightmap params, let parent handle it
+   if (lmParams == NULL)
+      return Parent::setupPass(state, sgData);
+
+   // Defaults
+   bool bRetVal = true;
+
+   // What render pass is this...
+   if (mCurPass == -1)
+   {
+      // First pass, reset this flag
+      mInternalPass = false;
+
+      // Pass call to parent
+      bRetVal = Parent::setupPass(state, sgData);
+   }
+   else
+   {
+      // If this light is represented in a lightmap, it has already done it's 
+      // job for non-lightmapped geometry. Now render the lightmapped geometry
+      // pass (specular + shadow-darkening)
+      if (!mInternalPass && lmParams->representedInLightmap)
+         mInternalPass = true;
+      else
+         return Parent::setupPass(state, sgData);
+   }
+
+   // Set up the shader constants we need to...
+   if (mLightMapParamsSC->isValid())
+   {
+      // If this is an internal pass, special case the parameters
+      if (mInternalPass)
+      {
+         AssertFatal(lmParams->shadowDarkenColor.alpha == -1.0f, "Assumption failed, check unpack code!");
+         getMaterialParameters()->set(mLightMapParamsSC, lmParams->shadowDarkenColor);
+      }
+      else
+         getMaterialParameters()->set(mLightMapParamsSC, ColorF::WHITE);
+   }*/
+   bool bRetVal = Parent::setupPass(state, sgData);;
+
+   AssertFatal(mProcessedMaterial->getNumPasses() > 0, "No passes created! Ohnoes");
+   const RenderPassData *rpd = mProcessedMaterial->getPass(0);
+   AssertFatal(rpd, "No render pass data!");
+   AssertFatal(rpd->mRenderStates[0], "No render state 0!");
+
+   GFXStateBlockDesc litState = rpd->mRenderStates[0]->getDesc();
+
+   // Create state blocks for each of the 3 possible combos in setupPass
+
+   //DynamicLight State: This will effect lightmapped and non-lightmapped geometry
+   // in the same way.
+   //litState.separateAlphaBlendDefined = true;
+   //litState.separateAlphaBlendEnable = true;
+   //litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
+
+   litState.blendEnable = false;
+   litState.blendOp = GFXBlendOpMax;
+   litState.stencilDefined = true;
+   litState.stencilEnable = true;
+   litState.stencilWriteMask = 0x03;
+   litState.stencilMask = 0x03;
+   litState.stencilRef = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
+   litState.stencilPassOp = GFXStencilOpReplace;
+   litState.stencilFailOp = GFXStencilOpKeep;
+   litState.stencilZFailOp = GFXStencilOpKeep;
+   litState.stencilFunc = GFXCmpAlways;
+
+   // Now override stateblock with our own
+   GFX->setStateBlock(GFX->createStateBlock(litState));
+
+   return bRetVal;
 }

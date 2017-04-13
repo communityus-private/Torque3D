@@ -273,3 +273,75 @@ new CustomMaterial( AL_ParticlePointLightMaterial )
    
    pixVersion = 3.0;
 };
+
+//Reflection probe
+new ShaderData( ReflectionProbeShader )
+{
+   DXVertexShaderFile = "shaders/common/lighting/advanced/convexGeometryV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeP.hlsl";
+
+   //OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
+   //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
+
+   samplerNames[0] = "$deferredBuffer";
+   /*samplerNames[1] = "$shadowMap";
+   samplerNames[2] = "$dynamicShadowMap";
+   samplerNames[3] = "$cookieMap";
+   samplerNames[4] = "$gTapRotationTex";
+   samplerNames[5] = "$lightBuffer";
+   samplerNames[6] = "$colorBuffer";
+   samplerNames[7] = "$matInfoBuffer";*/
+   
+   pixVersion = 3.0;
+};
+
+// Convex-geometry light states
+new GFXStateBlockData( AL_ProbeState )
+{
+   blendDefined = true;
+   blendEnable = true;
+   blendSrc = GFXBlendOne;
+   blendDest = GFXBlendOne;
+   blendOp = GFXBlendOpAdd;
+   
+   zDefined = true;
+   zEnable = true;
+   zWriteEnable = false;
+   zFunc = GFXCmpGreaterEqual;
+
+   samplersDefined = true;
+   samplerStates[0] = SamplerClampPoint;  // G-buffer
+   mSamplerNames[0] = "deferredBuffer";
+   samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not use linear, these are perspective projections)
+   mSamplerNames[1] = "shadowMap";
+   samplerStates[2] = SamplerClampLinear;  // Shadow Map (Do not use linear, these are perspective projections)
+   mSamplerNames[2] = "colorBuffer";
+   samplerStates[3] = SamplerClampLinear; // matInfo
+   mSamplerNames[3] = "matInfoBuffer";   
+   samplerStates[4] = SamplerClampLinear;   // cubemap
+   
+   cullDefined = true;
+   cullMode = GFXCullCW;
+   
+   stencilDefined = true;
+   stencilEnable = true;
+   stencilFailOp = GFXStencilOpKeep;
+   stencilZFailOp = GFXStencilOpKeep;
+   stencilPassOp = GFXStencilOpKeep;
+   stencilFunc = GFXCmpLess;
+   stencilRef = 0;
+};
+
+new CustomMaterial( ReflectionProbeMaterial )
+{
+   shader = ReflectionProbeShader;
+   stateBlock = AL_ProbeState;
+   
+   sampler["deferredBuffer"] = "#deferred";
+   sampler["lightBuffer"] = "#indirectLighting";
+   sampler["matInfoBuffer"] = "#matinfo";
+   
+   target = "indirectLighting";
+   
+   pixVersion = 3.0;
+};
