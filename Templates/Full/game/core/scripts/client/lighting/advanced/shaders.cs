@@ -284,8 +284,9 @@ new ShaderData( ReflectionProbeShader )
    //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
 
    samplerNames[0] = "$deferredBuffer";
-   /*samplerNames[1] = "$shadowMap";
-   samplerNames[2] = "$dynamicShadowMap";
+   samplerNames[1] = "$colorBuffer";
+   samplerNames[2] = "$matInfoBuffer";
+   /*
    samplerNames[3] = "$cookieMap";
    samplerNames[4] = "$gTapRotationTex";
    samplerNames[5] = "$lightBuffer";
@@ -312,13 +313,10 @@ new GFXStateBlockData( AL_ProbeState )
    samplersDefined = true;
    samplerStates[0] = SamplerClampPoint;  // G-buffer
    mSamplerNames[0] = "deferredBuffer";
-   samplerStates[1] = SamplerClampPoint;  // Shadow Map (Do not use linear, these are perspective projections)
-   mSamplerNames[1] = "shadowMap";
-   samplerStates[2] = SamplerClampLinear;  // Shadow Map (Do not use linear, these are perspective projections)
-   mSamplerNames[2] = "colorBuffer";
-   samplerStates[3] = SamplerClampLinear; // matInfo
-   mSamplerNames[3] = "matInfoBuffer";   
-   samplerStates[4] = SamplerClampLinear;   // cubemap
+   samplerStates[1] = SamplerClampLinear;  // Shadow Map (Do not use linear, these are perspective projections)
+   mSamplerNames[1] = "colorBuffer";
+   samplerStates[2] = SamplerClampLinear; // matInfo
+   mSamplerNames[2] = "matInfoBuffer";   
    
    cullDefined = true;
    cullMode = GFXCullCW;
