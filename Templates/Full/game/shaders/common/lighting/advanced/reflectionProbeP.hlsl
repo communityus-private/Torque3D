@@ -91,8 +91,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
    
    float4 color = float4(1, 1, 1, 1);
 
-   float4 colorSample = float4(0, 0, 0, 0);
-   
    // Need world-space normal.
    float3 wsNormal = mul(float4(normal, 1), invViewMat).rgb;
    //float3 wsNormal = mul(normal, IN.wsEyeDir.rgb);
@@ -127,5 +125,5 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       color *= Intensity;
    }
 
-   return lerp(colorSample,color,Sat_NL_Att);
+   return float4(color.rgb,Sat_NL_Att);
 }
