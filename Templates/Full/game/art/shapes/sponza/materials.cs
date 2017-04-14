@@ -76,7 +76,7 @@ singleton Material(sponza_column_b)
    metalness[0] = "6";
    translucentBlendOp = "None";
    diffuseMap[0] = "art/shapes/sponza/Sponza_Column_b_diffuse.DDS";
-   normalMap[0] = "art/shapes/sponza/Sponza_Column_b_normal.DDS";
+   normalMap[0] = "art/shapes/sponza/Sponza_Floor_normal.DDS";
    roughMap[0] = "art/shapes/sponza/Sponza_Column_b_roughness.DDS";
    metalMap[0] = "art/shapes/sponza/Dielectric_metallic.DDS";
 };
@@ -89,7 +89,7 @@ singleton Material(sponza_arch)
    metalness[0] = "6";
    translucentBlendOp = "None";
    diffuseMap[0] = "art/shapes/sponza/Sponza_Arch_diffuse.DDS";
-   normalMap[0] = "art/shapes/sponza/Sponza_Arch_normal.DDS";
+   normalMap[0] = "art/shapes/sponza/Sponza_Floor_normal.DDS";
    roughMap[0] = "art/shapes/sponza/Sponza_Arch_roughness.DDS";
    metalMap[0] = "art/shapes/sponza/Dielectric_metallic.DDS";
 };
@@ -103,7 +103,7 @@ singleton Material(sponza_column_c)
    translucentBlendOp = "None";
    diffuseColor[1] = "White";
    diffuseMap[0] = "art/shapes/sponza/Sponza_Column_c_diffuse.DDS";
-   normalMap[0] = "art/shapes/sponza/Sponza_Column_c_normal.DDS";
+   normalMap[0] = "art/shapes/sponza/Sponza_Floor_normal.DDS";
    roughMap[0] = "art/shapes/sponza/Sponza_Column_c_roughness.DDS";
    metalMap[0] = "art/shapes/sponza/Dielectric_metallic.DDS";
 };
@@ -324,4 +324,41 @@ singleton Material(sponza_fabric_c)
    normalMap[0] = "art/shapes/sponza/Sponza_Fabric_Blue_normal.DDS";
    roughMap[0] = "art/shapes/sponza/Sponza_Fabric_roughness.DDS";
    metalMap[0] = "art/shapes/sponza/Sponza_Fabric_metallic.DDS";
+};
+
+singleton Material(column_a_mat)
+{
+   mapTo = "column_a";
+   diffuseMap[0] = "art/shapes/sponza/Sponza_Column_a_diffuse.DDS";
+   normalMap[0] = "art/shapes/sponza/Sponza_Floor_normal.DDS";
+   roughMap[0] = "art/shapes/sponza/Sponza_Bricks_a_Roughness.DDS";
+   metalMap[0] = "art/shapes/sponza/Dielectric_metallic.DDS";
+   diffuseColor[0] = "1 1 1 1";
+};
+
+singleton Material(bricks_mat)
+{
+   mapTo = "bricks";
+   diffuseMap[0] = "art/shapes/sponza/Sponza_Bricks_a_Albedo.DDS";
+   normalMap[0] = "art/shapes/sponza/Sponza_Floor_normal.DDS";
+   roughMap[0] = "art/shapes/sponza/Sponza_Bricks_a_Roughness.DDS";
+   metalMap[0] = "art/shapes/sponza/Dielectric_metallic.DDS";
+};
+
+singleton Material(flagpole_mat)
+{
+   mapTo = "flagpole";
+   diffuseMap[0] = "art/shapes/sponza/Sponza_FlagPole_diffuse.DDS";
+   normalMap[0] = "art/shapes/sponza/Sponza_FlagPole_normal.DDS";
+   roughMap[0] = "art/shapes/sponza/Sponza_FlagPole_roughness.DDS";
+   metalMap[0] = "art/shapes/sponza/Dielectric_metallic.DDS";
+};
+
+singleton Material(vase_hanging_mat)
+{
+   mapTo = "vase_hanging";
+   diffuseMap[0] = "art/shapes/sponza/VaseHanging_diffuse.DDS";
+   normalMap[0] = "art/shapes/sponza/VaseHanging_normal.DDS";
+   roughMap[0] = "art/shapes/sponza/VaseHanging_roughness.DDS";
+   metalMap[0] = "art/shapes/sponza/Metallic_metallic.DDS";
 };

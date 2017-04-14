@@ -1302,6 +1302,7 @@ function VisibilityDropdownToggle()
    {
       EVisibility.setVisible(true);
       visibilityToggleBtn.setStateOn(1);
+      EVisibility.setExtent("200 540");
    }
 }
 

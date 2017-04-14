@@ -64,7 +64,7 @@ function EditorLightingMenu::onMenuSelect( %this )
 
 function updateReflectionProbes()
 {
-   %probeIds = parseMissionGroupForIds("ReflectionProbe", "");
+   /*%probeIds = parseMissionGroupForIds("ReflectionProbe", "");
    %probeCount = getWordCount(%probeIds);
    
    for(%i=0; %i < %probeCount; %i++)
@@ -75,5 +75,7 @@ function updateReflectionProbes()
       %probe.bake(%path, 64);
    }
    
-   EWorldEditor.isDirty = true;
+   EWorldEditor.isDirty = true;*/
+   
+   Canvas.pushDialog(ProbeBakeDlg);
 }

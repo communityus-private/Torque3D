@@ -128,6 +128,9 @@ private:
    GFXVertexBufferHandle< VertexType > mVertexBuffer;
    GFXPrimitiveBufferHandle            mPrimitiveBuffer;
 
+   //Debug rendering
+   static bool smRenderReflectionProbes;
+
 public:
    ReflectionProbe();
    virtual ~ReflectionProbe();

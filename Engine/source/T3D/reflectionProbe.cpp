@@ -55,6 +55,7 @@
 
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
+bool ReflectionProbe::smRenderReflectionProbes = true;
 
 /*#include "platform/platform.h"
 #include "lighting/lightInfo.h"
@@ -221,6 +222,11 @@ void ReflectionProbe::initPersistFields()
    addProtectedField("Bake", TypeBool, Offset(mBake, ReflectionProbe),
       &_doBake, &defaultProtectedGetFn, "Regenerate Voxel Grid", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
    endGroup("Baking");
+
+   Con::addVariable("$Light::renderReflectionProbes", TypeBool, &ReflectionProbe::smRenderReflectionProbes,
+      "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
+      "@note Only works for shadow mapped lights.\n\n"
+      "@ingroup Lighting");
 
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
@@ -468,7 +474,7 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
    mUseCubemap = stream->readFlag();
    stream->read(&mCubemapName);
 
-   if (mCubemapName.isNotEmpty())
+   if (mCubemapName.isNotEmpty() && mProbeModeType == ProbeModeType::StaticCubemap)
       Sim::findObject(mCubemapName, mCubemap);
 
    //if (stream->readFlag())
@@ -684,7 +690,7 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       state->getRenderPass()->addInst(ri);
    }
 
-   if (gEditingMission)
+   if (gEditingMission && ReflectionProbe::smRenderReflectionProbes)
    {
       if (!mEditorShapeInst)
          return;
@@ -924,9 +930,9 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
    if (validCubemap)
    {
-      if (mCubemap->mCubemap)
-         mCubemap->updateFaces();
-      else
+      //if (mCubemap->mCubemap)
+      //   mCubemap->updateFaces();
+     // else
          mCubemap->createMap();
 
       mDirty = false;

@@ -52,7 +52,7 @@ new SimGroup(MissionGroup) {
       squareSize = "128";
       scaleU = "12";
       scaleV = "12";
-      Material = "BlankWhite";
+      Material = "Grid512_Grey_Mat";
       canSave = "1";
       canSaveDynamicFields = "1";
          enabled = "1";
@@ -67,7 +67,7 @@ new SimGroup(MissionGroup) {
       colorize = "0 0 0 1";
       rayleighScattering = "0.0035";
       sunScale = "1 1 1 1";
-      ambientScale = "1 1 1 1";
+      ambientScale = "0 0 0 1";
       fogScale = "1 1 1 1";
       exposure = "1";
       zOffset = "0";
@@ -127,6 +127,8 @@ new SimGroup(MissionGroup) {
       scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
+         bricks = "bricks_mat";
+         flagpole = "flagpole_mat";
    };
    new SimGroup(Probes) {
       canSave = "1";
@@ -1019,25 +1021,23 @@ new SimGroup(MissionGroup) {
       canSave = "1";
       canSaveDynamicFields = "1";
    };
-   new TSStatic() {
-      shapeName = "art/shapes/textures/PBRTEST2.dae";
-      playAmbient = "1";
-      meshCulling = "0";
-      originSort = "0";
-      collisionType = "Collision Mesh";
-      decalType = "Collision Mesh";
-      allowPlayerStep = "0";
-      alphaFadeEnable = "0";
-      alphaFadeStart = "100";
-      alphaFadeEnd = "150";
-      alphaFadeInverse = "0";
-      renderNormals = "0";
-      forceDetail = "-1";
-      position = "-19.6311 44.0018 7.11283";
+   new ReflectionProbe(Skylight) {
+      enabled = "1";
+      ProbeShape = "Sphere";
+      radius = "200";
+      ProbeMode = "Baked Cubemap";
+      Intensity = "1";
+      reflectionPath = "levels/Empty Room/probes/";
+      StaticCubemap = "DesertSkyCubemap";
+      SkyColor = "0.5 0.5 1 1";
+      GroundColor = "0.8 0.7 0.5 1";
+      Bake = "0";
+      position = "-24.1486 43.5601 53.3237";
       rotation = "1 0 0 0";
-      scale = "1 1 1";
+      scale = "200 200 200";
       canSave = "1";
       canSaveDynamicFields = "1";
+      persistentId = "0039b2a6-20c2-11e7-b558-91c869a431e1";
    };
 };
 //--- OBJECT WRITE END ---
