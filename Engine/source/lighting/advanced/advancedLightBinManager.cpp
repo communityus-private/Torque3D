@@ -1379,8 +1379,11 @@ bool ReflectProbeMatInstance::setupPass(SceneRenderState *state, const SceneData
    //litState.separateAlphaBlendEnable = true;
    //litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
 
-   litState.blendEnable = false;
-   litState.blendOp = GFXBlendOpMax;
+   litState.blendDefined = true;
+   litState.blendEnable = true;
+   litState.blendSrc = GFXBlendSrcAlpha;
+   litState.blendDest = GFXBlendOne;
+   litState.blendOp = GFXBlendOpAdd;
    litState.stencilDefined = true;
    litState.stencilEnable = true;
    litState.stencilWriteMask = 0x03;
