@@ -202,6 +202,7 @@ public:
 
    //Baking
    void bake(String outputPath, S32 resolution);
+   void renderFrame(GFXTextureTargetRef* target, U32 faceId, Point2I resolution);
 };
 
 typedef ReflectionProbe::ProbeShapeType ReflectProbeType;

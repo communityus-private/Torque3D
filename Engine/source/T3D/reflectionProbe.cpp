@@ -52,6 +52,9 @@
 #include "console/simPersistId.h"
 #include "math/mPolyhedron.impl.h"
 #include <string>
+#include "postFx/postEffectManager.h"
+#include "T3D/gameFunctions.h"
+#include "gui/core/guiOffscreenCanvas.h"
 
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
@@ -184,6 +187,9 @@ ReflectionProbe::~ReflectionProbe()
 
    if (mEditorShapeInst)
       SAFE_DELETE(mEditorShapeInst);
+
+   if (mCubemap)
+      mCubemap->deleteObject();
 }
 
 //-----------------------------------------------------------------------------
@@ -657,7 +663,10 @@ void ReflectionProbe::updateMaterial()
          }
 
          if (validCubemap)
+         {
             mCubemap->createMap();
+            mCubemap->updateFaces();
+         }
       }
 
       mProbeInfo->mUseCubemap = true;
@@ -746,7 +755,8 @@ void ReflectionProbe::submitLights(LightManager *lm, bool staticLighting)
    if (!mEnabled)
       return;
 
-   if ((mProbeModeType == SkyLight || mProbeModeType == BakedCubemap || mProbeModeType == StaticCubemap) && !mProbeInfo->mCubemap->mCubemap.isValid())
+   if ((mProbeModeType == SkyLight || mProbeModeType == BakedCubemap || mProbeModeType == StaticCubemap) && 
+      mProbeInfo->mCubemap && !mProbeInfo->mCubemap->mCubemap.isValid())
    {
       mProbeInfo->mCubemap->mCubemap = NULL;
    }
@@ -810,36 +820,161 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
    }
 
-   // store current matrices
-   GFXTransformSaver saver;
+   bool validCubemap = true;
 
-   // set projection to 90 degrees vertical and horizontal
-   F32 left, right, top, bottom;
-   F32 nearPlane = 0.1;
-   F32 farDist = 1000;
-
-   if (mProbeModeType == SkyLight)
+   for (U32 i = 0; i < 6; ++i)
    {
-      nearPlane = 1000;
-      farDist = 10000;
+      GFXTexHandle blendTex;
+      blendTex.set(resolution, resolution, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, "");
+
+      GFXTextureTargetRef mBaseTarget = GFX->allocRenderToTextureTarget();
+      mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
+
+      renderFrame(&mBaseTarget, i, Point2I(resolution, resolution));
+
+      mBaseTarget->resolve();
+
+      char fileName[256];
+      dSprintf(fileName, 256, "%s%s_%i.png", mReflectionPath.c_str(),
+         mProbeUniqueID.c_str(), i);
+
+      FileStream stream;
+      if (!stream.open(fileName, Torque::FS::File::Write))
+      {
+         Con::errorf("ReflectionProbe::bake(): Couldn't open cubemap face file fo writing " + String(fileName));
+         return;
+      }
+
+      GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
+      blendTex->copyToBmp(&bitmap);
+      bitmap.writeBitmap("png", stream);
+
+      if (Platform::isFile(fileName) && mCubemap)
+         mCubemap->setCubeFaceFile(i, FileName(fileName));
+      else
+         validCubemap = false;
+
+      bitmap.deleteImage();
    }
 
-   MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
-   GFX->setFrustum(left, right, bottom, top, nearPlane, farDist);
+   if (validCubemap)
+   {
+      if (mCubemap->mCubemap)
+         mCubemap->updateFaces();
+      else
+         mCubemap->createMap();
 
-   // We don't use a special clipping projection, but still need to initialize 
-   // this for objects like SkyBox which will use it during a reflect pass.
-   gClientSceneGraph->setNonClipProjection(GFX->getProjectionMatrix());
+      mDirty = false;
+   }
 
-   bool validCubemap = true;
+   setMaskBits(-1);
+}
+
+//
+//
+void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point2I resolution)
+{
+   if (!GFX->allowRender() || GFX->canCurrentlyRender())
+      return;
+
+   PROFILE_START(ReflectionProbe_CanvasPreRender);
+
+   GFX->setActiveRenderTarget(*target);
+   if (!GFX->getActiveRenderTarget())
+      return;
+
+   GFXTarget* renderTarget = GFX->getActiveRenderTarget();
+   if (renderTarget == NULL)
+      return;
+
+   // Make sure the root control is the size of the canvas.
+   Point2I size = renderTarget->getSize();
+   if (size.x == 0 || size.y == 0)
+      return;
+
+   PROFILE_END();
+
+   // Begin GFX
+   PROFILE_START(ReflectionProbe_GFXBeginScene);
+   bool beginSceneRes = GFX->beginScene();
+   PROFILE_END();
+
+   // Can't render if waiting for device to reset.   
+   if (!beginSceneRes)
+      return;
+
+   // Clear the current viewport area
+   GFX->clear(GFXClearZBuffer | GFXClearStencil | GFXClearTarget, gCanvasClearColor, 1.0f, 0);
+
+   // Make sure we have a clean matrix state 
+   // before we start rendering anything!   
+   //GFX->setWorldMatrix(MatrixF::Identity);
+   //GFX->setViewMatrix(MatrixF::Identity);
+   //GFX->setProjectionMatrix(MatrixF::Identity);
+
+   // Save the current transforms so we can restore
+   // it for child control rendering below.
+   GFXTransformSaver saver;
+   bool renderingToTarget = false;
+
+   // Set up the appropriate render style
+   Point2I renderSize = Point2I(512, 512);
+
+   // set up the camera and viewport stuff:
+   F32 wwidth;
+   F32 wheight;
+   F32 renderWidth = F32(renderSize.x);
+   F32 renderHeight = F32(renderSize.y);
+   F32 aspectRatio = renderWidth / renderHeight;
+
+   F32 nearPlane = 0.01;
+   F32 farPlane = 1000;
+   F32 fov = 90;
+
+   wheight = nearPlane * mTan(fov / 2.0f);
+   wwidth = aspectRatio * wheight;
+
+   F32 hscale = wwidth * 2.0f / renderWidth;
+   F32 vscale = wheight * 2.0f / renderHeight;
+
+   F32 left = 0;
+   F32 right = renderWidth * hscale - wwidth;
+   F32 top = 0;
+   F32 bottom = wheight - vscale * renderHeight;
+
+   Frustum frustum = Frustum(false, left, right, top, bottom, nearPlane, farPlane);
+   //frustum.set(false, left, right, top, bottom, nearPlane, farPlane);
+
+   GFXTarget *origTarget = GFX->getActiveRenderTarget();
+
+   /*if (mReflectPriority > 0)
+   {
+      // Get the total reflection priority.
+      F32 totalPriority = 0;
+      for (U32 i = 0; i < smAwakeTSCtrls.size(); i++)
+      if (smAwakeTSCtrls[i]->isVisible())
+      totalPriority += smAwakeTSCtrls[i]->mReflectPriority;
+
+      REFLECTMGR->update(mReflectPriority / totalPriority,
+      renderSize,
+      mLastCameraQuery);
+   }*/
+
+   GFX->setActiveRenderTarget(origTarget);
+
+   GFX->setFrustum(frustum);
+   MatrixF saveProjection = GFX->getProjectionMatrix();
+
+   // We're going to be displaying this render at size of this control in
+   // pixels - let the scene know so that it can calculate e.g. reflections
+   // correctly for that final display result.
+   gClientSceneGraph->setDisplayTargetResolution(renderSize);
 
    // Standard view that will be overridden below.
    VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
 
-   for (U32 i = 0; i < 6; ++i)
+   switch (faceId)
    {
-      switch (i)
-      {
       case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
          vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
          vUpVec = VectorF(0.0f, 1.0f, 0.0f);
@@ -864,85 +999,60 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
          vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
          vUpVec = VectorF(0.0f, 1.0f, 0.0f);
          break;
-      }
-
-      // create camera matrix
-      VectorF cross = mCross(vUpVec, vLookatPt);
-      cross.normalizeSafe();
-
-      MatrixF matView(true);
-      matView.setColumn(0, cross);
-      matView.setColumn(1, vLookatPt);
-      matView.setColumn(2, vUpVec);
-      matView.setPosition(getPosition());
-      matView.inverse();
-
-      GFX->setWorldMatrix(matView);
-
-      Point2I destSize = Point2I(resolution, resolution);
-      GFXTexHandle blendTex;
-      blendTex.set(destSize.x, destSize.y, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, "");
-
-      GFXTextureTargetRef mBaseTarget = GFX->allocRenderToTextureTarget();
-      mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
-      GFX->setActiveRenderTarget(mBaseTarget);
-
-      GFX->clear(GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 1.0f, 0);
-
-      SceneRenderState reflectRenderState
-         (
-         gClientSceneGraph,
-         SPT_Reflect,
-         SceneCameraState::fromGFX()
-         );
-
-      reflectRenderState.getMaterialDelegate().bind(REFLECTMGR, &ReflectionManager::getReflectionMaterial);
-      reflectRenderState.setDiffuseCameraTransform(matView);
-
-      // render scene
-      //LIGHTMGR->unregisterAllLights();
-      //LIGHTMGR->registerGlobalLights(&reflectRenderState.getCullingFrustum(), false);
-      gClientSceneGraph->renderScene(&reflectRenderState, -1);
-      //LIGHTMGR->unregisterAllLights();
-
-      mBaseTarget->resolve();
-
-      char fileName[256];
-      dSprintf(fileName, 256, "%s%s_%i.png", mReflectionPath.c_str(),
-         mProbeUniqueID.c_str(), i);
-
-      FileStream stream;
-      if (!stream.open(fileName, Torque::FS::File::Write))
-      {
-         Con::errorf("ReflectionProbe::bake(): Couldn't open cubemap face file fo writing " + String(fileName));
-         return;
-      }
-
-      GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
-      blendTex->copyToBmp(&bitmap);
-      bitmap.writeBitmap("png", stream);
-
-      if (Platform::isFile(fileName) && mCubemap)
-         mCubemap->setCubeFaceFile(i, FileName(fileName));
-      else
-         validCubemap = false;
    }
 
-   if (validCubemap)
-   {
-      //if (mCubemap->mCubemap)
-      //   mCubemap->updateFaces();
-     // else
-         mCubemap->createMap();
+   // create camera matrix
+   //VectorF cross = mCross(vUpVec, vLookatPt);
+   //cross.normalizeSafe();
 
-      mDirty = false;
-   }
+   MatrixF matView(true);
+   /*matView.setColumn(0, cross);
+   matView.setColumn(1, vLookatPt);
+   matView.setColumn(2, vUpVec);
+   matView.setPosition(getPosition());*/
 
-   setMaskBits(-1);
+   matView = getTransform();
+   matView.inverse();
+
+   GFX->setWorldMatrix(matView);
+
+   saveProjection = GFX->getProjectionMatrix();
+   MatrixF saveModelview = GFX->getWorldMatrix();
+   //mSaveViewport = guiViewport;
+   //Point2F mSaveWorldToScreenScale = GFX->getWorldToScreenScale();
+   //Frustum mSaveFrustum = GFX->getFrustum();
+   //mSaveFrustum.setTransform(getTransform());
+
+   // Set the default non-clip projection as some 
+   // objects depend on this even in non-reflect cases.
+   gClientSceneGraph->setNonClipProjection(saveProjection);
+
+   // Give the post effect manager the worldToCamera, and cameraToScreen matrices
+   PFXMGR->setFrameMatrices(saveModelview, saveProjection);
+
+   PROFILE_START(ReflectionProbe_GameRenderWorld);
+   //FrameAllocator::setWaterMark(0);
+
+   gClientSceneGraph->renderScene(SPT_Diffuse);
+
+   // renderScene leaves some states dirty, which causes problems if GameTSCtrl is the last Gui object rendered
+   GFX->updateStates();
+
+   /*AssertFatal(FrameAllocator::getWaterMark() == 0,
+      "Error, someone didn't reset the water mark on the frame allocator!");
+   FrameAllocator::setWaterMark(0);*/
+   PROFILE_END();
+
+   saver.restore();
+
+   PROFILE_START(ReflectionProbe_GFXEndScene);
+   GFX->endScene();
+   PROFILE_END();
 }
 
 DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath, S32 resolution), ("", 256),
    "@brief returns true if control object is inside the fog\n\n.")
 {
    object->bake(outputPath, resolution);
+   //object->renderFrame(false);
 }
