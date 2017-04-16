@@ -148,8 +148,7 @@ ReflectionProbe::ReflectionProbe()
    // be sent across the network to clients
    mNetFlags.set(Ghostable | ScopeAlways);
 
-   // Set it as a "static" object that casts shadows
-   mTypeMask |= StaticObjectType | StaticShapeObjectType | LightObjectType;
+   mTypeMask = LightObjectType | MarkerObjectType;
 
    // Make sure we the Material instance to NULL
    // so we don't try to access it incorrectly
