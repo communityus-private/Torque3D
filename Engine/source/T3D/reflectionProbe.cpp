@@ -821,6 +821,9 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
    bool validCubemap = true;
 
+   //Set this to true to use the prior method where it goes through the SPT_Reflect path for the bake
+   bool useReflectBake = false;
+
    for (U32 i = 0; i < 6; ++i)
    {
       GFXTexHandle blendTex;
@@ -829,7 +832,96 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       GFXTextureTargetRef mBaseTarget = GFX->allocRenderToTextureTarget();
       mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
 
-      renderFrame(&mBaseTarget, i, Point2I(resolution, resolution));
+      if (useReflectBake)
+      {
+         // set projection to 90 degrees vertical and horizontal
+         F32 left, right, top, bottom;
+         F32 nearPlane = 0.1;
+         F32 farDist = 1000;
+
+         if (mProbeModeType == SkyLight)
+         {
+            nearPlane = 1000;
+            farDist = 10000;
+         }
+
+         MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
+         GFX->setFrustum(left, right, bottom, top, nearPlane, farDist);
+
+         // We don't use a special clipping projection, but still need to initialize 
+         // this for objects like SkyBox which will use it during a reflect pass.
+         gClientSceneGraph->setNonClipProjection(GFX->getProjectionMatrix());
+
+         bool validCubemap = true;
+
+         // Standard view that will be overridden below.
+         VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
+
+         switch (i)
+         {
+         case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
+            vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
+            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+            break;
+         case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
+            vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
+            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+            break;
+         case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
+            vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
+            vUpVec = VectorF(0.0f, 0.0f, -1.0f);
+            break;
+         case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
+            vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
+            vUpVec = VectorF(0.0f, 0.0f, 1.0f);
+            break;
+         case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
+            vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
+            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+            break;
+         case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
+            vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
+            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+            break;
+         }
+
+         // create camera matrix
+         VectorF cross = mCross(vUpVec, vLookatPt);
+         cross.normalizeSafe();
+
+         MatrixF matView(true);
+         matView.setColumn(0, cross);
+         matView.setColumn(1, vLookatPt);
+         matView.setColumn(2, vUpVec);
+         matView.setPosition(getPosition());
+         matView.inverse();
+
+         GFX->setWorldMatrix(matView);
+
+         GFX->setActiveRenderTarget(mBaseTarget);
+
+         GFX->clear(GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 1.0f, 0);
+
+         SceneRenderState reflectRenderState
+         (
+            gClientSceneGraph,
+            SPT_Reflect,
+            SceneCameraState::fromGFX()
+         );
+
+         reflectRenderState.getMaterialDelegate().bind(REFLECTMGR, &ReflectionManager::getReflectionMaterial);
+         reflectRenderState.setDiffuseCameraTransform(matView);
+
+         // render scene
+         //LIGHTMGR->unregisterAllLights();
+         //LIGHTMGR->registerGlobalLights(&reflectRenderState.getCullingFrustum(), false);
+         gClientSceneGraph->renderScene(&reflectRenderState, -1);
+         //LIGHTMGR->unregisterAllLights();
+      }
+      else
+      {
+         renderFrame(&mBaseTarget, i, Point2I(resolution, resolution));
+      }
 
       mBaseTarget->resolve();
 
@@ -913,7 +1005,7 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
 
    // Save the current transforms so we can restore
    // it for child control rendering below.
-   GFXTransformSaver saver;
+   //GFXTransformSaver saver;
    bool renderingToTarget = false;
 
    // Set up the appropriate render style
@@ -1001,14 +1093,14 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
    }
 
    // create camera matrix
-   //VectorF cross = mCross(vUpVec, vLookatPt);
-   //cross.normalizeSafe();
+   VectorF cross = mCross(vUpVec, vLookatPt);
+   cross.normalizeSafe();
 
    MatrixF matView(true);
-   /*matView.setColumn(0, cross);
+   matView.setColumn(0, cross);
    matView.setColumn(1, vLookatPt);
    matView.setColumn(2, vUpVec);
-   matView.setPosition(getPosition());*/
+   matView.setPosition(getPosition());
 
    matView = getTransform();
    matView.inverse();
@@ -1042,7 +1134,7 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
    FrameAllocator::setWaterMark(0);*/
    PROFILE_END();
 
-   saver.restore();
+   //saver.restore();
 
    PROFILE_START(ReflectionProbe_GFXEndScene);
    GFX->endScene();
