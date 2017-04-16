@@ -770,7 +770,7 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    SceneRenderState *state,
    BaseMatInstance *overrideMat)
 {
-   if (overrideMat)
+   if (overrideMat || !ReflectionProbe::smRenderReflectionProbes)
       return;
 
    GFXDrawUtil *draw = GFX->getDrawUtil();
@@ -823,7 +823,8 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
    //Set this to true to use the prior method where it goes through the SPT_Reflect path for the bake
    bool useReflectBake = false;
-
+   bool probeRenderState = ReflectionProbe::smRenderReflectionProbes;
+   ReflectionProbe::smRenderReflectionProbes = false;
    for (U32 i = 0; i < 6; ++i)
    {
       GFXTexHandle blendTex;
@@ -957,7 +958,7 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
       mDirty = false;
    }
-
+   ReflectionProbe::smRenderReflectionProbes = probeRenderState;
    setMaskBits(-1);
 }
 
@@ -1084,7 +1085,7 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
    matView.setColumn(2, vUpVec);
    matView.setPosition(getPosition());
 
-   matView = getTransform();
+   //matView = getTransform();
    matView.inverse();
 
    GFX->setWorldMatrix(matView);
@@ -1098,10 +1099,10 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
 
    // Set the default non-clip projection as some 
    // objects depend on this even in non-reflect cases.
-   gClientSceneGraph->setNonClipProjection(saveProjection);
+   gClientSceneGraph->setNonClipProjection(MatrixF::Identity);
 
    // Give the post effect manager the worldToCamera, and cameraToScreen matrices
-   PFXMGR->setFrameMatrices(saveModelview, saveProjection);
+   PFXMGR->setFrameMatrices(saveModelview, matView);
 
    PROFILE_START(ReflectionProbe_GameRenderWorld);
    //FrameAllocator::setWaterMark(0);
