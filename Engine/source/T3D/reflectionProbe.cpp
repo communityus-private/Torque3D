@@ -1005,34 +1005,16 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
 
    // Save the current transforms so we can restore
    // it for child control rendering below.
-   //GFXTransformSaver saver;
-   bool renderingToTarget = false;
-
-   // Set up the appropriate render style
-   Point2I renderSize = Point2I(512, 512);
-
-   // set up the camera and viewport stuff:
-   F32 wwidth;
-   F32 wheight;
-   F32 renderWidth = F32(renderSize.x);
-   F32 renderHeight = F32(renderSize.y);
-   F32 aspectRatio = renderWidth / renderHeight;
+   GFXTransformSaver saver;
 
    F32 nearPlane = 0.01;
    F32 farPlane = 1000;
-   F32 fov = 90;
-
-   wheight = nearPlane * mTan(fov / 2.0f);
-   wwidth = aspectRatio * wheight;
-
-   F32 hscale = wwidth * 2.0f / renderWidth;
-   F32 vscale = wheight * 2.0f / renderHeight;
-
    F32 left = 0;
-   F32 right = renderWidth * hscale - wwidth;
+   F32 right = 0;
    F32 top = 0;
-   F32 bottom = wheight - vscale * renderHeight;
+   F32 bottom = 0;
 
+   MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
    Frustum frustum = Frustum(false, left, right, top, bottom, nearPlane, farPlane);
    //frustum.set(false, left, right, top, bottom, nearPlane, farPlane);
 
@@ -1059,7 +1041,7 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
    // We're going to be displaying this render at size of this control in
    // pixels - let the scene know so that it can calculate e.g. reflections
    // correctly for that final display result.
-   gClientSceneGraph->setDisplayTargetResolution(renderSize);
+   gClientSceneGraph->setDisplayTargetResolution(resolution);
 
    // Standard view that will be overridden below.
    VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
@@ -1134,7 +1116,7 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
    FrameAllocator::setWaterMark(0);*/
    PROFILE_END();
 
-   //saver.restore();
+   saver.restore();
 
    PROFILE_START(ReflectionProbe_GFXEndScene);
    GFX->endScene();
