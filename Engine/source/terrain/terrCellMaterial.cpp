@@ -513,7 +513,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
          // isn't fooled into thinking there is a real bug.  That is until
          // we get down to a single material.  If a single material case
          // fails it means it cannot generate any passes at all!
-         const bool logErrors = matCount == 1;
+         const bool logErrors = true;// matCount == 1;
          GFXShader::setLogging( logErrors, true );
 
          pass->shader = SHADERGEN->getShader( featureData, getGFXVertexFormat<TerrVertex>(), NULL, mSamplerNames );
