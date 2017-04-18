@@ -1276,7 +1276,21 @@ void TerrainCompositeMapFeatHLSL::processPix(Vector<ShaderComponent*> &component
    Var *detailBlend = (Var*)LangElement::find(String::ToString("detailBlend%d", compositeIndex));
    AssertFatal(detailBlend, "The detail blend is missing!");
 
-   meta->addStatement(new GenOp("   @ = float4(0.0,lerp(float3(1,0,0),@.grb,@));\r\n", material, texOp, detailBlend));
+   String matinfoName(String::ToString("matinfoCol%d", compositeIndex));
+   Var *matinfoCol = new Var(matinfoName, "float3");
+   
+   Var *priorComp = (Var*)LangElement::find(String::ToString("matinfoCol%d", compositeIndex - 1));
+   if (priorComp)
+   {
+      meta->addStatement(new GenOp("   @ = @.grb*@;\r\n", new DecOp(matinfoCol), texOp, detailBlend));
+      meta->addStatement(new GenOp("   @.gba += @;\r\n", material, matinfoCol));
+   }
+   else
+   {
+      meta->addStatement(new GenOp("   @ = lerp(float3(1,0,0),@.grb,@);\r\n", new DecOp(matinfoCol), texOp, detailBlend));
+      meta->addStatement(new GenOp("   @ = float4(0.0,@);\r\n", material, matinfoCol));
+   }
+
 
    output = meta;
 }
