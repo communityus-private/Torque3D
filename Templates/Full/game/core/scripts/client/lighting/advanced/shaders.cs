@@ -286,6 +286,7 @@ new ShaderData( ReflectionProbeShader )
    samplerNames[0] = "$deferredBuffer";
    samplerNames[1] = "$colorBuffer";
    samplerNames[2] = "$matInfoBuffer";
+   samplerNames[3] = "directLightingBuffer";
    /*
    samplerNames[3] = "$cookieMap";
    samplerNames[4] = "$gTapRotationTex";
@@ -317,6 +318,8 @@ new GFXStateBlockData( AL_ProbeState )
    mSamplerNames[1] = "colorBuffer";
    samplerStates[2] = SamplerClampLinear; // matInfo
    mSamplerNames[2] = "matInfoBuffer";   
+   samplerStates[3] = SamplerClampLinear; // direct Lighting
+   mSamplerNames[3] = "directLightingBuffer";
    
    cullDefined = true;
    cullMode = GFXCullCW;
@@ -338,6 +341,7 @@ new CustomMaterial( ReflectionProbeMaterial )
    sampler["deferredBuffer"] = "#deferred";
    sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
+   sampler["directLightingBuffer"] = "#directLighting";
    
    target = "indirectLighting";
    

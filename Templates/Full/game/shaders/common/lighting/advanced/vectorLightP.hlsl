@@ -303,17 +303,17 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
    
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    float Sat_NdotV = saturate(dot(normalize(-IN.vsEyeRay), normal));
-   float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * Sat_NdotV );
+   //float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * Sat_NdotV );
 
    // Sample the AO texture.      
    #ifdef USE_SSAO_MASK
       float ao = 1.0 - TORQUE_TEX2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams3 ) ).r;
-      addToResult *= ao;
+      //addToResult *= ao;
    #endif
 
    #ifdef PSSM_DEBUG_RENDER
       lightColorOut = debugColor;
    #endif
    
-   return float4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a);
+   return float4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)/*+addToResult.rgb*/),real_specular.a);
 }
