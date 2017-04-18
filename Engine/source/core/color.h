@@ -286,13 +286,10 @@ inline ColorF::ColorF(const F32 in_r,
 
 inline ColorF& ColorF::operator*=(const ColorF& in_mul)
 {
-   ColorF tmp = toLinear();
-   ColorF tmp1 = ColorF(in_mul).toLinear();
-   tmp.red   *= tmp1.red;
-   tmp.green *= tmp1.green;
-   tmp.blue  *= tmp1.blue;
-   tmp.alpha *= tmp1.alpha;
-   *this = tmp.toGamma();
+   red   *= in_mul.red;
+   green *= in_mul.green;
+   blue  *= in_mul.blue;
+   alpha *= in_mul.alpha;
    return *this;
 }
 
@@ -305,13 +302,10 @@ inline ColorF ColorF::operator*(const ColorF& in_mul) const
 
 inline ColorF& ColorF::operator+=(const ColorF& in_rAdd)
 {
-   ColorF tmp = toLinear();
-   ColorF tmp1 = ColorF(in_rAdd).toLinear();
-   tmp.red += tmp1.red;
-   tmp.green += tmp1.green;
-   tmp.blue += tmp1.blue;
-   tmp.alpha += tmp1.alpha;
-   *this = tmp.toGamma();
+   red += in_rAdd.red;
+   green += in_rAdd.green;
+   blue += in_rAdd.blue;
+   alpha += in_rAdd.alpha;
    return *this;
 }
 
@@ -324,13 +318,10 @@ inline ColorF ColorF::operator+(const ColorF& in_rAdd) const
 
 inline ColorF& ColorF::operator-=(const ColorF& in_rSub)
 {
-   ColorF tmp = toLinear();
-   ColorF tmp1 = ColorF(in_rSub).toLinear();
-   tmp.red -= tmp1.red;
-   tmp.green -= tmp1.green;
-   tmp.blue -= tmp1.blue;
-   tmp.alpha -= tmp1.alpha;
-   *this = tmp.toGamma();
+   red -= in_rSub.red;
+   green -= in_rSub.green;
+   blue -= in_rSub.blue;
+   alpha -= in_rSub.alpha;
    return *this;
 }
 
@@ -343,12 +334,10 @@ inline ColorF ColorF::operator-(const ColorF& in_rSub) const
 
 inline ColorF& ColorF::operator*=(const F32 in_mul)
 {
-   ColorF tmp = toLinear();
-   tmp.red   *= in_mul;
-   tmp.green *= in_mul;
-   tmp.blue  *= in_mul;
-   tmp.alpha *= in_mul;
-   *this = tmp.toGamma();
+   red   *= in_mul;
+   green *= in_mul;
+   blue  *= in_mul;
+   alpha *= in_mul;
    return *this;
 }
 
@@ -364,12 +353,10 @@ inline ColorF& ColorF::operator/=(const F32 in_div)
    AssertFatal(in_div != 0.0f, "Error, div by zero...");
    F32 inv = 1.0f / in_div;
 
-   ColorF tmp = toLinear();
-   tmp.red *= inv;
-   tmp.green *= inv;
-   tmp.blue *= inv;
-   tmp.alpha *= inv;
-   *this = tmp.toGamma();
+   red *= inv;
+   green *= inv;
+   blue *= inv;
+   alpha *= inv;
    return *this;
 }
 
