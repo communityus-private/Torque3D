@@ -1159,6 +1159,8 @@ AdvancedLightBinManager::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(cons
 
    invViewMat = matInstance->getMaterialParameterHandle("$invViewMat");
 
+   ambientColor = matInstance->getMaterialParameterHandle("$AmbientColor");
+
    skyColor = matInstance->getMaterialParameterHandle("$SkyColor");
    groundColor = matInstance->getMaterialParameterHandle("$GroundColor");
    intensity = matInstance->getMaterialParameterHandle("$Intensity");
@@ -1252,6 +1254,8 @@ void AdvancedLightBinManager::ReflectProbeMaterialInfo::setProbeParameters(const
       GFX->setCubeTexture(4, NULL);
       matParams->setSafe(useCubemap, 0.0f);
    }
+
+   matParams->setSafe(ambientColor, probeInfo->mAmbient);
 
    matParams->setSafe(skyColor, probeInfo->mSkyColor);
    matParams->setSafe(groundColor, probeInfo->mGroundColor);

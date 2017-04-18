@@ -60,13 +60,21 @@ public:
       Convex = 1,          ///< Convex-based shape
    };
 
-   enum ProbeModeType
+   enum IndrectLightingModeType
    {
-      HorizonColor = 0,            
-      StaticCubemap = 1, 
-      BakedCubemap = 2,
-      SkyLight = 3,
-      //DynamicCubemap = 3,
+      NoIndirect = 0,            
+      AmbientColor = 1, 
+      SphericalHarmonics = 2
+   };
+
+   enum ReflectionModeType
+   {
+      NoReflection = 0,
+      HorizonColor = 1,
+      StaticCubemap = 2,
+      BakedCubemap = 3,
+      SkyLight = 4,
+      //DynamicCubemap = 5,
    };
 
 private:
@@ -101,11 +109,17 @@ private:
 
    ProbeShapeType mProbeShapeType;
 
-   ProbeModeType mProbeModeType;
-
    ReflectProbeInfo* mProbeInfo;
 
    Polyhedron mPolyhedron;
+
+   //Indirect Lighting Contribution stuff
+   IndrectLightingModeType mIndrectLightingModeType;
+   ColorF mAmbientColor;
+   ColorF mSphericalHarmonics;
+
+   //Reflection Contribution stuff
+   ReflectionModeType mReflectionModeType;
 
    F32 mRadius;
    bool mOverrideColor;
@@ -208,7 +222,10 @@ public:
 typedef ReflectionProbe::ProbeShapeType ReflectProbeType;
 DefineEnumType(ReflectProbeType);
 
-typedef ReflectionProbe::ProbeModeType ReflectProbeMode;
-DefineEnumType(ReflectProbeMode);
+typedef ReflectionProbe::IndrectLightingModeType IndrectLightingModeEnum;
+DefineEnumType(IndrectLightingModeEnum);
+
+typedef ReflectionProbe::ReflectionModeType ReflectionModeEnum;
+DefineEnumType(ReflectionModeEnum);
 
 #endif // _ReflectionProbe_H_

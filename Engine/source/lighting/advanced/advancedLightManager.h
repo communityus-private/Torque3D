@@ -54,6 +54,7 @@
 
 class AvailableSLInterfaces;
 class AdvancedLightBinManager;
+class ProbeBinManager;
 class RenderDeferredMgr;
 class BaseMatInstance;
 class MaterialParameters;
@@ -118,6 +119,8 @@ protected:
    virtual ~AdvancedLightManager();
 
    SimObjectPtr<AdvancedLightBinManager> mLightBinManager;
+
+   SimObjectPtr<ProbeBinManager> mProbeBinManager;
 
    SimObjectPtr<RenderDeferredMgr> mDeferredRenderBin;
 

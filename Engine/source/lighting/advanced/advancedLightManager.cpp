@@ -25,6 +25,7 @@
 
 #include "lighting/advanced/advancedLightBinManager.h"
 #include "lighting/advanced/advancedLightingFeatures.h"
+#include "lighting/advanced/ProbeBinManager.h"
 #include "lighting/shadowMap/shadowMapManager.h"
 #include "lighting/shadowMap/lightShadowMap.h"
 #include "lighting/common/sceneLighting.h"
@@ -59,6 +60,7 @@ AdvancedLightManager::AdvancedLightManager()
    :  LightManager( "Advanced Lighting", "ADVLM" )
 {
    mLightBinManager = NULL;
+   mProbeBinManager = NULL;
    mLastShader = NULL;
    mAvailableSLInterfaces = NULL;
 }
@@ -115,6 +117,9 @@ void AdvancedLightManager::activate( SceneManager *sceneManager )
    mLightBinManager = new AdvancedLightBinManager( this, SHADOWMGR, blendTargetFormat );
    mLightBinManager->assignName( "AL_LightBinMgr" );
 
+   mProbeBinManager = new ProbeBinManager(this, blendTargetFormat);
+   mProbeBinManager->assignName("AL_ProbeBinMgr");
+
    // First look for the deferred bin...
    RenderDeferredMgr *deferredBin = _findDeferredRenderBin();
 
@@ -155,6 +160,7 @@ void AdvancedLightManager::deactivate()
       mLightBinManager->deleteObject();
    }
    mLightBinManager = NULL;
+   mProbeBinManager = NULL;
 
    if ( mDeferredRenderBin )
       mDeferredRenderBin->deleteObject();
@@ -496,8 +502,8 @@ void AdvancedLightManager::addSphereReflectProbe(ReflectProbeInfo* probeInfo)
    //Parent::registerGlobalLight(light, obj);
 
    // Pass the volume lights to the bin manager.
-   if (mLightBinManager)
-      mLightBinManager->addSphereReflectionProbe(probeInfo);
+   if (mProbeBinManager)
+      mProbeBinManager->addSphereReflectionProbe(probeInfo);
 }
 
 void AdvancedLightManager::addConvexReflectProbe(ReflectProbeInfo* probeInfo)
@@ -505,8 +511,8 @@ void AdvancedLightManager::addConvexReflectProbe(ReflectProbeInfo* probeInfo)
    //Parent::registerGlobalLight(light, obj);
 
    // Pass the volume lights to the bin manager.
-   if (mLightBinManager)
-      mLightBinManager->addConvexReflectionProbe(probeInfo);
+   if (mProbeBinManager)
+      mProbeBinManager->addConvexReflectionProbe(probeInfo);
 }
 
 bool AdvancedLightManager::setTextureStage(  const SceneData &sgData,

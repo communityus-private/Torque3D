@@ -228,6 +228,8 @@ protected:
       MaterialParameterHandle *lightTrilight;
       MaterialParameterHandle *lightSpotParams;
 
+      MaterialParameterHandle *ambientColor;
+
       MaterialParameterHandle *skyColor;
       MaterialParameterHandle *groundColor;
       MaterialParameterHandle *intensity;
