@@ -126,7 +126,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
       float4 ref = float4(reflectionVec, smoothness);
       color = TORQUE_TEXCUBELOD(cubeMap, ref);
       color.a = 1;
-      color += AmbientColor / smoothness;
       color *= Intensity;
    }
 
