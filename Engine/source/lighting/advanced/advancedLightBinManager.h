@@ -236,6 +236,7 @@ protected:
 
       MaterialParameterHandle *useCubemap;
       MaterialParameterHandle *cubemap;
+      MaterialParameterHandle *cubeMips;
 
       ReflectProbeMaterialInfo(const String &matName, const GFXVertexFormat *vertexFormat);
 

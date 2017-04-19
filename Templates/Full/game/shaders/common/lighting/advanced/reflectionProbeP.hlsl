@@ -55,6 +55,7 @@ uniform float4 GroundColor;
 uniform float useCubemap;
 uniform float Intensity;
 TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 4);
+uniform float cubeMips;
 
 float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 { 

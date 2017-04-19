@@ -1168,6 +1168,7 @@ AdvancedLightBinManager::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(cons
    useCubemap = matInstance->getMaterialParameterHandle("$useCubemap");
 
    cubemap = matInstance->getMaterialParameterHandle("$cubeMap");
+   cubeMips = matInstance->getMaterialParameterHandle("$cubeMips");
 }
 
 AdvancedLightBinManager::ReflectProbeMaterialInfo::~ReflectProbeMaterialInfo()
@@ -1248,6 +1249,7 @@ void AdvancedLightBinManager::ReflectProbeMaterialInfo::setProbeParameters(const
       matParams->setSafe(useCubemap, 1.0f);
 
       GFX->setCubeTexture(4, probeInfo->mCubemap->mCubemap);
+      matParams->setSafe(cubeMips, S32(probeInfo->mCubemap->mCubemap->getMipMapLevels()));
    }
    else
    {
