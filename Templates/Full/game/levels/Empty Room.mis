@@ -110,6 +110,16 @@ new SimGroup(MissionGroup) {
          canSave = "1";
          canSaveDynamicFields = "1";
       };
+      new CameraBookmark() {
+         isAIControlled = "0";
+         dataBlock = "CameraBookmarkMarker";
+         position = "-17.8058 0.291567 6.37798";
+         rotation = "0.214026 0.125288 -0.96876 62.2862";
+         scale = "1 1 1";
+         internalName = "mirrorTest";
+         canSave = "1";
+         canSaveDynamicFields = "1";
+      };
    };
    new GroundPlane() {
       squareSize = "128";
