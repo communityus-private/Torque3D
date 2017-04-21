@@ -231,66 +231,9 @@ void RenderProbeMgr::render( SceneRenderState *state )
          vsFarPlane, inverseViewMatrix);
    }
 
-   // Check if bin is disabled in advanced lighting.
-   //if ( MATMGR->getDeferredEnabled() && mBasicOnly )
-   //   return;
-
-   /*for( U32 i=0; i<mElementList.size(); i++ )
-   {
-      ObjectRenderInst *ri = static_cast<ObjectRenderInst*>(mElementList[i].inst);
-      if ( ri->renderDelegate )
-         ri->renderDelegate( ri, state, mOverrideMat );      
-   }*/
-
-   //Draw reflection probes
-   //These render out to the indirectLighting buffer, so we'll swap up on the active target
-   /*GFXTextureTargetRef indirectLightingTarget = new GFXTextureTargetRef();
-   indirectLightingTarget->attachTexture(GFXTextureTarget::DepthStencil, getRenderPass()->getDepthTargetTexture());
-
-   // Preserve contents
-   GFX->getActiveRenderTarget()->preserve();
-
-   GFX->pushActiveRenderTarget();
-   GFX->setActiveRenderTarget(indirectLightingTarget);*/
-   //GFX->setViewport(mNamedTarget.getViewport());
-
    //Order the probes by size, biggest to smallest
    PROFILE_START(AdvancedLightManager_ReflectProbeRender);
-   dQsort(mElementList.address(), mElementList.size(), sizeof(const ProbeRenderInst), AscendingReflectProbeInfluence);
-
-   //Diffuse color contribution
-   /*for (ReflectProbeBinIterator itr = mReflectProbeBin.begin(); itr != mReflectProbeBin.end(); itr++)
-   {
-   ReflectProbeBinEntry& curEntry = *itr;
-
-   // Set geometry
-   GFX->setVertexBuffer(curEntry->vertBuffer);
-   GFX->setPrimitiveBuffer(curEntry->primBuffer);
-
-   MatrixF probeTrans = MatrixF::Identity;
-   probeTrans.setPosition(curEntry->probeInfo->getPosition());
-   probeTrans.scale(curEntry->probeInfo->mRadius * 1.01f);
-
-   sgData.objTrans = &probeTrans;
-
-   if (mReflectProbeDiffuseMaterial && mReflectProbeDiffuseMaterial->matInstance)
-   {
-   mReflectProbeDiffuseMaterial->setProbeParameters(curEntry->probeInfo, state, worldToCameraXfm);
-
-   while (mReflectProbeDiffuseMaterial->matInstance->setupPass(state, sgData))
-   {
-   // Set transforms
-   matrixSet.setWorld(*sgData.objTrans);
-   mReflectProbeDiffuseMaterial->matInstance->setTransforms(matrixSet, state);
-   mReflectProbeDiffuseMaterial->matInstance->setSceneInfo(state, sgData);
-
-   if (curEntry->primBuffer)
-   GFX->drawIndexedPrimitive(GFXTriangleList, 0, 0, curEntry->vertBuffer->mNumVerts, 0, curEntry->numPrims);
-   else
-   GFX->drawPrimitive(GFXTriangleList, 0, curEntry->numPrims);
-   }
-   }
-   }*/
+   dQsort(mElementList.address(), mElementList.size(), sizeof(const MainSortElem), AscendingReflectProbeInfluence);
 
    NamedTexTarget* lightInfoTarget = NamedTexTarget::find("indirectLighting");
 
