@@ -55,6 +55,7 @@
 #include "postFx/postEffectManager.h"
 #include "T3D/gameFunctions.h"
 #include "gui/core/guiOffscreenCanvas.h"
+#include "postFx/postEffect.h"
 
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
@@ -823,6 +824,12 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 {
    GFXDEBUGEVENT_SCOPE(ReflectionProbe_Bake, ColorI::WHITE);
 
+   PostEffect *preCapture = dynamic_cast<PostEffect*>(Sim::findObject("AL_PreCapture"));
+   PostEffect *deferredShading = dynamic_cast<PostEffect*>(Sim::findObject("AL_DeferredShading"));
+   if (preCapture)
+      preCapture->enable();
+   if (deferredShading)
+      deferredShading->disable();
    if (mReflectionModeType == StaticCubemap || mReflectionModeType == BakedCubemap || mReflectionModeType == SkyLight)
    {
       if (!mCubemap)
@@ -964,6 +971,10 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       if (!stream.open(fileName, Torque::FS::File::Write))
       {
          Con::errorf("ReflectionProbe::bake(): Couldn't open cubemap face file fo writing " + String(fileName));
+         if (preCapture)
+            preCapture->disable();
+         if (deferredShading)
+            deferredShading->enable();
          return;
       }
 
@@ -990,6 +1001,10 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    }
    ReflectionProbe::smRenderReflectionProbes = probeRenderState;
    setMaskBits(-1);
+   if (preCapture)
+      preCapture->disable();
+   if (deferredShading)
+      deferredShading->enable();
 }
 
 //

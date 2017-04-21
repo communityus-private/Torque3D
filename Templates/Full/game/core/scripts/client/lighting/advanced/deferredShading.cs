@@ -54,9 +54,25 @@ new ShaderData( AL_DeferredShader )
    pixVersion = 2.0;
 };
 
+singleton PostEffect( AL_PreCapture )
+{
+   renderTime = "PFXAfterBin";
+   renderBin = "SkyBin";
+   shader = AL_DeferredShader;
+   stateBlock = AL_DeferredShadingState;
+   texture[0] = "#color";
+   texture[1] = "#directLighting";
+   texture[2] = "#matinfo";
+   texture[3] = "#indirectLighting";
+   texture[4] = "#deferred";
+   target = "$backBuffer";
+   renderPriority = 10000;
+   allowReflectPass = true;
+};
+
 singleton PostEffect( AL_DeferredShading )
 {
-   renderTime = "PFXBeforeBin";
+   renderTime = "PFXAfterBin";
    renderBin = "ProbeBin";
    shader = AL_DeferredShader;
    stateBlock = AL_DeferredShadingState;
