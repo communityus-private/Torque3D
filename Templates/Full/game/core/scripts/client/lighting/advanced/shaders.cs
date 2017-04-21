@@ -284,9 +284,7 @@ new ShaderData( ReflectionProbeShader )
    //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
 
    samplerNames[0] = "$deferredBuffer";
-   samplerNames[1] = "$colorBuffer";
-   samplerNames[2] = "$matInfoBuffer";
-   samplerNames[3] = "directLightingBuffer";
+   samplerNames[1] = "$matInfoBuffer";
    /*
    samplerNames[3] = "$cookieMap";
    samplerNames[4] = "$gTapRotationTex";
@@ -315,11 +313,7 @@ new GFXStateBlockData( AL_ProbeState )
    samplerStates[0] = SamplerClampPoint;  // G-buffer
    mSamplerNames[0] = "deferredBuffer";
    samplerStates[1] = SamplerClampLinear;  // Shadow Map (Do not use linear, these are perspective projections)
-   mSamplerNames[1] = "colorBuffer";
-   samplerStates[2] = SamplerClampLinear; // matInfo
-   mSamplerNames[2] = "matInfoBuffer";   
-   samplerStates[3] = SamplerClampLinear; // direct Lighting
-   mSamplerNames[3] = "directLightingBuffer";
+   mSamplerNames[1] = "matInfoBuffer";
    
    cullDefined = true;
    cullMode = GFXCullCW;
@@ -339,9 +333,7 @@ new CustomMaterial( ReflectionProbeMaterial )
    stateBlock = AL_ProbeState;
    
    sampler["deferredBuffer"] = "#deferred";
-   sampler["colorBuffer"] = "#color";
    sampler["matInfoBuffer"] = "#matinfo";
-   sampler["directLightingBuffer"] = "#directLighting";
    
    target = "indirectLighting";
    

@@ -426,17 +426,17 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
    GFXTextureObject *matInfoTexObject = matInfoTexTarget->getTexture();
    if (!matInfoTexObject) return;
 
-   GFX->setTexture(3, matInfoTexObject);
+   GFX->setTexture(1, matInfoTexObject);
 
    if (probeInfo->mUseCubemap && probeInfo->mCubemap)
    {
       matParams->setSafe(useCubemap, 1.0f);
 
-      GFX->setCubeTexture(4, probeInfo->mCubemap->mCubemap);
+      GFX->setCubeTexture(2, probeInfo->mCubemap->mCubemap);
    }
    else
    {
-      GFX->setCubeTexture(4, NULL);
+      GFX->setCubeTexture(2, NULL);
       matParams->setSafe(useCubemap, 0.0f);
    }
 
