@@ -37,6 +37,10 @@
 #endif
 #include "lighting/lightInfo.h"
 
+#ifndef _RENDERPASSMANAGER_H_
+#include "renderInstance/renderPassManager.h"
+#endif
+
 class BaseMatInstance;
 
 
@@ -109,7 +113,7 @@ private:
 
    ProbeShapeType mProbeShapeType;
 
-   ReflectProbeInfo* mProbeInfo;
+   ProbeRenderInst* mProbeInfo;
 
    Polyhedron mPolyhedron;
 

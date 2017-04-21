@@ -46,6 +46,8 @@ function initRenderManager()
       resolveEffect = "AL_FormatCopy";
    };
    DiffuseRenderPassManager.addManager( new RenderPassStateBin()           { renderOrder = 0.001; stateToken = AL_FormatToken; } );
+   
+   DiffuseRenderPassManager.addManager( new RenderProbeMgr(ProbeBin)       { bintype = "Probes"; renderOrder = 0.05; processAddOrder = 0.05; } );
      
    // We really need to fix the sky to render after all the 
    // meshes... but that causes issues in reflections.

@@ -69,47 +69,6 @@ bool ReflectionProbe::smRenderReflectionProbes = true;
 #include "console/simObject.h"
 #include "math/mathUtils.h"*/
 
-
-ReflectProbeInfo::ReflectProbeInfo()
-   : mTransform(true),
-   mColor(0.0f, 0.0f, 0.0f, 1.0f),
-   mBrightness(1.0f),
-   mAmbient(0.0f, 0.0f, 0.0f, 1.0f),
-   mRange(1.0f, 1.0f, 1.0f),
-   mInnerConeAngle(90.0f),
-   mOuterConeAngle(90.0f),
-   mPriority(1.0f),
-   mScore(0.0f),
-   mDebugRender(false),
-   mCubemap(NULL),
-   mRadius(1.0f),
-   mOverrideColor(false),
-   mGroundColor(ColorI::WHITE),
-   mSkyColor(ColorI::WHITE),
-   mIntensity(1.0f)
-{
-}
-
-ReflectProbeInfo::~ReflectProbeInfo()
-{
-   SAFE_DELETE(mCubemap);
-}
-
-void ReflectProbeInfo::set(const ReflectProbeInfo *light)
-{
-   mTransform = light->mTransform;
-   mColor = light->mColor;
-   mBrightness = light->mBrightness;
-   mAmbient = light->mAmbient;
-   mRange = light->mRange;
-}
-
-void ReflectProbeInfo::getWorldToLightProj(MatrixF *outMatrix) const
-{
-   *outMatrix = getTransform();
-   outMatrix->inverse();
-}
-
 IMPLEMENT_CO_NETOBJECT_V1(ReflectionProbe);
 
 ConsoleDocClass(ReflectionProbe,
@@ -175,7 +134,7 @@ ReflectionProbe::ReflectionProbe()
    mBake = false;
    mDirty = false;
 
-   mProbeInfo = new ReflectProbeInfo();
+   mProbeInfo = new ProbeRenderInst();
 
    mRadius = 10;
 
@@ -797,21 +756,35 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       // Allow the shape to submit the RenderInst(s) for itself
       mEditorShapeInst->render(rdata);
    }
+
+   //Submit our probe to actually do the probe action
+   // Get a handy pointer to our RenderPassmanager
+   RenderPassManager *renderPass = state->getRenderPass();
+
+   // Allocate an MeshRenderInst so that we can submit it to the RenderPassManager
+   ProbeRenderInst *probeInst = renderPass->allocInst<ProbeRenderInst>();
+
+   probeInst->set(mProbeInfo);
+
+   probeInst->type = RenderPassManager::RIT_Probes;
+
+   // Submit our RenderInst to the RenderPassManager
+   state->getRenderPass()->addInst(probeInst);
 }
 
 void ReflectionProbe::submitLights(LightManager *lm, bool staticLighting)
 {
-   if (!mEnabled)
+   //if (!mEnabled)
       return;
 
-   if ((mReflectionModeType == SkyLight || mReflectionModeType == BakedCubemap || mReflectionModeType == StaticCubemap) &&
+  /* if ((mReflectionModeType == SkyLight || mReflectionModeType == BakedCubemap || mReflectionModeType == StaticCubemap) &&
       mProbeInfo->mCubemap && !mProbeInfo->mCubemap->mCubemap.isValid())
    {
       mProbeInfo->mCubemap->mCubemap = NULL;
    }
 
    if (mProbeShapeType == Sphere)
-      lm->addSphereReflectProbe(mProbeInfo);
+      lm->addSphereReflectProbe(mProbeInfo);*/
    //else
    //   lm->addConvexReflectProbe(mProbeInfo);
 }

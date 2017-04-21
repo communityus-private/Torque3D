@@ -92,6 +92,7 @@ RenderDeferredMgr::RenderDeferredMgr( bool gatherDepth,
    notifyType( RenderPassManager::RIT_Mesh );
    notifyType( RenderPassManager::RIT_Terrain );
    notifyType( RenderPassManager::RIT_Object );
+   notifyType( RenderPassManager::RIT_Probes );
 
    // We want a full-resolution buffer
    mTargetSizeType = RenderTexTargetBinManager::WindowSize;
@@ -237,6 +238,8 @@ void RenderDeferredMgr::addElement( RenderInst *inst )
 
    const bool isTerrainInst = inst->type == RenderPassManager::RIT_Terrain;
 
+   const bool isProbeInst = inst->type == RenderPassManager::RIT_Probes;
+
    // Get the material if its a mesh.
    BaseMatInstance* matInst = NULL;
    if ( isMeshInst || isDecalMeshInst )
@@ -261,10 +264,12 @@ void RenderDeferredMgr::addElement( RenderInst *inst )
 
    // We're gonna add it to the bin... get the right element list.
    Vector< MainSortElem > *elementList;
-   if ( isMeshInst || isDecalMeshInst )
+   if (isMeshInst || isDecalMeshInst)
       elementList = &mElementList;
-   else if ( isTerrainInst )
+   else if (isTerrainInst)
       elementList = &mTerrainElementList;
+   else if (isProbeInst)
+      elementList = &mProbeElementList;
    else
       elementList = &mObjectElementList;
 
@@ -297,6 +302,7 @@ void RenderDeferredMgr::sort()
 void RenderDeferredMgr::clear()
 {
    Parent::clear();
+   mProbeElementList.clear();
    mTerrainElementList.clear();
    mObjectElementList.clear();
 }

@@ -155,9 +155,6 @@ public:
                                  GFXShaderConstBuffer *shaderConsts, 
                                  ShaderConstHandles *handles ) = 0;
 
-   virtual void addSphereReflectProbe(ReflectProbeInfo* probeInfo){};
-   virtual void addConvexReflectProbe(ReflectProbeInfo* probeInfo){};
-
    /// Called when the static scene lighting (aka lightmaps) should be computed.
    virtual bool lightScene( const char* callback, const char* param );
 
