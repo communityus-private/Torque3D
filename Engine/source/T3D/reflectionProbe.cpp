@@ -1015,16 +1015,7 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
       return;
 
    PROFILE_END();
-
-   // Begin GFX
-   PROFILE_START(ReflectionProbe_GFXBeginScene);
-   bool beginSceneRes = GFX->beginScene();
-   PROFILE_END();
-
-   // Can't render if waiting for device to reset.   
-   if (!beginSceneRes)
-      return;
-
+   
    // Clear the current viewport area
    GFX->clear(GFXClearZBuffer | GFXClearStencil | GFXClearTarget, gCanvasClearColor, 1.0f, 0);
 
@@ -1145,6 +1136,18 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
    PROFILE_START(ReflectionProbe_GameRenderWorld);
    //FrameAllocator::setWaterMark(0);
 
+   LIGHTMGR->unregisterAllLights();
+
+   Vector<SceneObject*> activeLights;
+   const U32 lightMask = LightObjectType;
+   getSceneManager()->getContainer()->findObjectList(lightMask, &activeLights);
+   for (U32 i = 0; i < activeLights.size(); i++)
+   {
+      ISceneLight *lightInterface = dynamic_cast<ISceneLight*>(activeLights[i]);
+      if (lightInterface && lightInterface->getLight())
+         LIGHTMGR->registerGlobalLight(lightInterface->getLight(), activeLights[i]);
+   }
+
    gClientSceneGraph->renderScene(SPT_Diffuse, StaticObjectType | StaticShapeObjectType | EnvironmentObjectType | LightObjectType);
 
    // renderScene leaves some states dirty, which causes problems if GameTSCtrl is the last Gui object rendered
@@ -1153,12 +1156,6 @@ void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point
    /*AssertFatal(FrameAllocator::getWaterMark() == 0,
       "Error, someone didn't reset the water mark on the frame allocator!");
    FrameAllocator::setWaterMark(0);*/
-   PROFILE_END();
-
-   saver.restore();
-
-   PROFILE_START(ReflectionProbe_GFXEndScene);
-   GFX->endScene();
    PROFILE_END();
 }
 
