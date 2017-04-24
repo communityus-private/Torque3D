@@ -221,6 +221,16 @@ public:
    //Baking
    void bake(String outputPath, S32 resolution);
    void renderFrame(GFXTextureTargetRef* target, U32 faceId, Point2I resolution);
+
+   void onRenderTSControlStyle(const RectI &updateRect);
+   void renderFrameCanvasStyle();
+   void capture(GFXTextureTargetRef* target, U32 faceId, Point2I resolution);
+   void _internalRenderTSControlStyle(Frustum &frustum);
+
+   GBitmap _captureBackBuffer();
+
+   MatrixF faceViewTransform;
+   GFXTextureTargetRef* faceRenderTarget;
 };
 
 typedef ReflectionProbe::ProbeShapeType ReflectProbeType;

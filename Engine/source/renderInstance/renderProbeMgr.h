@@ -101,6 +101,11 @@ protected:
       MaterialParameterHandle *useCubemap;
       MaterialParameterHandle *cubemap;
 
+      MaterialParameterHandle *eyePosWorld;
+      MaterialParameterHandle *volumeStart;
+      MaterialParameterHandle *volumeSize;
+      MaterialParameterHandle *volumePosition;
+
       ReflectProbeMaterialInfo(const String &matName, const GFXVertexFormat *vertexFormat);
 
       virtual ~ReflectProbeMaterialInfo();

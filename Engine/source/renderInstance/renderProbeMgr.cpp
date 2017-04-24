@@ -354,6 +354,11 @@ RenderProbeMgr::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String 
    useCubemap = matInstance->getMaterialParameterHandle("$useCubemap");
 
    cubemap = matInstance->getMaterialParameterHandle("$cubeMap");
+
+   eyePosWorld = matInstance->getMaterialParameterHandle("$eyePosWorld");
+   volumeStart = matInstance->getMaterialParameterHandle("$volumeStart");
+   volumeSize = matInstance->getMaterialParameterHandle("$volumeSize");
+   volumePosition = matInstance->getMaterialParameterHandle("$volumePosition");
 }
 
 RenderProbeMgr::ReflectProbeMaterialInfo::~ReflectProbeMaterialInfo()
@@ -445,6 +450,11 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
    matParams->setSafe(skyColor, probeInfo->mSkyColor);
    matParams->setSafe(groundColor, probeInfo->mGroundColor);
    matParams->setSafe(intensity, probeInfo->mIntensity);
+
+   matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
+   matParams->setSafe(volumeStart, probeInfo->getPosition() - Point3F(probeInfo->mRadius, probeInfo->mRadius, probeInfo->mRadius));
+   matParams->setSafe(volumePosition, probeInfo->getPosition());
+   matParams->setSafe(volumeSize, Point3F(probeInfo->mRadius * 2, probeInfo->mRadius * 2, probeInfo->mRadius * 2));
 }
 
 
