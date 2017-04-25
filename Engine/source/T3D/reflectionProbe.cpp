@@ -2080,7 +2080,7 @@ void ReflectionProbe::_internalRenderTSControlStyle(Frustum &frustum)
    //PROFILE_START(GameRenderWorld);
    FrameAllocator::setWaterMark(0);
 
-   gClientSceneGraph->renderScene(SPT_Diffuse);
+   gClientSceneGraph->renderScene(SPT_Reflect);
 
    // renderScene leaves some states dirty, which causes problems if GameTSCtrl is the last Gui object rendered
    GFX->updateStates();
