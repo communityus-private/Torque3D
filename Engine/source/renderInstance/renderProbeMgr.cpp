@@ -355,10 +355,10 @@ RenderProbeMgr::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String 
 
    cubemap = matInstance->getMaterialParameterHandle("$cubeMap");
 
-   eyePosWorld = matInstance->getMaterialParameterHandle("$eyePosWorld");
-   volumeStart = matInstance->getMaterialParameterHandle("$volumeStart");
-   volumeSize = matInstance->getMaterialParameterHandle("$volumeSize");
-   volumePosition = matInstance->getMaterialParameterHandle("$volumePosition");
+   //eyePosWorld = matInstance->getMaterialParameterHandle("$eyePosWorld");
+   //volumeStart = matInstance->getMaterialParameterHandle("$volumeStart");
+   //volumeSize = matInstance->getMaterialParameterHandle("$volumeSize");
+   //volumePosition = matInstance->getMaterialParameterHandle("$volumePosition");
 }
 
 RenderProbeMgr::ReflectProbeMaterialInfo::~ReflectProbeMaterialInfo()
@@ -451,10 +451,10 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
    matParams->setSafe(groundColor, probeInfo->mGroundColor);
    matParams->setSafe(intensity, probeInfo->mIntensity);
 
-   matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
-   matParams->setSafe(volumeStart, probeInfo->getPosition() - Point3F(probeInfo->mRadius, probeInfo->mRadius, probeInfo->mRadius));
-   matParams->setSafe(volumePosition, probeInfo->getPosition());
-   matParams->setSafe(volumeSize, Point3F(probeInfo->mRadius * 2, probeInfo->mRadius * 2, probeInfo->mRadius * 2));
+   //matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
+   //matParams->setSafe(volumeStart, probeInfo->getPosition() - Point3F(probeInfo->mRadius, probeInfo->mRadius, probeInfo->mRadius));
+   //matParams->setSafe(volumePosition, probeInfo->getPosition());
+   //matParams->setSafe(volumeSize, Point3F(probeInfo->mRadius * 2, probeInfo->mRadius * 2, probeInfo->mRadius * 2));
 }
 
 
@@ -658,18 +658,18 @@ ProbeRenderInst::~ProbeRenderInst()
    SAFE_DELETE(mCubemap);
 }
 
-void ProbeRenderInst::set(const ProbeRenderInst *light)
+void ProbeRenderInst::set(const ProbeRenderInst *probeInfo)
 {
-   mTransform = light->mTransform;
-   mColor = light->mColor;
-   mBrightness = light->mBrightness;
-   mAmbient = light->mAmbient;
-   mRange = light->mRange;
-   mCubemap = light->mCubemap;
-   mRadius = light->mRadius;
-   mIntensity = light->mIntensity;
+   mTransform = probeInfo->mTransform;
+   mColor = probeInfo->mColor;
+   mBrightness = probeInfo->mBrightness;
+   mAmbient = probeInfo->mAmbient;
+   mRange = probeInfo->mRange;
+   mCubemap = probeInfo->mCubemap;
+   mRadius = probeInfo->mRadius;
+   mIntensity = probeInfo->mIntensity;
 
-   mUseCubemap = light->mUseCubemap;
+   mUseCubemap = probeInfo->mUseCubemap;
 }
 
 void ProbeRenderInst::getWorldToLightProj(MatrixF *outMatrix) const

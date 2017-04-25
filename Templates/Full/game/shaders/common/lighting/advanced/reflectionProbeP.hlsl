@@ -14,9 +14,8 @@ struct ConvexConnectP
 };
 
 TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
-TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 1);
-TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 2);
-TORQUE_UNIFORM_SAMPLER2D(directLighting, 3);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 1);
+TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 2);
 
 uniform float4 rtParams0;
 uniform float4 lightColor;
@@ -54,7 +53,6 @@ uniform float4 SkyColor;
 uniform float4 GroundColor;
 uniform float useCubemap;
 uniform float Intensity;
-TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 4);
 uniform float cubeMips;
 
 float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
