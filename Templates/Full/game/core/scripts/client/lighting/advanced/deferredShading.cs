@@ -54,11 +54,28 @@ new ShaderData( AL_DeferredShader )
    pixVersion = 2.0;
 };
 
+new ShaderData( AL_ProbeShader )
+{
+   DXVertexShaderFile = "shaders/common/postFx/postFxV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/probeShadingP.hlsl";
+   
+   OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
+   OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/probeShadingP.glsl";
+
+   samplerNames[0] = "colorBufferTex";
+   samplerNames[1] = "directLightingBuffer";
+   samplerNames[2] = "matInfoTex";
+   samplerNames[3] = "indirectLightingBuffer";
+   samplerNames[4] = "deferredTex";
+   pixVersion = 2.0;
+};
+
+
 singleton PostEffect( AL_PreCapture )
 {
    renderTime = "PFXAfterBin";
    renderBin = "SkyBin";
-   shader = AL_DeferredShader;
+   shader = AL_ProbeShader;
    stateBlock = AL_DeferredShadingState;
    texture[0] = "#color";
    texture[1] = "#directLighting";
