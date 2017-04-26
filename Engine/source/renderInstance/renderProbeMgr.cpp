@@ -28,6 +28,7 @@
 #include "math/util/matrixSet.h"
 #include "materials/processedMaterial.h"
 #include "renderInstance/renderDeferredMgr.h"
+#include "math/mPolyhedron.impl.h"
 
 IMPLEMENT_CONOBJECT(RenderProbeMgr);
 
@@ -81,7 +82,11 @@ void RenderProbeMgr::addElement(RenderInst *inst)
    internalAddElement(inst);
 
    ProbeRenderInst* probeInst = static_cast<ProbeRenderInst*>(inst);
-   addSphereReflectionProbe(probeInst);
+
+   if (probeInst->mProbeShapeType == ProbeRenderInst::Sphere)
+      addSphereReflectionProbe(probeInst);
+   else
+      addConvexReflectionProbe(probeInst);
 }
 
 //remove
@@ -89,7 +94,7 @@ void RenderProbeMgr::addElement(RenderInst *inst)
 //Con::setIntVariable("lightMetrics::culledReflectProbes", 0/*mNumLightsCulled*/);
 //
 
-GFXVertexBufferHandle<RenderProbeMgr::ProbeVertex> RenderProbeMgr::getSphereMesh(U32 &outNumPrimitives, GFXPrimitiveBuffer *&outPrimitives)
+GFXVertexBufferHandle<GFXVertexPC> RenderProbeMgr::getSphereMesh(U32 &outNumPrimitives, GFXPrimitiveBufferHandle &outPrimitives)
 {
    static SphereMesh sSphereMesh;
 
@@ -139,12 +144,138 @@ void RenderProbeMgr::addSphereReflectionProbe(ProbeRenderInst *probeInfo)
 
 void RenderProbeMgr::addConvexReflectionProbe(ProbeRenderInst *probeInfo)
 {
+   //build it 
+   Polyhedron poly;
+   poly.buildBox(probeInfo->getTransform(), probeInfo->mRadius);
+
+   /*const U32 numPoints = poly.getNumPoints();
+
+   if (numPoints == 0)
+   {
+      probeInfo->numPrims = numPoints;
+      return;
+   }
+
+   const Point3F* points = poly.getPoints();
+   const PlaneF* planes = poly.getPlanes();
+   const Point3F viewDir = GFX->getViewMatrix().getForwardVector();
+
+   // Create a temp buffer for the vertices and
+   // put all the polyhedron's points in there.
+
+   probeInfo->vertBuffer.set(GFX, numPoints, GFXBufferTypeStatic);
+
+   probeInfo->vertBuffer.lock();
+   for (U32 i = 0; i < numPoints; ++i)
+   {
+      probeInfo->vertBuffer[i].point = points[i];
+      probeInfo->vertBuffer[i].color = ColorI::WHITE;
+   }
+
+   /*if (getTransform())
+   {
+   for (U32 i = 0; i < numPoints; ++i)
+   getTransform().mulP(verts[i].point);
+   }*/
+   /*probeInfo->vertBuffer.unlock();
+
+   // Allocate a temp buffer for the face indices.
+
+   const U32 numIndices = poly.getNumEdges() * 3;
+   const U32 numPlanes = poly.getNumPlanes();
+
+   probeInfo->primBuffer.set(GFX, numIndices, 0, GFXBufferTypeVolatile);
+
+   // Unfortunately, since polygons may have varying numbers of
+   // vertices, we also need to retain that information.
+   FrameTemp< U32 > numIndicesForPoly(numPlanes);
+   U32 numPolys = 0;
+
+   // Create all the polygon indices.
+   U16* indices;
+   probeInfo->primBuffer.lock(&indices);
+   U32 idx = 0;
+   for (U32 i = 0; i < numPlanes; ++i)
+   {
+      U32 numPoints = poly.extractFace(i, &indices[idx], numIndices - idx);
+      numIndicesForPoly[numPolys] = numPoints;
+      idx += numPoints;
+
+      numPolys++;
+   }
+   probeInfo->primBuffer.unlock();
+
+   //probeInfo->vertBuffer = verts;
+   probeInfo->numPrims = numPolys;
+
    //probeInfo->vertBuffer = probeInfo->vertBuffer;
    //probeInfo->primBuffer = probeInfo->primBuffer;
    //probeInfo->numPrims = probeInfo->numPrims;
 
    //probeInfo->probeInfo = probeInfo;
-   //pEntry.probeMaterial = _getReflectProbeMaterial();
+   //pEntry.probeMaterial = _getReflectProbeMaterial();*/
+
+   probeInfo->numVerts = poly.getNumPoints();
+   const Point3F* points = poly.getPoints();
+   const PlaneF* planes = poly.getPlanes();
+   const Point3F viewDir = GFX->getViewMatrix().getForwardVector();
+
+   if (probeInfo->numVerts == 0)
+   {
+      probeInfo->numPrims = probeInfo->numVerts;
+      return;
+   }
+
+   // Create a temp buffer for the vertices and
+   // put all the polyhedron's points in there.
+
+   probeInfo->vertBuffer.set(GFX, probeInfo->numVerts, GFXBufferTypeVolatile);
+   ColorF vertColor = ColorF(1,1,1,1).toLinear();
+   probeInfo->vertBuffer.lock();
+   for (U32 i = 0; i < probeInfo->numVerts; ++i)
+   {
+      probeInfo->vertBuffer[i].point = points[i];
+      probeInfo->vertBuffer[i].color = vertColor;
+   }
+
+   /*if (probeInfo->getTransform())
+   {
+      for (U32 i = 0; i < probeInfo->numVerts; ++i)
+         probeInfo->getTransform().mulP(probeInfo->vertBuffer[i].point);
+   }*/
+
+   probeInfo->vertBuffer.unlock();
+
+   // Allocate a temp buffer for the face indices.
+
+   const U32 numIndices = poly.getNumEdges() * 3;
+   const U32 numPlanes = poly.getNumPlanes();
+
+   probeInfo->primBuffer.set(GFX, numIndices, 0, GFXBufferTypeVolatile);
+
+   // Unfortunately, since polygons may have varying numbers of
+   // vertices, we also need to retain that information.
+
+   probeInfo->numIndicesForPoly.clear();
+   probeInfo->numIndicesForPoly.setSize(numPlanes);
+   U32 numPolys = 0;
+
+   // Create all the polygon indices.
+
+   U16* indices;
+   probeInfo->primBuffer.lock(&indices);
+   U32 idx = 0;
+   for (U32 i = 0; i < numPlanes; ++i)
+   {
+      U32 numPoints = poly.extractFace(i, &indices[idx], numIndices - idx);
+      probeInfo->numIndicesForPoly[numPolys] = numPoints;
+      idx += numPoints;
+
+      numPolys++;
+   }
+   probeInfo->primBuffer.unlock();
+
+   probeInfo->numPrims = numPolys;
 
    if (!mReflectProbeMaterial)
       mReflectProbeMaterial = _getReflectProbeMaterial();
@@ -232,7 +363,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
    }
 
    //Order the probes by size, biggest to smallest
-   PROFILE_START(AdvancedLightManager_ReflectProbeRender);
+   PROFILE_START(RenderProbeManager_ReflectProbeRender);
    dQsort(mElementList.address(), mElementList.size(), sizeof(const MainSortElem), AscendingReflectProbeInfluence);
 
    NamedTexTarget* lightInfoTarget = NamedTexTarget::find("indirectLighting");
@@ -259,9 +390,9 @@ void RenderProbeMgr::render( SceneRenderState *state )
       GFX->setVertexBuffer(curEntry->vertBuffer);
       GFX->setPrimitiveBuffer(curEntry->primBuffer);
 
-      MatrixF probeTrans = MatrixF::Identity;
-      probeTrans.setPosition(curEntry->getPosition());
-      probeTrans.scale(curEntry->mRadius * 1.01f);
+      MatrixF probeTrans = curEntry->getTransform();//MatrixF::Identity;
+      //probeTrans.setPosition(curEntry->getPosition());
+      //probeTrans.scale(curEntry->mRadius * 1.01f);
 
       sgData.objTrans = &probeTrans;
 
@@ -277,7 +408,15 @@ void RenderProbeMgr::render( SceneRenderState *state )
             mReflectProbeMaterial->matInstance->setSceneInfo(state, sgData);
 
             if (curEntry->primBuffer)
-               GFX->drawIndexedPrimitive(GFXTriangleList, 0, 0, curEntry->vertBuffer->mNumVerts, 0, curEntry->numPrims);
+            {
+               U32 startIndex = 0;
+               for (U32 i = 0; i < curEntry->numPrims; ++i)
+               {
+                  U32 numVerts = curEntry->numIndicesForPoly[i];
+                  GFX->drawIndexedPrimitive(GFXTriangleStrip, 0, 0, curEntry->numVerts, startIndex, numVerts - 2);
+                  startIndex += numVerts;
+               }
+            }
             else
                GFX->drawPrimitive(GFXTriangleList, 0, curEntry->numPrims);
          }
@@ -610,7 +749,7 @@ RenderProbeMgr::ReflectProbeMaterialInfo* RenderProbeMgr::_getReflectProbeMateri
 
       // Now create the material info object.
       mReflectProbeMaterial = new ReflectProbeMaterialInfo("ReflectionProbeMaterial",
-         getGFXVertexFormat<RenderProbeMgr::ProbeVertex>());
+         getGFXVertexFormat<GFXVertexPC>());
 
    return mReflectProbeMaterial;
 }
@@ -658,18 +797,23 @@ ProbeRenderInst::~ProbeRenderInst()
    SAFE_DELETE(mCubemap);
 }
 
-void ProbeRenderInst::set(const ProbeRenderInst *light)
+void ProbeRenderInst::set(const ProbeRenderInst *probeInfo)
 {
-   mTransform = light->mTransform;
-   mColor = light->mColor;
-   mBrightness = light->mBrightness;
-   mAmbient = light->mAmbient;
-   mRange = light->mRange;
-   mCubemap = light->mCubemap;
-   mRadius = light->mRadius;
-   mIntensity = light->mIntensity;
+   mTransform = probeInfo->mTransform;
+   mColor = probeInfo->mColor;
+   mBrightness = probeInfo->mBrightness;
+   mAmbient = probeInfo->mAmbient;
+   mRange = probeInfo->mRange;
+   mCubemap = probeInfo->mCubemap;
+   mRadius = probeInfo->mRadius;
+   mIntensity = probeInfo->mIntensity;
 
-   mUseCubemap = light->mUseCubemap;
+   mUseCubemap = probeInfo->mUseCubemap;
+
+   mProbeShapeType = probeInfo->mProbeShapeType;
+   //numPrims = probeInfo->numPrims;
+   //vertBuffer = probeInfo->vertBuffer;
+   //primBuffer = probeInfo->primBuffer;
 }
 
 void ProbeRenderInst::getWorldToLightProj(MatrixF *outMatrix) const

@@ -43,6 +43,9 @@
 #ifndef _CUBEMAPDATA_H_
 #include "gfx/sim/cubemapData.h"
 #endif
+#ifndef _GFXPRIMITIVEBUFFER_H_
+#include "gfx/gfxPrimitiveBuffer.h"
+#endif
 
 class SceneRenderState;
 class ISceneObject;
@@ -510,9 +513,19 @@ struct ProbeRenderInst : public RenderInst
    /// for this light.
    bool mDebugRender;
 
-   GFXPrimitiveBuffer* primBuffer;
-   GFXVertexBuffer* vertBuffer;
+   GFXPrimitiveBufferHandle primBuffer;
+   GFXVertexBufferHandle<GFXVertexPC> vertBuffer;
    U32 numPrims;
+   U32 numVerts;
+   Vector< U32 > numIndicesForPoly;
+
+   enum ProbeShapeType
+   {
+      Sphere = 0,            ///< Sphere shaped
+      Box = 1,               ///< Box-based shape
+   };
+
+   ProbeShapeType mProbeShapeType;
 
 public:
 

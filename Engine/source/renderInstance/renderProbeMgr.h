@@ -60,6 +60,8 @@ public:
 class RenderProbeMgr : public RenderBinManager
 {
    typedef RenderBinManager Parent;
+public:
+   typedef GFXVertexPNTT FarFrustumQuadVert;
 
 protected:
    struct ReflectProbeMaterialInfo
@@ -121,14 +123,12 @@ protected:
       void setProbeParameters(const ProbeRenderInst *probe, const SceneRenderState* renderState, const MatrixF &worldViewOnly);
    };
 
-   typedef GFXVertexPC ProbeVertex;
-   typedef GFXVertexPNTT FarFrustumQuadVert;
    GFXVertexBufferHandle<FarFrustumQuadVert> mFarFrustumQuadVerts;
 
-   GFXVertexBufferHandle<ProbeVertex> getSphereMesh(U32 &outNumPrimitives, GFXPrimitiveBuffer *&outPrimitives);
+   GFXVertexBufferHandle<GFXVertexPC> getSphereMesh(U32 &outNumPrimitives, GFXPrimitiveBufferHandle &outPrimitives);
 
    // Convex geometry for lights
-   GFXVertexBufferHandle<ProbeVertex> mSphereGeometry;
+   GFXVertexBufferHandle<GFXVertexPC> mSphereGeometry;
 
    GFXPrimitiveBufferHandle mSphereIndices;
 

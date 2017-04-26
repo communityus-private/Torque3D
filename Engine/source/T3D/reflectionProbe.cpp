@@ -61,6 +61,7 @@
 #include "platform/platform.h"
 #include "T3D/gameFunctions.h"
 #include "gui/3d/guiTSControl.h"
+#include "renderInstance/renderProbeMgr.h"
 //
 
 extern bool gEditingMission;
@@ -92,8 +93,8 @@ ConsoleDocClass(ReflectionProbe,
 ImplementEnumType(ReflectProbeType,
    "Type of mesh data available in a shape.\n"
    "@ingroup gameObjects")
-{ ReflectionProbe::Sphere, "Sphere", "Sphere shaped" },
-{ ReflectionProbe::Convex, "Convex", "Convex-based shape" }
+{ ProbeRenderInst::Sphere, "Sphere", "Sphere shaped" },
+{ ProbeRenderInst::Box, "Convex", "Convex-based shape" }
 EndImplementEnumType;
 
 ImplementEnumType(IndrectLightingModeEnum,
@@ -129,7 +130,7 @@ ReflectionProbe::ReflectionProbe()
    // so we don't try to access it incorrectly
    mMaterialInst = NULL;
 
-   mProbeShapeType = Sphere;
+   mProbeShapeType = ProbeRenderInst::Sphere;
 
    mIndrectLightingModeType = AmbientColor;
    mAmbientColor = ColorF(1, 1, 1, 1);
@@ -293,7 +294,9 @@ bool ReflectionProbe::onAdd()
    if (isClientObject())
       updateMaterial();
 
-   Point3F origin = Point3F(-0.5000000, 0.5000000, -0.5000000);
+   mPolyhedron.buildBox(getTransform(), Box3F(mRadius));
+
+   /*Point3F origin = Point3F(-0.5000000, 0.5000000, -0.5000000);
    Point3F vecs[3];
    vecs[0] = Point3F(1.0000000, 0.0000000, 0.0000000);
    vecs[1] = Point3F(0.0000000, -1.0000000, 0.0000000);
@@ -339,7 +342,9 @@ bool ReflectionProbe::onAdd()
    mPolyhedron.edgeList[8].vertex[0] = 4; mPolyhedron.edgeList[8].vertex[1] = 2; mPolyhedron.edgeList[8].face[0] = 1; mPolyhedron.edgeList[8].face[1] = 5;
    mPolyhedron.edgeList[9].vertex[0] = 4; mPolyhedron.edgeList[9].vertex[1] = 7; mPolyhedron.edgeList[9].face[0] = 4; mPolyhedron.edgeList[9].face[1] = 5;
    mPolyhedron.edgeList[10].vertex[0] = 5; mPolyhedron.edgeList[10].vertex[1] = 7; mPolyhedron.edgeList[10].face[0] = 3; mPolyhedron.edgeList[10].face[1] = 4;
-   mPolyhedron.edgeList[11].vertex[0] = 7; mPolyhedron.edgeList[11].vertex[1] = 6; mPolyhedron.edgeList[11].face[0] = 3; mPolyhedron.edgeList[11].face[1] = 5;
+   mPolyhedron.edgeList[11].vertex[0] = 7; mPolyhedron.edgeList[11].vertex[1] = 6; mPolyhedron.edgeList[11].face[0] = 3; mPolyhedron.edgeList[11].face[1] = 5;*/
+
+   setPolyhedron(mPolyhedron);
 
    setMaskBits(-1);
 
@@ -404,7 +409,7 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
    stream->write(mCubemapName);
 
    //if (stream->writeFlag(mask & PolyMask))
-   {
+   /*{
       U32 i;
       stream->write(mPolyhedron.pointList.size());
       for (i = 0; i < mPolyhedron.pointList.size(); i++)
@@ -423,7 +428,7 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
          stream->write(rEdge.vertex[0]);
          stream->write(rEdge.vertex[1]);
       }
-   }
+   }*/
 
    return retMask;
 }
@@ -449,11 +454,11 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
          updateMaterial();
    }
 
-   U32 shapeType = Sphere;
+   U32 shapeType = ProbeRenderInst::Sphere;
    stream->read(&shapeType);
-   if ((ProbeShapeType)shapeType != Sphere)
+   if ((ProbeRenderInst::ProbeShapeType)shapeType != ProbeRenderInst::Sphere)
    {
-      mProbeShapeType = (ProbeShapeType)shapeType;
+      mProbeShapeType = (ProbeRenderInst::ProbeShapeType)shapeType;
    }
 
    U32 indirectModeType = AmbientColor;
@@ -490,7 +495,7 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
       Sim::findObject(mCubemapName, mCubemap);
 
    //if (stream->readFlag())
-   {
+   /*{
       U32 i, size;
       Polyhedron tempPH;
       stream->read(&size);
@@ -514,7 +519,10 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
          stream->read(&rEdge.vertex[1]);
       }
       setPolyhedron(tempPH);
-   }
+   }*/
+   Polyhedron tempPH;
+   tempPH.buildBox(getTransform(), Box3F(mRadius));
+   setPolyhedron(tempPH);
 
    createGeometry();
    updateMaterial();
@@ -546,12 +554,30 @@ void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
 {
    mPolyhedron = rPolyhedron;
 
-   mPolyhedron.transform(getTransform(), getScale());
+   /*if (mPolyhedron.pointList.size() != 0) {
+      mObjBox.minExtents.set(1e10, 1e10, 1e10);
+      mObjBox.maxExtents.set(-1e10, -1e10, -1e10);
+      for (U32 i = 0; i < mPolyhedron.pointList.size(); i++) {
+         mObjBox.minExtents.setMin(mPolyhedron.pointList[i]);
+         mObjBox.maxExtents.setMax(mPolyhedron.pointList[i]);
+      }
+   }
+   else {
+      mObjBox.minExtents.set(-0.5, -0.5, -0.5);
+      mObjBox.maxExtents.set(0.5, 0.5, 0.5);
+   }*/
 
-   Point3F halfScale = getScale()/2;
-   mObjBox = Box3F(-halfScale, halfScale);
+   //mPolyhedron.transform(getTransform(), getScale());
+
+   //Point3F halfScale = getScale()/2;
+   //mObjBox = Box3F(-halfScale, halfScale);
+
+   mObjBox = Box3F(mRadius);
 
    resetWorldBox();
+
+   if (isServerObject())
+      return;
 
    /*MatrixF base(true);
    base.scale(Point3F(1.0 / mObjScale.x,
@@ -561,7 +587,7 @@ void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
 
    //
    //Translate the probeInfo's polyhedron into a convex shape for rendering with
-   const U32 numPoints = mPolyhedron.getNumPoints();
+   /*const U32 numPoints = mPolyhedron.getNumPoints();
 
    if (numPoints == 0)
    {
@@ -576,7 +602,7 @@ void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
    // Create a temp buffer for the vertices and
    // put all the polyhedron's points in there.
 
-   GFXVertexBufferHandle< AdvancedLightManager::LightVertex > verts(GFX, numPoints, GFXBufferTypeStatic);
+   GFXVertexBufferHandle< GFXVertexPC > verts(GFX, numPoints, GFXBufferTypeStatic);
 
    verts.lock();
    for (U32 i = 0; i < numPoints; ++i)
@@ -585,12 +611,12 @@ void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
       verts[i].color = ColorI::WHITE;
    }
 
-   if (getTransform())
+   /*if (getTransform())
    {
       for (U32 i = 0; i < numPoints; ++i)
          getTransform().mulP(verts[i].point);
-   }
-   verts.unlock();
+   }*/
+   /*verts.unlock();
 
    // Allocate a temp buffer for the face indices.
 
@@ -627,7 +653,7 @@ void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
             continue;
       }*/
 
-      U32 numPoints = mPolyhedron.extractFace(i, &indices[idx], numIndices - idx);
+      /*U32 numPoints = mPolyhedron.extractFace(i, &indices[idx], numIndices - idx);
       numIndicesForPoly[numPolys] = numPoints;
       idx += numPoints;
 
@@ -637,7 +663,7 @@ void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
 
    mProbeInfo->vertBuffer = verts;
    mProbeInfo->primBuffer = prims;
-   mProbeInfo->numPrims = numPolys;
+   mProbeInfo->numPrims = numPolys;*/
 }
 
 void ReflectionProbe::updateMaterial()
@@ -696,6 +722,8 @@ void ReflectionProbe::updateMaterial()
    {
       mProbeInfo->mAmbient = ColorF(0, 0, 0, 0);
    }
+
+   mProbeInfo->mProbeShapeType = mProbeShapeType;
 }
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
@@ -814,7 +842,7 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    ColorI color = ColorI::WHITE;
    color.alpha = 50;
 
-   if (mProbeShapeType == Sphere)
+   if (mProbeShapeType == ProbeRenderInst::Sphere)
       draw->drawSphere(desc, mRadius, getPosition(), color);
    else
       draw->drawPolyhedron(desc, mPolyhedron, color);

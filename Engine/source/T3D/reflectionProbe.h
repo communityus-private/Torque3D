@@ -58,11 +58,6 @@ class ReflectionProbe : public SceneObject, public ISceneLight
    typedef SceneObject Parent;
 
 public:
-   enum ProbeShapeType
-   {
-      Sphere = 0,            ///< Sphere shaped
-      Convex = 1,          ///< Convex-based shape
-   };
 
    enum IndrectLightingModeType
    {
@@ -111,7 +106,7 @@ private:
    // The actual Material instance
    BaseMatInstance*  mMaterialInst;
 
-   ProbeShapeType mProbeShapeType;
+   ProbeRenderInst::ProbeShapeType mProbeShapeType;
 
    ProbeRenderInst* mProbeInfo;
 
@@ -233,7 +228,7 @@ public:
    GFXTextureTargetRef* faceRenderTarget;
 };
 
-typedef ReflectionProbe::ProbeShapeType ReflectProbeType;
+typedef ProbeRenderInst::ProbeShapeType ReflectProbeType;
 DefineEnumType(ReflectProbeType);
 
 typedef ReflectionProbe::IndrectLightingModeType IndrectLightingModeEnum;
