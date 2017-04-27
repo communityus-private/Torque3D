@@ -120,6 +120,16 @@ new SimGroup(MissionGroup) {
          canSave = "1";
          canSaveDynamicFields = "1";
       };
+      new CameraBookmark() {
+         isAIControlled = "0";
+         dataBlock = "CameraBookmarkMarker";
+         position = "15.8629 -8.35756 4.69165";
+         rotation = "0.0151395 -0.00460125 0.999875 33.8145";
+         scale = "1 1 1";
+         internalName = "NewCamera_0";
+         canSave = "1";
+         canSaveDynamicFields = "1";
+      };
    };
    new GroundPlane() {
       squareSize = "128";
@@ -1192,8 +1202,10 @@ new SimGroup(MissionGroup) {
       enabled = "1";
       ProbeShape = "Sphere";
       radius = "200";
-      ProbeMode = "Baked Cubemap";
       Intensity = "0.1";
+      IndirectLightMode = "Ambient Color";
+      IndirectLight = "1 1 1 1";
+      ReflectionMode = "Baked Cubemap";
       reflectionPath = "levels/Empty Room/probes/";
       StaticCubemap = "DesertSkyCubemap";
       SkyColor = "0.5 0.5 1 1";
@@ -1205,6 +1217,7 @@ new SimGroup(MissionGroup) {
       canSave = "1";
       canSaveDynamicFields = "1";
       persistentId = "0039b2a6-20c2-11e7-b558-91c869a431e1";
+         ProbeMode = "Baked Cubemap";
    };
    new TSStatic() {
       shapeName = "art/shapes/textures/pbrGrid.dae";
@@ -1375,7 +1388,7 @@ new SimGroup(MissionGroup) {
       isEnabled = "1";
       color = "0.0802193 0.804559 0.7593 1";
       brightness = "1";
-      castShadows = "1";
+      castShadows = "0";
       staticRefreshFreq = "250";
       dynamicRefreshFreq = "8";
       priority = "1";
@@ -1450,6 +1463,46 @@ new SimGroup(MissionGroup) {
       position = "-24.378 4.92861 3.5101";
       rotation = "1 0 0 0";
       scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new TSStatic() {
+      shapeName = "art/shapes/cube/cube.dae";
+      playAmbient = "1";
+      meshCulling = "0";
+      originSort = "0";
+      collisionType = "Collision Mesh";
+      decalType = "Collision Mesh";
+      allowPlayerStep = "0";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
+      renderNormals = "0";
+      forceDetail = "-1";
+      position = "24.1149 10.5531 0.125195";
+      rotation = "1 0 0 0";
+      scale = "1 10 10";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new TSStatic() {
+      shapeName = "art/shapes/cube/cube.dae";
+      playAmbient = "1";
+      meshCulling = "0";
+      originSort = "0";
+      collisionType = "Collision Mesh";
+      decalType = "Collision Mesh";
+      allowPlayerStep = "0";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
+      renderNormals = "0";
+      forceDetail = "-1";
+      position = "12.7735 12.0238 0.464151";
+      rotation = "1 0 0 0";
+      scale = "1 10 10";
       canSave = "1";
       canSaveDynamicFields = "1";
    };
