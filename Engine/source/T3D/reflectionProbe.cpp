@@ -471,7 +471,26 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
    if (mCubemapName.isNotEmpty() && mReflectionModeType == ReflectionModeType::StaticCubemap)
       Sim::findObject(mCubemapName, mCubemap);
 
+   createGeometry();
    updateMaterial();
+}
+
+void ReflectionProbe::createGeometry()
+{
+   // Clean up our previous shape
+   if (mEditorShapeInst)
+      SAFE_DELETE(mEditorShapeInst);
+   
+   mEditorShape = NULL;
+   
+   String shapeFile = "tools/resources/ReflectProbeSphere.dae";
+   
+   // Attempt to get the resource from the ResourceManager
+   mEditorShape = ResourceManager::get().load(shapeFile);
+   if (mEditorShape)
+   {
+      mEditorShapeInst = new TSShapeInstance(mEditorShape, isClientObject());
+   }
 }
 
 //-----------------------------------------------------------------------------

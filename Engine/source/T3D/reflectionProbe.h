@@ -185,6 +185,9 @@ public:
    // use the same Materials.
    //--------------------------------------------------------------------------
 
+   // Create the geometry for rendering
+   void createGeometry();
+
    // Get the Material instance
    void updateMaterial();
 
