@@ -53,7 +53,7 @@ class BaseMatInstance;
 // actual setup and rendering for you.
 //-----------------------------------------------------------------------------
 
-class ReflectionProbe : public SceneObject, public ISceneLight
+class ReflectionProbe : public SceneObject
 {
    typedef SceneObject Parent;
 
@@ -69,10 +69,9 @@ public:
    enum ReflectionModeType
    {
       NoReflection = 0,
-      HorizonColor = 1,
-      StaticCubemap = 2,
-      BakedCubemap = 3,
-      SkyLight = 4,
+      StaticCubemap = 1,
+      BakedCubemap = 2,
+      SkyLight = 3,
       //DynamicCubemap = 5,
    };
 
@@ -110,8 +109,6 @@ private:
 
    ProbeRenderInst* mProbeInfo;
 
-   Polyhedron mPolyhedron;
-
    //Indirect Lighting Contribution stuff
    IndrectLightingModeType mIndrectLightingModeType;
    ColorF mAmbientColor;
@@ -121,9 +118,6 @@ private:
    ReflectionModeType mReflectionModeType;
 
    F32 mRadius;
-   bool mOverrideColor;
-   ColorF mSkyColor;
-   ColorF mGroundColor;
    F32 mIntensity;
 
    String mCubemapName;
@@ -190,13 +184,9 @@ public:
    // minimizing texture, state, and shader switching by grouping objects that
    // use the same Materials.
    //--------------------------------------------------------------------------
-   // Create the geometry for rendering
-   void createGeometry();
 
    // Get the Material instance
    void updateMaterial();
-
-   void setPolyhedron(const Polyhedron& rPolyhedron);
 
    // This is the function that allows this object to submit itself for rendering
    void prepRenderImage(SceneRenderState *state);
@@ -205,27 +195,8 @@ public:
       SceneRenderState *state,
       BaseMatInstance *overrideMat);
 
-   /// Submit lights to the light manager passed in.
-   virtual void submitLights(LightManager *lm, bool staticLighting);
-
-   ///
-   virtual LightInfo* getLight() {
-      return NULL;
-   }
-
    //Baking
    void bake(String outputPath, S32 resolution);
-   void renderFrame(GFXTextureTargetRef* target, U32 faceId, Point2I resolution);
-
-   void onRenderTSControlStyle(const RectI &updateRect);
-   void renderFrameCanvasStyle();
-   void capture(GFXTextureTargetRef* target, U32 faceId, Point2I resolution);
-   void _internalRenderTSControlStyle(Frustum &frustum);
-
-   GBitmap _captureBackBuffer();
-
-   MatrixF faceViewTransform;
-   GFXTextureTargetRef* faceRenderTarget;
 };
 
 typedef ProbeRenderInst::ProbeShapeType ReflectProbeType;

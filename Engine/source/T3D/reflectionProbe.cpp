@@ -21,7 +21,7 @@
 //-----------------------------------------------------------------------------
 
 #include "platform/platform.h"
-#include "T3D/ReflectionProbe.h"
+#include "T3D/reflectionProbe.h"
 
 #include "math/mathIO.h"
 #include "scene/sceneRenderState.h"
@@ -45,12 +45,10 @@
 #include "gfx/gfxTextureHandle.h"
 #include "core/stream/fileStream.h"
 #include "core/fileObject.h"
-#include "scene/reflectionManager.h"
 #include "lighting/advanced/advancedLightManager.h"
 #include "core/resourceManager.h"
 
 #include "console/simPersistId.h"
-#include "math/mPolyhedron.impl.h"
 #include <string>
 #include "postFx/postEffectManager.h"
 #include "T3D/gameFunctions.h"
@@ -94,7 +92,7 @@ ImplementEnumType(ReflectProbeType,
    "Type of mesh data available in a shape.\n"
    "@ingroup gameObjects")
 { ProbeRenderInst::Sphere, "Sphere", "Sphere shaped" },
-{ ProbeRenderInst::Box, "Convex", "Convex-based shape" }
+{ ProbeRenderInst::Box, "Box", "Box shape" }
 EndImplementEnumType;
 
 ImplementEnumType(IndrectLightingModeEnum,
@@ -109,7 +107,6 @@ ImplementEnumType(ReflectionModeEnum,
    "Type of mesh data available in a shape.\n"
    "@ingroup gameObjects")
 { ReflectionProbe::NoReflection, "No Reflections", "This probe does not provide any local reflection data"},
-{ ReflectionProbe::HorizonColor, "Horizon Colors", "Uses sky and ground flat colors for ambient light" },
 { ReflectionProbe::StaticCubemap, "Static Cubemap", "Uses a static CubemapData" },
 { ReflectionProbe::BakedCubemap, "Baked Cubemap", "Uses a cubemap baked from the probe's current position" },
 { ReflectionProbe::SkyLight, "Skylight", "Captures a cubemap of the sky and far terrain, designed to influence the whole level" }
@@ -145,10 +142,6 @@ ReflectionProbe::ReflectionProbe()
    mProbeInfo = new ProbeRenderInst();
 
    mRadius = 10;
-
-   mOverrideColor = false;
-   mSkyColor = ColorF(0.5f, 0.5f, 1.0f, 1.0f);
-   mGroundColor = ColorF(0.8f, 0.7f, 0.5f, 1.0f);
    mIntensity = 1.0f;
 
    mUseCubemap = false;
@@ -203,9 +196,6 @@ void ReflectionProbe::initPersistFields()
          "The type of mesh data to use for collision queries.");
 
       addField("StaticCubemap", TypeCubemapName, Offset(mCubemapName, ReflectionProbe), "Cubemap used instead of reflection texture if fullReflect is off.");
-
-      addField("SkyColor", TypeColorF, Offset(mSkyColor, ReflectionProbe), "Path of file to save and load results.");
-      addField("GroundColor", TypeColorF, Offset(mGroundColor, ReflectionProbe), "Path of file to save and load results.");
 
       addProtectedField("Bake", TypeBool, Offset(mBake, ReflectionProbe),
          &_doBake, &defaultProtectedGetFn, "Regenerate Voxel Grid", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
@@ -294,8 +284,6 @@ bool ReflectionProbe::onAdd()
    if (isClientObject())
       updateMaterial();
 
-   mPolyhedron.buildBox(getTransform(), Box3F(mRadius));
-
    /*Point3F origin = Point3F(-0.5000000, 0.5000000, -0.5000000);
    Point3F vecs[3];
    vecs[0] = Point3F(1.0000000, 0.0000000, 0.0000000);
@@ -343,8 +331,6 @@ bool ReflectionProbe::onAdd()
    mPolyhedron.edgeList[9].vertex[0] = 4; mPolyhedron.edgeList[9].vertex[1] = 7; mPolyhedron.edgeList[9].face[0] = 4; mPolyhedron.edgeList[9].face[1] = 5;
    mPolyhedron.edgeList[10].vertex[0] = 5; mPolyhedron.edgeList[10].vertex[1] = 7; mPolyhedron.edgeList[10].face[0] = 3; mPolyhedron.edgeList[10].face[1] = 4;
    mPolyhedron.edgeList[11].vertex[0] = 7; mPolyhedron.edgeList[11].vertex[1] = 6; mPolyhedron.edgeList[11].face[0] = 3; mPolyhedron.edgeList[11].face[1] = 5;*/
-
-   setPolyhedron(mPolyhedron);
 
    setMaskBits(-1);
 
@@ -394,9 +380,6 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
 
    stream->write((U32)mReflectionModeType);
 
-   stream->writeFlag(mOverrideColor);
-   stream->write(mSkyColor);
-   stream->write(mGroundColor);
    stream->writeFloat(mIntensity, 7);
    stream->write(mRadius);
 
@@ -456,10 +439,7 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
 
    U32 shapeType = ProbeRenderInst::Sphere;
    stream->read(&shapeType);
-   if ((ProbeRenderInst::ProbeShapeType)shapeType != ProbeRenderInst::Sphere)
-   {
-      mProbeShapeType = (ProbeRenderInst::ProbeShapeType)shapeType;
-   }
+   mProbeShapeType = (ProbeRenderInst::ProbeShapeType)shapeType;
 
    U32 indirectModeType = AmbientColor;
    stream->read(&indirectModeType);
@@ -477,9 +457,6 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
       mReflectionModeType = (ReflectionModeType)reflectModeType;
    }
 
-   mOverrideColor = stream->readFlag();
-   stream->read(&mSkyColor);
-   stream->read(&mGroundColor);
    mIntensity = stream->readFloat(7);
    stream->read(&mRadius);
 
@@ -494,222 +471,47 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
    if (mCubemapName.isNotEmpty() && mReflectionModeType == ReflectionModeType::StaticCubemap)
       Sim::findObject(mCubemapName, mCubemap);
 
-   //if (stream->readFlag())
-   /*{
-      U32 i, size;
-      Polyhedron tempPH;
-      stream->read(&size);
-      tempPH.pointList.setSize(size);
-      for (i = 0; i < tempPH.pointList.size(); i++)
-         mathRead(*stream, &tempPH.pointList[i]);
-
-      stream->read(&size);
-      tempPH.planeList.setSize(size);
-      for (i = 0; i < tempPH.planeList.size(); i++)
-         mathRead(*stream, &tempPH.planeList[i]);
-
-      stream->read(&size);
-      tempPH.edgeList.setSize(size);
-      for (i = 0; i < tempPH.edgeList.size(); i++) {
-         Polyhedron::Edge& rEdge = tempPH.edgeList[i];
-
-         stream->read(&rEdge.face[0]);
-         stream->read(&rEdge.face[1]);
-         stream->read(&rEdge.vertex[0]);
-         stream->read(&rEdge.vertex[1]);
-      }
-      setPolyhedron(tempPH);
-   }*/
-   Polyhedron tempPH;
-   tempPH.buildBox(getTransform(), Box3F(mRadius));
-   setPolyhedron(tempPH);
-
-   createGeometry();
    updateMaterial();
 }
 
 //-----------------------------------------------------------------------------
 // Object Rendering
 //-----------------------------------------------------------------------------
-void ReflectionProbe::createGeometry()
-{
-   // Clean up our previous shape
-   if (mEditorShapeInst)
-      SAFE_DELETE(mEditorShapeInst);
-
-   mEditorShape = NULL;
-
-   String shapeFile = "tools/resources/ReflectProbeSphere.dae";
-
-   // Attempt to get the resource from the ResourceManager
-   mEditorShape = ResourceManager::get().load(shapeFile);
-
-   if (mEditorShape)
-   {
-      mEditorShapeInst = new TSShapeInstance(mEditorShape, isClientObject());
-   }
-}
-
-void ReflectionProbe::setPolyhedron(const Polyhedron& rPolyhedron)
-{
-   mPolyhedron = rPolyhedron;
-
-   /*if (mPolyhedron.pointList.size() != 0) {
-      mObjBox.minExtents.set(1e10, 1e10, 1e10);
-      mObjBox.maxExtents.set(-1e10, -1e10, -1e10);
-      for (U32 i = 0; i < mPolyhedron.pointList.size(); i++) {
-         mObjBox.minExtents.setMin(mPolyhedron.pointList[i]);
-         mObjBox.maxExtents.setMax(mPolyhedron.pointList[i]);
-      }
-   }
-   else {
-      mObjBox.minExtents.set(-0.5, -0.5, -0.5);
-      mObjBox.maxExtents.set(0.5, 0.5, 0.5);
-   }*/
-
-   //mPolyhedron.transform(getTransform(), getScale());
-
-   //Point3F halfScale = getScale()/2;
-   //mObjBox = Box3F(-halfScale, halfScale);
-
-   mObjBox = Box3F(mRadius);
-
-   resetWorldBox();
-
-   if (isServerObject())
-      return;
-
-   /*MatrixF base(true);
-   base.scale(Point3F(1.0 / mObjScale.x,
-      1.0 / mObjScale.y,
-      1.0 / mObjScale.z));
-   base.mul(mWorldToObj);*/
-
-   //
-   //Translate the probeInfo's polyhedron into a convex shape for rendering with
-   /*const U32 numPoints = mPolyhedron.getNumPoints();
-
-   if (numPoints == 0)
-   {
-      mProbeInfo->numPrims = numPoints;
-      return;
-   }
-
-   const Point3F* points = mPolyhedron.getPoints();
-   const PlaneF* planes = mPolyhedron.getPlanes();
-   const Point3F viewDir = GFX->getViewMatrix().getForwardVector();
-
-   // Create a temp buffer for the vertices and
-   // put all the polyhedron's points in there.
-
-   GFXVertexBufferHandle< GFXVertexPC > verts(GFX, numPoints, GFXBufferTypeStatic);
-
-   verts.lock();
-   for (U32 i = 0; i < numPoints; ++i)
-   {
-      verts[i].point = points[i];
-      verts[i].color = ColorI::WHITE;
-   }
-
-   /*if (getTransform())
-   {
-      for (U32 i = 0; i < numPoints; ++i)
-         getTransform().mulP(verts[i].point);
-   }*/
-   /*verts.unlock();
-
-   // Allocate a temp buffer for the face indices.
-
-   const U32 numIndices = mPolyhedron.getNumEdges() * 3;
-   const U32 numPlanes = mPolyhedron.getNumPlanes();
-
-   GFXPrimitiveBufferHandle prims(GFX, numIndices, 0, GFXBufferTypeVolatile);
-
-   // Unfortunately, since polygons may have varying numbers of
-   // vertices, we also need to retain that information.
-
-   FrameTemp< U32 > numIndicesForPoly(numPlanes);
-   U32 numPolys = 0;
-
-   // Create all the polygon indices.
-   U16* indices;
-   prims.lock(&indices);
-   U32 idx = 0;
-   for (U32 i = 0; i < numPlanes; ++i)
-   {
-      // Since face extraction is somewhat costly, don't bother doing it for
-      // backfacing polygons if culling is enabled.
-
-      /*if (!desc.cullDefined || desc.cullMode != GFXCullNone)
-      {
-         F32 dot = mDot(planes[i], viewDir);
-
-         // See if it faces *the same way* as the view direction.  This would
-         // normally mean that the face is *not* backfacing but since we expect
-         // planes on the polyhedron to be facing *inwards*, we need to reverse
-         // the logic here.
-
-         if (dot > 0.f)
-            continue;
-      }*/
-
-      /*U32 numPoints = mPolyhedron.extractFace(i, &indices[idx], numIndices - idx);
-      numIndicesForPoly[numPolys] = numPoints;
-      idx += numPoints;
-
-      numPolys++;
-   }
-   prims.unlock();
-
-   mProbeInfo->vertBuffer = verts;
-   mProbeInfo->primBuffer = prims;
-   mProbeInfo->numPrims = numPolys;*/
-}
 
 void ReflectionProbe::updateMaterial()
 {
    mProbeInfo->setPosition(getPosition());
 
-   if (mReflectionModeType == BakedCubemap || mReflectionModeType == StaticCubemap || mReflectionModeType == SkyLight)
-   { 
-      if (!mCubemap)
-      {
-         mCubemap = new CubemapData();
-         mCubemap->registerObject();
-      }
-
-      if (!mProbeUniqueID.isEmpty())
-      {
-         bool validCubemap = true;
-
-         for (U32 i = 0; i < 6; ++i)
-         {
-            char faceFile[256];
-            dSprintf(faceFile, sizeof(faceFile), "%s%s_%i.png", mReflectionPath.c_str(),
-               mProbeUniqueID.c_str(), i);
-
-            if (Platform::isFile(faceFile))
-               mCubemap->setCubeFaceFile(i, FileName(faceFile));
-            else
-               validCubemap = false;
-         }
-
-         if (validCubemap)
-         {
-            mCubemap->createMap();
-            mCubemap->updateFaces();
-         }
-      }
-
-      mProbeInfo->mUseCubemap = true;
-      mProbeInfo->mCubemap = mCubemap;
-   }
-   else
+   if (!mCubemap)
    {
-      mProbeInfo->mUseCubemap = false;
-      mProbeInfo->mSkyColor = mSkyColor;
-      mProbeInfo->mGroundColor = mGroundColor;
+      mCubemap = new CubemapData();
+      mCubemap->registerObject();
    }
+
+   if (!mProbeUniqueID.isEmpty())
+   {
+      bool validCubemap = true;
+
+      for (U32 i = 0; i < 6; ++i)
+      {
+         char faceFile[256];
+         dSprintf(faceFile, sizeof(faceFile), "%s%s_%i.png", mReflectionPath.c_str(),
+            mProbeUniqueID.c_str(), i);
+
+         if (Platform::isFile(faceFile))
+            mCubemap->setCubeFaceFile(i, FileName(faceFile));
+         else
+            validCubemap = false;
+      }
+
+      if (validCubemap)
+      {
+         mCubemap->createMap();
+         mCubemap->updateFaces();
+      }
+   }
+
+   mProbeInfo->mCubemap = mCubemap;
    
    mProbeInfo->mIntensity = mIntensity;
    mProbeInfo->mRadius = mRadius;
@@ -747,6 +549,8 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       if (!mEditorShapeInst)
          return;
 
+      GFXTransformSaver saver;
+
       // Calculate the distance of this object from the camera
       Point3F cameraOffset;
       getRenderTransform().getColumn(3, &cameraOffset);
@@ -767,7 +571,6 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       // GFXTransformSaver is a handy helper class that restores
       // the current GFX matrices to their original values when
       // it goes out of scope at the end of the function
-      GFXTransformSaver saver;
 
       // Set up our TS render state      
       TSRenderState rdata;
@@ -790,6 +593,8 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
 
       // Allow the shape to submit the RenderInst(s) for itself
       mEditorShapeInst->render(rdata);
+
+      saver.restore();
    }
 
    //Submit our probe to actually do the probe action
@@ -805,23 +610,6 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
 
    // Submit our RenderInst to the RenderPassManager
    state->getRenderPass()->addInst(probeInst);
-}
-
-void ReflectionProbe::submitLights(LightManager *lm, bool staticLighting)
-{
-   //if (!mEnabled)
-      return;
-
-  /* if ((mReflectionModeType == SkyLight || mReflectionModeType == BakedCubemap || mReflectionModeType == StaticCubemap) &&
-      mProbeInfo->mCubemap && !mProbeInfo->mCubemap->mCubemap.isValid())
-   {
-      mProbeInfo->mCubemap->mCubemap = NULL;
-   }
-
-   if (mProbeShapeType == Sphere)
-      lm->addSphereReflectProbe(mProbeInfo);*/
-   //else
-   //   lm->addConvexReflectProbe(mProbeInfo);
 }
 
 void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
@@ -843,9 +631,14 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    color.alpha = 50;
 
    if (mProbeShapeType == ProbeRenderInst::Sphere)
+   {
       draw->drawSphere(desc, mRadius, getPosition(), color);
+   }
    else
-      draw->drawPolyhedron(desc, mPolyhedron, color);
+   {
+      Box3F cube(mRadius);
+      draw->drawCube(desc, cube, color);
+   }
 }
 
 DefineEngineMethod(ReflectionProbe, postApply, void, (), ,
@@ -893,9 +686,6 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    //gEditingMission = false;
 
    //Set this to true to use the prior method where it goes through the SPT_Reflect path for the bake
-   bool useReflectBake = false;
-   bool experMode = false;
-   bool captureMode = true;
    bool probeRenderState = ReflectionProbe::smRenderReflectionProbes;
    ReflectionProbe::smRenderReflectionProbes = false;
    for (U32 i = 0; i < 6; ++i)
@@ -906,278 +696,63 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       GFXTextureTargetRef mBaseTarget = GFX->allocRenderToTextureTarget();
       mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
 
-      if (useReflectBake)
+      // Standard view that will be overridden below.
+      VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
+
+      switch (i)
       {
-         // set projection to 90 degrees vertical and horizontal
-         F32 left, right, top, bottom;
-         F32 nearPlane = 0.01;
-         F32 farDist = 1000;
-
-         if (mReflectionModeType == SkyLight)
-         {
-            nearPlane = 1000;
-            farDist = 10000;
-         }
-
-         MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
-         GFX->setFrustum(left, right, bottom, top, nearPlane, farDist);
-
-         // We don't use a special clipping projection, but still need to initialize 
-         // this for objects like SkyBox which will use it during a reflect pass.
-         gClientSceneGraph->setNonClipProjection(GFX->getProjectionMatrix());
-
-         bool validCubemap = true;
-
-         // Standard view that will be overridden below.
-         VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
-
-         switch (i)
-         {
-         case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
-            vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
-            vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
-            vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 0.0f, -1.0f);
-            break;
-         case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
-            vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 0.0f, 1.0f);
-            break;
-         case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
-            vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
-            vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         }
-
-         // create camera matrix
-         VectorF cross = mCross(vUpVec, vLookatPt);
-         cross.normalizeSafe();
-
-         MatrixF matView(true);
-         matView.setColumn(0, cross);
-         matView.setColumn(1, vLookatPt);
-         matView.setColumn(2, vUpVec);
-         matView.setPosition(getPosition());
-         matView.inverse();
-         
-
-         GFX->setWorldMatrix(matView);
-
-         GFX->setActiveRenderTarget(mBaseTarget);
-
-         GFX->clear(GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 1.0f, 0);
-
-         SceneRenderState reflectRenderState
-         (
-            gClientSceneGraph,
-            SPT_Reflect,
-            SceneCameraState::fromGFX()
-         );
-
-         reflectRenderState.getMaterialDelegate().bind(REFLECTMGR, &ReflectionManager::getReflectionMaterial);
-         reflectRenderState.setDiffuseCameraTransform(matView);
-
-         MatrixF projMat = GFX->getProjectionMatrix();
-         Point3F projPos = projMat.getPosition();
-         Point3F projRot = RotationF(projMat).asEulerF(RotationF::Degrees);
-
-         MatrixF nonClipMat = gClientSceneGraph->getNonClipProjection();
-         Point3F nonClipPos = nonClipMat.getPosition();
-         Point3F nonClipRot = RotationF(nonClipMat).asEulerF(RotationF::Degrees);
-
-         MatrixF worldMat = GFX->getWorldMatrix();
-         Point3F worldPos = worldMat.getPosition();
-         Point3F worldRot = RotationF(worldMat).asEulerF(RotationF::Degrees);
-
-         Frustum curFrust = GFX->getFrustum();
-
-         MatrixF viewMat = GFX->getViewMatrix();
-         Point3F viewPos = viewMat.getPosition();
-         Point3F viewRot = RotationF(viewMat).asEulerF(RotationF::Degrees);
-
-         Point2F screenScale = GFX->getWorldToScreenScale();
-         RectI clipRect = GFX->getClipRect();
-
-         // render scene
-         //LIGHTMGR->unregisterAllLights();
-         //LIGHTMGR->registerGlobalLights(&reflectRenderState.getCullingFrustum(), false);
-         gClientSceneGraph->renderScene(&reflectRenderState, -1);
-         //LIGHTMGR->unregisterAllLights();
+      case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
+         vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
+      case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
+         vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
+      case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
+         vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 0.0f, -1.0f);
+         break;
+      case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
+         vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
+         vUpVec = VectorF(0.0f, 0.0f, 1.0f);
+         break;
+      case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
+         vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
+      case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
+         vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
+         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+         break;
       }
-      else if (experMode)
+
+      // create camera matrix
+      VectorF cross = mCross(vUpVec, vLookatPt);
+      cross.normalizeSafe();
+
+      MatrixF matView(true);
+      matView.setColumn(0, cross);
+      matView.setColumn(1, vLookatPt);
+      matView.setColumn(2, vUpVec);
+      matView.setPosition(getPosition());
+      matView.inverse();
+
+      // set projection to 90 degrees vertical and horizontal
+      F32 left, right, top, bottom;
+      F32 nearPlane = 0.01;
+      F32 farDist = 1000;
+
+      if (mReflectionModeType == SkyLight)
       {
-         // Clear the current viewport area
-         GFX->clear(GFXClearZBuffer | GFXClearStencil | GFXClearTarget, gCanvasClearColor, 1.0f, 0);
-
-         // Save the current transforms so we can restore
-         // it for child control rendering below.
-         GFXTransformSaver saver;
-
-         F32 nearPlane = 0.01;
-         F32 farPlane = 1000;
-         F32 left = 0;
-         F32 right = 0;
-         F32 top = 0;
-         F32 bottom = 0;
-
-         if (mReflectionModeType == SkyLight)
-         {
-            nearPlane = 1000;
-            farPlane = 10000;
-         }
-
-         MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
-         Frustum frustum = Frustum(false, left, right, top, bottom, nearPlane, farPlane);
-
-         GFX->setFrustum(frustum);
-         MatrixF saveProjection = GFX->getProjectionMatrix();
-
-         gClientSceneGraph->setNonClipProjection(saveProjection);
-
-         // We're going to be displaying this render at size of this control in
-         // pixels - let the scene know so that it can calculate e.g. reflections
-         // correctly for that final display result.
-         //gClientSceneGraph->setDisplayTargetResolution(resolution);
-
-         // Standard view that will be overridden below.
-         VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
-
-         switch (i)
-         {
-         case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
-            vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
-            vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
-            vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 0.0f, -1.0f);
-            break;
-         case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
-            vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
-            vUpVec = VectorF(0.0f, 0.0f, 1.0f);
-            break;
-         case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
-            vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
-            vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
-            vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-            break;
-         }
-
-         // create camera matrix
-         VectorF cross = mCross(vUpVec, vLookatPt);
-         cross.normalizeSafe();
-
-         MatrixF matView(true);
-         matView.setColumn(0, cross);
-         matView.setColumn(1, vLookatPt);
-         matView.setColumn(2, vUpVec);
-         matView.setPosition(getPosition());
-
-         //matView = getTransform();
-         matView.inverse();
-
-         GFX->setWorldMatrix(matView);
-
-         GFX->setActiveRenderTarget(mBaseTarget);
-
-         GFX->clear(GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 1.0f, 0);
-
-         //saveProjection = GFX->getProjectionMatrix();
-         MatrixF saveModelview = GFX->getWorldMatrix();
-
-         //GFX->setProjectionMatrix(getTransform());
-         //mSaveViewport = guiViewport;
-         //Point2F mSaveWorldToScreenScale = GFX->getWorldToScreenScale();
-         //Frustum mSaveFrustum = GFX->getFrustum();
-         //mSaveFrustum.setTransform(getTransform());
-
-         // Set the default non-clip projection as some 
-         // objects depend on this even in non-reflect cases.
-         //gClientSceneGraph->setNonClipProjection(MatrixF::Identity);
-
-         // Give the post effect manager the worldToCamera, and cameraToScreen matrices
-         PFXMGR->setFrameMatrices(saveModelview, matView);
-
-         //cheating!
-         //MatrixF newProjMat = RotationF(EulerF(90, -180, 0), RotationF::Degrees).asMatrixF();
-         //GFX->setProjectionMatrix(newProjMat);
-         //MatrixF newNonClipMat = RotationF(EulerF(90, -180, 0), RotationF::Degrees).asMatrixF();
-         //gClientSceneGraph->setNonClipProjection(newNonClipMat);
-
-         MatrixF projMat = GFX->getProjectionMatrix();
-         Point3F projPos = projMat.getPosition();
-         Point3F projRot = RotationF(projMat).asEulerF(RotationF::Degrees);
-
-         MatrixF nonClipMat = gClientSceneGraph->getNonClipProjection();
-         Point3F nonClipPos = nonClipMat.getPosition();
-         Point3F nonClipRot = RotationF(nonClipMat).asEulerF(RotationF::Degrees);
-
-         MatrixF worldMat = GFX->getWorldMatrix();
-         Point3F worldPos = worldMat.getPosition();
-         Point3F worldRot = RotationF(worldMat).asEulerF(RotationF::Degrees);
-
-         Frustum curFrust = GFX->getFrustum();
-
-         MatrixF viewMat = GFX->getViewMatrix();
-         Point3F viewPos = viewMat.getPosition();
-         Point3F viewRot = RotationF(viewMat).asEulerF(RotationF::Degrees);
-
-         Point2F screenScale = GFX->getWorldToScreenScale();
-         RectI clipRect = GFX->getClipRect();
-
-         //PROFILE_START(ReflectionProbe_GameRenderWorld);
-         //FrameAllocator::setWaterMark(0);
-
-         LIGHTMGR->unregisterAllLights();
-
-         Vector<SceneObject*> activeLights;
-         const U32 lightMask = LightObjectType;
-         getSceneManager()->getContainer()->findObjectList(lightMask, &activeLights);
-         for (U32 i = 0; i < activeLights.size(); i++)
-         {
-            ISceneLight *lightInterface = dynamic_cast<ISceneLight*>(activeLights[i]);
-            if (lightInterface && lightInterface->getLight())
-               LIGHTMGR->registerGlobalLight(lightInterface->getLight(), activeLights[i]);
-         }
-
-         SceneRenderState reflectRenderState
-         (
-            gClientSceneGraph,
-            SPT_Reflect,
-            SceneCameraState::fromGFX()
-         );
-
-         //gClientSceneGraph->renderScene(SPT_Diffuse, StaticObjectType | StaticShapeObjectType | EnvironmentObjectType | LightObjectType);
-         gClientSceneGraph->renderScene(&reflectRenderState, -1);
-
-         // renderScene leaves some states dirty, which causes problems if GameTSCtrl is the last Gui object rendered
-         GFX->updateStates();
+         nearPlane = 1000;
+         farDist = 10000;
       }
-      else if (captureMode)
-      {
-         capture(&mBaseTarget, i, Point2I(resolution, resolution));
-      }
-      else
-      {
-         renderFrame(&mBaseTarget, i, Point2I(resolution, resolution));
-      }
+
+      MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
+      Frustum frustum(false, left, right, top, bottom, nearPlane, farDist);
+
+      renderFrame(&mBaseTarget, matView, frustum, StaticObjectType | StaticShapeObjectType & EDITOR_RENDER_TYPEMASK, gCanvasClearColor);
 
       mBaseTarget->resolve();
 
@@ -1223,1064 +798,6 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       preCapture->disable();
    if (deferredShading)
       deferredShading->enable();
-}
-
-//
-//
-void ReflectionProbe::renderFrame(GFXTextureTargetRef* target, U32 faceId, Point2I resolution)
-{
-   if (!GFX->allowRender() || GFX->canCurrentlyRender())
-      return;
-
-   PROFILE_START(ReflectionProbe_CanvasPreRender);
-
-   GFX->setActiveRenderTarget(*target);
-   if (!GFX->getActiveRenderTarget())
-      return;
-
-   GFXTarget* renderTarget = GFX->getActiveRenderTarget();
-   if (renderTarget == NULL)
-      return;
-
-   // Make sure the root control is the size of the canvas.
-   Point2I size = renderTarget->getSize();
-   if (size.x == 0 || size.y == 0)
-      return;
-
-   PROFILE_END();
-   
-   // Clear the current viewport area
-   GFX->clear(GFXClearZBuffer | GFXClearStencil | GFXClearTarget, gCanvasClearColor, 1.0f, 0);
-
-   // Make sure we have a clean matrix state 
-   // before we start rendering anything!   
-   //GFX->setWorldMatrix(MatrixF::Identity);
-   //GFX->setViewMatrix(MatrixF::Identity);
-   //GFX->setProjectionMatrix(MatrixF::Identity);
-
-   // Save the current transforms so we can restore
-   // it for child control rendering below.
-   GFXTransformSaver saver;
-
-   F32 nearPlane = 0.01;
-   F32 farPlane = 1000;
-   F32 left = 0;
-   F32 right = 0;
-   F32 top = 0;
-   F32 bottom = 0;
-
-   if (mReflectionModeType == SkyLight)
-   {
-      nearPlane = 1000;
-      farPlane = 10000;
-   }
-
-   MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
-   Frustum frustum = Frustum(false, left, right, top, bottom, nearPlane, farPlane);
-
-   GFXTarget *origTarget = GFX->getActiveRenderTarget();
-
-   /*if (mReflectPriority > 0)
-   {
-      // Get the total reflection priority.
-      F32 totalPriority = 0;
-      for (U32 i = 0; i < smAwakeTSCtrls.size(); i++)
-      if (smAwakeTSCtrls[i]->isVisible())
-      totalPriority += smAwakeTSCtrls[i]->mReflectPriority;
-
-      REFLECTMGR->update(mReflectPriority / totalPriority,
-      renderSize,
-      mLastCameraQuery);
-   }*/
-
-   GFX->setActiveRenderTarget(origTarget);
-
-   GFX->setFrustum(frustum);
-   MatrixF saveProjection = GFX->getProjectionMatrix();
-
-   // We're going to be displaying this render at size of this control in
-   // pixels - let the scene know so that it can calculate e.g. reflections
-   // correctly for that final display result.
-   gClientSceneGraph->setDisplayTargetResolution(resolution);
-
-   // Standard view that will be overridden below.
-   VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
-
-   switch (faceId)
-   {
-      case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
-         vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
-         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-         break;
-      case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
-         vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
-         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-         break;
-      case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
-         vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
-         vUpVec = VectorF(0.0f, 0.0f, -1.0f);
-         break;
-      case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
-         vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
-         vUpVec = VectorF(0.0f, 0.0f, 1.0f);
-         break;
-      case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
-         vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
-         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-         break;
-      case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
-         vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
-         vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-         break;
-   }
-
-   // create camera matrix
-   VectorF cross = mCross(vUpVec, vLookatPt);
-   cross.normalizeSafe();
-
-   MatrixF matView(true);
-   matView.setColumn(0, cross);
-   matView.setColumn(1, vLookatPt);
-   matView.setColumn(2, vUpVec);
-   matView.setPosition(getPosition());
-
-   //matView = getTransform();
-   matView.inverse();
-
-   //MatrixF projMat;
-   //MathUtils::getZBiasProjectionMatrix(0.001f, frustum, &projMat);
-
-   GFX->setWorldMatrix(matView);
-
-   saveProjection = GFX->getProjectionMatrix();
-   MatrixF saveModelview = GFX->getWorldMatrix();
-
-   //GFX->setProjectionMatrix(matView);
-   //mSaveViewport = guiViewport;
-   //Point2F mSaveWorldToScreenScale = GFX->getWorldToScreenScale();
-   //Frustum mSaveFrustum = GFX->getFrustum();
-   //mSaveFrustum.setTransform(getTransform());
-
-   // Set the default non-clip projection as some 
-   // objects depend on this even in non-reflect cases.
-   gClientSceneGraph->setNonClipProjection(MatrixF::Identity);
-
-   // Give the post effect manager the worldToCamera, and cameraToScreen matrices
-   PFXMGR->setFrameMatrices(saveModelview, matView);
-
-   //cheating!
-   //MatrixF newProjMat = RotationF(EulerF(90, -180, 0), RotationF::Degrees).asMatrixF();
-   //GFX->setProjectionMatrix(newProjMat);
-   //MatrixF newNonClipMat = RotationF(EulerF(90, -180, 0), RotationF::Degrees).asMatrixF();
-   //gClientSceneGraph->setNonClipProjection(newNonClipMat);
-
-   MatrixF projMat = GFX->getProjectionMatrix();
-   Point3F projPos = projMat.getPosition();
-   Point3F projRot = RotationF(projMat).asEulerF(RotationF::Degrees);
-
-   MatrixF nonClipMat = gClientSceneGraph->getNonClipProjection();
-   Point3F nonClipPos = nonClipMat.getPosition();
-   Point3F nonClipRot = RotationF(nonClipMat).asEulerF(RotationF::Degrees);
-
-   MatrixF worldMat = GFX->getWorldMatrix();
-   Point3F worldPos = worldMat.getPosition();
-   Point3F worldRot = RotationF(worldMat).asEulerF(RotationF::Degrees);
-
-   Frustum curFrust = GFX->getFrustum();
-
-   MatrixF viewMat = GFX->getViewMatrix();
-   Point3F viewPos = viewMat.getPosition();
-   Point3F viewRot = RotationF(viewMat).asEulerF(RotationF::Degrees);
-
-   Point2F screenScale = GFX->getWorldToScreenScale();
-   RectI clipRect = GFX->getClipRect();
-
-   PROFILE_START(ReflectionProbe_GameRenderWorld);
-   //FrameAllocator::setWaterMark(0);
-
-   LIGHTMGR->unregisterAllLights();
-
-   Vector<SceneObject*> activeLights;
-   const U32 lightMask = LightObjectType;
-   getSceneManager()->getContainer()->findObjectList(lightMask, &activeLights);
-   for (U32 i = 0; i < activeLights.size(); i++)
-   {
-      ISceneLight *lightInterface = dynamic_cast<ISceneLight*>(activeLights[i]);
-      if (lightInterface && lightInterface->getLight())
-         LIGHTMGR->registerGlobalLight(lightInterface->getLight(), activeLights[i]);
-   }
-
-   SceneRenderState reflectRenderState
-   (
-      gClientSceneGraph,
-      SPT_Reflect,
-      SceneCameraState::fromGFX()
-   );
-
-   //gClientSceneGraph->renderScene(SPT_Diffuse, StaticObjectType | StaticShapeObjectType | EnvironmentObjectType | LightObjectType);
-   gClientSceneGraph->renderScene(&reflectRenderState, -1);
-
-   // renderScene leaves some states dirty, which causes problems if GameTSCtrl is the last Gui object rendered
-   GFX->updateStates();
-
-   /*AssertFatal(FrameAllocator::getWaterMark() == 0,
-      "Error, someone didn't reset the water mark on the frame allocator!");
-   FrameAllocator::setWaterMark(0);*/
-   PROFILE_END();
-}
-
-void ReflectionProbe::renderFrameCanvasStyle()
-{
-   bool preRenderOnly = false;
-   bool bufferSwap = true;
-
-   if (!GFX->allowRender() || GFX->canCurrentlyRender())
-      return;
-
-   // Set our window as the current render target so we can see outputs.
-   GFX->setActiveRenderTarget(*faceRenderTarget);
-
-   if (!GFX->getActiveRenderTarget())
-   {
-      return;
-   }
-
-#ifdef TORQUE_GFX_STATE_DEBUG
-   GFX->getDebugStateManager()->startFrame();
-#endif
-
-   GFXTarget* renderTarget = GFX->getActiveRenderTarget();
-   if (renderTarget == NULL)
-   {
-      return;
-   }
-
-   // Make sure the root control is the size of the canvas.
-   Point2I size = renderTarget->getSize();
-
-   if (size.x == 0 || size.y == 0)
-   {
-      return;
-   }
-
-   RectI screenRect(0, 0, size.x, size.y);
-
-   //maintainSizing();
-
-   //preRender (recursive) all controls
-   //preRender();
-
-   // Are we just doing pre-render?
-   if (preRenderOnly)
-      return;
-
-   // Signal the interested parties.
-   GuiCanvas::getGuiCanvasFrameSignal().trigger(true);
-
-   // Gross hack to make sure we don't end up with advanced lighting and msaa 
-   // at the same time, which causes artifacts. At the same time we don't 
-   // want to just throw the settings the user has chosen if the light manager 
-   // changes at a later time.
-
-   /*GFXVideoMode mode = mPlatformWindow->getVideoMode();
-   if (dStricmp(LIGHTMGR->getId(), "ADVLM") == 0 && mode.antialiasLevel > 0)
-   {
-      const char *pref = Con::getVariable("$pref::Video::mode");
-      mode.parseFromString(pref);
-      mode.antialiasLevel = 0;
-      mPlatformWindow->setVideoMode(mode);
-
-      Con::printf("AntiAliasing has been disabled; it is not compatible with AdvancedLighting.");
-   }
-   else if (dStricmp(LIGHTMGR->getId(), "BLM") == 0)
-   {
-      const char *pref = Con::getVariable("$pref::Video::mode");
-
-      U32 prefAA = dAtoi(StringUnit::getUnit(pref, 5, " "));
-      if (prefAA != mode.antialiasLevel)
-      {
-         mode.parseFromString(pref);
-         mPlatformWindow->setVideoMode(mode);
-
-         Con::printf("AntiAliasing has been enabled while running BasicLighting.");
-      }
-   }*/
-
-   // for now, just always reset the update regions - this is a
-   // fix for FSAA on ATI cards
-   /*resetUpdateRegions();
-
-   PROFILE_START(CanvasRenderControls);
-
-   // Draw the mouse
-   GuiCursor *mouseCursor = NULL;
-   bool cursorVisible = true;
-
-   if (bool(mMouseCapturedControl))
-      mMouseCapturedControl->getCursor(mouseCursor, cursorVisible, mLastEvent);
-   else if (bool(mMouseControl))
-      mMouseControl->getCursor(mouseCursor, cursorVisible, mLastEvent);
-
-   Point2I cursorPos((S32)mCursorPt.x, (S32)mCursorPt.y);
-   if (!mouseCursor)
-      mouseCursor = mDefaultCursor;
-
-   if (mLastCursorEnabled && mLastCursor)
-   {
-      Point2I spot = mLastCursor->getHotSpot();
-      Point2I cext = mLastCursor->getExtent();
-      Point2I pos = mLastCursorPt - spot;
-      addUpdateRegion(pos - Point2I(2, 2), Point2I(cext.x + 4, cext.y + 4));
-   }
-
-   if (cursorVisible && mouseCursor)
-   {
-      Point2I spot = mouseCursor->getHotSpot();
-      Point2I cext = mouseCursor->getExtent();
-      Point2I pos = cursorPos - spot;
-
-      addUpdateRegion(pos - Point2I(2, 2), Point2I(cext.x + 4, cext.y + 4));
-   }
-
-   mLastCursorEnabled = cursorVisible;
-   mLastCursor = mouseCursor;
-   mLastCursorPt = cursorPos;*/
-
-   // Begin GFX
-   //PROFILE_START(GFXBeginScene);
-
-   GFXTransformSaver saver;
-
-   bool beginSceneRes = GFX->beginScene();
-
-   //PROFILE_END();
-
-   // Render all offscreen canvas objects here since we may need them in the render loop
-   /*if (GuiOffscreenCanvas::sList.size() != 0)
-   {
-      // Reset the entire state since oculus shit will have barfed it.
-      GFX->updateStates(true);
-
-      for (Vector<GuiOffscreenCanvas*>::iterator itr = GuiOffscreenCanvas::sList.begin(); itr != GuiOffscreenCanvas::sList.end(); itr++)
-      {
-         (*itr)->renderFrame(false, false);
-      }
-
-      GFX->setActiveRenderTarget(renderTarget);
-   }*/
-
-   // Can't render if waiting for device to reset.   
-   if (!beginSceneRes)
-   {
-      //PROFILE_END(); // CanvasRenderControls
-
-                     // Since we already triggered the signal once for begin-of-frame,
-                     // we should be consistent and trigger it again for end-of-frame.
-      GuiCanvas::getGuiCanvasFrameSignal().trigger(false);
-
-      return;
-   }
-
-   // Clear the current viewport area
-   GFX->setViewport(screenRect);
-   GFX->clear(GFXClearZBuffer | GFXClearStencil | GFXClearTarget, gCanvasClearColor, 1.0f, 0);
-
-   //resetUpdateRegions();
-
-   // Make sure we have a clean matrix state 
-   // before we start rendering anything!   
-   GFX->setWorldMatrix(MatrixF::Identity);
-   GFX->setViewMatrix(MatrixF::Identity);
-   GFX->setProjectionMatrix(MatrixF::Identity);
-
-   // If we're taking a screenshot then let it have
-   // a chance at altering the view matrix.
-   //if (gScreenShot && gScreenShot->isPending())
-   //   gScreenShot->tileGui(size);
-
-   //RectI updateUnion;
-   //buildUpdateUnion(&updateUnion);
-   //if (updateUnion.intersect(screenRect))
-   {
-      // Render active GUI Dialogs
-      /*for (iterator i = begin(); i != end(); i++)
-      {
-         // Get the control
-         GuiControl *contentCtrl = static_cast<GuiControl*>(*i);
-
-         GFX->setClipRect(updateUnion);
-         GFX->setStateBlock(mDefaultGuiSB);
-
-         contentCtrl->onRender(contentCtrl->getPosition(), updateUnion);
-      }*/
-
-      RectI updateRect(0, 0, 512, 512);
-
-      GFXStateBlockDesc d;
-
-      d.cullDefined = true;
-      d.cullMode = GFXCullNone;
-      d.zDefined = true;
-      d.zEnable = false;
-
-      GFXStateBlockRef mDefaultGuiSB = GFX->createStateBlock(d);
-
-      GFX->setClipRect(updateRect);
-      GFX->setStateBlock(mDefaultGuiSB);
-
-      onRenderTSControlStyle(updateRect);
-
-      // Fill Black if no Dialogs
-      //if (this->size() == 0)
-      //   GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
-
-      // Tooltip resource
-      /*if (bool(mMouseControl))
-      {
-         U32 curTime = Platform::getRealMilliseconds();
-         if (mHoverControl == mMouseControl)
-         {
-            if (mHoverPositionSet || (curTime - mHoverControlStart) >= mHoverControl->mTipHoverTime || (curTime - mHoverLeftControlTime) <= mHoverControl->mTipHoverTime)
-            {
-               if (!mHoverPositionSet)
-               {
-                  mHoverPosition = cursorPos;
-               }
-               mHoverPositionSet = mMouseControl->mRenderTooltipDelegate(mHoverPosition, cursorPos, NULL);
-            }
-
-         }
-         else
-         {
-            if (mHoverPositionSet)
-            {
-               mHoverLeftControlTime = curTime;
-               mHoverPositionSet = false;
-            }
-            mHoverControl = mMouseControl;
-            mHoverControlStart = curTime;
-         }
-      }*/
-
-      //GFX->setClipRect(updateUnion);
-
-      // Draw an ugly box if we don't have a cursor available...
-      //if (mCursorEnabled && mShowCursor && !mouseCursor)
-      //{
-      //   GFX->drawRectFill( RectI( mCursorPt.x, mCursorPt.y, mCursorPt.x + 2, mCursorPt.y + 2 ), ColorI( 255, 0, 0 ) );
-      //}
-
-      // CodeReview - Make sure our bitmap modulation is clear or else there's a black modulation
-      // that ruins rendering of textures at startup.. This was done in mouseCursor 
-      // onRender and so at startup when it wasn't called the modulation was black, ruining
-      // the loading screen display. This fixes the issue, but is it only masking a deeper issue
-      // in GFX with regard to gui rendering? [5/3/2007 justind]
-      //GFX->getDrawUtil()->clearBitmapModulation();
-
-      // Really draw the cursor. :)
-      // Only if the platform cursor controller is missing or the platform cursor
-      // isn't visible.
-      /*if (!mPlatformWindow->getCursorController() || (mCursorEnabled && mouseCursor && mShowCursor &&
-         !mPlatformWindow->getCursorController()->isCursorVisible()))
-      {
-         Point2I pos((S32)mCursorPt.x, (S32)mCursorPt.y);
-         Point2I spot = mouseCursor->getHotSpot();
-
-         pos -= spot;
-         mouseCursor->render(pos);
-      }*/
-   }
-
-   // Render all RTT end of frame updates HERE
-   //DynamicTexture::updateScreenTextures();
-   //DynamicTexture::updateEndOfFrameTextures();
-   // mPending is set when the console function "screenShot()" is called
-   // this situation is necessary because it needs to take the screenshot
-   // before the buffers swap
-
-   //PROFILE_END();
-
-   // Fence logic here, because this is where endScene is called.
-   /*if (mNumFences > 0)
-   {
-      // Issue next fence
-      mFences[mNextFenceIdx]->issue();
-
-      mNextFenceIdx++;
-
-      // Wrap the next fence around to first if we're maxxed
-      if (mNextFenceIdx >= mNumFences)
-         mNextFenceIdx = 0;
-
-      // Block on previous fence
-      mFences[mNextFenceIdx]->block();
-   }*/
-
-   //PROFILE_START(GFXEndScene);
-   GFX->endScene();
-   //PROFILE_END();
-
-   //GFX->getDeviceEventSignal().trigger(GFXDevice::dePostFrame);
-   //swapBuffers();
-
-   //GuiCanvas::getGuiCanvasFrameSignal().trigger(false);
-
-#ifdef TORQUE_GFX_STATE_DEBUG
-   GFX->getDebugStateManager()->endFrame();
-#endif
-
-   saver.restore();
-
-   // Keep track of the last time we rendered.
-   //mLastRenderMs = Platform::getRealMilliseconds();
-}
-
-void ReflectionProbe::onRenderTSControlStyle(const RectI &updateRect)
-{
-   Point2I offset(0, 0);
-   // Save the current transforms so we can restore
-   // it for child control rendering below.
-   bool renderingToTarget = false;
-
-   //mLastCameraQuery.displayDevice = NULL;
-
-   /*if (!processCameraQuery(&mLastCameraQuery))
-   {
-      // We have no camera, but render the GUI children 
-      // anyway.  This makes editing GuiTSCtrl derived
-      // controls easier in the GuiEditor.
-      renderChildControls(offset, updateRect);
-      return;
-   }*/
-
-   // jamesu - currently a little bit of a hack. Ideally we need to ditch the viewports in the query data and just rely on the display device
-   /*if (mLastCameraQuery.displayDevice)
-   {
-      if (mRenderStyle == RenderStyleStereoSideBySide)
-      {
-         mLastCameraQuery.displayDevice->setDrawMode(GFXDevice::RS_StereoSideBySide);
-      }
-      else if (mRenderStyle == RenderStyleStereoSeparate)
-      {
-         mLastCameraQuery.displayDevice->setDrawMode(GFXDevice::RS_StereoSeparate);
-      }
-      else
-      {
-         mLastCameraQuery.displayDevice->setDrawMode(GFXDevice::RS_Standard);
-      }
-
-      // The connection's display device may want to set the eye offset
-      if (mLastCameraQuery.displayDevice->providesEyeOffsets())
-      {
-         mLastCameraQuery.displayDevice->getEyeOffsets(mLastCameraQuery.eyeOffset);
-      }
-
-      // Grab field of view for both eyes
-      if (mLastCameraQuery.displayDevice->providesFovPorts())
-      {
-         mLastCameraQuery.displayDevice->getFovPorts(mLastCameraQuery.fovPort);
-         mLastCameraQuery.hasFovPort = true;
-      }
-
-      mLastCameraQuery.displayDevice->getStereoViewports(mLastCameraQuery.stereoViewports);
-      mLastCameraQuery.displayDevice->getStereoTargets(mLastCameraQuery.stereoTargets);
-
-      mLastCameraQuery.hasStereoTargets = mLastCameraQuery.stereoTargets[0];
-   }*/
-
-   GFXTargetRef origTarget = GFX->getActiveRenderTarget();
-   U32 origStyle = GFX->getCurrentRenderStyle();
-
-   // Set up the appropriate render style
-   Point2I renderSize = Point2I(512,512);
-   Frustum frustum;
-
-   //mLastCameraQuery.currentEye = -1;
-
-   /*if (mRenderStyle == RenderStyleStereoSideBySide)
-   {
-      GFX->setCurrentRenderStyle(GFXDevice::RS_StereoSideBySide);
-      GFX->setStereoEyeOffsets(mLastCameraQuery.eyeOffset);
-      GFX->setStereoHeadTransform(mLastCameraQuery.headMatrix);
-
-      if (!mLastCameraQuery.hasStereoTargets)
-      {
-         // Need to calculate our current viewport here
-         mLastCameraQuery.stereoViewports[0] = updateRect;
-         mLastCameraQuery.stereoViewports[0].extent.x /= 2;
-         mLastCameraQuery.stereoViewports[1] = mLastCameraQuery.stereoViewports[0];
-         mLastCameraQuery.stereoViewports[1].point.x += mLastCameraQuery.stereoViewports[1].extent.x;
-      }
-
-      if (!mLastCameraQuery.hasFovPort)
-      {
-         // Need to make our own fovPort
-         mLastCameraQuery.fovPort[0] = CalculateFovPortForCanvas(mLastCameraQuery.stereoViewports[0], mLastCameraQuery);
-         mLastCameraQuery.fovPort[1] = CalculateFovPortForCanvas(mLastCameraQuery.stereoViewports[1], mLastCameraQuery);
-      }
-
-      GFX->setStereoFovPort(mLastCameraQuery.fovPort); // NOTE: this specifies fov for BOTH eyes
-      GFX->setSteroViewports(mLastCameraQuery.stereoViewports);
-      GFX->setStereoTargets(mLastCameraQuery.stereoTargets);
-
-      MatrixF myTransforms[2];
-      Frustum frustum;
-
-      if (smUseLatestDisplayTransform)
-      {
-         // Use the view matrix determined from the display device
-         myTransforms[0] = mLastCameraQuery.eyeTransforms[0];
-         myTransforms[1] = mLastCameraQuery.eyeTransforms[1];
-      }
-      else
-      {
-         // Use the view matrix determined from the control object
-         myTransforms[0] = mLastCameraQuery.cameraMatrix;
-         myTransforms[1] = mLastCameraQuery.cameraMatrix;
-         mLastCameraQuery.headMatrix = mLastCameraQuery.cameraMatrix; // override head
-
-         QuatF qrot = mLastCameraQuery.cameraMatrix;
-         Point3F pos = mLastCameraQuery.cameraMatrix.getPosition();
-         Point3F rotEyePos;
-
-         myTransforms[0].setPosition(pos + qrot.mulP(mLastCameraQuery.eyeOffset[0], &rotEyePos));
-         myTransforms[1].setPosition(pos + qrot.mulP(mLastCameraQuery.eyeOffset[1], &rotEyePos));
-      }
-
-      GFX->setStereoEyeTransforms(myTransforms);
-
-      // Allow render size to originate from the render target
-      if (mLastCameraQuery.stereoTargets[0])
-      {
-         renderSize = mLastCameraQuery.stereoTargets[0]->getSize();
-         renderingToTarget = true;
-      }
-
-      // NOTE: these calculations are essentially overridden later by the fov port settings when rendering each eye.
-      MathUtils::makeFovPortFrustum(&frustum, mLastCameraQuery.ortho, mLastCameraQuery.nearPlane, mLastCameraQuery.farPlane, mLastCameraQuery.fovPort[0]);
-
-      GFX->activateStereoTarget(-1);
-      _internalRender(RectI(updateRect.point, updateRect.extent), RectI(Point2I(0, 0), renderSize), frustum);
-
-      // Notify device we've rendered the right, thus the last stereo frame.
-      GFX->getDeviceEventSignal().trigger(GFXDevice::deRightStereoFrameRendered);
-
-      // Render preview
-      if (mLastCameraQuery.displayDevice)
-      {
-         GFXTexHandle previewTexture = mLastCameraQuery.displayDevice->getPreviewTexture();
-         if (!previewTexture.isNull())
-         {
-            GFX->setActiveRenderTarget(origTarget);
-            GFX->setCurrentRenderStyle(origStyle);
-            GFX->setClipRect(updateRect);
-            renderDisplayPreview(updateRect, previewTexture);
-         }
-      }
-   }
-   else if (mRenderStyle == RenderStyleStereoSeparate && mLastCameraQuery.displayDevice)
-   {
-      // In this case we render the scene twice to different render targets, then
-      // render the final composite view 
-      GFX->setCurrentRenderStyle(GFXDevice::RS_StereoSeparate);
-      GFX->setStereoEyeOffsets(mLastCameraQuery.eyeOffset);
-      GFX->setStereoHeadTransform(mLastCameraQuery.headMatrix);
-      GFX->setStereoFovPort(mLastCameraQuery.fovPort); // NOTE: this specifies fov for BOTH eyes
-      GFX->setSteroViewports(mLastCameraQuery.stereoViewports);
-      GFX->setStereoTargets(mLastCameraQuery.stereoTargets);
-
-      MatrixF myTransforms[2];
-
-      if (smUseLatestDisplayTransform)
-      {
-         // Use the view matrix determined from the display device
-         myTransforms[0] = mLastCameraQuery.eyeTransforms[0];
-         myTransforms[1] = mLastCameraQuery.eyeTransforms[1];
-      }
-      else
-      {
-         // Use the view matrix determined from the control object
-         myTransforms[0] = mLastCameraQuery.cameraMatrix;
-         myTransforms[1] = mLastCameraQuery.cameraMatrix;
-
-         QuatF qrot = mLastCameraQuery.cameraMatrix;
-         Point3F pos = mLastCameraQuery.cameraMatrix.getPosition();
-         Point3F rotEyePos;
-
-         myTransforms[0].setPosition(pos + qrot.mulP(mLastCameraQuery.eyeOffset[0], &rotEyePos));
-         myTransforms[1].setPosition(pos + qrot.mulP(mLastCameraQuery.eyeOffset[1], &rotEyePos));
-      }
-
-      MatrixF origMatrix = mLastCameraQuery.cameraMatrix;
-
-      // Left
-      MathUtils::makeFovPortFrustum(&frustum, mLastCameraQuery.ortho, mLastCameraQuery.nearPlane, mLastCameraQuery.farPlane, mLastCameraQuery.fovPort[0]);
-      mLastCameraQuery.cameraMatrix = myTransforms[0];
-      frustum.update();
-      GFX->activateStereoTarget(0);
-      mLastCameraQuery.currentEye = 0;
-      GFX->beginField();
-      _internalRender(RectI(Point2I(0, 0), mLastCameraQuery.stereoTargets[0]->getSize()), RectI(Point2I(0, 0), mLastCameraQuery.stereoTargets[0]->getSize()), frustum);
-      GFX->getDeviceEventSignal().trigger(GFXDevice::deLeftStereoFrameRendered);
-      GFX->endField();
-
-      // Right
-      GFX->activateStereoTarget(1);
-      mLastCameraQuery.currentEye = 1;
-      MathUtils::makeFovPortFrustum(&frustum, mLastCameraQuery.ortho, mLastCameraQuery.nearPlane, mLastCameraQuery.farPlane, mLastCameraQuery.fovPort[1]);
-      mLastCameraQuery.cameraMatrix = myTransforms[1];
-      frustum.update();
-      GFX->beginField();
-      _internalRender(RectI(Point2I(0, 0), mLastCameraQuery.stereoTargets[1]->getSize()), RectI(Point2I(0, 0), mLastCameraQuery.stereoTargets[0]->getSize()), frustum);
-      GFX->getDeviceEventSignal().trigger(GFXDevice::deRightStereoFrameRendered);
-      GFX->endField();
-
-      mLastCameraQuery.cameraMatrix = origMatrix;
-
-      // Render preview
-      if (mLastCameraQuery.displayDevice)
-      {
-         GFXTexHandle previewTexture = mLastCameraQuery.displayDevice->getPreviewTexture();
-         if (!previewTexture.isNull())
-         {
-            GFX->setActiveRenderTarget(origTarget);
-            GFX->setCurrentRenderStyle(origStyle);
-            GFX->setClipRect(updateRect);
-            renderDisplayPreview(updateRect, previewTexture);
-         }
-      }
-   }
-   else
-   {*/
-      // set up the camera and viewport stuff:
-      /*F32 wwidth;
-      F32 wheight;
-      F32 renderWidth = F32(renderSize.x);
-      F32 renderHeight = F32(renderSize.y);
-      F32 aspectRatio = renderWidth / renderHeight;
-
-      //F32 nearPlane = 0.01;
-      //F32 farPlane = 1000;
-      F32 fov = 90;
-
-      // Use the FOV to calculate the viewport height scale
-      // then generate the width scale from the aspect ratio.
-      //if (!mLastCameraQuery.ortho)
-      {
-         wheight = nearPlane * mTan(fov / 2.0f);
-         wwidth = aspectRatio * wheight;
-      }*/
-      /*else
-      {
-         wheight = mLastCameraQuery.fov;
-         wwidth = aspectRatio * wheight;
-      }*/
-
-      //F32 hscale = wwidth * 2.0f / renderWidth;
-      //F32 vscale = wheight * 2.0f / renderHeight;
-
-      //F32 left = (updateRect.point.x - offset.x) * hscale - wwidth;
-      //F32 right = (updateRect.point.x + updateRect.extent.x - offset.x) * hscale - wwidth;
-      //F32 top = wheight - vscale * (updateRect.point.y - offset.y);
-      //F32 bottom = wheight - vscale * (updateRect.point.y + updateRect.extent.y - offset.y);
-
-      //frustum.set(false, left, right, top, bottom, nearPlane, farPlane);
-
-      // set projection to 90 degrees vertical and horizontal
-      F32 left, right, top, bottom;
-      F32 nearPlane = 0.01;
-      F32 farDist = 1000;
-
-      if (mReflectionModeType == SkyLight)
-      {
-         nearPlane = 1000;
-         farDist = 10000;
-      }
-
-      MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
-      frustum.set(false, left, right, top, bottom, nearPlane, farDist);
-
-      // Manipulate the frustum for tiled screenshots
-      /*const bool screenShotMode = gScreenShot && gScreenShot->isPending();
-      if (screenShotMode)
-      {
-         gScreenShot->tileFrustum(frustum);
-         GFX->setViewMatrix(MatrixF::Identity);
-      }*/
-
-      RectI tempRect = updateRect;
-      _internalRenderTSControlStyle(frustum);
-   
-
-   // TODO: Some render to sort of overlay system?
-
-   // Allow subclasses to render 2D elements.
-   GFX->setActiveRenderTarget(origTarget);
-   GFX->setCurrentRenderStyle(origStyle);
-   GFX->setClipRect(updateRect);
-   //renderGui(offset, updateRect);
-
-   /*if (shouldRenderChildControls())
-   {
-      renderChildControls(offset, updateRect);
-   }
-   smFrameCount++;*/
-}
-
-void ReflectionProbe::_internalRenderTSControlStyle(Frustum &frustum)
-{
-   RectI updateRect(0, 0, 512, 512);
-   Point2I renderSize = Point2I(512,512);
-   GFXTarget *origTarget = GFX->getActiveRenderTarget();
-   //S32 origStereoTarget = GFX->getCurrentStereoTarget();
-
-   //if (mForceFOV != 0)
-   //   mLastCameraQuery.fov = mDegToRad(mForceFOV);
-
-   /*if (mCameraZRot)
-   {
-      MatrixF rotMat(EulerF(0, 0, mDegToRad(mCameraZRot)));
-      mLastCameraQuery.cameraMatrix.mul(rotMat);
-   }*/
-
-   /*if (mReflectPriority > 0)
-   {
-      // Get the total reflection priority.
-      F32 totalPriority = 0;
-      for (U32 i = 0; i < smAwakeTSCtrls.size(); i++)
-         if (smAwakeTSCtrls[i]->isVisible())
-            totalPriority += smAwakeTSCtrls[i]->mReflectPriority;
-
-      REFLECTMGR->update(mReflectPriority / totalPriority,
-         renderSize,
-         mLastCameraQuery);
-   }*/
-
-   //GFX->setActiveRenderTarget(origTarget);
-   //GFX->setCurrentStereoTarget(origStereoTarget);
-   GFX->setViewport(updateRect);
-
-   // Clear the zBuffer so GUI doesn't hose object rendering accidentally
-   GFX->clear(GFXClearZBuffer, ColorI(20, 20, 20), 1.0f, 0);
-
-   GFX->setFrustum(frustum);
-   MatrixF mSaveProjection = GFX->getProjectionMatrix();
-
-   /*if (mLastCameraQuery.ortho)
-   {
-      mOrthoWidth = frustum.getWidth();
-      mOrthoHeight = frustum.getHeight();
-   }*/
-
-   // We're going to be displaying this render at size of this control in
-   // pixels - let the scene know so that it can calculate e.g. reflections
-   // correctly for that final display result.
-   gClientSceneGraph->setDisplayTargetResolution(renderSize);
-
-   // Set the GFX world matrix to the world-to-camera transform, but don't 
-   // change the cameraMatrix in mLastCameraQuery. This is because 
-   // mLastCameraQuery.cameraMatrix is supposed to contain the camera-to-world
-   // transform. In-place invert would save a copy but mess up any GUIs that
-   // depend on that value.
-   CameraQuery camera;
-   GameProcessCameraQuery(&camera);
-
-   //MatrixF worldToCamera = camera.cameraMatrix;//faceViewTransform;//mLastCameraQuery.cameraMatrix;
-   MatrixF worldToCamera = faceViewTransform;//mLastCameraQuery.cameraMatrix;
-   //worldToCamera.inverse();
-   GFX->setWorldMatrix(worldToCamera);
-
-   mSaveProjection = GFX->getProjectionMatrix();
-   MatrixF mSaveModelview = GFX->getWorldMatrix();
-   //RectI mSaveViewport = guiViewport;
-   Point2F mSaveWorldToScreenScale = GFX->getWorldToScreenScale();
-   Frustum mSaveFrustum = GFX->getFrustum();
-   mSaveFrustum.setTransform(getTransform());
-
-   // Set the default non-clip projection as some 
-   // objects depend on this even in non-reflect cases.
-   gClientSceneGraph->setNonClipProjection(mSaveProjection);
-
-   // Give the post effect manager the worldToCamera, and cameraToScreen matrices
-   PFXMGR->setFrameMatrices(mSaveModelview, mSaveProjection);
-
-   //renderWorld(guiViewport);
-   //PROFILE_START(GameRenderWorld);
-   FrameAllocator::setWaterMark(0);
-
-   gClientSceneGraph->renderScene(SPT_Diffuse);
-
-   // renderScene leaves some states dirty, which causes problems if GameTSCtrl is the last Gui object rendered
-   GFX->updateStates();
-
-   AssertFatal(FrameAllocator::getWaterMark() == 0,
-      "Error, someone didn't reset the water mark on the frame allocator!");
-   FrameAllocator::setWaterMark(0);
-   //PROFILE_END();
-
-   /*DebugDrawer* debugDraw = DebugDrawer::get();
-   if (mRenderStyle == RenderStyleStereoSideBySide && debugDraw->willDraw())
-   {
-      // For SBS we need to render over each viewport
-      Frustum frustum;
-
-      GFX->setViewport(mLastCameraQuery.stereoViewports[0]);
-      MathUtils::makeFovPortFrustum(&frustum, mLastCameraQuery.ortho, mLastCameraQuery.nearPlane, mLastCameraQuery.farPlane, mLastCameraQuery.fovPort[0]);
-      GFX->setFrustum(frustum);
-      debugDraw->render(false);
-
-      GFX->setViewport(mLastCameraQuery.stereoViewports[1]);
-      MathUtils::makeFovPortFrustum(&frustum, mLastCameraQuery.ortho, mLastCameraQuery.nearPlane, mLastCameraQuery.farPlane, mLastCameraQuery.fovPort[1]);
-      GFX->setFrustum(frustum);
-      debugDraw->render();
-   }
-   else
-   {
-      debugDraw->render();
-   }*/
-
-   //saver.restore();
-}
-
-GBitmap ReflectionProbe::_captureBackBuffer()
-{
-   GFXTextureObject *backBufferTex = PFXMGR->getBackBufferTex();
-   if (!backBufferTex) 
-      return GBitmap();
-
-   U32 height = backBufferTex->getHeight();
-   U32 width = backBufferTex->getWidth();
-
-   GBitmap bitmap = GBitmap(backBufferTex->getWidth(), backBufferTex->getHeight(), false, GFXFormatR8G8B8);
-   backBufferTex->copyToBmp(&bitmap);
-
-   return bitmap;
-}
-
-void ReflectionProbe::capture(GFXTextureTargetRef* target, U32 faceId, Point2I resolution)
-{
-   if (!GFX->allowRender() || GFX->canCurrentlyRender())
-      return;
-
-   //PROFILE_START(ReflectionProbe_capture);
-
-   GFX->setActiveRenderTarget(*target);
-   if (!GFX->getActiveRenderTarget())
-      return;
-
-   GFXTarget* renderTarget = GFX->getActiveRenderTarget();
-   if (renderTarget == NULL)
-      return;
-
-   // Make sure the root control is the size of the canvas.
-   Point2I size = renderTarget->getSize();
-   if (size.x == 0 || size.y == 0)
-      return;
-
-   // Standard view that will be overridden below.
-   VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
-
-   switch (faceId)
-   {
-   case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
-      vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
-      vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
-      vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 0.0f, -1.0f);
-      break;
-   case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
-      vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 0.0f, 1.0f);
-      break;
-   case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
-      vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
-      vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   }
-
-   // create camera matrix
-   VectorF cross = mCross(vUpVec, vLookatPt);
-   cross.normalizeSafe();
-
-   MatrixF matView(true);
-   matView.setColumn(0, cross);
-   matView.setColumn(1, vLookatPt);
-   matView.setColumn(2, vUpVec);
-   matView.setPosition(getPosition());
-   matView.inverse();
-   //
-
-   faceViewTransform = matView;
-
-   faceRenderTarget = target;
-
-   //PROFILE_END();
-
-   // Let the canvas render the scene.
-   renderFrameCanvasStyle();
-
-   // Now grab the current back buffer.
-   //GBitmap bitmap = _captureBackBuffer();
-
-   // The current GFX device couldn't capture the backbuffer or it's unable of doing so.
-   //if (bitmap.getByteSize() <= 0)
-   //   return;
-
-   // We captured... clear the flag.
-   //bool mPending = false;
-
-   // We gotta attach the extension ourselves.
-   /*char filename[256];
-   dSprintf(filename, 256, "%s.%s", mFilename, mWriteJPG ? "jpg" : "png");
-
-   // Open up the file on disk.
-   FileStream fs;
-   if (!fs.open(filename, Torque::FS::File::Write))
-      Con::errorf("ScreenShot::_singleCapture() - Failed to open output file '%s'!", filename);
-   else
-   {
-      // Write it and close.
-      if (mWriteJPG)
-         bitmap->writeBitmap("jpg", fs);
-      else
-         bitmap->writeBitmap("png", fs);
-
-      fs.close();
-   }*/
-
-   // Cleanup.
-   //delete bitmap;
-
-   /*char fileName[256];
-   dSprintf(fileName, 256, "%s%s_BACKBUFFER_%i.png", mReflectionPath.c_str(),
-      mProbeUniqueID.c_str(), faceId);
-
-   FileStream stream;
-   if (!stream.open(fileName, Torque::FS::File::Write))
-   {
-      Con::errorf("ReflectionProbe::bake(): Couldn't open cubemap face file fo writing " + String(fileName));
-      /*if (preCapture)
-         preCapture->disable();
-      if (deferredShading)
-         deferredShading->enable();*/
-      /*return;
-   }
-
-   //GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
-   //blendTex->copyToBmp(&bitmap);
-   bitmap.writeBitmap("png", stream);
-
-   bitmap.deleteImage();*/
 }
 
 DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath, S32 resolution), ("", 256),

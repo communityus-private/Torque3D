@@ -108,6 +108,8 @@ protected:
       MaterialParameterHandle *volumeSize;
       MaterialParameterHandle *volumePosition;
 
+      MaterialParameterHandle *useSphereMode;
+
       ReflectProbeMaterialInfo(const String &matName, const GFXVertexFormat *vertexFormat);
 
       virtual ~ReflectProbeMaterialInfo();
