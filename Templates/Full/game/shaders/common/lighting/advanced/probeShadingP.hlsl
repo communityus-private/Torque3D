@@ -46,15 +46,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    }
 	  
    float4 directLighting = TORQUE_TEX2D( directLightingBuffer, IN.uv0 ); //shadowmap*specular
-   float3 indirectLighting = TORQUE_TEX2D( indirectLightingBuffer, IN.uv0 ).rgb; //environment mapping*lightmaps
-   float metalness = matInfo.a;
-	  
-   float frez = directLighting.a;
-   
-   float3 diffuseColor = colorBuffer - (colorBuffer * metalness);
-   float3 reflectColor = lerp(indirectLighting*colorBuffer,indirectLighting,frez);
-   colorBuffer = diffuseColor+reflectColor;
-   colorBuffer += directLighting.rgb;
+   colorBuffer *= directLighting.rgb;
    
    return hdrEncode( float4(colorBuffer.rgb, 1.0) );
 }
