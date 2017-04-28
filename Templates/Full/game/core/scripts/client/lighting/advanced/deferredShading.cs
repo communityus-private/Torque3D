@@ -73,8 +73,8 @@ new ShaderData( AL_ProbeShader )
 
 singleton PostEffect( AL_PreCapture )
 {
-   renderTime = "PFXAfterBin";
-   renderBin = "SkyBin";
+   renderTime = "PFXBeforeBin";
+   renderBin = "ProbeBin";
    shader = AL_ProbeShader;
    stateBlock = AL_DeferredShadingState;
    texture[0] = "#color";
