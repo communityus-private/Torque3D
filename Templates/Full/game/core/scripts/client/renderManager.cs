@@ -51,7 +51,6 @@ function initRenderManager()
    // We really need to fix the sky to render after all the 
    // meshes... but that causes issues in reflections.
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(SkyBin)        { bintype = "Sky"; renderOrder = 0.1; processAddOrder = 0.1; } );
-   DiffuseRenderPassManager.addManager( new RenderProbeMgr(ProbeBin)       { bintype = "Probes"; renderOrder = 0.15; processAddOrder = 0.15; } );
    
    //DiffuseRenderPassManager.addManager( new RenderVistaMgr()             { bintype = "Vista"; renderOrder = 0.15; processAddOrder = 0.15; } );
    
@@ -82,6 +81,7 @@ function initRenderManager()
    
    // Note that the GlowPostFx is triggered after this bin.
    DiffuseRenderPassManager.addManager( new RenderGlowMgr(GlowBin)             { renderOrder = 1.5; processAddOrder = 1.5; } );
+   DiffuseRenderPassManager.addManager( new RenderProbeMgr(ProbeBin)       { bintype = "Probes"; renderOrder = 1.55; processAddOrder = 1.55; } );
    
    // We render any editor stuff from this bin.  Note that the HDR is
    // completed before this bin to keep editor elements from tone mapping.   
