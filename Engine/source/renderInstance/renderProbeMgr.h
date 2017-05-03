@@ -141,6 +141,7 @@ public:
    RenderProbeMgr(RenderInstType riType, F32 renderOrder, F32 processAddOrder);
 
    // RenderBinMgr
+   void _setupPerFrameParameters(const SceneRenderState *state);
    virtual void addElement(RenderInst *inst);
    virtual void render(SceneRenderState * state);
 
@@ -148,7 +149,7 @@ public:
    static void initPersistFields();
    DECLARE_CONOBJECT(RenderProbeMgr);
 
-   ReflectProbeMaterialInfo* mReflectProbeMaterial;
+   ReflectProbeMaterialInfo* mReflectProbeSpecularMaterial;
    ReflectProbeMaterialInfo* mReflectProbeDiffuseMaterial;
    ReflectProbeMaterialInfo* _getReflectProbeMaterial();
    ReflectProbeMaterialInfo* _getReflectProbeDiffuseMaterial();

@@ -20,60 +20,31 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "platform/platform.h"
 #include "T3D/reflectionProbe.h"
-
 #include "math/mathIO.h"
 #include "scene/sceneRenderState.h"
 #include "console/consoleTypes.h"
 #include "core/stream/bitStream.h"
-#include "materials/materialManager.h"
 #include "materials/baseMatInstance.h"
-#include "renderInstance/renderPassManager.h"
-#include "lighting/lightQuery.h"
 #include "console/engineAPI.h"
-
 #include "gfx/gfxDrawUtil.h"
-
-#include "lighting/advanced/advancedLightBinManager.h"
-
 #include "gfx/gfxDebugEvent.h"
 #include "gfx/gfxTransformSaver.h"
 #include "math/mathUtils.h"
-#include "math/util/frustum.h"
 #include "gfx/bitmap/gBitmap.h"
-#include "gfx/gfxTextureHandle.h"
 #include "core/stream/fileStream.h"
 #include "core/fileObject.h"
-#include "lighting/advanced/advancedLightManager.h"
 #include "core/resourceManager.h"
-
 #include "console/simPersistId.h"
 #include <string>
-#include "postFx/postEffectManager.h"
 #include "T3D/gameFunctions.h"
-#include "gui/core/guiOffscreenCanvas.h"
 #include "postFx/postEffect.h"
-
-//
-#include "platform/platform.h"
-#include "T3D/gameFunctions.h"
-#include "gui/3d/guiTSControl.h"
 #include "renderInstance/renderProbeMgr.h"
-//
+
 
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool ReflectionProbe::smRenderReflectionProbes = true;
-
-/*#include "platform/platform.h"
-#include "lighting/lightInfo.h"
-
-#include "math/mMath.h"
-#include "core/color.h"
-#include "gfx/gfxCubemap.h"
-#include "console/simObject.h"
-#include "math/mathUtils.h"*/
 
 IMPLEMENT_CO_NETOBJECT_V1(ReflectionProbe);
 
@@ -201,18 +172,6 @@ void ReflectionProbe::initPersistFields()
          &_doBake, &defaultProtectedGetFn, "Regenerate Voxel Grid", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
    endGroup("Reflection");
 
-   addGroup("CubemapMode");
-     
-   endGroup("CubemapMode");
-
-   addGroup("ColorMode");
-      
-   endGroup("ColorMode");
-
-   addGroup("Baking");
-      
-   endGroup("Baking");
-
    Con::addVariable("$Light::renderReflectionProbes", TypeBool, &ReflectionProbe::smRenderReflectionProbes,
       "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
       "@note Only works for shadow mapped lights.\n\n"
@@ -278,60 +237,10 @@ bool ReflectionProbe::onAdd()
       mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
    }
 
-   //Store the hash as our probeID string
-
    // Refresh this object's material (if any)
    if (isClientObject())
       updateMaterial();
-
-   /*Point3F origin = Point3F(-0.5000000, 0.5000000, -0.5000000);
-   Point3F vecs[3];
-   vecs[0] = Point3F(1.0000000, 0.0000000, 0.0000000);
-   vecs[1] = Point3F(0.0000000, -1.0000000, 0.0000000);
-   vecs[2] = Point3F(0.0000000, 0.0000000, 1.0000000);
-
-   origin += getPosition();
-
-   mPolyhedron.pointList.setSize(8);
-   mPolyhedron.pointList[0] = origin;
-   mPolyhedron.pointList[1] = origin + vecs[0];
-   mPolyhedron.pointList[2] = origin + vecs[1];
-   mPolyhedron.pointList[3] = origin + vecs[2];
-   mPolyhedron.pointList[4] = origin + vecs[0] + vecs[1];
-   mPolyhedron.pointList[5] = origin + vecs[0] + vecs[2];
-   mPolyhedron.pointList[6] = origin + vecs[1] + vecs[2];
-   mPolyhedron.pointList[7] = origin + vecs[0] + vecs[1] + vecs[2];
-
-   Point3F normal;
-   mPolyhedron.planeList.setSize(6);
-
-   mCross(vecs[2], vecs[0], &normal);
-   mPolyhedron.planeList[0].set(origin, normal);
-   mCross(vecs[0], vecs[1], &normal);
-   mPolyhedron.planeList[1].set(origin, normal);
-   mCross(vecs[1], vecs[2], &normal);
-   mPolyhedron.planeList[2].set(origin, normal);
-   mCross(vecs[1], vecs[0], &normal);
-   mPolyhedron.planeList[3].set(mPolyhedron.pointList[7], normal);
-   mCross(vecs[2], vecs[1], &normal);
-   mPolyhedron.planeList[4].set(mPolyhedron.pointList[7], normal);
-   mCross(vecs[0], vecs[2], &normal);
-   mPolyhedron.planeList[5].set(mPolyhedron.pointList[7], normal);
-
-   mPolyhedron.edgeList.setSize(12);
-   mPolyhedron.edgeList[0].vertex[0] = 0; mPolyhedron.edgeList[0].vertex[1] = 1; mPolyhedron.edgeList[0].face[0] = 0; mPolyhedron.edgeList[0].face[1] = 1;
-   mPolyhedron.edgeList[1].vertex[0] = 1; mPolyhedron.edgeList[1].vertex[1] = 5; mPolyhedron.edgeList[1].face[0] = 0; mPolyhedron.edgeList[1].face[1] = 4;
-   mPolyhedron.edgeList[2].vertex[0] = 5; mPolyhedron.edgeList[2].vertex[1] = 3; mPolyhedron.edgeList[2].face[0] = 0; mPolyhedron.edgeList[2].face[1] = 3;
-   mPolyhedron.edgeList[3].vertex[0] = 3; mPolyhedron.edgeList[3].vertex[1] = 0; mPolyhedron.edgeList[3].face[0] = 0; mPolyhedron.edgeList[3].face[1] = 2;
-   mPolyhedron.edgeList[4].vertex[0] = 3; mPolyhedron.edgeList[4].vertex[1] = 6; mPolyhedron.edgeList[4].face[0] = 3; mPolyhedron.edgeList[4].face[1] = 2;
-   mPolyhedron.edgeList[5].vertex[0] = 6; mPolyhedron.edgeList[5].vertex[1] = 2; mPolyhedron.edgeList[5].face[0] = 2; mPolyhedron.edgeList[5].face[1] = 5;
-   mPolyhedron.edgeList[6].vertex[0] = 2; mPolyhedron.edgeList[6].vertex[1] = 0; mPolyhedron.edgeList[6].face[0] = 2; mPolyhedron.edgeList[6].face[1] = 1;
-   mPolyhedron.edgeList[7].vertex[0] = 1; mPolyhedron.edgeList[7].vertex[1] = 4; mPolyhedron.edgeList[7].face[0] = 4; mPolyhedron.edgeList[7].face[1] = 1;
-   mPolyhedron.edgeList[8].vertex[0] = 4; mPolyhedron.edgeList[8].vertex[1] = 2; mPolyhedron.edgeList[8].face[0] = 1; mPolyhedron.edgeList[8].face[1] = 5;
-   mPolyhedron.edgeList[9].vertex[0] = 4; mPolyhedron.edgeList[9].vertex[1] = 7; mPolyhedron.edgeList[9].face[0] = 4; mPolyhedron.edgeList[9].face[1] = 5;
-   mPolyhedron.edgeList[10].vertex[0] = 5; mPolyhedron.edgeList[10].vertex[1] = 7; mPolyhedron.edgeList[10].face[0] = 3; mPolyhedron.edgeList[10].face[1] = 4;
-   mPolyhedron.edgeList[11].vertex[0] = 7; mPolyhedron.edgeList[11].vertex[1] = 6; mPolyhedron.edgeList[11].face[0] = 3; mPolyhedron.edgeList[11].face[1] = 5;*/
-
+  
    setMaskBits(-1);
 
    return true;
@@ -390,28 +299,6 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
 
    stream->writeFlag(mUseCubemap);
    stream->write(mCubemapName);
-
-   //if (stream->writeFlag(mask & PolyMask))
-   /*{
-      U32 i;
-      stream->write(mPolyhedron.pointList.size());
-      for (i = 0; i < mPolyhedron.pointList.size(); i++)
-         mathWrite(*stream, mPolyhedron.pointList[i]);
-
-      stream->write(mPolyhedron.planeList.size());
-      for (i = 0; i < mPolyhedron.planeList.size(); i++)
-         mathWrite(*stream, mPolyhedron.planeList[i]);
-
-      stream->write(mPolyhedron.edgeList.size());
-      for (i = 0; i < mPolyhedron.edgeList.size(); i++) {
-         const Polyhedron::Edge& rEdge = mPolyhedron.edgeList[i];
-
-         stream->write(rEdge.face[0]);
-         stream->write(rEdge.face[1]);
-         stream->write(rEdge.vertex[0]);
-         stream->write(rEdge.vertex[1]);
-      }
-   }*/
 
    return retMask;
 }
@@ -552,22 +439,22 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
    if (!mEnabled)
       return;
 
-   // If the light is selected or light visualization
-   // is enabled then register the callback.
-   const bool isSelectedInEditor = (gEditingMission && isSelected());
-   if (isSelectedInEditor)
-   {
-      ObjectRenderInst *ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
-      ri->renderDelegate.bind(this, &ReflectionProbe::_onRenderViz);
-      ri->type = RenderPassManager::RIT_Editor;
-      state->getRenderPass()->addInst(ri);
-   }
+   //Submit our probe to actually do the probe action
+   // Get a handy pointer to our RenderPassmanager
+   RenderPassManager *renderPass = state->getRenderPass();
 
-   if (gEditingMission && ReflectionProbe::smRenderReflectionProbes)
-   {
-      if (!mEditorShapeInst)
-         return;
+   // Allocate an MeshRenderInst so that we can submit it to the RenderPassManager
+   ProbeRenderInst *probeInst = renderPass->allocInst<ProbeRenderInst>();
 
+   probeInst->set(mProbeInfo);
+
+   probeInst->type = RenderPassManager::RIT_Probes;
+
+   // Submit our RenderInst to the RenderPassManager
+   state->getRenderPass()->addInst(probeInst);
+
+   if (gEditingMission && mEditorShapeInst)
+   {
       GFXTransformSaver saver;
 
       // Calculate the distance of this object from the camera
@@ -604,7 +491,7 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
 
       // Set the world matrix to the objects render transform
       MatrixF mat = getRenderTransform();
-      mat.scale(Point3F(1,1,1));
+      mat.scale(Point3F(1, 1, 1));
       GFX->setWorldMatrix(mat);
 
       // Animate the the shape
@@ -616,26 +503,23 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       saver.restore();
    }
 
-   //Submit our probe to actually do the probe action
-   // Get a handy pointer to our RenderPassmanager
-   RenderPassManager *renderPass = state->getRenderPass();
-
-   // Allocate an MeshRenderInst so that we can submit it to the RenderPassManager
-   ProbeRenderInst *probeInst = renderPass->allocInst<ProbeRenderInst>();
-
-   probeInst->set(mProbeInfo);
-
-   probeInst->type = RenderPassManager::RIT_Probes;
-
-   // Submit our RenderInst to the RenderPassManager
-   state->getRenderPass()->addInst(probeInst);
+   // If the light is selected or light visualization
+   // is enabled then register the callback.
+   const bool isSelectedInEditor = (gEditingMission && isSelected());
+   if (isSelectedInEditor)
+   {
+      ObjectRenderInst *ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
+      ri->renderDelegate.bind(this, &ReflectionProbe::_onRenderViz);
+      ri->type = RenderPassManager::RIT_Editor;
+      state->getRenderPass()->addInst(ri);
+   }
 }
 
 void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    SceneRenderState *state,
    BaseMatInstance *overrideMat)
 {
-   if (overrideMat || !ReflectionProbe::smRenderReflectionProbes)
+   if (!ReflectionProbe::smRenderReflectionProbes)
       return;
 
    GFXDrawUtil *draw = GFX->getDrawUtil();
@@ -759,13 +643,13 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
       // set projection to 90 degrees vertical and horizontal
       F32 left, right, top, bottom;
-      F32 nearPlane = 0.01;
-      F32 farDist = 1000;
+      F32 nearPlane = 0.01f;
+      F32 farDist = 1000.f;
 
       if (mReflectionModeType == SkyLight)
       {
-         nearPlane = 1000;
-         farDist = 10000;
+         nearPlane = 1000.f;
+         farDist = 10000.f;
       }
 
       MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);

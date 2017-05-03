@@ -274,11 +274,11 @@ new CustomMaterial( AL_ParticlePointLightMaterial )
    pixVersion = 3.0;
 };
 
-//Reflection probe
-new ShaderData( ReflectionProbeShader )
+//Reflection probe Specular
+new ShaderData( ReflectionProbeSpecularShader )
 {
    DXVertexShaderFile = "shaders/common/lighting/advanced/convexGeometryV.hlsl";
-   DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeP.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeSpecularP.hlsl";
 
    //OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
    //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
@@ -291,6 +291,21 @@ new ShaderData( ReflectionProbeShader )
    samplerNames[5] = "$lightBuffer";
    samplerNames[6] = "$colorBuffer";
    samplerNames[7] = "$matInfoBuffer";*/
+   
+   pixVersion = 3.0;
+};
+
+//Reflection Probe Diffuse
+new ShaderData( ReflectionProbeDiffuseShader )
+{
+   DXVertexShaderFile = "shaders/common/lighting/advanced/convexGeometryV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeDiffuseP.hlsl";
+
+   //OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
+   //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
+
+   samplerNames[0] = "$deferredBuffer";
+   samplerNames[1] = "$matInfoBuffer";
    
    pixVersion = 3.0;
 };
@@ -327,15 +342,28 @@ new GFXStateBlockData( AL_ProbeState )
    stencilRef = 0;
 };
 
-new CustomMaterial( ReflectionProbeMaterial )
+new CustomMaterial( ReflectionProbeSpecularMaterial )
 {
-   shader = ReflectionProbeShader;
+   shader = ReflectionProbeSpecularShader;
    stateBlock = AL_ProbeState;
    
    sampler["deferredBuffer"] = "#deferred";
    sampler["matInfoBuffer"] = "#matinfo";
    
    target = "indirectLighting";
+   
+   pixVersion = 3.0;
+};
+
+new CustomMaterial( ReflectionProbeDiffuseMaterial )
+{
+   shader = ReflectionProbeDiffuseShader;
+   stateBlock = AL_ProbeState;
+   
+   sampler["deferredBuffer"] = "#deferred";
+   sampler["matInfoBuffer"] = "#matinfo";
+   
+   target = "directLighting";
    
    pixVersion = 3.0;
 };
