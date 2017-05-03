@@ -58,13 +58,14 @@ function initRenderManager()
    // Normal mesh rendering.
    DiffuseRenderPassManager.addManager( new RenderTerrainMgr(TerrainBin)   { renderOrder = 0.4; processAddOrder = 0.4; basicOnly = true; } );
    DiffuseRenderPassManager.addManager( new RenderMeshMgr(MeshBin)         { bintype = "Mesh"; renderOrder = 0.5; processAddOrder = 0.5; basicOnly = true; } );
-   DiffuseRenderPassManager.addManager( new RenderImposterMgr(ImposterBin) { renderOrder = 0.56; processAddOrder = 0.56; basicOnly = true; } );
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(ObjectBin)     { bintype = "Object"; renderOrder = 0.6; processAddOrder = 0.6; } );
      
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(ShadowBin)     { bintype = "Shadow"; renderOrder = 0.7; processAddOrder = 0.7; } );
    DiffuseRenderPassManager.addManager( new RenderMeshMgr(DecalRoadBin)    { bintype = "DecalRoad"; renderOrder = 0.8; processAddOrder = 0.8; } );
    DiffuseRenderPassManager.addManager( new RenderMeshMgr(DecalBin)        { bintype = "Decal"; renderOrder = 0.81; processAddOrder = 0.81; } );
    DiffuseRenderPassManager.addManager( new RenderOcclusionMgr(OccluderBin){ bintype = "Occluder"; renderOrder = 0.9; processAddOrder = 0.9; } );
+   DiffuseRenderPassManager.addManager( new RenderProbeMgr(ProbeBin)       { bintype = "Probes"; renderOrder = 0.95; processAddOrder = 0.95; } );
+   DiffuseRenderPassManager.addManager( new RenderImposterMgr(ImposterBin) { renderOrder = 0.96; processAddOrder = 0.96; basicOnly = true; } );
      
    // We now render translucent objects that should handle
    // their own fogging and lighting.
@@ -81,7 +82,6 @@ function initRenderManager()
    
    // Note that the GlowPostFx is triggered after this bin.
    DiffuseRenderPassManager.addManager( new RenderGlowMgr(GlowBin)             { renderOrder = 1.5; processAddOrder = 1.5; } );
-   DiffuseRenderPassManager.addManager( new RenderProbeMgr(ProbeBin)       { bintype = "Probes"; renderOrder = 1.55; processAddOrder = 1.55; } );
    
    // We render any editor stuff from this bin.  Note that the HDR is
    // completed before this bin to keep editor elements from tone mapping.   
