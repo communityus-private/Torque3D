@@ -470,6 +470,7 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       TSRenderState rdata;
       rdata.setSceneState(state);
       rdata.setFadeOverride(1.0f);
+      rdata.setCubemap(mCubemap->mCubemap);
 
       // We might have some forward lit materials
       // so pass down a query to gather lights.
