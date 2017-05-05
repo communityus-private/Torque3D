@@ -41,6 +41,9 @@
 #include "postFx/postEffect.h"
 #include "renderInstance/renderProbeMgr.h"
 
+#include "math/util/sphereMesh.h"
+#include "materials/materialManager.h"
+#include "math/util/matrixSet.h"
 
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
@@ -94,10 +97,6 @@ ReflectionProbe::ReflectionProbe()
 
    mTypeMask = LightObjectType | MarkerObjectType;
 
-   // Make sure we the Material instance to NULL
-   // so we don't try to access it incorrectly
-   mMaterialInst = NULL;
-
    mProbeShapeType = ProbeRenderInst::Sphere;
 
    mIndrectLightingModeType = AmbientColor;
@@ -126,9 +125,6 @@ ReflectionProbe::ReflectionProbe()
 
 ReflectionProbe::~ReflectionProbe()
 {
-   if (mMaterialInst)
-      SAFE_DELETE(mMaterialInst);
-
    if (mEditorShapeInst)
       SAFE_DELETE(mEditorShapeInst);
 
@@ -278,10 +274,6 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
       mathWrite(*stream, getScale());
    }
 
-   // Write out any of the updated editable properties
-   if (stream->writeFlag(mask & UpdateMask))
-      stream->write(mMaterialName);
-
    stream->write((U32)mProbeShapeType);
 
    stream->write((U32)mIndrectLightingModeType);
@@ -314,14 +306,6 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
       mathRead(*stream, &mObjScale);
 
       setTransform(mObjToWorld);
-   }
-
-   if (stream->readFlag())  // UpdateMask
-   {
-      stream->read(&mMaterialName);
-
-      if (isProperlyAdded())
-         updateMaterial();
    }
 
    U32 shapeType = ProbeRenderInst::Sphere;
@@ -418,7 +402,7 @@ void ReflectionProbe::updateMaterial()
    }
 
    mProbeInfo->mCubemap = mCubemap;
-   
+
    mProbeInfo->mIntensity = mIntensity;
    mProbeInfo->mRadius = mRadius;
 
@@ -473,6 +457,10 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       // Make sure we have a valid level of detail
       if (mEditorShapeInst->getCurrentDetail() < 0)
          return;
+
+      BaseMatInstance* probePrevMat = mEditorShapeInst->getMaterialList()->getMaterialInst(0);
+
+      setPreviewMatParameters(state, probePrevMat);
 
       // GFXTransformSaver is a handy helper class that restores
       // the current GFX matrices to their original values when
@@ -542,6 +530,32 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
       Box3F cube(mRadius);
       draw->drawCube(desc, cube, color);
    }
+}
+
+void ReflectionProbe::setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat)
+{
+   //Set up the params
+   MaterialParameters *matParams = mat->getMaterialParameters();
+
+   //Get the deferred render target
+   NamedTexTarget* deferredTexTarget = NamedTexTarget::find("deferred");
+
+   GFXTextureObject *deferredTexObject = deferredTexTarget->getTexture();
+   if (!deferredTexObject) 
+      return;
+
+   GFX->setTexture(0, deferredTexObject);
+
+   //Set the cubemap
+   GFX->setCubeTexture(1, mCubemap->mCubemap);
+
+   //Set the invViewMat
+   MatrixSet &matrixSet = renderState->getRenderPass()->getMatrixSet();
+   const MatrixF &worldToCameraXfm = matrixSet.getWorldToCamera();
+
+   MaterialParameterHandle *invViewMat = mat->getMaterialParameterHandle("$invViewMat");
+
+   matParams->setSafe(invViewMat, worldToCameraXfm);
 }
 
 DefineEngineMethod(ReflectionProbe, postApply, void, (), ,

@@ -100,11 +100,6 @@ private:
    //--------------------------------------------------------------------------
    // Rendering variables
    //--------------------------------------------------------------------------
-   // The name of the Material we will use for rendering
-   String            mMaterialName;
-   // The actual Material instance
-   BaseMatInstance*  mMaterialInst;
-
    ProbeRenderInst::ProbeShapeType mProbeShapeType;
 
    ProbeRenderInst* mProbeInfo;
@@ -129,11 +124,14 @@ private:
 
    // Define our vertex format here so we don't have to
    // change it in multiple spots later
-   typedef GFXVertexPNT VertexType;
+   typedef GFXVertexPNTTB VertexType;
 
    // The GFX vertex and primitive buffers
    GFXVertexBufferHandle< VertexType > mVertexBuffer;
    GFXPrimitiveBufferHandle            mPrimitiveBuffer;
+
+   U32 mSphereVertCount;
+   U32 mSpherePrimitiveCount;
 
    //Debug rendering
    static bool smRenderReflectionProbes;
@@ -197,6 +195,8 @@ public:
    void _onRenderViz(ObjectRenderInst *ri,
       SceneRenderState *state,
       BaseMatInstance *overrideMat);
+
+   void setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat);
 
    //Baking
    void bake(String outputPath, S32 resolution);
