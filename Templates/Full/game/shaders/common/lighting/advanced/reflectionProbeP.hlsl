@@ -45,7 +45,9 @@ uniform float useSphereMode;
 float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 { 
     // Compute scene UV
-    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
+    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w; 
+
+    //float4 hardCodedRTParams0 = float4(0,0.0277777780,1,0.972222209);
     float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
 
     // Matinfo flags
@@ -67,6 +69,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
     // Use eye ray to get ws pos
     float4 worldPos = float4(eyePosWorld + IN.wsEyeDir.rgb * depth, 1.0f);
+    float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
 
     if(useSphereMode)
     {
@@ -94,7 +97,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
         float Sat_NL_Att = saturate( nDotL * atten ) * lightBrightness;
 
         float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),nDotL)).rgb;
-        float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
         ref = float4(reflectionVec, smoothness);
 
         alpha = Sat_NL_Att;
@@ -117,7 +119,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
         float3 posOnBox = wPos + nrdir*fa;
         rdir = posOnBox - volumePosition;
 
-        float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
         ref = float4(rdir, smoothness);
 
         alpha = 1;

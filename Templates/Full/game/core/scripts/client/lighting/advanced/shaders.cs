@@ -275,31 +275,10 @@ new CustomMaterial( AL_ParticlePointLightMaterial )
 };
 
 //Reflection probe Specular
-new ShaderData( ReflectionProbeSpecularShader )
+new ShaderData( ReflectionProbeShader )
 {
    DXVertexShaderFile = "shaders/common/lighting/advanced/convexGeometryV.hlsl";
-   DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeSpecularP.hlsl";
-
-   //OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
-   //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
-
-   samplerNames[0] = "$deferredBuffer";
-   samplerNames[1] = "$matInfoBuffer";
-   /*
-   samplerNames[3] = "$cookieMap";
-   samplerNames[4] = "$gTapRotationTex";
-   samplerNames[5] = "$lightBuffer";
-   samplerNames[6] = "$colorBuffer";
-   samplerNames[7] = "$matInfoBuffer";*/
-   
-   pixVersion = 3.0;
-};
-
-//Reflection Probe Diffuse
-new ShaderData( ReflectionProbeDiffuseShader )
-{
-   DXVertexShaderFile = "shaders/common/lighting/advanced/convexGeometryV.hlsl";
-   DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeDiffuseP.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeP.hlsl";
 
    //OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
    //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
@@ -342,28 +321,15 @@ new GFXStateBlockData( AL_ProbeState )
    stencilRef = 0;
 };
 
-new CustomMaterial( ReflectionProbeSpecularMaterial )
+new CustomMaterial( ReflectionProbeMaterial )
 {
-   shader = ReflectionProbeSpecularShader;
+   shader = ReflectionProbeShader;
    stateBlock = AL_ProbeState;
    
    sampler["deferredBuffer"] = "#deferred";
    sampler["matInfoBuffer"] = "#matinfo";
    
    target = "indirectLighting";
-   
-   pixVersion = 3.0;
-};
-
-new CustomMaterial( ReflectionProbeDiffuseMaterial )
-{
-   shader = ReflectionProbeDiffuseShader;
-   stateBlock = AL_ProbeState;
-   
-   sampler["deferredBuffer"] = "#deferred";
-   sampler["matInfoBuffer"] = "#matinfo";
-   
-   target = "directLighting";
    
    pixVersion = 3.0;
 };

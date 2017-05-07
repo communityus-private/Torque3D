@@ -149,10 +149,8 @@ public:
    static void initPersistFields();
    DECLARE_CONOBJECT(RenderProbeMgr);
 
-   ReflectProbeMaterialInfo* mReflectProbeSpecularMaterial;
-   ReflectProbeMaterialInfo* mReflectProbeDiffuseMaterial;
+   ReflectProbeMaterialInfo* mReflectProbeMaterial;
    ReflectProbeMaterialInfo* _getReflectProbeMaterial();
-   ReflectProbeMaterialInfo* _getReflectProbeDiffuseMaterial();
 
    // Add a reflection probe to the bin
    void addSphereReflectionProbe(ProbeRenderInst *probeInfo);

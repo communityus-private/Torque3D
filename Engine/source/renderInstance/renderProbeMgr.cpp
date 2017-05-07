@@ -56,15 +56,13 @@ S32 QSORT_CALLBACK AscendingReflectProbeInfluence(const void* a, const void* b)
 RenderProbeMgr::RenderProbeMgr()
 : RenderBinManager(RenderPassManager::RIT_Probes, 1.0f, 1.0f)
 {
-   mReflectProbeSpecularMaterial = nullptr;
-   mReflectProbeDiffuseMaterial = nullptr;
+   mReflectProbeMaterial = nullptr;
 }
 
 RenderProbeMgr::RenderProbeMgr(RenderInstType riType, F32 renderOrder, F32 processAddOrder)
  : RenderBinManager(riType, renderOrder, processAddOrder)
 {  
-   mReflectProbeSpecularMaterial = nullptr;
-   mReflectProbeDiffuseMaterial = nullptr;
+   mReflectProbeMaterial = nullptr;
 }
 
 void RenderProbeMgr::initPersistFields()
@@ -136,11 +134,8 @@ void RenderProbeMgr::addSphereReflectionProbe(ProbeRenderInst *probeInfo)
 {
    probeInfo->vertBuffer = getSphereMesh(probeInfo->numPrims, probeInfo->primBuffer);
 
-   if (!mReflectProbeSpecularMaterial)
-      mReflectProbeSpecularMaterial = _getReflectProbeMaterial();
-
-   if (!mReflectProbeDiffuseMaterial)
-      mReflectProbeDiffuseMaterial = _getReflectProbeDiffuseMaterial();
+   if (!mReflectProbeMaterial)
+      mReflectProbeMaterial = _getReflectProbeMaterial();
 }
 
 void RenderProbeMgr::addConvexReflectionProbe(ProbeRenderInst *probeInfo)
@@ -211,11 +206,8 @@ void RenderProbeMgr::addConvexReflectionProbe(ProbeRenderInst *probeInfo)
 
    probeInfo->numPrims = 12;
 
-   if (!mReflectProbeSpecularMaterial)
-      mReflectProbeSpecularMaterial = _getReflectProbeMaterial();
-
-   if (!mReflectProbeDiffuseMaterial)
-      mReflectProbeDiffuseMaterial = _getReflectProbeDiffuseMaterial();
+   if (!mReflectProbeMaterial)
+      mReflectProbeMaterial = _getReflectProbeMaterial();
    //
 
   // mReflectProbeBin.push_back(pEntry);
@@ -268,7 +260,7 @@ void RenderProbeMgr::_setupPerFrameParameters(const SceneRenderState *state)
    PlaneF vsFarPlane(verts[0].normal, verts[1].normal, verts[2].normal);
 
    MatrixSet &matrixSet = getRenderPass()->getMatrixSet();
-   //matrixSet.restoreSceneViewProjection();
+   matrixSet.restoreSceneViewProjection();
 
    const MatrixF &worldToCameraXfm = matrixSet.getWorldToCamera();
 
@@ -276,21 +268,12 @@ void RenderProbeMgr::_setupPerFrameParameters(const SceneRenderState *state)
    //inverseViewMatrix.fullInverse();
    //inverseViewMatrix.transpose();
 
-   //MatrixF inverseViewMatrix = MatrixF::Identity;
+   inverseViewMatrix = MatrixF::Identity;
 
    // Parameters calculated, assign them to the materials
-   if (mReflectProbeSpecularMaterial)
+   if (mReflectProbeMaterial != nullptr && mReflectProbeMaterial->matInstance != nullptr)
    {
-      mReflectProbeSpecularMaterial->setViewParameters(frustum.getNearDist(),
-         frustum.getFarDist(),
-         frustum.getPosition(),
-         farPlane,
-         vsFarPlane, inverseViewMatrix);
-   }
-
-   if (mReflectProbeDiffuseMaterial)
-   {
-      mReflectProbeDiffuseMaterial->setViewParameters(frustum.getNearDist(),
+      mReflectProbeMaterial->setViewParameters(frustum.getNearDist(),
          frustum.getFarDist(),
          frustum.getPosition(),
          farPlane,
@@ -311,7 +294,19 @@ void RenderProbeMgr::render( SceneRenderState *state )
 
    GFXTransformSaver saver;
 
-   //GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
+   NamedTexTarget* lightInfoTarget = NamedTexTarget::find("indirectLighting");
+
+   GFXTextureObject *indirectLightTexObject = lightInfoTarget->getTexture();
+   if (!indirectLightTexObject)
+      return;
+
+   GFXTextureTargetRef indirectLightTarget = GFX->allocRenderToTextureTarget();
+
+   indirectLightTarget->attachTexture(GFXTextureTarget::Color0, indirectLightTexObject);
+
+   GFX->pushActiveRenderTarget();
+   GFX->setActiveRenderTarget(indirectLightTarget);
+   GFX->setViewport(lightInfoTarget->getViewport());
 
    // Restore transforms
    MatrixSet &matrixSet = getRenderPass()->getMatrixSet();
@@ -331,21 +326,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
    dQsort(mElementList.address(), mElementList.size(), sizeof(const MainSortElem), AscendingReflectProbeInfluence);
 
    //Specular
-   PROFILE_START(RenderProbeManager_ReflectProbeRender_Specular);
-
-   NamedTexTarget* lightInfoTarget = NamedTexTarget::find("indirectLighting");
-
-   GFXTextureObject *indirectLightTexObject = lightInfoTarget->getTexture();
-   if (!indirectLightTexObject) 
-      return;
-
-   GFXTextureTargetRef indirectLightTarget = GFX->allocRenderToTextureTarget();
-
-   indirectLightTarget->attachTexture(GFXTextureTarget::Color0, indirectLightTexObject);
-
-   GFX->getActiveRenderTarget()->preserve();
-   GFX->pushActiveRenderTarget();
-   GFX->setActiveRenderTarget(indirectLightTarget);
+   PROFILE_START(RenderProbeManager_ReflectProbeRender);
 
    for (U32 i = 0; i<mElementList.size(); i++)
    {
@@ -354,109 +335,34 @@ void RenderProbeMgr::render( SceneRenderState *state )
       if (curEntry->numPrims == 0)
          continue;
 
-      // Set geometry
-      GFX->setVertexBuffer(curEntry->vertBuffer);
-      GFX->setPrimitiveBuffer(curEntry->primBuffer);
+      if (!mReflectProbeMaterial || !mReflectProbeMaterial->matInstance)
+         break;
 
+      //Setup
       MatrixF probeTrans = curEntry->getTransform();
       if(curEntry->mProbeShapeType == ProbeRenderInst::Sphere)
          probeTrans.scale(curEntry->mRadius * 1.01f);
 
       sgData.objTrans = &probeTrans;
 
-      if (mReflectProbeSpecularMaterial && mReflectProbeSpecularMaterial->matInstance)
-      {
-         mReflectProbeSpecularMaterial->setProbeParameters(curEntry, state, worldToCameraXfm);
-
-         while (mReflectProbeSpecularMaterial->matInstance->setupPass(state, sgData))
-         {
-            // Set transforms
-            matrixSet.setWorld(*sgData.objTrans);
-            mReflectProbeSpecularMaterial->matInstance->setTransforms(matrixSet, state);
-            mReflectProbeSpecularMaterial->matInstance->setSceneInfo(state, sgData);
-
-            /*if (curEntry->primBuffer)
-            {
-               U32 startIndex = 0;
-               for (U32 i = 0; i < curEntry->numPrims; ++i)
-               {
-                  U32 numVerts = curEntry->numIndicesForPoly[i];
-                  GFX->drawIndexedPrimitive(GFXTriangleStrip, 0, 0, curEntry->numVerts, startIndex, numVerts - 2);
-                  startIndex += numVerts;
-               }
-            }
-            else*/
-               GFX->drawPrimitive(GFXTriangleList, 0, curEntry->numPrims);
-         }
-      }
-   }
-
-   indirectLightTarget->resolve();
-   GFX->popActiveRenderTarget();
-   PROFILE_END();
-
-   //Diffuse
-   PROFILE_START(RenderProbeManager_ReflectProbeRender_Diffuse);
-
-   NamedTexTarget* directLightingTarget = NamedTexTarget::find("directLighting");
-
-   GFXTextureObject *directLightTexObject = directLightingTarget->getTexture();
-   if (!directLightTexObject)
-      return;
-
-   GFXTextureTargetRef directLightTarget = GFX->allocRenderToTextureTarget();
-
-   directLightTarget->attachTexture(GFXTextureTarget::Color0, directLightTexObject);
-
-   GFX->getActiveRenderTarget()->preserve();
-   GFX->pushActiveRenderTarget();
-   GFX->setActiveRenderTarget(directLightTarget);
-
-   for (U32 i = 0; i<mElementList.size(); i++)
-   {
-      ProbeRenderInst *curEntry = static_cast<ProbeRenderInst*>(mElementList[i].inst);
-
-      if (curEntry->numPrims == 0)
-         continue;
+      mReflectProbeMaterial->setProbeParameters(curEntry, state, worldToCameraXfm);
 
       // Set geometry
       GFX->setVertexBuffer(curEntry->vertBuffer);
       GFX->setPrimitiveBuffer(curEntry->primBuffer);
 
-      MatrixF probeTrans = curEntry->getTransform();
-      if (curEntry->mProbeShapeType == ProbeRenderInst::Sphere)
-         probeTrans.scale(curEntry->mRadius * 1.01f);
-
-      sgData.objTrans = &probeTrans;
-
-      if (mReflectProbeDiffuseMaterial && mReflectProbeDiffuseMaterial->matInstance)
+      while (mReflectProbeMaterial->matInstance->setupPass(state, sgData))
       {
-         mReflectProbeDiffuseMaterial->setProbeParameters(curEntry, state, worldToCameraXfm);
+         // Set transforms
+         matrixSet.setWorld(*sgData.objTrans);
+         mReflectProbeMaterial->matInstance->setTransforms(matrixSet, state);
+         mReflectProbeMaterial->matInstance->setSceneInfo(state, sgData);
 
-         while (mReflectProbeDiffuseMaterial->matInstance->setupPass(state, sgData))
-         {
-            // Set transforms
-            matrixSet.setWorld(*sgData.objTrans);
-            mReflectProbeDiffuseMaterial->matInstance->setTransforms(matrixSet, state);
-            mReflectProbeDiffuseMaterial->matInstance->setSceneInfo(state, sgData);
-
-            /*if (curEntry->primBuffer)
-            {
-            U32 startIndex = 0;
-            for (U32 i = 0; i < curEntry->numPrims; ++i)
-            {
-            U32 numVerts = curEntry->numIndicesForPoly[i];
-            GFX->drawIndexedPrimitive(GFXTriangleStrip, 0, 0, curEntry->numVerts, startIndex, numVerts - 2);
-            startIndex += numVerts;
-            }
-            }
-            else*/
-            GFX->drawPrimitive(GFXTriangleList, 0, curEntry->numPrims);
-         }
+         GFX->drawPrimitive(GFXTriangleList, 0, curEntry->numPrims);
       }
    }
 
-   directLightTarget->resolve();
+   indirectLightTarget->resolve();
    GFX->popActiveRenderTarget();
    PROFILE_END();
 
@@ -559,6 +465,11 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setViewParameters(const F32 _zNea
    matParams->setSafe(zNearFarInvNearFar, Point4F(_zNear, _zFar, 1.0f / _zNear, 1.0f / _zFar));
 
    matParams->setSafe(invViewMat, _inverseViewMatrix);
+
+   Point4F frPlane = *((const Point4F *)&_farPlane);
+   Point4F vsFrPlane = *((const Point4F *)&_vsFarPlane);
+   Point4F nearFarInvNearFar = Point4F(_zNear, _zFar, 1.0f / _zNear, 1.0f / _zFar);
+   const F32 negFarPlaneDotEyeVal = -(mDot(*((const Point3F *)&_farPlane), _eyePos) + _farPlane.d);
 }
 
 void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRenderInst *probeInfo, const SceneRenderState* renderState, const MatrixF &worldViewOnly)
@@ -617,7 +528,7 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
 
    matParams->setSafe(intensity, probeInfo->mIntensity);
 
-   matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
+   //matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
    matParams->setSafe(volumeStart, probeInfo->getPosition() - Point3F(probeInfo->mRadius/2, probeInfo->mRadius/2, probeInfo->mRadius/2));
    matParams->setSafe(volumePosition, probeInfo->getPosition());
    matParams->setSafe(volumeSize, Point3F(probeInfo->mRadius, probeInfo->mRadius, probeInfo->mRadius));
@@ -634,9 +545,9 @@ bool ReflectProbeMatInstance::init(const FeatureSet &features, const GFXVertexFo
    if (!success || !mProcessedMaterial || mProcessedMaterial->getNumPasses() == 0)
       return false;
 
-   mProbeParamsSC = getMaterialParameterHandle("$lightMapParams");
+   /*mProbeParamsSC = getMaterialParameterHandle("$lightMapParams");
 
-   /*mLightMapParamsSC = getMaterialParameterHandle("$lightMapParams");
+   mLightMapParamsSC = getMaterialParameterHandle("$lightMapParams");
 
    // Grab the state block for the first render pass (since this mat instance
    // inserts a pass after the first pass)
@@ -773,29 +684,13 @@ RenderProbeMgr::ReflectProbeMaterialInfo* RenderProbeMgr::_getReflectProbeMateri
 
    //ReflectProbeMaterialInfo *info = NULL;
 
-   if (!mReflectProbeSpecularMaterial)
+   if (!mReflectProbeMaterial)
 
       // Now create the material info object.
-      mReflectProbeSpecularMaterial = new ReflectProbeMaterialInfo("ReflectionProbeSpecularMaterial",
+      mReflectProbeMaterial = new ReflectProbeMaterialInfo("ReflectionProbeMaterial",
          getGFXVertexFormat<GFXVertexPC>());
 
-   return mReflectProbeSpecularMaterial;
-}
-
-RenderProbeMgr::ReflectProbeMaterialInfo* RenderProbeMgr::_getReflectProbeDiffuseMaterial()
-{
-   PROFILE_SCOPE(AdvancedLightBinManager__getReflectProbeDiffuseMaterial);
-
-   //ReflectProbeMaterialInfo *info = NULL;
-
-   if (!mReflectProbeDiffuseMaterial)
-   {
-      // Now create the material info object.
-      mReflectProbeDiffuseMaterial = new ReflectProbeMaterialInfo("ReflectionProbeDiffuseMaterial",
-         getGFXVertexFormat<GFXVertexPC>());
-   }
-
-   return mReflectProbeDiffuseMaterial;
+   return mReflectProbeMaterial;
 }
 
 //

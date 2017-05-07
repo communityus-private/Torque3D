@@ -198,6 +198,9 @@ public:
 
    void setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat);
 
+   //Spherical Harmonics
+   //void sphericalHarmonicsFromCubemap(Vector<Point3F> & output, const U32 order);
+
    //Baking
    void bake(String outputPath, S32 resolution);
 };
