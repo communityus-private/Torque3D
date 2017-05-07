@@ -268,7 +268,7 @@ void RenderProbeMgr::_setupPerFrameParameters(const SceneRenderState *state)
    //inverseViewMatrix.fullInverse();
    //inverseViewMatrix.transpose();
 
-   inverseViewMatrix = MatrixF::Identity;
+   //inverseViewMatrix = MatrixF::Identity;
 
    // Parameters calculated, assign them to the materials
    if (mReflectProbeMaterial != nullptr && mReflectProbeMaterial->matInstance != nullptr)
