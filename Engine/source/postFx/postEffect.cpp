@@ -722,12 +722,8 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
    if ( mMatScreenToWorldSC->isValid() )
    {
       // World space->screen space
-      MatrixF tempMat = thisFrame.cameraToScreen;
-      tempMat.mul( thisFrame.worldToCamera );
-      tempMat.transpose();
-
       // Support using these matrices as float3x3 or float4x4...
-      mShaderConsts->set( mMatScreenToWorldSC, tempMat, mMatScreenToWorldSC->getType() );
+      mShaderConsts->set( mMatScreenToWorldSC, state->getWorldViewMatrix(), mMatScreenToWorldSC->getType() );
    }
 
    if ( mMatPrevScreenToWorldSC->isValid() )

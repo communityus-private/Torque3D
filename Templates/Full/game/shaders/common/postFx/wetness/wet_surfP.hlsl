@@ -15,6 +15,7 @@ TORQUE_UNIFORM_SAMPLER2D(colorBufferTex    ,3);
 uniform float accumTime             : register(C1);
 
 uniform float3    eyePosWorld;
+uniform float4x4 matScreenToWorld;
 
 //----------------------------------------------
 // Downhill Shader
@@ -38,11 +39,12 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    if ( depth > 0.99999999 )
       return float4(0, 0, 0, 0);
       
+    float3 wsNormal = mul(float4(normal, 0), matScreenToWorld).rgb;
    // Get world space normals
-   float ang = dot(float(normal.x), float(normal.z));
+   float ang = dot(normalize(wsNormal).z,1);
    
    animate = 1;
-   if(ang == 0 || ang <= 0.2)
+   if(ang <= 0 || ang >= 0.2)
       animate = 0;
    
    // Animate UVs
@@ -58,7 +60,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    {
       wetUV = float3(wetUV.x,
                      wetUV.y,
-                     wetUV.z + accumTime * 0.1); // Animate our UV
+                     wetUV.z + accumTime * 0.01); // Animate our UV
       wetness = TORQUE_TEX2D( wetMap, (wetUV.xz + wetUV.yz + wetUV.xy) * 0.2 ).rgb;
    }
    
@@ -79,12 +81,12 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    float4 directLighting = TORQUE_TEX2D( directLightingBuffer, IN.uv0 ); //shadowmap*specular
    lightcolor = directLighting.rgb;
    specular = directLighting.a;
-   color = TORQUE_TEX2D( colorBufferTex, IN.uv0 );
-   
+   color = TORQUE_TEX2D( colorBufferTex, IN.uv0 );   
+
    float wetsum = (wetSpec1 + wetSpec2);
    float3 diffuseColor = color.rgb - (color.rgb * 0.92 * wetsum);
    lightcolor.rgb = lerp( 0.08 * lightcolor.rgb, diffuseColor, wetsum );
-   color.rgb =  diffuseColor + lightcolor.rgb;   
+   color.rgb =  diffuseColor + lightcolor.rgb;    
    
-   return hdrEncode( color ); 
+   return hdrEncode( float4(wsNormal,1) ); 
 }
