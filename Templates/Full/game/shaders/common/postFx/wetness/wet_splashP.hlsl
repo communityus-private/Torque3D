@@ -3,13 +3,13 @@
 // Copyright (C) GarageGames.com, Inc.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
+#include "../../ShaderModelAutoGen.hlsl"
 #include "./../postFx.hlsl"
-#include "./../../torque.hlsl"
+#include "shaders/common/torque.hlsl"
 
-uniform sampler2D prepassTex        : register(S0);
-uniform sampler2D lightPrePassTex   : register(S1);
-uniform sampler2D splashNormalMap   : register(S2);
+TORQUE_UNIFORM_SAMPLER2D(deferredTex        ,0);
+TORQUE_UNIFORM_SAMPLER2D(directLightingBuffer   ,1);
+TORQUE_UNIFORM_SAMPLER2D(splashNormalMap   ,2);
 
 uniform float accumTime             : register(C1);
 
@@ -20,7 +20,7 @@ uniform float     splashAlpha;
 //----------------------------------------------
 // Splash Shader
 //----------------------------------------------
-float4 main( PFXVertToPix In ) : COLOR
+float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
    //return float4(0, 0, 0, 0);
    // Define an output variable
@@ -29,7 +29,7 @@ float4 main( PFXVertToPix In ) : COLOR
    float nl_Att, specular, splashSpec1, splashSpec2;
    
    // Get the prepass texture
-   float4 prepass = prepassUncondition( prepassTex, In.uv0 );
+   float4 prepass = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 );
    float3 normal = prepass.rgb; // Get the normals
    float depth = prepass.a; // Get the depth
       
@@ -37,12 +37,14 @@ float4 main( PFXVertToPix In ) : COLOR
    if ( depth > 0.99999999 )
       return float4(0, 0, 0, 0);
       
-   // Get the light information of the lightPrePassTex
-   lightinfoUncondition( tex2D( lightPrePassTex, In.uv0 ), lightcolor, nl_Att, specular );
+   // Get the light information of the directLightingBuffer
+   float4 directLighting = TORQUE_TEX2D( directLightingBuffer, IN.uv0 ); //shadowmap*specular
+   lightcolor = directLighting.rgb;
+   specular = directLighting.a;
    
    // Get the UV we want to apply out texture on (rainUV)
    // and assign our rain splash texture to a float3 (splashColor)
-   float3 rainUV = eyePosWorld + ( In.wsEyeRay * depth );
+   float3 rainUV = eyePosWorld + ( IN.wsEyeRay * depth );
    
    // Filter out walls and similar
    float ang = dot(float(normal.x), float(normal.z));
@@ -73,7 +75,7 @@ float4 main( PFXVertToPix In ) : COLOR
                       rainUV.z);
    
    // Get splash normals from normal map
-   float3 splashNormal = tex2D( splashNormalMap, rainUV.xy ).rgb;
+   float3 splashNormal = TORQUE_TEX2D( splashNormalMap, rainUV.xy ).rgb;
    
    // Get the splash normals
    splashNorm = normalize( splashNormal );
@@ -81,11 +83,11 @@ float4 main( PFXVertToPix In ) : COLOR
    splashNorm = normalize( splashNorm );
    
    // Modifies specularity
-   splashSpec1 = saturate(dot(splashNorm, normalize(float3(In.wsEyeRay))));
+   splashSpec1 = saturate(dot(splashNorm, normalize(float3(IN.wsEyeRay))));
    splashSpec1 = pow( splashSpec1, 1 ); // Increase/decrease specularity power
    
    // Modifies specularity
-   splashSpec2 = saturate(dot(splashNorm, normalize(float3(-In.wsEyeRay))));
+   splashSpec2 = saturate(dot(splashNorm, normalize(float3(-IN.wsEyeRay))));
    splashSpec2 = pow( splashSpec2, 1 ); // Increase/decrease specularity power
    
    // Apply the wetness specularity to our output color

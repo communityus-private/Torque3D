@@ -80,8 +80,8 @@ singleton ShaderData( WetnessShader )
    DXVertexShaderFile 	= "shaders/common/postFx/postFxV.hlsl";
    DXPixelShaderFile 	= "shaders/common/postFx/wetness/wet_surfP.hlsl";  
    
-   samplerNames[0] = "$prepassTex";
-   samplerNames[1] = "lightInfoBuffer";
+   samplerNames[0] = "deferredTex";
+   samplerNames[1] = "directLightingBuffer";
    samplerNames[2] = "$wetMap";
              
    pixVersion = 3.0;
@@ -92,8 +92,8 @@ singleton ShaderData( WetnessRefractShader )
    DXVertexShaderFile 	= "shaders/common/postFx/wetness/wet_lightrefractV.hlsl";
    DXPixelShaderFile 	= "shaders/common/postFx/wetness/wet_lightrefractP.hlsl";  
    
-   samplerNames[0] = "$prepassTex";
-   samplerNames[1] = "lightInfoBuffer";
+   samplerNames[0] = "deferredTex";
+   samplerNames[1] = "directLightingBuffer";
    samplerNames[2] = "$wetMap";
    samplerNames[3] = "$backbuffer";
              
@@ -105,8 +105,8 @@ singleton ShaderData( WetnessRainFallShader )
    DXVertexShaderFile 	= "shaders/common/postFx/postFxV.hlsl";
    DXPixelShaderFile 	= "shaders/common/postFx/wetness/wet_rainfallP.hlsl";  
    
-   samplerNames[0] = "$prepassTex";
-   samplerNames[1] = "lightInfoBuffer";
+   samplerNames[0] = "deferredTex";
+   samplerNames[1] = "directLightingBuffer";
    samplerNames[2] = "$rainfall";
              
    pixVersion = 3.0;
@@ -118,8 +118,8 @@ singleton ShaderData( WetnessRainSplashShader )
    DXVertexShaderFile 	= "shaders/common/postFx/postFxV.hlsl";
    DXPixelShaderFile 	= "shaders/common/postFx/wetness/wet_splashP.hlsl";  
    
-   samplerNames[0] = "$prepassTex";
-   samplerNames[1] = "lightInfoBuffer";
+   samplerNames[0] = "deferredTex";
+   samplerNames[1] = "directLightingBuffer";
    samplerNames[2] = "$splashNormal";
              
    pixVersion = 3.0;
@@ -139,9 +139,9 @@ singleton PostEffect( WetnessPostFX )
    shader = WetnessShader;
    stateBlock = WetnessStateBlock;
    
-   texture[0] = "#prepass";
-   texture[1] = "#lightinfo";
-   texture[2] = "wetMap.png";
+   texture[0] = "#deferred";
+   texture[1] = "#directLighting";
+   texture[2] = "./wetMap.png";
    texture[3] = "#color";
    
    singleton PostEffect()
@@ -151,9 +151,9 @@ singleton PostEffect( WetnessPostFX )
       shader = WetnessRefractShader;
       stateBlock = WetnessStateBlock;
       
-      texture[0] = "#prepass";
-      texture[1] = "#lightinfo";
-      texture[2] = "wetMap.png";
+      texture[0] = "#deferred";
+      texture[1] = "#directLighting";
+      texture[2] = "./wetMap.png";
       texture[3] = "$backbuffer";
    };
    
@@ -164,9 +164,9 @@ singleton PostEffect( WetnessPostFX )
       shader = WetnessRainFallShader;
       stateBlock = WetnessStateBlock;
       
-      texture[0] = "#prepass";
-      texture[1] = "#lightinfo";
-      texture[2] = "rainfall.png";
+      texture[0] = "#deferred";
+      texture[1] = "#directLighting";
+      texture[2] = "./rainfall.png";
    };
    
    singleton PostEffect()
@@ -176,9 +176,9 @@ singleton PostEffect( WetnessPostFX )
       shader = WetnessRainSplashShader;
       stateBlock = WetnessStateBlock;
       
-      texture[0] = "#prepass";
-      texture[1] = "#lightinfo";
-      texture[2] = "splashNormal.png";  
+      texture[0] = "#deferred";
+      texture[1] = "#directLighting";
+      texture[2] = "./splashNormal.png";  
    };
    
 };

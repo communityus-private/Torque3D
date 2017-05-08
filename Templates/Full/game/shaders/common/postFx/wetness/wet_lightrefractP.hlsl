@@ -3,16 +3,16 @@
 // Copyright (C) GarageGames.com, Inc.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
+#include "../../ShaderModelAutoGen.hlsl"
 #include "./../postFx.hlsl"
-#include "./../../torque.hlsl"
+#include "shaders/common/torque.hlsl"
 
-uniform sampler2D prepassTex        : register(S0);
-uniform sampler2D lightPrePassTex   : register(S1);
-uniform sampler2D wetMap            : register(S2);
-uniform sampler2D backbuff          : register(S3);
+TORQUE_UNIFORM_SAMPLER2D(deferredTex        ,0);
+TORQUE_UNIFORM_SAMPLER2D(directLightingBuffer   ,1);
+TORQUE_UNIFORM_SAMPLER2D(wetMap            ,2);
+TORQUE_UNIFORM_SAMPLER2D(backbuff          ,3);
 
-uniform float accumTime             : register(C1);
+uniform float accumTime;
 
 uniform float3    eyePosWorld;
 
@@ -25,7 +25,7 @@ struct ConnectData
 	float4 noiseCoord : TEXCOORD1;
 };
 
-float4 main(ConnectData In) : COLOR
+float4 main(ConnectData IN) : TORQUE_TARGET0
 {
    //return float4(0, 0, 0, 0);
    float4 color;
@@ -34,7 +34,7 @@ float4 main(ConnectData In) : COLOR
    float amount = 0.75;
    
    // Get the prepass texture for uv channel 0
-   float4 prepass = prepassUncondition( prepassTex, In.texCoord );
+   float4 prepass = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.texCoord );
    float3 normal = prepass.rgb; // Get the normal from the prepass texture
    float depth = prepass.a; // Get the depth form the prepass
     
@@ -43,11 +43,11 @@ float4 main(ConnectData In) : COLOR
       return float4(0, 0, 0, 0);
       
    // Get the refraction UV
-   float4 refUV = In.noiseCoord;
+   float4 refUV = IN.noiseCoord;
    
 	//Fetch the normals and decompress
-	float4 normalColor = (tex2D(wetMap, refUV.xy) * 2) - 1.0f;
-	float4 animColor = (tex2D(wetMap, refUV.zw) * 2) - 1.0f;
+	float4 normalColor = (TORQUE_TEX2D(wetMap, refUV.xy) * 2) - 1.0f;
+	float4 animColor = (TORQUE_TEX2D(wetMap, refUV.zw) * 2) - 1.0f;
 
 	normalColor.z += animColor.w;
 	
@@ -55,7 +55,7 @@ float4 main(ConnectData In) : COLOR
 	float3 refractionVec = normalize(normalColor.xyz);
 
 	//Fetch the screen by displacing the texture coordinates by the refraction
-	float3 screenColor = tex2D(backbuff, In.texCoord - (refractionVec.xy * 0.2f * amount)).xyz;
+	float3 screenColor = TORQUE_TEX2D(backbuff, IN.texCoord - (refractionVec.xy * 0.2f * amount)).xyz;
 
 	//Find a specular component from the refraction
 	float2 refractHighlight = refractionVec.xy * amount;
@@ -63,7 +63,9 @@ float4 main(ConnectData In) : COLOR
 	* float3(0.85f, 0.85f, 1.0f);
    
    // Get the speculariry of the object we're interacting with
-   lightinfoUncondition( tex2D( lightPrePassTex, In.texCoord ), lightcolor, nl_Att, specular );
+   float4 directLighting = TORQUE_TEX2D( directLightingBuffer, IN.texCoord ); //shadowmap*specular
+   lightcolor = directLighting.rgb;
+   specular = directLighting.a;
    if(specular < 0.2)
       return float4(0, 0, 0, 1);
    

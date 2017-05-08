@@ -3,13 +3,13 @@
 // Copyright (C) GarageGames.com, Inc.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
+#include "../../ShaderModelAutoGen.hlsl"
 #include "./../postFx.hlsl"
-#include "./../../torque.hlsl"
+#include "shaders/common/torque.hlsl"
 
-uniform sampler2D prepassTex        : register(S0);
-uniform sampler2D lightPrePassTex   : register(S1);
-uniform sampler2D rainfall          : register(S2);
+TORQUE_UNIFORM_SAMPLER2D(deferredTex        ,0);
+TORQUE_UNIFORM_SAMPLER2D(directLightingBuffer   ,1);
+TORQUE_UNIFORM_SAMPLER2D(rainfall          ,2);
 
 uniform float accumTime             : register(C1);
 
@@ -18,7 +18,7 @@ uniform float3    eyePosWorld;
 //----------------------------------------------
 // Downhill Shader
 //----------------------------------------------
-float4 main( PFXVertToPix In ) : COLOR
+float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
    //return float4(0, 0, 0, 0);
    // Define an output variable
@@ -27,16 +27,18 @@ float4 main( PFXVertToPix In ) : COLOR
    float nl_Att, specular;
    
    // Get the speculariry of the object we're interacting with
-   lightinfoUncondition( tex2D( lightPrePassTex, In.uv0 ), lightcolor, nl_Att, specular );
+   float4 directLighting = TORQUE_TEX2D( directLightingBuffer, IN.uv0 ); //shadowmap*specular
+   lightcolor = directLighting.rgb;
+   specular = directLighting.a;
    
    // Get the UV we want to apply the out color texture on
-   float2 wetUV = In.uv0;
+   float2 wetUV = IN.uv0;
    
    // Animate UVs
    wetUV = float2(wetUV.x + accumTime, wetUV.y - accumTime * 2); // Animate our UV
    
    // Get the primary wetness normal
-   float3 raincolor = tex2D( rainfall, wetUV * 2 ).rgb;
+   float3 raincolor = TORQUE_TEX2D( rainfall, wetUV * 2 ).rgb;
    
    // Apply the wetness specularity to our output color
    color.rgb = raincolor;
