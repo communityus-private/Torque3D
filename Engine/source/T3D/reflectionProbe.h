@@ -72,7 +72,7 @@ public:
       StaticCubemap = 1,
       BakedCubemap = 2,
       SkyLight = 3,
-      //DynamicCubemap = 5,
+      DynamicCubemap = 5,
    };
 
 private:
@@ -117,6 +117,7 @@ private:
 
    String mCubemapName;
    CubemapData *mCubemap;
+   GFXCubemapHandle  mDynamicCubemap;
    bool mUseCubemap;
 
    String mReflectionPath;
@@ -135,6 +136,12 @@ private:
 
    //Debug rendering
    static bool smRenderReflectionProbes;
+
+   U32 mDynamicLastBakeMS;
+   U32 mRefreshRateMS;
+
+   GBitmap* mCubeFaceBitmaps[6];
+   U32 mCubemapResolution;
 
 public:
    ReflectionProbe();
@@ -199,7 +206,25 @@ public:
    void setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat);
 
    //Spherical Harmonics
-   //void sphericalHarmonicsFromCubemap(Vector<Point3F> & output, const U32 order);
+   void calculateSHTerms();
+   F32 texelSolidAngle(F32 aU, F32 aV, U32 width, U32 height);
+   F32 areaElement(F32 x, F32 y);
+
+   //
+   ColorF decodeSH(Point3F normal);
+
+   //
+   void calcDirectionVector(U32 face, U32 face_x, U32 face_y, F32& out_x, F32& out_y, F32& out_z) const;
+   F32 calcSolidAngle(U32 face, U32 x, U32 y) const;
+   ColorF sampleFace(U32 face, F32 s, F32 t);
+   ColorF readTexelClamped(U32 face, U32 x, U32 y);
+   void computeTexCoords(F32 x, F32 y, F32 z, U32& out_face, F32& out_s, F32& out_t);
+   ColorF readTexel(U32 face, U32 x, U32 y) const;
+
+   //
+   ColorF sampleSide(U32 termindex, U32 sideIndex);
+   F32 harmonics(U32 termId, Point3F normal);
+
 
    //Baking
    void bake(String outputPath, S32 resolution);

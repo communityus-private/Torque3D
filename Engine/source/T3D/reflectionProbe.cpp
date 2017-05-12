@@ -44,6 +44,7 @@
 #include "math/util/sphereMesh.h"
 #include "materials/materialManager.h"
 #include "math/util/matrixSet.h"
+#include "gfx/bitmap/cubemapSaver.h"
 
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
@@ -83,6 +84,7 @@ ImplementEnumType(ReflectionModeEnum,
 { ReflectionProbe::NoReflection, "No Reflections", "This probe does not provide any local reflection data"},
 { ReflectionProbe::StaticCubemap, "Static Cubemap", "Uses a static CubemapData" },
 { ReflectionProbe::BakedCubemap, "Baked Cubemap", "Uses a cubemap baked from the probe's current position" },
+{ ReflectionProbe::DynamicCubemap, "Dynamic Cubemap", "Uses a cubemap baked from the probe's current position, updated at a set rate" },
 { ReflectionProbe::SkyLight, "Skylight", "Captures a cubemap of the sky and far terrain, designed to influence the whole level" }
    EndImplementEnumType;
 
@@ -121,6 +123,9 @@ ReflectionProbe::ReflectionProbe()
 
    mEditorShapeInst = NULL;
    mEditorShape = NULL;
+
+   mRefreshRateMS = 200;
+   mDynamicLastBakeMS = 0;
 }
 
 ReflectionProbe::~ReflectionProbe()
@@ -323,10 +328,7 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
 
    U32 reflectModeType = BakedCubemap;
    stream->read(&reflectModeType);
-   if ((ReflectionModeType)reflectModeType != BakedCubemap && (ReflectionModeType)reflectModeType != NoReflection)
-   {
-      mReflectionModeType = (ReflectionModeType)reflectModeType;
-   }
+   mReflectionModeType = (ReflectionModeType)reflectModeType;
 
    mIntensity = stream->readFloat(7);
    stream->read(&mRadius);
@@ -372,36 +374,43 @@ void ReflectionProbe::updateMaterial()
 {
    mProbeInfo->setPosition(getPosition());
 
-   if (!mCubemap)
+   if (mReflectionModeType != DynamicCubemap)
    {
-      mCubemap = new CubemapData();
-      mCubemap->registerObject();
-   }
-
-   if (!mProbeUniqueID.isEmpty())
-   {
-      bool validCubemap = true;
-
-      for (U32 i = 0; i < 6; ++i)
+      if (!mCubemap)
       {
-         char faceFile[256];
-         dSprintf(faceFile, sizeof(faceFile), "%s%s_%i.png", mReflectionPath.c_str(),
-            mProbeUniqueID.c_str(), i);
-
-         if (Platform::isFile(faceFile))
-            mCubemap->setCubeFaceFile(i, FileName(faceFile));
-         else
-            validCubemap = false;
+         mCubemap = new CubemapData();
+         mCubemap->registerObject();
       }
 
-      if (validCubemap)
+      if (!mProbeUniqueID.isEmpty())
       {
-         mCubemap->createMap();
-         mCubemap->updateFaces();
-      }
-   }
+         bool validCubemap = true;
 
-   mProbeInfo->mCubemap = mCubemap;
+         for (U32 i = 0; i < 6; ++i)
+         {
+            char faceFile[256];
+            dSprintf(faceFile, sizeof(faceFile), "%s%s_%i.png", mReflectionPath.c_str(),
+               mProbeUniqueID.c_str(), i);
+
+            if (Platform::isFile(faceFile))
+               mCubemap->setCubeFaceFile(i, FileName(faceFile));
+            else
+               validCubemap = false;
+         }
+
+         if (validCubemap)
+         {
+            mCubemap->createMap();
+            mCubemap->updateFaces();
+         }
+      }
+
+      mProbeInfo->mCubemap = &mCubemap->mCubemap;
+   }
+   else if (mReflectionModeType == DynamicCubemap && !mDynamicCubemap.isNull())
+   {
+      mProbeInfo->mCubemap = &mDynamicCubemap;
+   }
 
    mProbeInfo->mIntensity = mIntensity;
    mProbeInfo->mRadius = mRadius;
@@ -416,12 +425,22 @@ void ReflectionProbe::updateMaterial()
    }
 
    mProbeInfo->mProbeShapeType = mProbeShapeType;
+
+   calculateSHTerms();
+
+   bool tump = true;
 }
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
 {
    if (!mEnabled)
       return;
+
+   if (mReflectionModeType == DynamicCubemap && mRefreshRateMS < (Platform::getRealMilliseconds() - mDynamicLastBakeMS))
+   {
+      bake("", 32);
+      mDynamicLastBakeMS = Platform::getRealMilliseconds();
+   }
 
    //Submit our probe to actually do the probe action
    // Get a handy pointer to our RenderPassmanager
@@ -437,7 +456,7 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
    // Submit our RenderInst to the RenderPassManager
    state->getRenderPass()->addInst(probeInst);
 
-   if (gEditingMission && mEditorShapeInst)
+   if (ReflectionProbe::smRenderReflectionProbes && gEditingMission && mEditorShapeInst)
    {
       GFXTransformSaver saver;
 
@@ -470,7 +489,11 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       TSRenderState rdata;
       rdata.setSceneState(state);
       rdata.setFadeOverride(1.0f);
-      rdata.setCubemap(mCubemap->mCubemap);
+
+      if(mReflectionModeType != DynamicCubemap)
+         rdata.setCubemap(mCubemap->mCubemap);
+      else
+         rdata.setCubemap(mDynamicCubemap);
 
       // We might have some forward lit materials
       // so pass down a query to gather lights.
@@ -559,246 +582,299 @@ void ReflectionProbe::setPreviewMatParameters(SceneRenderState* renderState, Bas
    matParams->setSafe(invViewMat, worldToCameraXfm);
 }
 
+ColorF ReflectionProbe::decodeSH(Point3F normal)
+{
+   float x = normal.x;
+   float y = normal.y;
+   float z = normal.z;
+
+   ColorF l00 = mProbeInfo->mSHTerms[0];
+
+   ColorF l10 = mProbeInfo->mSHTerms[1];
+   ColorF l11 = mProbeInfo->mSHTerms[2];
+   ColorF l12 = mProbeInfo->mSHTerms[3];
+
+   ColorF l20 = mProbeInfo->mSHTerms[4];
+   ColorF l21 = mProbeInfo->mSHTerms[5];
+   ColorF l22 = mProbeInfo->mSHTerms[6];
+   ColorF l23 = mProbeInfo->mSHTerms[7];
+   ColorF l24 = mProbeInfo->mSHTerms[8];
+
+   ColorF result = (
+         l00 * mProbeInfo->mSHConstants[0] +
+
+         l12 * mProbeInfo->mSHConstants[1] * x +
+         l10 * mProbeInfo->mSHConstants[1] * y +
+         l11 * mProbeInfo->mSHConstants[1] * z +
+
+         l20 * mProbeInfo->mSHConstants[2] * x*y +
+         l21 * mProbeInfo->mSHConstants[2] * y*z +
+         l22 * mProbeInfo->mSHConstants[3] * (3.0*z*z - 1.0) +
+         l23 * mProbeInfo->mSHConstants[2] * x*z +
+         l24 * mProbeInfo->mSHConstants[4] * (x*x - y*y)
+      );
+
+   return ColorF(mMax(result.red, 0), mMax(result.green, 0), mMax(result.blue, 0));
+}
+
+inline float lerp(float a, float b, float t) 
+{
+   return a * (1.f - t) + b * t;
+}
+
+static ColorF mixColor(const ColorF& a, const ColorF& b, float t) 
+{
+   return ColorF(
+      lerp(a.red, b.red, t),
+      lerp(a.green, b.green, t),
+      lerp(a.blue, b.blue, t));
+}
+
+MatrixF getSideMatrix(U32 side)
+{
+   // Standard view that will be overridden below.
+   VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
+
+   switch (side)
+   {
+   case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
+      vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
+      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+      break;
+   case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
+      vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
+      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+      break;
+   case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
+      vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
+      vUpVec = VectorF(0.0f, 0.0f, -1.0f);
+      break;
+   case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
+      vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
+      vUpVec = VectorF(0.0f, 0.0f, 1.0f);
+      break;
+   case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
+      vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
+      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+      break;
+   case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
+      vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
+      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
+      break;
+   }
+
+   // create camera matrix
+   VectorF cross = mCross(vUpVec, vLookatPt);
+   cross.normalizeSafe();
+
+   MatrixF rotMat(true);
+   rotMat.setColumn(0, cross);
+   rotMat.setColumn(1, vLookatPt);
+   rotMat.setColumn(2, vUpVec);
+   //rotMat.inverse();
+
+   return rotMat;
+}
+
+F32 ReflectionProbe::harmonics(U32 termId, Point3F normal)
+{
+   F32 x = normal.x;
+   F32 y = normal.y;
+   F32 z = normal.z;
+
+   switch(termId)
+   {
+   case 0:
+      return 1.0;
+   case 1:
+      return y;
+   case 2:
+      return z;
+   case 3:
+      return x;
+   case 4:
+      return x*y;
+   case 5:
+      return y*z;
+   case 6:
+      return 3.0*z*z - 1.0;
+   case 7:
+      return x*z;
+   default:
+      return x*x - y*y;
+   }
+}
+
+ColorF ReflectionProbe::sampleSide(U32 termindex, U32 sideIndex)
+{
+   MatrixF sideRot = getSideMatrix(sideIndex);
+
+   ColorF result = ColorF::ZERO;
+   F32 divider = 0;
+
+   for (int y = 0; y<mCubemapResolution; y++)
+   {
+      for (int x = 0; x<mCubemapResolution; x++)
+      {
+         Point2F sidecoord = ((Point2F(x, y) + Point2F(0.5, 0.5)) / Point2F(mCubemapResolution, mCubemapResolution))*2.0 - Point2F(1.0, 1.0);
+         Point3F normal = Point3F(sidecoord.x, sidecoord.y, -1.0);
+         normal.normalize();
+
+         ColorF texel = mCubeFaceBitmaps[sideIndex]->sampleTexel(y, x);
+         texel = ColorF(mMax(texel.red, 0.01), mMax(texel.green, 0.01), mMax(texel.blue, 0.01)) * 1.5;
+
+         Point3F dir;
+         sideRot.mulP(normal, &dir);
+
+         result += texel * harmonics(termindex,dir) * -normal.z;
+         divider += -normal.z;
+      }
+   }
+
+   result /= divider;
+
+   return result;
+}
+
 //
 //SH Calculations
 // From http://sunandblackcat.com/tipFullView.php?l=eng&topicid=32&topic=Spherical-Harmonics-From-Cube-Texture
 // With shader decode logic from https://github.com/nicknikolov/cubemap-sh
-/*void ReflectionProbe::sphericalHarmonicsFromCubemap(Vector<Point3F> & output, const U32 order)
+void ReflectionProbe::calculateSHTerms()
 {
-   const uint sqOrder = order*order;
+   if (!mCubemap || !mCubemap->mCubemap)
+      return;
 
-   // allocate memory for calculations
-   output.resize(sqOrder);
-   std::vector<float> resultR(sqOrder);
-   std::vector<float> resultG(sqOrder);
-   std::vector<float> resultB(sqOrder);
-
-   // variables that describe current face of cube texture
-   std::unique_ptr data;
-   GLint width, height;
-   GLint internalFormat;
-   GLint numComponents;
-
-   // initialize values
-   float fWt = 0.0f;
-   for (uint i = 0; i < sqOrder; i++)
+   const VectorF cubemapFaceNormals[6] =
    {
-      output[i].x = 0;
-      output[i].y = 0;
-      output[i].z = 0;
-      resultR[i] = 0;
-      resultG[i] = 0;
-      resultB[i] = 0;
+      // D3DCUBEMAP_FACE_POSITIVE_X:
+      VectorF(1.0f, 0.0f, 0.0f),
+      // D3DCUBEMAP_FACE_NEGATIVE_X:
+      VectorF(-1.0f, 0.0f, 0.0f),
+      // D3DCUBEMAP_FACE_POSITIVE_Y:
+      VectorF(0.0f, 1.0f, 0.0f),
+      // D3DCUBEMAP_FACE_NEGATIVE_Y:
+      VectorF(0.0f, -1.0f, 0.0f),
+      // D3DCUBEMAP_FACE_POSITIVE_Z:
+      VectorF(0.0f, 0.0f, 1.0f),
+      // D3DCUBEMAP_FACE_NEGATIVE_Z:
+      VectorF(0.0f, 0.0f, -1.0f),
+   };
+
+   mCubemapResolution = mCubemap->mCubemap->getSize();
+
+   for (U32 i = 0; i < 6; i++)
+   {
+      mCubeFaceBitmaps[i] = new GBitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
    }
-   std::vector<float> shBuff(sqOrder);
-   std::vector<float> shBuffB(sqOrder);
 
-   // bind current texture
-   glBindTexture(GL_TEXTURE_CUBE_MAP, cubeTexture->texture());
-   // for each face of cube texture
-   for (int face = 0; face < 6; face++)
+   //If we fail to parse the cubemap for whatever reason, we really can't continue
+   if (!CubemapSaver::getBitmaps(mCubemap->mCubemap, GFXFormatR8G8B8, mCubeFaceBitmaps))
+      return; 
+
+   //Set up our constants
+   F32 L0 = 1;
+   F32 L1 = 1.8;
+   F32 L2 = 0.83;
+   F32 L2m2_L2m1_L21 = 2.9;
+   F32 L20 = 0.58;
+   F32 L22 = 1.1;
+
+   mProbeInfo->mSHConstants[0] = L0;
+   mProbeInfo->mSHConstants[1] = L1;
+   mProbeInfo->mSHConstants[2] = L2 * L2m2_L2m1_L21;
+   mProbeInfo->mSHConstants[3] = L2 * L20;
+   mProbeInfo->mSHConstants[4] = L2 * L22;
+
+   for (U32 i = 0; i < 9; i++)
    {
-      // get width and height
-      glGetTexLevelParameteriv(cubeSides[face], 0, GL_TEXTURE_WIDTH, &width);
-      glGetTexLevelParameteriv(cubeSides[face], 0, GL_TEXTURE_HEIGHT, &height);
+      //Clear it, just to be sure
+      mProbeInfo->mSHTerms[i] = ColorF(0.f, 0.f, 0.f);
 
-      if (width != height)
+      //Now, encode for each side
+      mProbeInfo->mSHTerms[i] = sampleSide(i, 0); //POS_X
+      mProbeInfo->mSHTerms[i] += sampleSide(i, 1); //NEG_X
+      mProbeInfo->mSHTerms[i] += sampleSide(i, 2); //POS_Y
+      mProbeInfo->mSHTerms[i] += sampleSide(i, 3); //NEG_Y
+      mProbeInfo->mSHTerms[i] += sampleSide(i, 4); //POS_Z
+      mProbeInfo->mSHTerms[i] += sampleSide(i, 5); //NEG_Z
+
+      //Average
+      mProbeInfo->mSHTerms[i] /= 6;
+   }
+
+   for (U32 i = 0; i < 6; i++)
+      SAFE_DELETE(mCubeFaceBitmaps[i]);
+
+   bool mExportSHTerms = false;
+   if (mExportSHTerms)
+   {
+      for (U32 f = 0; f < 6; f++)
       {
-         return;
-      }
+         char fileName[256];
+         dSprintf(fileName, 256, "%s%s_DecodedFaces_%d.png", mReflectionPath.c_str(),
+            mProbeUniqueID.c_str(), f);
 
-      // get format of data in texture
-      glGetTexLevelParameteriv(cubeSides[face], 0,
-         GL_TEXTURE_INTERNAL_FORMAT, &internalFormat);
+         ColorF color = decodeSH(cubemapFaceNormals[f]);
 
-      // get data from texture
-      if (internalFormat == GL_RGBA)
-      {
-         numComponents = 4;
-         data = std::unique_ptr(new GLubyte[numComponents * width * width]);
-      }
-      else if (internalFormat == GL_RGB)
-      {
-         numComponents = 3;
-         data = std::unique_ptr(new GLubyte[numComponents * width * width]);
-      }
-      else
-      {
-         return;
-      }
-      glGetTexImage(cubeSides[face], 0, internalFormat, GL_UNSIGNED_BYTE, data.get());
-
-      // step between two texels for range [0, 1]
-      float invWidth = 1.0f / float(width);
-      // initial negative bound for range [-1, 1]
-      float negativeBound = -1.0f + invWidth;
-      // step between two texels for range [-1, 1]
-      float invWidthBy2 = 2.0f / float(width);
-
-      for (int y = 0; y < width; y++)
-      {
-         // texture coordinate V in range [-1 to 1]
-         const float fV = negativeBound + float(y) * invWidthBy2;
-
-         for (int x = 0; x < width; x++)
+         FileStream stream;
+         if (stream.open(fileName, Torque::FS::File::Write))
          {
-            // texture coordinate U in range [-1 to 1]
-            const float fU = negativeBound + float(x) * invWidthBy2;
+            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
 
-            // determine direction from center of cube texture to current texel
-            glm::vec3 dir;
-            switch (cubeSides[face])
-            {
-            case GL_TEXTURE_CUBE_MAP_POSITIVE_X:
-               dir.x = 1.0f;
-               dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-               dir.z = 1.0f - (invWidthBy2 * float(x) + invWidth);
-               dir = -dir;
-               break;
-            case GL_TEXTURE_CUBE_MAP_NEGATIVE_X:
-               dir.x = -1.0f;
-               dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-               dir.z = -1.0f + (invWidthBy2 * float(x) + invWidth);
-               dir = -dir;
-               break;
-            case GL_TEXTURE_CUBE_MAP_POSITIVE_Y:
-               dir.x = -1.0f + (invWidthBy2 * float(x) + invWidth);
-               dir.y = 1.0f;
-               dir.z = -1.0f + (invWidthBy2 * float(y) + invWidth);
-               dir = -dir;
-               break;
-            case GL_TEXTURE_CUBE_MAP_NEGATIVE_Y:
-               dir.x = -1.0f + (invWidthBy2 * float(x) + invWidth);
-               dir.y = -1.0f;
-               dir.z = 1.0f - (invWidthBy2 * float(y) + invWidth);
-               dir = -dir;
-               break;
-            case GL_TEXTURE_CUBE_MAP_POSITIVE_Z:
-               dir.x = -1.0f + (invWidthBy2 * float(x) + invWidth);
-               dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-               dir.z = 1.0f;
-               break;
-            case GL_TEXTURE_CUBE_MAP_NEGATIVE_Z:
-               dir.x = 1.0f - (invWidthBy2 * float(x) + invWidth);
-               dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-               dir.z = -1.0f;
-               break;
-            default:
-               return;
-            }
+            bitmap.fill(color);
 
-            // normalize direction
-            dir = glm::normalize(dir);
+            bitmap.writeBitmap("png", stream);
+         }
+      }
 
-            // scale factor depending on distance from center of the face
-            const float fDiffSolid = 4.0f / ((1.0f + fU*fU + fV*fV) *
-               sqrtf(1.0f + fU*fU + fV*fV));
-            fWt += fDiffSolid;
+      for (U32 f = 0; f < 9; f++)
+      {
+         char fileName[256];
+         dSprintf(fileName, 256, "%s%s_SHTerms_%d.png", mReflectionPath.c_str(),
+            mProbeUniqueID.c_str(), f);
 
-            // calculate coefficients of spherical harmonics for current direction
-            sphericalHarmonicsEvaluateDirection(shBuff.data(), order, dir);
+         ColorF color = mProbeInfo->mSHTerms[f];
 
-            // index of texel in texture
-            uint pixOffsetIndex = (x + y * width) * numComponents;
-            // get color from texture and map to range [0, 1]
-            glm::vec3 clr(
-               float(data[pixOffsetIndex]) / 255,
-               float(data[pixOffsetIndex + 1]) / 255,
-               float(data[pixOffsetIndex + 2]) / 255
-            );
+         FileStream stream;
+         if (stream.open(fileName, Torque::FS::File::Write))
+         {
+            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
 
-            // scale color and add to previously accumulated coefficients
-            sphericalHarmonicsScale(shBuffB.data(), order,
-               shBuff.data(), clr.r * fDiffSolid);
-            sphericalHarmonicsAdd(resultR.data(), order,
-               resultR.data(), shBuffB.data());
-            sphericalHarmonicsScale(shBuffB.data(), order,
-               shBuff.data(), clr.g * fDiffSolid);
-            sphericalHarmonicsAdd(resultG.data(), order,
-               resultG.data(), shBuffB.data());
-            sphericalHarmonicsScale(shBuffB.data(), order,
-               shBuff.data(), clr.b * fDiffSolid);
-            sphericalHarmonicsAdd(resultB.data(), order,
-               resultB.data(), shBuffB.data());
+            bitmap.fill(color);
+
+            bitmap.writeBitmap("png", stream);
          }
       }
    }
-
-   // final scale for coefficients
-   const float fNormProj = (4.0f * M_PI) / fWt;
-   sphericalHarmonicsScale(resultR.data(), order, resultR.data(), fNormProj);
-   sphericalHarmonicsScale(resultG.data(), order, resultG.data(), fNormProj);
-   sphericalHarmonicsScale(resultB.data(), order, resultB.data(), fNormProj);
-
-   // save result
-   for (uint i = 0; i < sqOrder; i++)
-   {
-      output[i].r = resultR[i];
-      output[i].g = resultG[i];
-      output[i].b = resultB[i];
-   }
 }
 
-Point3F sphericalHarmonicsFromTexture(glm::vec3 & N, std::vector & coef)
+F32 ReflectionProbe::texelSolidAngle(F32 aU, F32 aV, U32 width, U32 height)
 {
-   return
+   // transform from [0..res - 1] to [- (1 - 1 / res) .. (1 - 1 / res)]
+   // ( 0.5 is for texel center addressing)
+   const F32 U = (2.0 * (aU + 0.5) / width) - 1.0;
+   const F32 V = (2.0 * (aV + 0.5) / height) - 1.0;
 
-      // constant term, lowest frequency //////
-      C4 * coef[0] +
+   // shift from a demi texel, mean 1.0 / size  with U and V in [-1..1]
+   const F32 invResolutionW = 1.0 / width;
+   const F32 invResolutionH = 1.0 / height;
 
-      // axis aligned terms ///////////////////
-      2.0 * C2 * coef[1] * N.y +
-      2.0 * C2 * coef[2] * N.z +
-      2.0 * C2 * coef[3] * N.x +
+   // U and V are the -1..1 texture coordinate on the current face.
+   // get projected area for this texel
+   const F32 x0 = U - invResolutionW;
+   const F32 y0 = V - invResolutionH;
+   const F32 x1 = U + invResolutionW;
+   const F32 y1 = V + invResolutionH;
+   const F32 angle = areaElement(x0, y0) - areaElement(x0, y1) - areaElement(x1, y0) + areaElement(x1, y1);
 
-      // band 2 terms /////////////////////////
-      2.0 * C1 * coef[4] * N.x * N.y +
-      2.0 * C1 * coef[5] * N.y * N.z +
-      C3 * coef[6] * N.z * N.z - C5 * coef[6] +
-      2.0 * C1 * coef[7] * N.x * N.z +
-      C1 * coef[8] * (N.x * N.x - N.y * N.y);
+   return angle;
 }
 
-void sphericalHarmonicsEvaluateDirection(float * result, int order,
-   const glm::vec3 & dir)
+F32 ReflectionProbe::areaElement(F32 x, F32 y) 
 {
-   // calculate coefficients for first 3 bands of spherical harmonics
-   double p_0_0 = 0.282094791773878140;
-   double p_1_0 = 0.488602511902919920 * dir.z;
-   double p_1_1 = -0.488602511902919920;
-   double p_2_0 = 0.946174695757560080 * dir.z * dir.z - 0.315391565252520050;
-   double p_2_1 = -1.092548430592079200 * dir.z;
-   double p_2_2 = 0.546274215296039590;
-   result[0] = p_0_0;
-   result[1] = p_1_1 * dir.y;
-   result[2] = p_1_0;
-   result[3] = p_1_1 * dir.x;
-   result[4] = p_2_2 * (dir.x * dir.y + dir.y * dir.x);
-   result[5] = p_2_1 * dir.y;
-   result[6] = p_2_0;
-   result[7] = p_2_1 * dir.x;
-   result[8] = p_2_2 * (dir.x * dir.x - dir.y * dir.y);
+   return mAtan2(x * y, (F32)mSqrt(x * x + y * y + 1.0));
 }
-
-void sphericalHarmonicsAdd(float * result, int order,
-   const float * inputA, const float * inputB)
-{
-   const int numCoeff = order * order;
-   for (int i = 0; i < numCoeff; i++)
-   {
-      result[i] = inputA[i] + inputB[i];
-   }
-}
-
-void sphericalHarmonicsScale(float * result, int order,
-   const float * input, float scale)
-{
-   const int numCoeff = order * order;
-   for (int i = 0; i < numCoeff; i++)
-   {
-      result[i] = input[i] * scale;
-   }
-}*/
 
 DefineEngineMethod(ReflectionProbe, postApply, void, (), ,
    "A utility method for forcing a network update.\n")
@@ -816,7 +892,8 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       preCapture->enable();
    if (deferredShading)
       deferredShading->disable();
-   if (mReflectionModeType == StaticCubemap || mReflectionModeType == BakedCubemap || mReflectionModeType == SkyLight)
+
+   //if (mReflectionModeType == StaticCubemap || mReflectionModeType == BakedCubemap || mReflectionModeType == SkyLight)
    {
       if (!mCubemap)
       {
@@ -825,14 +902,23 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       }
    }
 
-   if (mReflectionPath.isEmpty() || !mPersistentId)
+   if (mReflectionModeType == DynamicCubemap && mDynamicCubemap.isNull())
    {
-      if (!mPersistentId)
-         mPersistentId = getOrCreatePersistentId();
+      //mCubemap->createMap();
+      mDynamicCubemap = GFX->createCubemap();
+      mDynamicCubemap->initDynamic(resolution, GFXFormatR8G8B8);
+   }
+   else if (mReflectionModeType != DynamicCubemap)
+   {
+      if (mReflectionPath.isEmpty() || !mPersistentId)
+      {
+         if (!mPersistentId)
+            mPersistentId = getOrCreatePersistentId();
 
-      mReflectionPath = outputPath.c_str();
+         mReflectionPath = outputPath.c_str();
 
-      mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
+         mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
+      }
    }
 
    bool validCubemap = true;
@@ -853,7 +939,12 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       blendTex.set(resolution, resolution, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, "");
 
       GFXTextureTargetRef mBaseTarget = GFX->allocRenderToTextureTarget();
-      mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
+
+      GFX->clearTextureStateImmediate(0);
+      if(mReflectionModeType == DynamicCubemap)
+         mBaseTarget->attachTexture(GFXTextureTarget::Color0, mDynamicCubemap, i);
+      else
+         mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
 
       // Standard view that will be overridden below.
       VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
@@ -915,34 +1006,37 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
       mBaseTarget->resolve();
 
-      char fileName[256];
-      dSprintf(fileName, 256, "%s%s_%i.png", mReflectionPath.c_str(),
-         mProbeUniqueID.c_str(), i);
-
-      FileStream stream;
-      if (!stream.open(fileName, Torque::FS::File::Write))
+      if (mReflectionModeType != DynamicCubemap)
       {
-         Con::errorf("ReflectionProbe::bake(): Couldn't open cubemap face file fo writing " + String(fileName));
-         if (preCapture)
-            preCapture->disable();
-         if (deferredShading)
-            deferredShading->enable();
-         return;
+         char fileName[256];
+         dSprintf(fileName, 256, "%s%s_%i.png", mReflectionPath.c_str(),
+            mProbeUniqueID.c_str(), i);
+
+         FileStream stream;
+         if (!stream.open(fileName, Torque::FS::File::Write))
+         {
+            Con::errorf("ReflectionProbe::bake(): Couldn't open cubemap face file fo writing " + String(fileName));
+            if (preCapture)
+               preCapture->disable();
+            if (deferredShading)
+               deferredShading->enable();
+            return;
+         }
+
+         GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
+         blendTex->copyToBmp(&bitmap);
+         bitmap.writeBitmap("png", stream);
+
+         if (Platform::isFile(fileName) && mCubemap)
+            mCubemap->setCubeFaceFile(i, FileName(fileName));
+         else
+            validCubemap = false;
+
+         bitmap.deleteImage();
       }
-
-      GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
-      blendTex->copyToBmp(&bitmap);
-      bitmap.writeBitmap("png", stream);
-
-      if (Platform::isFile(fileName) && mCubemap)
-         mCubemap->setCubeFaceFile(i, FileName(fileName));
-      else
-         validCubemap = false;
-
-      bitmap.deleteImage();
    }
 
-   if (validCubemap)
+   if (mReflectionModeType != DynamicCubemap && validCubemap)
    {
       if (mCubemap->mCubemap)
          mCubemap->updateFaces();
@@ -951,8 +1045,12 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
       mDirty = false;
    }
+
+   calculateSHTerms();
+
    ReflectionProbe::smRenderReflectionProbes = probeRenderState;
    setMaskBits(-1);
+
    if (preCapture)
       preCapture->disable();
    if (deferredShading)

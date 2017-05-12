@@ -268,7 +268,7 @@ void RenderProbeMgr::_setupPerFrameParameters(const SceneRenderState *state)
    //inverseViewMatrix.fullInverse();
    //inverseViewMatrix.transpose();
 
-   inverseViewMatrix = MatrixF::Identity;
+   //inverseViewMatrix = MatrixF::Identity;
 
    // Parameters calculated, assign them to the materials
    if (mReflectProbeMaterial != nullptr && mReflectProbeMaterial->matInstance != nullptr)
@@ -436,6 +436,12 @@ RenderProbeMgr::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String 
    volumePosition = matInstance->getMaterialParameterHandle("$volumePosition");
 
    useSphereMode = matInstance->getMaterialParameterHandle("$useSphereMode");
+
+   for(U32 i=0; i < 9; i++)
+      shTerms[i] = matInstance->getMaterialParameterHandle(String::ToString("$SHTerms%d",i));
+
+   for (U32 i = 0; i < 5; i++)
+      shConsts[i] = matInstance->getMaterialParameterHandle(String::ToString("$SHConsts%d", i));
 }
 
 RenderProbeMgr::ReflectProbeMaterialInfo::~ReflectProbeMaterialInfo()
@@ -515,9 +521,9 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
 
    GFX->setTexture(1, matInfoTexObject);
 
-   if (probeInfo->mCubemap)
+   if (probeInfo->mCubemap && !probeInfo->mCubemap->isNull())
    {
-      GFX->setCubeTexture(2, probeInfo->mCubemap->mCubemap);
+      GFX->setCubeTexture(2, probeInfo->mCubemap->getPointer());
    }
    else
    {
@@ -534,6 +540,20 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
    matParams->setSafe(volumeSize, Point3F(probeInfo->mRadius, probeInfo->mRadius, probeInfo->mRadius));
 
    matParams->setSafe(useSphereMode, probeInfo->mProbeShapeType == ProbeRenderInst::Sphere ? 1.0f : 0.0f);
+
+   //SH Terms
+   //static AlignedArray<Point3F> shTermsArray(9, sizeof(Point3F));
+   //dMemset(shTermsArray.getBuffer(), 0, shTermsArray.getBufferSize());
+
+   for (U32 i = 0; i < 9; i++)
+   {
+      matParams->setSafe(shTerms[i], probeInfo->mSHTerms[i]);
+   }
+
+   for (U32 i = 0; i < 5; i++)
+   {
+      matParams->setSafe(shConsts[i], probeInfo->mSHConstants[i]);
+   }
 }
 
 
@@ -723,8 +743,16 @@ void ProbeRenderInst::set(const ProbeRenderInst *probeInfo)
    numPrims = probeInfo->numPrims;
    numVerts = probeInfo->numVerts;
    numIndicesForPoly = probeInfo->numIndicesForPoly;
-   //vertBuffer = probeInfo->vertBuffer;
-   //primBuffer = probeInfo->primBuffer;
+
+   for (U32 i = 0; i < 9; i++)
+   {
+      mSHTerms[i] = probeInfo->mSHTerms[i];
+   }
+
+   for (U32 i = 0; i < 5; i++)
+   {
+      mSHConstants[i] = probeInfo->mSHConstants[i];
+   }
 }
 
 void ProbeRenderInst::getWorldToLightProj(MatrixF *outMatrix) const

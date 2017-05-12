@@ -18,9 +18,7 @@ TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 1);
 TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 2);
 
 uniform float4 rtParams0;
-uniform float4 lightColor;
 
-uniform float  lightBrightness;
 uniform float3 lightPosition;
 
 uniform float4 vsFarPlane;
@@ -35,12 +33,61 @@ uniform float3 volumeStart;
 uniform float3 volumeSize;
 uniform float3 volumePosition;
 
-uniform float4 AmbientColor;
-
 uniform float Intensity;
-uniform float cubeMips;
+
+//SHTerms
+uniform float4 SHTerms0;
+uniform float4 SHTerms1;
+uniform float4 SHTerms2;
+uniform float4 SHTerms3;
+uniform float4 SHTerms4;
+uniform float4 SHTerms5;
+uniform float4 SHTerms6;
+uniform float4 SHTerms7;
+uniform float4 SHTerms8;
+
+uniform float SHConsts0;
+uniform float SHConsts1;
+uniform float SHConsts2;
+uniform float SHConsts3;
+uniform float SHConsts4;
 
 uniform float useSphereMode;
+
+float4 decodeSH(float3 normal)
+{
+   float x = normal.x;
+   float y = normal.y;
+   float z = normal.z;
+
+   float3 l00 = SHTerms0.rgb;
+
+   float3 l10 = SHTerms1.rgb;
+   float3 l11 = SHTerms2.rgb;
+   float3 l12 = SHTerms3.rgb;
+
+   float3 l20 = SHTerms4.rgb;
+   float3 l21 = SHTerms5.rgb;
+   float3 l22 = SHTerms6.rgb;
+   float3 l23 = SHTerms7.rgb;
+   float3 l24 = SHTerms8.rgb;
+
+   float3 result = (
+         l00 * SHConsts0 +
+
+         l12 * SHConsts1 * x +
+         l10 * SHConsts1 * y +
+         l11 * SHConsts1 * z +
+
+         l20 * SHConsts2 * x*y +
+         l21 * SHConsts2 * y*z +
+         l22 * SHConsts3 * (3.0*z*z - 1.0) +
+         l23 * SHConsts2 * x*z +
+         l24 * SHConsts4 * (x*x - y*y)
+      );
+
+    return float4(result,1);
+}
 
 float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 { 
@@ -84,7 +131,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
         clip( lightRange - lenLightV );
 
         // Get the attenuated falloff.
-        float atten = attenuate( lightColor, lightAttenuation, lenLightV );
+        float atten = attenuate( float4(1,1,1,1), lightAttenuation, lenLightV );
         clip( atten - 1e-6 );
 
         // Normalize lightVec
@@ -94,7 +141,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
         // fillrate on pixels that are backfacing to the light.
         float nDotL = dot( lightVec, normal );
 
-        float Sat_NL_Att = saturate( nDotL * atten ) * lightBrightness;
+        float Sat_NL_Att = saturate( nDotL * atten );
 
         float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),nDotL)).rgb;
         ref = float4(reflectionVec, smoothness);
@@ -125,7 +172,13 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
     }
 
     color = TORQUE_TEXCUBELOD(cubeMap, ref);
-    color *= Intensity;
+
+    float specularIntensity = 1;
+    float irradianceIntensity = 2;
+    float4 specularColor = (color * specularIntensity) * smoothness;
+    float4 indirectColor = (decodeSH(wsNormal) * irradianceIntensity);// * (1 - smoothness);
+
+    color.rgb = specularColor.rgb + indirectColor.rgb;
 
     return float4(color.rgb, alpha);
 

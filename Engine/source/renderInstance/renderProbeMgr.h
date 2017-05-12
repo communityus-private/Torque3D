@@ -110,6 +110,9 @@ protected:
 
       MaterialParameterHandle *useSphereMode;
 
+      MaterialParameterHandle *shTerms[9];
+      MaterialParameterHandle *shConsts[5];
+
       ReflectProbeMaterialInfo(const String &matName, const GFXVertexFormat *vertexFormat);
 
       virtual ~ReflectProbeMaterialInfo();

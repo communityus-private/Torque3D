@@ -484,7 +484,7 @@ struct ProbeRenderInst : public RenderInst
    F32 mRadius;
    F32 mIntensity;
 
-   CubemapData *mCubemap;
+   GFXCubemapHandle *mCubemap;
 
    /// The priority of this light used for
    /// light and shadow scoring.
@@ -511,6 +511,10 @@ struct ProbeRenderInst : public RenderInst
    };
 
    ProbeShapeType mProbeShapeType;
+
+   //Spherical Harmonics data
+   ColorF mSHTerms[9];
+   F32 mSHConstants[5];
 
 public:
 
