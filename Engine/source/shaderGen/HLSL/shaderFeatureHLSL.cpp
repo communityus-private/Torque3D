@@ -1256,7 +1256,7 @@ void LightmapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
          // Find out if RTLighting should be added or substituted
          bool bPreProcessedLighting = false;
          AdvancedLightBinManager *lightBin;
-         if (Sim::findObject("AL_LightBinMgr", lightBin))
+         if ( Sim::findObject( "AL_LightBinMgr", lightBin ) )
             bPreProcessedLighting = lightBin->MRTLightmapsDuringDeferred();
 
          // Lightmap has already been included in the advanced light bin, so
@@ -1390,7 +1390,7 @@ void TonemapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
    // Find out if RTLighting should be added
    bool bPreProcessedLighting = false;
    AdvancedLightBinManager *lightBin;
-   if (Sim::findObject("AL_LightBinMgr", lightBin))
+   if ( Sim::findObject( "AL_LightBinMgr", lightBin ) )
       bPreProcessedLighting = lightBin->MRTLightmapsDuringDeferred();
 
    // Add in the realtime lighting contribution

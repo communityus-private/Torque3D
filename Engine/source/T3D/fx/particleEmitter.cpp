@@ -1631,7 +1631,6 @@ void ParticleEmitter::copyToVB( const Point3F &camPos, const ColorF &ambientColo
       PROFILE_END();
    }
 
-
    PROFILE_START(ParticleEmitter_copyToVB_LockCopy);
    // create new VB if emitter size grows
    if( !mVertBuff || n_parts > mCurBuffSize )
@@ -1644,7 +1643,6 @@ void ParticleEmitter::copyToVB( const Point3F &camPos, const ColorF &ambientColo
    dMemcpy( verts, tempBuff.address(), n_parts * 4 * sizeof(ParticleVertexType) );
    mVertBuff.unlock();
    PROFILE_END();
-
 
    PROFILE_END();
 }

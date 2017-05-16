@@ -37,7 +37,7 @@ in vec3 wsEyeRay;
 out vec4 OUT_col;
 
 void main()
-{
+{   
    //vec2 deferredCoord = ( uv0.xy * rtParams0.zw ) + rtParams0.xy;
    float depth = deferredUncondition( deferredTex, uv0 ).w;
    //return vec4( depth, 0, 0, 0.7 );

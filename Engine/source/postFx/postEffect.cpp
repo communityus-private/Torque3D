@@ -271,21 +271,21 @@ PostEffect::PostEffect()
    :  mRenderTime( PFXAfterDiffuse ),
       mRenderPriority( 1.0 ),
       mEnabled( false ),
-      mSkip( false ),
-      mUpdateShader( true ),
       mStateBlockData( NULL ),
+      mUpdateShader( true ),
+      mSkip( false ),
       mAllowReflectPass( false ),
       mTargetClear( PFXTargetClear_None ),
-      mTargetViewport( PFXTargetViewport_TargetSize ),
       mTargetScale( Point2F::One ),
+      mTargetViewport( PFXTargetViewport_TargetSize ),
       mTargetSize( Point2I::Zero ),
       mTargetFormat( GFXFormatR8G8B8A8 ),
       mTargetClearColor( ColorF::BLACK ),
       mOneFrameOnly( false ),
       mOnThisFrame( true ),
-      mShaderReloadKey( 0 ),
-      mIsValid( false ),
       mRTSizeSC( NULL ),
+      mIsValid( false ),
+      mShaderReloadKey( 0 ),
       mOneOverRTSizeSC( NULL ),
       mViewportOffsetSC( NULL ),
       mTargetViewportSC( NULL ),
@@ -1189,7 +1189,6 @@ void PostEffect::process(  const SceneRenderState *state,
 
    if ( mTargetTex || mTargetDepthStencil )
    {
-
       const RectI &oldViewport = GFX->getViewport();
       GFXTarget *oldTarget = GFX->getActiveRenderTarget();
 

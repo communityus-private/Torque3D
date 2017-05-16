@@ -72,7 +72,7 @@ const Vector<String> TerrainCellMaterial::mSamplerNames = _initSamplerNames();
 TerrainCellMaterial::TerrainCellMaterial()
    :  mTerrain( NULL ),
       mCurrPass( 0 ),
-      mDeferredMat(NULL),
+      mDeferredMat( NULL ),
       mReflectMat( NULL )
 {
    smAllMaterials.push_back( this );
@@ -708,8 +708,8 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
 
    // If we're doing deferred it requires some 
    // special stencil settings for it to work.
-   if (deferredMat)
-      desc.addDesc(RenderDeferredMgr::getOpaqueStenciWriteDesc(false));
+   if ( deferredMat )
+      desc.addDesc( RenderDeferredMgr::getOpaqueStenciWriteDesc( false ) );
 
    desc.setCullMode(GFXCullCCW);
    pass->stateBlock = GFX->createStateBlock( desc );

@@ -117,8 +117,9 @@ function initClient()
       exec("./benchmark.cs");
 
    if(isFile("art/gui/benchmarkGui.gui"))
-      exec("art/gui/benchmarkGui.gui");      
-
+      exec("art/gui/benchmarkGui.gui");  
+   if (isFile("./config_vehicle.cs"))
+      exec("./config_vehicle.cs");
    loadMaterials();
 
    // Really shouldn't be starting the networking unless we are
