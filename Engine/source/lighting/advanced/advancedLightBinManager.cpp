@@ -252,7 +252,7 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
    if ( !_onPreRender( state ) )
       return;
 
-      GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
+   GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
 
    // Restore transforms
    MatrixSet &matrixSet = getRenderPass()->getMatrixSet();

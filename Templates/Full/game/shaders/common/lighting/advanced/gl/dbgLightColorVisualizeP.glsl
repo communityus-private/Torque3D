@@ -28,7 +28,7 @@ uniform sampler2D lightDeferredTex;
 out vec4 OUT_col;
 
 void main()
-{   
+{
    vec4 lightColor = texture( lightDeferredTex, uv0 );
-   OUT_col = vec4( lightColor.rgb, 1.0 ); 
+   OUT_col = vec4( lightColor.rgb, 1.0 );
 }

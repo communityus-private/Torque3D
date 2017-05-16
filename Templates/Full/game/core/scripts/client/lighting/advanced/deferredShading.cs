@@ -65,6 +65,7 @@ singleton PostEffect( AL_DeferredShading )
    texture[2] = "#matinfo";
    texture[3] = "#indirectLighting";
    texture[4] = "#deferred";
+   
    target = "$backBuffer";
    renderPriority = 10000;
    allowReflectPass = true;

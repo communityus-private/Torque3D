@@ -296,7 +296,6 @@ GFXTextureObject* ReflectionManager::getRefractTex( bool forceUpdate )
       desHeight = mFloor((F32)targetSize.y * smRefractTexScale);
    }
 
-
    if ( mRefractTex.isNull() || 
         mRefractTex->getWidth() != desWidth ||
         mRefractTex->getHeight() != desHeight ||
