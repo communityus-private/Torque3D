@@ -666,34 +666,37 @@ bool ReflectProbeMatInstance::setupPass(SceneRenderState *state, const SceneData
    const RenderPassData *rpd = mProcessedMaterial->getPass(0);
    AssertFatal(rpd, "No render pass data!");
    AssertFatal(rpd->mRenderStates[0], "No render state 0!");
+   
+   if (!mProjectionState)
+   {
+      GFXStateBlockDesc litState = rpd->mRenderStates[0]->getDesc();
 
-   GFXStateBlockDesc litState = rpd->mRenderStates[0]->getDesc();
+      // Create state blocks for each of the 3 possible combos in setupPass
 
-   // Create state blocks for each of the 3 possible combos in setupPass
+      //DynamicLight State: This will effect lightmapped and non-lightmapped geometry
+      // in the same way.
+      //litState.separateAlphaBlendDefined = true;
+      //litState.separateAlphaBlendEnable = true;
+      //litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
 
-   //DynamicLight State: This will effect lightmapped and non-lightmapped geometry
-   // in the same way.
-   //litState.separateAlphaBlendDefined = true;
-   //litState.separateAlphaBlendEnable = true;
-   //litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
-
-   litState.blendDefined = true;
-   litState.blendEnable = true;
-   litState.blendSrc = GFXBlendSrcAlpha;
-   litState.blendDest = GFXBlendOne;
-   litState.blendOp = GFXBlendOpAdd;
-   litState.stencilDefined = true;
-   litState.stencilEnable = true;
-   litState.stencilWriteMask = 0x03;
-   litState.stencilMask = 0x03;
-   litState.stencilRef = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
-   litState.stencilPassOp = GFXStencilOpReplace;
-   litState.stencilFailOp = GFXStencilOpKeep;
-   litState.stencilZFailOp = GFXStencilOpKeep;
-   litState.stencilFunc = GFXCmpAlways;
-
+      litState.blendDefined = true;
+      litState.blendEnable = true;
+      litState.blendSrc = GFXBlendSrcAlpha;
+      litState.blendDest = GFXBlendOne;
+      litState.blendOp = GFXBlendOpAdd;
+      litState.stencilDefined = true;
+      litState.stencilEnable = true;
+      litState.stencilWriteMask = 0x03;
+      litState.stencilMask = 0x03;
+      litState.stencilRef = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
+      litState.stencilPassOp = GFXStencilOpReplace;
+      litState.stencilFailOp = GFXStencilOpKeep;
+      litState.stencilZFailOp = GFXStencilOpKeep;
+      litState.stencilFunc = GFXCmpAlways;
+      mProjectionState = GFX->createStateBlock(litState);
+   }
    // Now override stateblock with our own
-   GFX->setStateBlock(GFX->createStateBlock(litState));
+   GFX->setStateBlock(mProjectionState);
 
    return bRetVal;
 }

@@ -45,10 +45,10 @@ protected:
    MaterialParameterHandle *mProbeParamsSC;
    bool mInternalPass;
 
-   GFXStateBlockRef mStateBlock;
+   GFXStateBlockRef mProjectionState;
 
 public:
-   ReflectProbeMatInstance(Material &mat) : Parent(mat), mProbeParamsSC(NULL), mInternalPass(false) {}
+   ReflectProbeMatInstance(Material &mat) : Parent(mat), mProbeParamsSC(NULL), mInternalPass(false), mProjectionState(NULL){}
 
    virtual bool init(const FeatureSet &features, const GFXVertexFormat *vertexFormat);
    virtual bool setupPass(SceneRenderState *state, const SceneData &sgData);
