@@ -173,12 +173,10 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
     color = TORQUE_TEXCUBELOD(cubeMap, ref);
 
-    float specularIntensity = 1;
-    float irradianceIntensity = 2;
-    float4 specularColor = (color * specularIntensity) * smoothness;
-    float4 indirectColor = (decodeSH(wsNormal) * irradianceIntensity);// * (1 - smoothness);
+    float4 specularColor = (color);
+    float4 indirectColor = (decodeSH(wsNormal));
 
-    color.rgb = specularColor.rgb + indirectColor.rgb;
+    color.rgb = lerp(indirectColor.rgb, specularColor.rgb, matInfo.b);
 
     return float4(color.rgb, alpha);
 

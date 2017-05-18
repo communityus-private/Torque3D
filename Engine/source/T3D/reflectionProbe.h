@@ -136,12 +136,15 @@ private:
 
    //Debug rendering
    static bool smRenderReflectionProbes;
+   static bool smRenderPreviewProbes;
 
    U32 mDynamicLastBakeMS;
    U32 mRefreshRateMS;
 
    GBitmap* mCubeFaceBitmaps[6];
    U32 mCubemapResolution;
+
+   F32 mMaxDrawDistance;
 
 public:
    ReflectionProbe();

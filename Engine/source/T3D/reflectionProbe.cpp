@@ -49,6 +49,7 @@
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool ReflectionProbe::smRenderReflectionProbes = true;
+bool ReflectionProbe::smRenderPreviewProbes = true;
 
 IMPLEMENT_CO_NETOBJECT_V1(ReflectionProbe);
 
@@ -126,6 +127,8 @@ ReflectionProbe::ReflectionProbe()
 
    mRefreshRateMS = 200;
    mDynamicLastBakeMS = 0;
+
+   mMaxDrawDistance = 75;
 }
 
 ReflectionProbe::~ReflectionProbe()
@@ -174,6 +177,11 @@ void ReflectionProbe::initPersistFields()
    endGroup("Reflection");
 
    Con::addVariable("$Light::renderReflectionProbes", TypeBool, &ReflectionProbe::smRenderReflectionProbes,
+      "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
+      "@note Only works for shadow mapped lights.\n\n"
+      "@ingroup Lighting");
+
+   Con::addVariable("$Light::renderPreviewProbes", TypeBool, &ReflectionProbe::smRenderPreviewProbes,
       "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
       "@note Only works for shadow mapped lights.\n\n"
       "@ingroup Lighting");
@@ -433,7 +441,14 @@ void ReflectionProbe::updateMaterial()
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
 {
-   if (!mEnabled)
+   if (!mEnabled || !ReflectionProbe::smRenderReflectionProbes)
+      return;
+
+   Point3F distVec = getPosition() - state->getCameraPosition();
+   F32 dist = distVec.len();
+
+   //Culling distance. Can be adjusted for performance options considerations via the scalar
+   if (dist > mMaxDrawDistance * Con::getFloatVariable("$pref::GI::ProbeDrawDistScale", 1.0))
       return;
 
    if (mReflectionModeType == DynamicCubemap && mRefreshRateMS < (Platform::getRealMilliseconds() - mDynamicLastBakeMS))
@@ -456,7 +471,7 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
    // Submit our RenderInst to the RenderPassManager
    state->getRenderPass()->addInst(probeInst);
 
-   if (ReflectionProbe::smRenderReflectionProbes && gEditingMission && mEditorShapeInst)
+   if (ReflectionProbe::smRenderPreviewProbes && gEditingMission && mEditorShapeInst)
    {
       GFXTransformSaver saver;
 
@@ -617,19 +632,6 @@ ColorF ReflectionProbe::decodeSH(Point3F normal)
    return ColorF(mMax(result.red, 0), mMax(result.green, 0), mMax(result.blue, 0));
 }
 
-inline float lerp(float a, float b, float t) 
-{
-   return a * (1.f - t) + b * t;
-}
-
-static ColorF mixColor(const ColorF& a, const ColorF& b, float t) 
-{
-   return ColorF(
-      lerp(a.red, b.red, t),
-      lerp(a.green, b.green, t),
-      lerp(a.blue, b.blue, t));
-}
-
 MatrixF getSideMatrix(U32 side)
 {
    // Standard view that will be overridden below.
@@ -720,8 +722,10 @@ ColorF ReflectionProbe::sampleSide(U32 termindex, U32 sideIndex)
          Point3F normal = Point3F(sidecoord.x, sidecoord.y, -1.0);
          normal.normalize();
 
+         F32 minBrightness = Con::getFloatVariable("$pref::GI::Cubemap_Sample_MinBrightness", 0.001f);
+
          ColorF texel = mCubeFaceBitmaps[sideIndex]->sampleTexel(y, x);
-         texel = ColorF(mMax(texel.red, 0.01), mMax(texel.green, 0.01), mMax(texel.blue, 0.01)) * 1.5;
+         texel = ColorF(mMax(texel.red, minBrightness), mMax(texel.green, minBrightness), mMax(texel.blue, minBrightness)) * Con::getFloatVariable("$pref::GI::Cubemap_Gain", 1.5);
 
          Point3F dir;
          sideRot.mulP(normal, &dir);
@@ -773,12 +777,12 @@ void ReflectionProbe::calculateSHTerms()
       return; 
 
    //Set up our constants
-   F32 L0 = 1;
-   F32 L1 = 1.8;
-   F32 L2 = 0.83;
-   F32 L2m2_L2m1_L21 = 2.9;
-   F32 L20 = 0.58;
-   F32 L22 = 1.1;
+   F32 L0 = Con::getFloatVariable("$pref::GI::SH_Term_L0", 1.0f);
+   F32 L1 = Con::getFloatVariable("$pref::GI::SH_Term_L1", 1.8f);
+   F32 L2 = Con::getFloatVariable("$pref::GI::SH_Term_L2", 0.83f);
+   F32 L2m2_L2m1_L21 = Con::getFloatVariable("$pref::GI::SH_Term_L2m2", 2.9f);
+   F32 L20 = Con::getFloatVariable("$pref::GI::SH_Term_L20", 0.58f);
+   F32 L22 = Con::getFloatVariable("$pref::GI::SH_Term_L22", 1.1f);
 
    mProbeInfo->mSHConstants[0] = L0;
    mProbeInfo->mSHConstants[1] = L1;
