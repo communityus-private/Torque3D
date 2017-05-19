@@ -381,7 +381,7 @@ RenderProbeMgr::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String 
    farPlane(NULL),
    vsFarPlane(NULL),
    negFarPlaneDotEye(NULL),
-   lightPosition(NULL),
+   probeWSPos(NULL),
    lightDirection(NULL),
    lightColor(NULL),
    lightAttenuation(NULL),
@@ -410,7 +410,8 @@ RenderProbeMgr::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String 
    lightSpotParams = matInstance->getMaterialParameterHandle("$lightSpotParams");
    lightAttenuation = matInstance->getMaterialParameterHandle("$lightAttenuation");
    lightRange = matInstance->getMaterialParameterHandle("$lightRange");
-   lightPosition = matInstance->getMaterialParameterHandle("$lightPosition");
+   probeLSPos = matInstance->getMaterialParameterHandle("$probeLSPos");
+   probeWSPos = matInstance->getMaterialParameterHandle("$probeWSPos");
    farPlane = matInstance->getMaterialParameterHandle("$farPlane");
    vsFarPlane = matInstance->getMaterialParameterHandle("$vsFarPlane");
    negFarPlaneDotEye = matInstance->getMaterialParameterHandle("$negFarPlaneDotEye");
@@ -420,10 +421,6 @@ RenderProbeMgr::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String 
 
    invViewMat = matInstance->getMaterialParameterHandle("$invViewMat");
 
-   ambientColor = matInstance->getMaterialParameterHandle("$AmbientColor");
-
-   skyColor = matInstance->getMaterialParameterHandle("$SkyColor");
-   groundColor = matInstance->getMaterialParameterHandle("$GroundColor");
    intensity = matInstance->getMaterialParameterHandle("$Intensity");
 
    useCubemap = matInstance->getMaterialParameterHandle("$useCubemap");
@@ -431,9 +428,8 @@ RenderProbeMgr::ReflectProbeMaterialInfo::ReflectProbeMaterialInfo(const String 
    cubemap = matInstance->getMaterialParameterHandle("$cubeMap");
 
    eyePosWorld = matInstance->getMaterialParameterHandle("$eyePosWorld");
-   volumeStart = matInstance->getMaterialParameterHandle("$volumeStart");
-   volumeSize = matInstance->getMaterialParameterHandle("$volumeSize");
-   volumePosition = matInstance->getMaterialParameterHandle("$volumePosition");
+   bbMin = matInstance->getMaterialParameterHandle("$bbMin");
+   bbMax = matInstance->getMaterialParameterHandle("$bbMax");
 
    useSphereMode = matInstance->getMaterialParameterHandle("$useSphereMode");
 
@@ -490,9 +486,12 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
 
    matParams->setSafe(lightRange, probeInfo->mRadius);
 
-   Point3F lightPos;
-   worldViewOnly.mulP(probeInfo->getPosition(), &lightPos);
-   matParams->setSafe(lightPosition, lightPos);
+   Point3F probePos = probeInfo->getPosition();
+   //worldViewOnly.mulP(probeInfo->getPosition(), &probePos);
+   matParams->setSafe(probeWSPos, probePos);
+
+   worldViewOnly.mulP(probeInfo->getPosition(), &probePos);
+   matParams->setSafe(probeLSPos, probePos);
 
    // Get the attenuation falloff ratio and normalize it.
    Point3F attenRatio = Point3F(0.0f, 1.0f, 1.0f);
@@ -530,14 +529,11 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
       GFX->setCubeTexture(2, NULL);
    }
 
-   matParams->setSafe(ambientColor, probeInfo->mAmbient);
-
    matParams->setSafe(intensity, probeInfo->mIntensity);
 
-   //matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
-   matParams->setSafe(volumeStart, probeInfo->getPosition() - Point3F(probeInfo->mRadius/2, probeInfo->mRadius/2, probeInfo->mRadius/2));
-   matParams->setSafe(volumePosition, probeInfo->getPosition());
-   matParams->setSafe(volumeSize, Point3F(probeInfo->mRadius, probeInfo->mRadius, probeInfo->mRadius));
+   matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
+   matParams->setSafe(bbMin, probeInfo->mBounds.minExtents);
+   matParams->setSafe(bbMax, probeInfo->mBounds.maxExtents);
 
    matParams->setSafe(useSphereMode, probeInfo->mProbeShapeType == ProbeRenderInst::Sphere ? 1.0f : 0.0f);
 
@@ -746,6 +742,7 @@ void ProbeRenderInst::set(const ProbeRenderInst *probeInfo)
    numPrims = probeInfo->numPrims;
    numVerts = probeInfo->numVerts;
    numIndicesForPoly = probeInfo->numIndicesForPoly;
+   mBounds = probeInfo->mBounds;
 
    for (U32 i = 0; i < 9; i++)
    {

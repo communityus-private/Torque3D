@@ -84,7 +84,8 @@ protected:
       MaterialParameterHandle *invViewMat;
 
       // Light Parameters
-      MaterialParameterHandle *lightPosition;
+      MaterialParameterHandle *probeLSPos;
+      MaterialParameterHandle *probeWSPos;
       MaterialParameterHandle *lightDirection;
       MaterialParameterHandle *lightColor;
       MaterialParameterHandle *lightBrightness;
@@ -94,19 +95,14 @@ protected:
       MaterialParameterHandle *lightTrilight;
       MaterialParameterHandle *lightSpotParams;
 
-      MaterialParameterHandle *ambientColor;
-
-      MaterialParameterHandle *skyColor;
-      MaterialParameterHandle *groundColor;
       MaterialParameterHandle *intensity;
 
       MaterialParameterHandle *useCubemap;
       MaterialParameterHandle *cubemap;
 
       MaterialParameterHandle *eyePosWorld;
-      MaterialParameterHandle *volumeStart;
-      MaterialParameterHandle *volumeSize;
-      MaterialParameterHandle *volumePosition;
+      MaterialParameterHandle *bbMin;
+      MaterialParameterHandle *bbMax;
 
       MaterialParameterHandle *useSphereMode;
 

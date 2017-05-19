@@ -434,6 +434,8 @@ void ReflectionProbe::updateMaterial()
 
    mProbeInfo->mProbeShapeType = mProbeShapeType;
 
+   mProbeInfo->mBounds = mWorldBox;
+
    calculateSHTerms();
 
    bool tump = true;

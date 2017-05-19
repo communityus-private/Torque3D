@@ -484,6 +484,8 @@ struct ProbeRenderInst : public RenderInst
    F32 mRadius;
    F32 mIntensity;
 
+   Box3F mBounds;
+
    GFXCubemapHandle *mCubemap;
 
    /// The priority of this light used for
