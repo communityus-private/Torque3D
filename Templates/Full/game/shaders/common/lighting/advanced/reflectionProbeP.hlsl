@@ -113,15 +113,19 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
     float4 ref = float4(0,0,0,0);
     float alpha = 0;
 
+    float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
+    float3 viewSpacePos = eyeRay * depth;
+
+    float3 wsEyeRay = mul(float4(eyeRay, 1), invViewMat).rgb;
+
     // Use eye ray to get ws pos
-    float3 worldPos = float3(eyePosWorld + IN.wsEyeDir.rgb * depth);
+    float3 worldPos = float3(eyePosWorld + wsEyeRay * depth);
     float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
 
     if(useSphereMode)
     {
         // Eye ray - Eye -> Pixel
-        float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
-        float3 viewSpacePos = eyeRay * depth;
+        
             
         // Build light vec, get length, clip pixel if needed
         float3 lightVec = probeLSPos - viewSpacePos;
@@ -152,6 +156,8 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
         float3 posOnBox = worldPos.xyz + nrdir * fa;
         reflectionVec = posOnBox - probeWSPos;
+
+        //reflectionVec = mul(probeWSPos,reflectionVec);
 
         ref = float4(reflectionVec, smoothness);
 
@@ -187,7 +193,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
     color.rgb = lerp(indirectColor.rgb * 1.5, specularColor.rgb * 1.5, matInfo.b);
 
-    return float4(color.rgb, alpha);
+    return float4(color.rgb, 1);
 
     /*float3 wPos = worldPos.rgb;
 
