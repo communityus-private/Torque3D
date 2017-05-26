@@ -388,10 +388,8 @@ void GFXD3D11WindowTarget::activate()
    GFXDEBUGEVENT_SCOPE(GFXPCD3D11WindowTarget_activate, ColorI::RED);
 
    //clear ther rendertargets first
-   ID3D11RenderTargetView* rtViews[8] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-
-   D3D11DEVICECONTEXT->OMSetRenderTargets(8, rtViews, NULL);
-   D3D11DEVICECONTEXT->OMSetRenderTargets(1, &D3D11->mDeviceBackBufferView, D3D11->mDeviceDepthStencilView);
+   ID3D11RenderTargetView* rtViews[8] = { D3D11->mDeviceBackBufferView, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+   D3D11DEVICECONTEXT->OMSetRenderTargets(8, rtViews, D3D11->mDeviceDepthStencilView);
 
    DXGI_SWAP_CHAIN_DESC pp;
    D3D11->mSwapChain->GetDesc(&pp);
