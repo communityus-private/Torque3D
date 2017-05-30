@@ -250,8 +250,8 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
 
    // create texture var
    Var *diffuseMap = new Var;
-   diffuseMap->setType("SamplerState");
-   diffuseMap->setName("baseTexMap");
+   diffuseMap->setType( "SamplerState" );
+   diffuseMap->setName( "baseTexMap" );
    diffuseMap->uniform = true;
    diffuseMap->sampler = true;
    diffuseMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
@@ -261,6 +261,7 @@ void TerrainBaseMapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentLis
    Var *baseColor = new Var;
    baseColor->setType( "float4" );
    baseColor->setName( "baseColor" );
+
    Var *diffuseTex = new Var;
    diffuseTex->setType("Texture2D");
    diffuseTex->setName("baseTexture");
@@ -425,7 +426,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
       // Get the layer texture var
       Var *layerTex = new Var;
-      layerTex->setType("SamplerState");
+      layerTex->setType( "SamplerState" );
       layerTex->setName( "layerTex" );
       layerTex->uniform = true;
       layerTex->sampler = true;
@@ -440,7 +441,6 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
       // Read the layer texture to get the samples.
       meta->addStatement(new GenOp("   @ = round( @.Sample( @, @.xy ) * 255.0f );\r\n",
          new DecOp(layerSample), layerTexObj, layerTex, inTex));
-
    }
 
    Var *layerSize = (Var*)LangElement::find( "layerSize" );
@@ -745,8 +745,8 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
 
       // Get the layer texture var
       Var *layerTex = new Var;
-      layerTex->setType("SamplerState");
-      layerTex->setName("macrolayerTex");
+      layerTex->setType( "SamplerState" );
+      layerTex->setName( "macrolayerTex" );
       layerTex->uniform = true;
       layerTex->sampler = true;
       layerTex->constNum = Var::getTexUnitNum();
@@ -760,7 +760,6 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
       layerTexObj->constNum = layerTex->constNum;
       meta->addStatement(new GenOp("   @ = round( @.Sample( @, @.xy ) * 255.0f );\r\n",
          new DecOp(layerSample), layerTexObj, layerTex, inTex));
-
    }
 
    Var *layerSize = (Var*)LangElement::find( "layerSize" );
@@ -828,16 +827,14 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
 
    // Get the detail texture.
    Var *detailMap = new Var;
-   detailMap->setType("SamplerState");
-   detailMap->setName(String::ToString("macroMap%d", detailIndex));
+   detailMap->setType( "SamplerState" );
+   detailMap->setName( String::ToString( "macroMap%d", detailIndex ) );
    detailMap->uniform = true;
    detailMap->sampler = true;
    detailMap->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
    //Create texture object for directx 11
-   Var *detailTex = NULL;
-   detailMap->setType("SamplerState");
-   detailTex = new Var;
+   Var *detailTex = new Var;
    detailTex->setName(String::ToString("macroMapTex%d", detailIndex));
    detailTex->setType("Texture2D");
    detailTex->uniform = true;
@@ -845,7 +842,6 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
    detailTex->constNum = detailMap->constNum;
 
    meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
-
    meta->addStatement( new GenOp( "   {\r\n" ) );
 
    // Note that we're doing the standard greyscale detail 
@@ -1032,11 +1028,7 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
 
    // Get the lightmap texture.
    Var *lightMap = new Var;
-   if (GFX->getAdapterType() == Direct3D11)
-      lightMap->setType("SamplerState");
-   else
-      lightMap->setType("sampler2D");
-
+   lightMap->setType("SamplerState");
    lightMap->setName("lightMapTex");
    lightMap->uniform = true;
    lightMap->sampler = true;
@@ -1057,7 +1049,6 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
       meta->addStatement( new GenOp( "   @ = 1;\r\n", new DecOp( lightMask ) ) );
    }
 
-   lightMap->setType("SamplerState");
    Var* lightMapTex = new Var;
    lightMapTex->setName("lightMapTexObj");
    lightMapTex->setType("Texture2D");
