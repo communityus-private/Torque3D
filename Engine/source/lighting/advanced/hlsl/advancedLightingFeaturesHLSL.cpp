@@ -769,16 +769,13 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
    deferredBuffer->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
    Var* deferredTex = NULL;
-   if (mIsDirect3D11)
-   {
-      deferredBuffer->setType("SamplerState");
-      deferredTex = new Var;
-      deferredTex->setName("deferredTex");
-      deferredTex->setType("Texture2D");
-      deferredTex->uniform = true;
-      deferredTex->texture = true;
-      deferredTex->constNum = deferredBuffer->constNum;
-   }
+   deferredBuffer->setType("SamplerState");
+   deferredTex = new Var;
+   deferredTex->setName("deferredTex");
+   deferredTex->setType("Texture2D");
+   deferredTex->uniform = true;
+   deferredTex->texture = true;
+   deferredTex->constNum = deferredBuffer->constNum;
 
    // Texture coord
    Var *uvScene = (Var*)LangElement::find("uvScene");
