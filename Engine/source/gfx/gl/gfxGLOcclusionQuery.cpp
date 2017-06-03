@@ -25,7 +25,7 @@
 #include "gfx/gl/tGL/tGL.h"
 
 GFXGLOcclusionQuery::GFXGLOcclusionQuery(GFXDevice* device) : 
-   GFXOcclusionQuery(device), mQuery(-1)
+   GFXOcclusionQuery(device), mQuery(-1), mTesting(false)
 {
 }
 
@@ -42,7 +42,11 @@ bool GFXGLOcclusionQuery::begin()
    if (!glIsQuery(mQuery))
       glGenQueries(1, &mQuery);
 
-   glBeginQuery(GL_SAMPLES_PASSED, mQuery);
+   if (!mTesting)
+   {
+      glBeginQuery(GL_SAMPLES_PASSED, mQuery);
+      mTesting = true;
+   }
    return true;
 }
 
@@ -54,6 +58,7 @@ void GFXGLOcclusionQuery::end()
    if (!glIsQuery(mQuery))
       return;
    glEndQuery(GL_SAMPLES_PASSED);
+   mTesting = false;
 }
 
 GFXOcclusionQuery::OcclusionQueryStatus GFXGLOcclusionQuery::getStatus(bool block, U32* data)
