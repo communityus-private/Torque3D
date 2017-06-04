@@ -141,7 +141,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
         // If we can do dynamic branching then avoid wasting
         // fillrate on pixels that are backfacing to the light.
-        float nDotL = dot( lightVec, normal );
+        float nDotL = abs(dot( lightVec, normal ));
 
         float Sat_NL_Att = saturate( nDotL * atten );
 
@@ -153,7 +153,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
         float3 rbminmax = (nrdir > 0.0) ? rbmax : rbmin;
         float fa = min(min(rbminmax.x,rbminmax.y),rbminmax.z);
-
+        clip(fa);
         float3 posOnBox = worldPos.xyz + nrdir * fa;
         reflectionVec = posOnBox - probeWSPos;
 
@@ -193,7 +193,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
     color.rgb = lerp(indirectColor.rgb * 1.5, specularColor.rgb * 1.5, matInfo.b);
 
-    return float4(color.rgb, 1);
+    return float4(color.rgb, alpha);
 
     /*float3 wPos = worldPos.rgb;
 

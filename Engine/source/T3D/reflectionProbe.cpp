@@ -228,7 +228,7 @@ bool ReflectionProbe::onAdd()
 
    mObjBox.minExtents.set(-1, -1, -1);
    mObjBox.maxExtents.set(1, 1, 1);
-   mObjScale.set(mRadius, mRadius, mRadius);
+   mObjScale.set(mRadius/2, mRadius/2, mRadius/2);
 
    // Skip our transform... it just dirties mask bits.
    Parent::setTransform(mObjToWorld);
