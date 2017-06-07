@@ -678,7 +678,7 @@ bool ReflectProbeMatInstance::setupPass(SceneRenderState *state, const SceneData
       litState.blendDefined = true;
       litState.blendEnable = true;
       litState.blendSrc = GFXBlendSrcAlpha;
-      litState.blendDest = GFXBlendOne;
+      litState.blendDest = GFXBlendInvSrcAlpha;
       litState.blendOp = GFXBlendOpAdd;
       litState.stencilDefined = true;
       litState.stencilEnable = true;
