@@ -93,3 +93,86 @@ function PostEffect::onEnabled( %this )
 {   
    return true;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+singleton ShaderData( TestNamedBugShader )
+{
+	DXVertexShaderFile 	= "shaders/common/postFx/postFxV.hlsl";
+	DXPixelShaderFile 	= "shaders/common/postFx/testNamedBugP.hlsl";
+   
+	//OGLVertexShaderFile  = "shaders/common/postFx/gl//postFxV.glsl";
+	//OGLPixelShaderFile   = "shaders/common/postFx/vignette/gl/testNamedBugP.glsl"; 
+};
+
+function TestNamedBugAPostFx::preProcess( %this )
+{      
+	%this.setShaderMacro( "WET", 0 );
+}
+
+function TestNamedBugBPostFx::preProcess( %this )
+{      
+	%this.setShaderMacro( "WET", 1 );
+}
+
+// write to target all red color
+singleton PostEffect( TestNamedBugAPostFx )
+{
+   renderTime = "PFXBeforeBin";
+   renderBin = "ProbeBin";
+	isEnabled = false;
+    allowReflectPass = false;
+	
+	shader = TestNamedBugShader;
+	stateBlock = PFX_DefaultStateBlock;
+	
+    target = "#matinfo2";
+    renderPriority = 100;
+};
+
+ // write to target all blue color
+singleton PostEffect( TestNamedBugBPostFx )
+{
+   renderTime = "PFXBeforeBin";
+   renderBin = "ProbeBin";
+	isEnabled = false;
+    allowReflectPass = false;
+	
+	shader = TestNamedBugShader;
+	stateBlock = PFX_DefaultStateBlock;
+	
+    target = "#matinfo2";
+    renderPriority = 101;
+};
+
+//should show all blue color - if not bug!
+singleton PostEffect( TestNamedBugVizPostFx )
+{   
+	isEnabled = false;   
+	allowReflectPass = false;
+        
+	shader = PFX_PassthruShader;
+	stateBlock = PFX_DefaultStateBlock;
+   
+	texture[0] = "#matinfo2";   
+	target = "$backbuffer";
+	renderPriority = 102;
+};
