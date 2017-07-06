@@ -879,9 +879,9 @@ void ColladaAppMesh::getMorphVertexData(const domMorph* morph, F32 time, const M
       if (colors_array) {
          for (S32 iVert = 0; iVert < vertTuples.size(); iVert++)
          {
-            ColorF tCol = colors_array[iVert];
-            tCol += ColorF(targetColors[iVert]) * (F32)targetWeights[iTarget];
-            colors_array[iVert] = tCol;
+            LinearColorF tCol = colors_array[iVert];
+            tCol += LinearColorF(targetColors[iVert]) * (F32)targetWeights[iTarget];
+            colors_array[iVert] = tCol.toColorI();
          }
       }
    }

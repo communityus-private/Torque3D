@@ -945,7 +945,7 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       }
 #endif
       meta->addStatement(new GenOp("   @ = @.SampleLevel(@,@,mipLod);\r\n",
-            new DecOp(diffColor), diffuseMapTex, diffuseMap, inTex));
+         new DecOp(diffColor), diffuseMapTex, diffuseMap, inTex));
 
       meta->addStatement(new GenOp("   @;\r\n", assignColor(diffColor, Material::Mul, NULL, targ) ) );
    }

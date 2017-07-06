@@ -455,7 +455,7 @@ void GFXGLDevice::endSceneInternal()
    mCanCurrentlyRender = false;
 }
 
-void GFXGLDevice::clear(U32 flags, ColorI color, F32 z, U32 stencil)
+void GFXGLDevice::clear(U32 flags, const LinearColorF& color, F32 z, U32 stencil)
 {
    // Make sure we have flushed our render target state.
    _updateRenderTargets();
@@ -475,10 +475,7 @@ void GFXGLDevice::clear(U32 flags, ColorI color, F32 z, U32 stencil)
    glColorMask(true, true, true, true);
    glDepthMask(true);
    glStencilMask(0xFFFFFFFF);
-   
-
-   ColorF c = color;   
-   glClearColor(c.red, c.green, c.blue, c.alpha);
+   glClearColor(color.red, color.green, color.blue, color.alpha);
    glClearDepth(z);
    glClearStencil(stencil);
 
@@ -635,7 +632,7 @@ void GFXGLDevice::setLightMaterialInternal(const GFXLightMaterial mat)
    // ONLY NEEDED ON FFP
 }
 
-void GFXGLDevice::setGlobalAmbientInternal(ColorF color)
+void GFXGLDevice::setGlobalAmbientInternal(LinearColorF color)
 {
    // ONLY NEEDED ON FFP
 }

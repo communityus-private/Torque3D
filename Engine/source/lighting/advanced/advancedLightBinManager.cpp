@@ -643,7 +643,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
    MaterialParameters *matParams = matInstance->getMaterialParameters();
 
    // Set color in the right format, set alpha to the luminance value for the color.
-   ColorF col = lightInfo->getColor();
+   LinearColorF col = lightInfo->getColor();
 
    // TODO: The specularity control of the light
    // is being scaled by the overall lumiance.
@@ -656,7 +656,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
    F32 lumiance = mDot(*((const Point3F *)&lightInfo->getColor()), colorToLumiance );
    col.alpha *= lumiance;
 
-   matParams->setSafe( lightColor, col.toLinear() );
+   matParams->setSafe( lightColor, col );
    matParams->setSafe( lightBrightness, lightInfo->getBrightness() );
 
    switch( lightInfo->getType() )
@@ -670,9 +670,9 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
 
          // Set small number for alpha since it represents existing specular in
          // the vector light. This prevents a divide by zero.
-         ColorF ambientColor = renderState->getAmbientLightColor();
+         LinearColorF ambientColor = renderState->getAmbientLightColor();
          ambientColor.alpha = 0.00001f;
-         matParams->setSafe( lightAmbient, ambientColor.toLinear() );
+         matParams->setSafe( lightAmbient, ambientColor );
 
          // If no alt color is specified, set it to the average of
          // the ambient and main color to avoid artifacts.
@@ -680,13 +680,13 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          // TODO: Trilight disabled until we properly implement it
          // in the light info!
          //
-         //ColorF lightAlt = lightInfo->getAltColor();
-         ColorF lightAlt( ColorF::ZERO ); // = lightInfo->getAltColor();
+         //LinearColorF lightAlt = lightInfo->getAltColor();
+         LinearColorF lightAlt( LinearColorF::BLACK ); // = lightInfo->getAltColor();
          if ( lightAlt.red == 0.0f && lightAlt.green == 0.0f && lightAlt.blue == 0.0f )
             lightAlt = (lightInfo->getColor() + renderState->getAmbientLightColor()) / 2.0f;
 
-         ColorF trilightColor = lightAlt;
-         matParams->setSafe(lightTrilight, trilightColor.toLinear());
+         LinearColorF trilightColor = lightAlt;
+         matParams->setSafe(lightTrilight, trilightColor);
       }
       break;
 
@@ -785,7 +785,7 @@ bool LightMatInstance::setupPass( SceneRenderState *state, const SceneData &sgDa
          getMaterialParameters()->set( mLightMapParamsSC, lmParams->shadowDarkenColor );
       }
       else
-         getMaterialParameters()->set( mLightMapParamsSC, ColorF::WHITE );
+         getMaterialParameters()->set( mLightMapParamsSC, LinearColorF::WHITE );
    }
 
    // Now override stateblock with our own

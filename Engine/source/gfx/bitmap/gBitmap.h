@@ -47,7 +47,7 @@ class Stream;
 class RectI;
 class Point2I;
 class ColorI;
-class ColorF;
+class LinearColorF;
 
 //------------------------------------------------------------------------------
 //-------------------------------------- GBitmap
@@ -202,7 +202,7 @@ public:
    /// the bitmap bits and to check for alpha values less than 255
    bool        checkForTransparency();
 
-   ColorF      sampleTexel(F32 u, F32 v) const;
+   LinearColorF      sampleTexel(F32 u, F32 v) const;
    bool        getColor(const U32 x, const U32 y, ColorI& rColor) const;
    bool        setColor(const U32 x, const U32 y, const ColorI& rColor);
    U8          getChanelValueAt(U32 x, U32 y, U32 chan);

@@ -200,7 +200,7 @@ void ParticleData::initPersistFields()
       "Deprecated. Use textureName instead." );
 
    // Interpolation variables
-   addField( "colors", TYPEID< ColorF >(), Offset(colors, ParticleData), PDC_NUM_KEYS,
+   addField( "colors", TYPEID< LinearColorF >(), Offset(colors, ParticleData), PDC_NUM_KEYS,
       "@brief Particle RGBA color keyframe values.\n\n"
       "The particle color will linearly interpolate between the color/time keys "
       "over the lifetime of the particle." );

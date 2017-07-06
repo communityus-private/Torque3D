@@ -36,53 +36,48 @@
 
 const F32 gGamma = 2.2f;
 const F32 gOneOverGamma = 1.f / 2.2f;
+const F32 gOneOver255 = 1.f / 255.f;
 
 class ColorI;
 
-class ColorF
+//32bit color in linear space
+class LinearColorF
 {
-  public:
+public:
    F32 red;
    F32 green;
    F32 blue;
    F32 alpha;
 
-  public:
-   ColorF() { }
-   ColorF(const ColorF& in_rCopy);
-   ColorF(const F32 in_r,
-          const F32 in_g,
-          const F32 in_b,
-          const F32 in_a = 1.0f);
+public:
+   LinearColorF() : red(0), green(0), blue(0), alpha(0) {}
+   LinearColorF(const LinearColorF& in_rCopy);
+   LinearColorF(const F32 in_r, const F32 in_g, const F32 in_b, const F32 in_a = 1.0f);
+   LinearColorF(const ColorI &color);
+   LinearColorF(const char* pStockColorName);
 
-   ColorF( const char* pStockColorName );
-
-   void set(const F32 in_r,
-            const F32 in_g,
-            const F32 in_b,
-            const F32 in_a = 1.0f);
-
+   void set( const F32 in_r, const F32 in_g, const F32 in_b, const F32 in_a = 1.0f );
    void set( const char* pStockColorName );
 
-   static const ColorF& StockColor( const char* pStockColorName );
+   static const LinearColorF& StockColor( const char* pStockColorName );
    StringTableEntry StockColor( void );
 
-   ColorF& operator*=(const ColorF& in_mul);       // Can be useful for lighting
-   ColorF  operator*(const ColorF& in_mul) const;
-   ColorF& operator+=(const ColorF& in_rAdd);
-   ColorF  operator+(const ColorF& in_rAdd) const;
-   ColorF& operator-=(const ColorF& in_rSub);
-   ColorF  operator-(const ColorF& in_rSub) const;
+   LinearColorF& operator*=(const LinearColorF& in_mul);       // Can be useful for lighting
+   LinearColorF  operator*(const LinearColorF& in_mul) const;
+   LinearColorF& operator+=(const LinearColorF& in_rAdd);
+   LinearColorF  operator+(const LinearColorF& in_rAdd) const;
+   LinearColorF& operator-=(const LinearColorF& in_rSub);
+   LinearColorF  operator-(const LinearColorF& in_rSub) const;
 
-   ColorF& operator*=(const F32 in_mul);
-   ColorF  operator*(const F32 in_mul) const;
-   ColorF& operator/=(const F32 in_div);
-   ColorF  operator/(const F32 in_div) const;
+   LinearColorF& operator*=(const F32 in_mul);
+   LinearColorF  operator*(const F32 in_mul) const;
+   LinearColorF& operator/=(const F32 in_div);
+   LinearColorF  operator/(const F32 in_div) const;
 
-   ColorF  operator-() const;
+   LinearColorF  operator-() const;
 
-   bool operator==(const ColorF&) const;
-   bool operator!=(const ColorF&) const;
+   bool operator==(const LinearColorF&) const;
+   bool operator!=(const LinearColorF&) const;
 
    operator F32*() { return &red; }
    operator const F32*() const { return &red; }
@@ -94,39 +89,38 @@ class ColorF
    U32 getRGBAPack() const;
    U32 getABGRPack() const;
 
-   operator ColorI() const;   
-
-   void interpolate(const ColorF& in_rC1,
-                    const ColorF& in_rC2,
+   void interpolate(const LinearColorF& in_rC1,
+                    const LinearColorF& in_rC2,
                     const F32 in_factor);
 
-   bool isValidColor() const { return (red   >= 0.0f && red   <= 1.0f) &&
-                                      (green >= 0.0f && green <= 1.0f) &&
-                                      (blue  >= 0.0f && blue  <= 1.0f) &&
-                                      (alpha >= 0.0f && alpha <= 1.0f); }
+   bool isClamped() const { return (red >= 0.0f && red <= 1.0f) &&
+                                   (green >= 0.0f && green <= 1.0f) &&
+                                   (blue  >= 0.0f && blue  <= 1.0f) &&
+                                   (alpha >= 0.0f && alpha <= 1.0f); }
    void clamp();
-
-   ColorF toLinear();
-   ColorF toGamma();
-   //calculate luminance, make sure color is linear first
+   
+   //calculate luminance
    F32 luminance();
 
-   static const ColorF ZERO;
-   static const ColorF ONE;
-   static const ColorF WHITE;
-   static const ColorF BLACK;
-   static const ColorF RED;
-   static const ColorF GREEN;
-   static const ColorF BLUE;
+   //convert to ColorI - slow operation, avoid when possible
+   ColorI toColorI(const bool keepAsLinear = false);
+   
+   static const LinearColorF ZERO;
+   static const LinearColorF ONE;
+   static const LinearColorF WHITE;
+   static const LinearColorF BLACK;
+   static const LinearColorF RED;
+   static const LinearColorF GREEN;
+   static const LinearColorF BLUE;
+
+   static F32 sSrgbToLinear[256];
 };
 
 
-//-------------------------------------- ColorI's are missing some of the operations
-//                                        present in ColorF since they cannot recover
-//                                        properly from over/underflow.
+//8bit color in srgb space
 class ColorI
 {
-  public:
+public:
    U8 red;
    U8 green;
    U8 blue;
@@ -142,17 +136,13 @@ class ColorI
       U32 brightness;   //Brightness/Value/Lightness
    };
 
-  public:
-   ColorI() { }
+public:
+   ColorI() : red(0), green(0), blue(0), alpha(0) {}
    ColorI(const ColorI& in_rCopy);
    ColorI(const Hsb& color);
-   ColorI(const U8 in_r,
-          const U8 in_g,
-          const U8 in_b,
-          const U8 in_a = U8(255));
+   ColorI(const U8 in_r, const U8 in_g, const U8 in_b, const U8 in_a = U8(255));
    ColorI(const ColorI& in_rCopy, const U8 in_a);
-
-   ColorI( const char* pStockColorName );
+   ColorI(const char* pStockColorName);
 
    void set(const Hsb& color);
 
@@ -194,9 +184,10 @@ class ColorI
    String getHex() const;
    S32 convertFromHex(const String& hex) const;
 
-   operator ColorF() const;
-
    operator const U8*() const { return &red; }
+
+   //convert linear color to srgb - slow operation, avoid when possible
+   ColorI fromLinear();
    
    static const ColorI ZERO;
    static const ColorI ONE;
@@ -228,11 +219,11 @@ public:
    }
 
    inline const char*      getColorName( void ) const { return mColorName; }
-   inline const ColorF&    getColorF( void ) const { return mColorF; }
+   inline const LinearColorF&    getColorF( void ) const { return mColorF; }
    inline const ColorI&    getColorI( void ) const { return mColorI; }
 
    const char*         mColorName;
-   ColorF              mColorF;
+   LinearColorF              mColorF;
    ColorI              mColorI;
 };
 
@@ -242,9 +233,9 @@ class StockColor
 {
 public:
    static bool isColor( const char* pStockColorName );
-   static const ColorF& colorF( const char* pStockColorName );
+   static const LinearColorF& colorF( const char* pStockColorName );
    static const ColorI& colorI( const char* pStockColorName );
-   static StringTableEntry name( const ColorF& color );
+   static StringTableEntry name( const LinearColorF& color );
    static StringTableEntry name( const ColorI& color );
 
    static S32 getCount( void );
@@ -255,12 +246,9 @@ public:
 };
 
 //------------------------------------------------------------------------------
-//-------------------------------------- INLINES (ColorF)
+//-------------------------------------- INLINES (LinearColorF)
 //
-inline void ColorF::set(const F32 in_r,
-            const F32 in_g,
-            const F32 in_b,
-            const F32 in_a)
+inline void LinearColorF::set(const F32 in_r, const F32 in_g, const F32 in_b, const F32 in_a)
 {
    red   = in_r;
    green = in_g;
@@ -268,7 +256,7 @@ inline void ColorF::set(const F32 in_r,
    alpha = in_a;
 }
 
-inline ColorF::ColorF(const ColorF& in_rCopy)
+inline LinearColorF::LinearColorF(const LinearColorF& in_rCopy)
 {
    red   = in_rCopy.red;
    green = in_rCopy.green;
@@ -276,128 +264,113 @@ inline ColorF::ColorF(const ColorF& in_rCopy)
    alpha = in_rCopy.alpha;
 }
 
-inline ColorF::ColorF(const F32 in_r,
-               const F32 in_g,
-               const F32 in_b,
-               const F32 in_a)
+inline LinearColorF::LinearColorF(const F32 in_r, const F32 in_g, const F32 in_b, const F32 in_a)
 {
    set(in_r, in_g, in_b, in_a);
 }
 
-inline ColorF& ColorF::operator*=(const ColorF& in_mul)
+inline LinearColorF& LinearColorF::operator*=(const LinearColorF& in_mul)
 {
-   ColorF tmp = toLinear();
-   ColorF tmp1 = ColorF(in_mul).toLinear();
-   tmp.red   *= tmp1.red;
-   tmp.green *= tmp1.green;
-   tmp.blue  *= tmp1.blue;
-   tmp.alpha *= tmp1.alpha;
-   *this = tmp.toGamma();
+   red   *= in_mul.red;
+   green *= in_mul.green;
+   blue  *= in_mul.blue;
+   alpha *= in_mul.alpha;
+
    return *this;
 }
 
-inline ColorF ColorF::operator*(const ColorF& in_mul) const
+inline LinearColorF LinearColorF::operator*(const LinearColorF& in_mul) const
 {
-   ColorF tmp(*this);
+   LinearColorF tmp(*this);
    tmp *= in_mul;
    return tmp;
 }
 
-inline ColorF& ColorF::operator+=(const ColorF& in_rAdd)
+inline LinearColorF& LinearColorF::operator+=(const LinearColorF& in_rAdd)
 {
-   ColorF tmp = toLinear();
-   ColorF tmp1 = ColorF(in_rAdd).toLinear();
-   tmp.red += tmp1.red;
-   tmp.green += tmp1.green;
-   tmp.blue += tmp1.blue;
-   tmp.alpha += tmp1.alpha;
-   *this = tmp.toGamma();
+   red += in_rAdd.red;
+   green += in_rAdd.green;
+   blue += in_rAdd.blue;
+   alpha += in_rAdd.alpha;
    return *this;
 }
 
-inline ColorF ColorF::operator+(const ColorF& in_rAdd) const
+inline LinearColorF LinearColorF::operator+(const LinearColorF& in_rAdd) const
 {
-   ColorF temp(*this);
+   LinearColorF temp(*this);
    temp += in_rAdd;
    return temp;
 }
 
-inline ColorF& ColorF::operator-=(const ColorF& in_rSub)
+inline LinearColorF& LinearColorF::operator-=(const LinearColorF& in_rSub)
 {
-   ColorF tmp = toLinear();
-   ColorF tmp1 = ColorF(in_rSub).toLinear();
-   tmp.red -= tmp1.red;
-   tmp.green -= tmp1.green;
-   tmp.blue -= tmp1.blue;
-   tmp.alpha -= tmp1.alpha;
-   *this = tmp.toGamma();
+   red -= in_rSub.red;
+   green -= in_rSub.green;
+   blue -= in_rSub.blue;
+   alpha -= in_rSub.alpha;
    return *this;
 }
 
-inline ColorF ColorF::operator-(const ColorF& in_rSub) const
+inline LinearColorF LinearColorF::operator-(const LinearColorF& in_rSub) const
 {
-   ColorF tmp(*this);
+   LinearColorF tmp(*this);
    tmp -= in_rSub;
    return tmp;
 }
 
-inline ColorF& ColorF::operator*=(const F32 in_mul)
+inline LinearColorF& LinearColorF::operator*=(const F32 in_mul)
 {
-   ColorF tmp = toLinear();
-   tmp.red   *= in_mul;
-   tmp.green *= in_mul;
-   tmp.blue  *= in_mul;
-   tmp.alpha *= in_mul;
-   *this = tmp.toGamma();
+   red   *= in_mul;
+   green *= in_mul;
+   blue  *= in_mul;
+   alpha *= in_mul;
    return *this;
 }
 
-inline ColorF ColorF::operator*(const F32 in_mul) const
+inline LinearColorF LinearColorF::operator*(const F32 in_mul) const
 {
-   ColorF tmp(*this);
+   LinearColorF tmp(*this);
    tmp *= in_mul;
    return tmp;
 }
 
-inline ColorF& ColorF::operator/=(const F32 in_div)
+inline LinearColorF& LinearColorF::operator/=(const F32 in_div)
 {
    AssertFatal(in_div != 0.0f, "Error, div by zero...");
    F32 inv = 1.0f / in_div;
 
-   ColorF tmp = toLinear();
-   tmp.red *= inv;
-   tmp.green *= inv;
-   tmp.blue *= inv;
-   tmp.alpha *= inv;
-   *this = tmp.toGamma();
+   red *= inv;
+   green *= inv;
+   blue *= inv;
+   alpha *= inv;
    return *this;
 }
 
-inline ColorF ColorF::operator/(const F32 in_div) const
+inline LinearColorF LinearColorF::operator/(const F32 in_div) const
 {
    AssertFatal(in_div != 0.0f, "Error, div by zero...");
    F32 inv = 1.0f / in_div;
-   ColorF tmp(*this);
+   LinearColorF tmp(*this);
    tmp /= inv;
    return tmp;
 }
 
-inline ColorF ColorF::operator-() const
+inline LinearColorF LinearColorF::operator-() const
 {
-   return ColorF(-red, -green, -blue, -alpha);
+   return LinearColorF(-red, -green, -blue, -alpha);
 }
 
-inline bool ColorF::operator==(const ColorF& in_Cmp) const
+inline bool LinearColorF::operator==(const LinearColorF& in_Cmp) const
 {
    return (red == in_Cmp.red && green == in_Cmp.green && blue == in_Cmp.blue && alpha == in_Cmp.alpha);
 }
 
-inline bool ColorF::operator!=(const ColorF& in_Cmp) const
+inline bool LinearColorF::operator!=(const LinearColorF& in_Cmp) const
 {
    return (red != in_Cmp.red || green != in_Cmp.green || blue != in_Cmp.blue || alpha != in_Cmp.alpha);
 }
 
-inline U32 ColorF::getARGBPack() const
+inline U32 LinearColorF::getARGBPack() const
 {
    return (U32(alpha * 255.0f + 0.5) << 24) |
           (U32(red   * 255.0f + 0.5) << 16) |
@@ -405,7 +378,7 @@ inline U32 ColorF::getARGBPack() const
           (U32(blue  * 255.0f + 0.5) <<  0);
 }
 
-inline U32 ColorF::getRGBAPack() const
+inline U32 LinearColorF::getRGBAPack() const
 {
    return ( U32( red   * 255.0f + 0.5) <<  0 ) |
           ( U32( green * 255.0f + 0.5) <<  8 ) |
@@ -413,7 +386,7 @@ inline U32 ColorF::getRGBAPack() const
           ( U32( alpha * 255.0f + 0.5) << 24 );
 }
 
-inline U32 ColorF::getABGRPack() const
+inline U32 LinearColorF::getABGRPack() const
 {
    return (U32(alpha * 255.0f + 0.5) << 24) |
           (U32(blue  * 255.0f + 0.5) << 16) |
@@ -422,9 +395,9 @@ inline U32 ColorF::getABGRPack() const
 
 }
 
-inline void ColorF::interpolate(const ColorF& in_rC1,
-   const ColorF& in_rC2,
-   const F32  in_factor)
+inline void LinearColorF::interpolate(const LinearColorF& in_rC1,
+                    const LinearColorF& in_rC2,
+                    const F32  in_factor)
 {
    if (in_factor <= 0 || in_rC1 == in_rC2)
    {
@@ -450,56 +423,20 @@ inline void ColorF::interpolate(const ColorF& in_rC1,
    alpha = (in_rC1.alpha * f2) + (in_rC2.alpha * in_factor);
 }
 
-inline void ColorF::clamp()
+inline void LinearColorF::clamp()
 {
-   if (red > 1.0f)
-      red = 1.0f;
-   else if (red < 0.0f)
-      red = 0.0f;
-
-   if (green > 1.0f)
-      green = 1.0f;
-   else if (green < 0.0f)
-      green = 0.0f;
-
-   if (blue > 1.0f)
-      blue = 1.0f;
-   else if (blue < 0.0f)
-      blue = 0.0f;
-
-   if (alpha > 1.0f)
-      alpha = 1.0f;
-   else if (alpha < 0.0f)
-      alpha = 0.0f;
+   red = mClampF(red, 0.0f, 1.0f);
+   green = mClampF(green, 0.0f, 1.0f);
+   blue = mClampF(blue, 0.0f, 1.0f);
+   alpha = mClampF(alpha, 0.0f, 1.0f);
 }
 
-inline ColorF ColorF::toGamma()
-{
-   ColorF color;
-   color.red = mPow(red,gOneOverGamma);
-   color.green = mPow(green, gOneOverGamma);
-   color.blue = mPow(blue, gOneOverGamma);
-   color.alpha = alpha;
-   return color;
-}
-
-inline ColorF ColorF::toLinear()
-{
-   ColorF color;
-   color.red = mPow(red,gGamma);
-   color.green = mPow(green, gGamma);
-   color.blue = mPow(blue, gGamma);
-   color.alpha = alpha;
-   return color;
-}
-
-inline F32 ColorF::luminance()
+inline F32 LinearColorF::luminance()
 {
    // ITU BT.709
    //return red * 0.2126f + green * 0.7152f + blue * 0.0722f;
    // ITU BT.601
-   ColorF tmp = toLinear();
-   return tmp.red * 0.3f + tmp.green * 0.59f + tmp.blue * 0.11f;
+   return red * 0.3f + green * 0.59f + blue * 0.11f;
 }
 
 //------------------------------------------------------------------------------
@@ -887,25 +824,72 @@ inline String ColorI::getHex() const
 	return result;
 }
 
-//-------------------------------------- INLINE CONVERSION OPERATORS
-inline ColorF::operator ColorI() const
+inline LinearColorF::LinearColorF( const ColorI &color)
 {
-   ColorF t = ColorF(red, green, blue, alpha).toGamma();
-   return ColorI(U8(t.red   * 255.0f + 0.5),
-                  U8(t.green * 255.0f + 0.5),
-                  U8(t.blue  * 255.0f + 0.5),
-                  U8(t.alpha * 255.0f + 0.5));
+   red = sSrgbToLinear[color.red],
+   green = sSrgbToLinear[color.green],
+   blue = sSrgbToLinear[color.blue],
+   alpha = F32(color.alpha * gOneOver255);
 }
 
-inline ColorI::operator ColorF() const
+inline ColorI LinearColorF::toColorI(const bool keepAsLinear)
 {
-   const F32 inv255 = 1.0f / 255.0f;
+   if (isClamped())
+   {
+      if (keepAsLinear)
+      {
+         return ColorI(U8(red * 255.0f + 0.5), U8(green * 255.0f + 0.5), U8(blue * 255.0f + 0.5), U8(alpha * 255.0f + 0.5));
+      }
+      else
+      {
+   #ifdef TORQUE_USE_LEGACY_GAMMA
+         float r = mPow(red, gOneOverGamma);
+         float g = mPow(green, gOneOverGamma);
+         float b = mPow(blue, gOneOverGamma);
+         return ColorI(U8(r * 255.0f + 0.5), U8(g * 255.0f + 0.5), U8(b * 255.0f + 0.5), U8(alpha * 255.0f + 0.5));
+   #else
+         float r = red < 0.0031308f ? 12.92f * red : 1.055 * mPow(red, 1.0f / 2.4f) - 0.055f;
+         float g = green < 0.0031308f ? 12.92f * green : 1.055 * mPow(green, 1.0f / 2.4f) - 0.055f;
+         float b = blue < 0.0031308f ? 12.92f * blue : 1.055 * mPow(blue, 1.0f / 2.4f) - 0.055f;
+         return ColorI(U8(r * 255.0f + 0.5), U8(g * 255.0f + 0.5), U8(b * 255.0f + 0.5), U8(alpha * 255.0f + 0.5));
+   #endif
+      }
+   }
+   else
+   {
+      LinearColorF color = LinearColorF(*this);
+      color.clamp();
 
-   return ColorF(F32(red)   * inv255,
-                 F32(green) * inv255,
-                 F32(blue)  * inv255,
-                 F32(alpha) * inv255).toLinear();
+      if (keepAsLinear)
+      {
+         return ColorI(U8(color.red * 255.0f + 0.5), U8(color.green * 255.0f + 0.5), U8(color.blue * 255.0f + 0.5), U8(color.alpha * 255.0f + 0.5));
+      }
+      else
+      {
+   #ifdef TORQUE_USE_LEGACY_GAMMA
+         float r = mPow(red, gOneOverGamma);
+         float g = mPow(green, gOneOverGamma);
+         float b = mPow(blue, gOneOverGamma);
+         return ColorI(U8(r * 255.0f + 0.5), U8(g * 255.0f + 0.5), U8(b * 255.0f + 0.5), U8(alpha * 255.0f + 0.5));
+   #else
+         float r = red < 0.0031308f ? 12.92f * red : 1.055 * mPow(red, 1.0f / 2.4f) - 0.055f;
+         float g = green < 0.0031308f ? 12.92f * green : 1.055 * mPow(green, 1.0f / 2.4f) - 0.055f;
+         float b = blue < 0.0031308f ? 12.92f * blue : 1.055 * mPow(blue, 1.0f / 2.4f) - 0.055f;
+         return ColorI(U8(r * 255.0f + 0.5), U8(g * 255.0f + 0.5), U8(b * 255.0f + 0.5), U8(alpha * 255.0f + 0.5));
+   #endif
+      }
+   }
+}
+
+inline ColorI ColorI::fromLinear()
+{
+   //manually create LinearColorF, otherwise it will try and convert to linear first
+   LinearColorF linearColor = LinearColorF(F32(red) * 255.0f + 0.5f,
+                                           F32(red) * 255.0f + 0.5f,
+                                           F32(red) * 255.0f + 0.5f,
+                                           F32(alpha) * 255.0f + 0.5f);
+   //convert back to srgb
+   return linearColor.toColorI();
 }
 
 #endif //_COLOR_H_
-

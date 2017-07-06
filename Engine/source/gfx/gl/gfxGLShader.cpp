@@ -196,7 +196,7 @@ void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const PlaneF& fv)
    internalSet(handle, fv);
 }
 
-void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const ColorF& fv)
+void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const LinearColorF& fv)
 {
    internalSet(handle, fv);
 }

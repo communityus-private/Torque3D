@@ -63,6 +63,9 @@ public:
    // Update a static cubemap @ pos
 	void updateFaces();
 
+   void setCubeFaceFile(U32 index, FileName newFaceFile);
+   GFXTexHandle* getCubeMapFace(U32 faceIdx) { return &mCubeFace[faceIdx]; }
+
 protected:
    FileName mCubeMapFile;
    FileName mCubeFaceFile[6];
@@ -73,4 +76,3 @@ protected:
 };
 
 #endif // CUBEMAPDATA
-

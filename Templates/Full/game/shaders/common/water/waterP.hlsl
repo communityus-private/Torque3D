@@ -155,7 +155,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    
    float2 deferredCoord = viewportCoordToRenderTarget( IN.posPostWave, rtParams1 );
 
-   float startDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, deferredCoord ).w;
+   float startDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, deferredCoord ).w;  
    
    // The water depth in world units of the undistorted pixel.
    float startDelta = ( startDepth - pixelDepth );

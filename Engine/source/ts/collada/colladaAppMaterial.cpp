@@ -59,8 +59,8 @@ ColladaAppMaterial::ColladaAppMaterial(const char* matName)
    flags |= TSMaterialList::S_Wrap;
    flags |= TSMaterialList::T_Wrap;
 
-   diffuseColor = ColorF::ONE;
-   specularColor = ColorF::ONE;
+   diffuseColor = LinearColorF::ONE;
+   specularColor = LinearColorF::ONE;
    smoothness = 0.0f;
    metalness = 0.0f;
    doubleSided = false;
@@ -68,8 +68,8 @@ ColladaAppMaterial::ColladaAppMaterial(const char* matName)
 
 ColladaAppMaterial::ColladaAppMaterial(const domMaterial *pMat)
 :  mat(pMat),
-   diffuseColor(ColorF::ONE),
-   specularColor(ColorF::ONE),
+   diffuseColor(LinearColorF::ONE),
+   specularColor(LinearColorF::ONE),
    smoothness(0.0f),
    metalness(0.0f),
    doubleSided(false)
@@ -176,7 +176,7 @@ void ColladaAppMaterial::resolveFloat(const domCommon_float_or_param_type* value
    }
 }
 
-void ColladaAppMaterial::resolveColor(const domCommon_color_or_texture_type* value, ColorF* dst)
+void ColladaAppMaterial::resolveColor(const domCommon_color_or_texture_type* value, LinearColorF* dst)
 {
    if (value && value->getColor()) {
       dst->red = value->getColor()->getValue()[0];

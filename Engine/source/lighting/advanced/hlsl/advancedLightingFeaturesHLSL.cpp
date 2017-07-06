@@ -769,7 +769,7 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
    deferredBuffer->constNum = Var::getTexUnitNum();     // used as texture unit num here
 
    Var* deferredTex = new Var;
-   deferredTex->setName("prePassTex");
+   deferredTex->setName("deferredTex");
    deferredTex->setType("Texture2D");
    deferredTex->uniform = true;
    deferredTex->texture = true;
@@ -786,7 +786,7 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
 
    String unconditionDeferredMethod = String::ToLower(RenderDeferredMgr::BufferName) + "Uncondition";
 
-   Var *d_NL_Att = (Var*)LangElement::find("d_NL_Att");
+   Var *d_NL_Att = (Var*)LangElement::find( "d_NL_Att" );
 
    meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, ,@, @);\r\n", unconditionDeferredMethod.c_str()), deferredBuffer, deferredTex, uvScene));
    meta->addStatement( new GenOp( "   float vDotN = dot(normalDepth.xyz, @);\r\n", wsViewVec ) );

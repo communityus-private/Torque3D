@@ -145,7 +145,7 @@ GFXDevice::GFXDevice()
    }
 
    mGlobalAmbientColorDirty = false;
-   mGlobalAmbientColor = ColorF(0.0f, 0.0f, 0.0f, 1.0f);
+   mGlobalAmbientColor = LinearColorF(0.0f, 0.0f, 0.0f, 1.0f);
 
    mLightMaterialDirty = false;
    dMemset(&mCurrentLightMaterial, 0, sizeof(GFXLightMaterial));
@@ -746,7 +746,7 @@ void GFXDevice::setLightMaterial(const GFXLightMaterial& mat)
    mStateDirty = true;
 }
 
-void GFXDevice::setGlobalAmbientColor(const ColorF& color)
+void GFXDevice::setGlobalAmbientColor(const LinearColorF& color)
 {
    if(mGlobalAmbientColor != color)
    {

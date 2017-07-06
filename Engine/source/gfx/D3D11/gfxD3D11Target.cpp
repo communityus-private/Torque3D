@@ -248,7 +248,7 @@ void GFXD3D11TextureTarget::activate()
    stateApplied();
    
    // Now set all the new surfaces into the appropriate slots.
-   ID3D11RenderTargetView* rtViews[MaxRenderSlotId] = { NULL, NULL, NULL, NULL, NULL, NULL,NULL};
+   ID3D11RenderTargetView* rtViews[MaxRenderSlotId] = { NULL, NULL, NULL, NULL, NULL, NULL };
 
    ID3D11DepthStencilView* dsView = (ID3D11DepthStencilView*)(mTargetViews[GFXTextureTarget::DepthStencil]);
    for (U32 i = 0; i < 6; i++)
@@ -388,8 +388,10 @@ void GFXD3D11WindowTarget::activate()
    GFXDEBUGEVENT_SCOPE(GFXPCD3D11WindowTarget_activate, ColorI::RED);
 
    //clear ther rendertargets first
-   ID3D11RenderTargetView* rtViews[8] = { D3D11->mDeviceBackBufferView, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-   D3D11DEVICECONTEXT->OMSetRenderTargets(8, rtViews, D3D11->mDeviceDepthStencilView);
+   ID3D11RenderTargetView* rtViews[8] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+
+   D3D11DEVICECONTEXT->OMSetRenderTargets(8, rtViews, NULL);
+   D3D11DEVICECONTEXT->OMSetRenderTargets(1, &D3D11->mDeviceBackBufferView, D3D11->mDeviceDepthStencilView);
 
    DXGI_SWAP_CHAIN_DESC pp;
    D3D11->mSwapChain->GetDesc(&pp);

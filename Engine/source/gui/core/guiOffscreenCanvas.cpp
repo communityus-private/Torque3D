@@ -178,7 +178,7 @@ void GuiOffscreenCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = tr
 
    // Clear the current viewport area
    GFX->setViewport( screenRect );
-   GFX->clear( GFXClearTarget, ColorF(0,0,0,0), 1.0f, 0 );
+   GFX->clear( GFXClearTarget, LinearColorF(0,0,0,0), 1.0f, 0 );
 
    resetUpdateRegions();
 
@@ -204,7 +204,7 @@ void GuiOffscreenCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = tr
 
       // Fill Blue if no Dialogs
       if(this->size() == 0)
-         GFX->clear( GFXClearTarget, ColorF(0,0,0,1), 1.0f, 0 );
+         GFX->clear( GFXClearTarget, LinearColorF(0,0,0,1), 1.0f, 0 );
 
       GFX->setClipRect( contentRect );
 

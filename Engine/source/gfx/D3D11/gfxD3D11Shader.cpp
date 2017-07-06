@@ -407,7 +407,7 @@ void GFXD3D11ShaderConstBuffer::set(GFXShaderConstHandle* handle, const PlaneF& 
    SET_CONSTANT(handle, fv, mVertexConstBuffer, mPixelConstBuffer);
 }
 
-void GFXD3D11ShaderConstBuffer::set(GFXShaderConstHandle* handle, const ColorF& fv)
+void GFXD3D11ShaderConstBuffer::set(GFXShaderConstHandle* handle, const LinearColorF& fv)
 { 
    SET_CONSTANT(handle, fv, mVertexConstBuffer, mPixelConstBuffer);
 }
