@@ -170,7 +170,6 @@ void GFXGLDevice::initGLState()
    }
 #endif
 
-   //set vysnc
    PlatformGL::setVSync(smDisableVSync ? 0 : 1);
    
    //install vsync callback

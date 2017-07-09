@@ -47,6 +47,7 @@ namespace GFXSemantic
    extern const String TEXCOORD;
    extern const String BLENDWEIGHT;
    extern const String BLENDINDICES;
+   extern const String PADDING;
 }
 
 

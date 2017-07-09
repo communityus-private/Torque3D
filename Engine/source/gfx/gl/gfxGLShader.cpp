@@ -446,13 +446,6 @@ bool GFXGLShader::_init()
    if(!compiledVertexShader || !compiledPixelShader)
       return false;
    
-   //bind fragment out color
-   /*(mProgram, 0, "OUT_col");
-    glBindFragDataLocation(mProgram, 1, "OUT_col1");
-    glBindFragDataLocation(mProgram, 2, "OUT_col2");
-    glBindFragDataLocation(mProgram, 3, "OUT_col3");*/
-   
-   
    // Link it!
    glLinkProgram( mProgram );
    

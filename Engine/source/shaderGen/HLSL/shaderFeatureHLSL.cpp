@@ -907,6 +907,9 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       tileParams->uniform = true;
       tileParams->constSortPos = cspPotentialPrimitive;
 
+      const bool is_sm3 = (GFX->getPixelShaderVersion() > 2.0f);
+      if(is_sm3)
+      {
       // Figure out the mip level
       meta->addStatement(new GenOp("   float2 _dx = ddx(@ * @.z);\r\n", inTex, atParams));
       meta->addStatement(new GenOp("   float2 _dy = ddy(@ * @.z);\r\n", inTex, atParams));
@@ -916,6 +919,11 @@ void DiffuseMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       // And the size of the mip level
       meta->addStatement(new GenOp("   float mipPixSz = pow(2.0, @.w - mipLod);\r\n", atParams));
       meta->addStatement(new GenOp("   float2 mipSz = mipPixSz / @.xy;\r\n", atParams));
+      }
+      else
+      {
+         meta->addStatement(new GenOp("   float2 mipSz = float2(1.0, 1.0);\r\n"));
+      }
 
       // Tiling mode
       // TODO: Select wrap or clamp somehow
@@ -1235,6 +1243,7 @@ void LightmapFeatHLSL::processPix(  Vector<ShaderComponent*> &componentList,
       lmColor->setName( "lmColor" );
       lmColor->setType( "float4" );
       LangElement *lmColorDecl = new DecOp( lmColor );
+      
       output = new GenOp("   @ = @.Sample(@, @);\r\n", lmColorDecl, lightMapTex, lightMap, inTex);
       return;
    }

@@ -257,6 +257,9 @@ public:
    virtual const RectI& getClipRect() const { return mClipRect; }
 
    // }   
+
+
+   
    /// @name Render Targets
    /// @{
    virtual void _updateRenderTargets();
@@ -313,6 +316,13 @@ public:
 
    // Default multisample parameters
    DXGI_SAMPLE_DESC getMultisampleType() const { return mMultisampleDesc; }
+
+   // Get feature level this gfx device supports
+   D3D_FEATURE_LEVEL getFeatureLevel() const { return mFeatureLevel; }
+   // Shader Model targers
+   const String &getVertexShaderTarget() const { return mVertexShaderTarget; }
+   const String &getPixelShaderTarget() const { return mPixelShaderTarget; }
+   const String &getShaderModel() const { return mShaderModel; }
 
    // grab the sampler map
    const SamplerMap &getSamplersMap() const { return mSamplersMap; }
