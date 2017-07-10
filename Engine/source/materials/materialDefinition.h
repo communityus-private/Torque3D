@@ -248,6 +248,7 @@ public:
    
    F32 msmoothness[MAX_STAGES];
    F32 mMetalness[MAX_STAGES];
+
    bool mPixelSpecular[MAX_STAGES];
 
    bool mVertLit[MAX_STAGES];

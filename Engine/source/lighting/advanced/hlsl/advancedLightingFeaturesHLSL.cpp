@@ -789,6 +789,7 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
    Var *d_NL_Att = (Var*)LangElement::find( "d_NL_Att" );
 
    meta->addStatement(new GenOp(avar("   float4 normalDepth = %s(@, ,@, @);\r\n", unconditionDeferredMethod.c_str()), deferredBuffer, deferredTex, uvScene));
+
    meta->addStatement( new GenOp( "   float vDotN = dot(normalDepth.xyz, @);\r\n", wsViewVec ) );
    meta->addStatement( new GenOp( "   float Minnaert = pow( @, @) * pow(vDotN, 1.0 - @);\r\n", d_NL_Att, minnaertConstant, minnaertConstant ) );
    meta->addStatement( new GenOp( "   @;\r\n", assignColor( new GenOp( "float4(Minnaert, Minnaert, Minnaert, 1.0)" ), Material::Mul ) ) );

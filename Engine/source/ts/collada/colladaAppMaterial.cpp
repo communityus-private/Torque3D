@@ -61,6 +61,7 @@ ColladaAppMaterial::ColladaAppMaterial(const char* matName)
 
    diffuseColor = LinearColorF::ONE;
    specularColor = LinearColorF::ONE;
+
    smoothness = 0.0f;
    metalness = 0.0f;
    doubleSided = false;

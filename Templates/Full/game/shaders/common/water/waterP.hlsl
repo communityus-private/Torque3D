@@ -181,6 +181,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
 
    // Get deferred depth at the position of this distorted pixel.
    float deferredDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, deferredCoord ).w;
+
    if ( deferredDepth > 0.99 )
      deferredDepth = 5.0;
     

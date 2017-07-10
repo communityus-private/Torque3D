@@ -850,8 +850,8 @@ void ProcessedDeferredMaterial::addStateBlockDesc(const GFXStateBlockDesc& desc)
    const bool isTranslucent = getMaterial()->isTranslucent();
    if (isTranslucent)
    {
-	   deferredStateBlock.setBlend(true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha);
-	   deferredStateBlock.setColorWrites(false, false, false, true);
+      deferredStateBlock.setBlend( true, GFXBlendSrcAlpha, GFXBlendInvSrcAlpha );
+      deferredStateBlock.setColorWrites(false, false, false, true);
    }
 
    // Enable z reads, but only enable zwrites if we're not translucent.

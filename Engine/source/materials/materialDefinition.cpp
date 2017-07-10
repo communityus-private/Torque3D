@@ -116,8 +116,10 @@ Material::Material()
    {
       mDiffuse[i].set( 1.0f, 1.0f, 1.0f, 1.0f );
       mDiffuseMapSRGB[i] = true;
+
       msmoothness[i] = 0.0f;
       mMetalness[i] = 0.0f;
+
       mPixelSpecular[i] = false;
       mFlipRB[i] = false;
       mInvertSmoothness[i] = false;

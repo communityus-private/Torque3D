@@ -33,7 +33,7 @@ TORQUE_UNIFORM_SAMPLER2D(deferredTex,4);
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
    float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
-   
+
    if (depth>0.9999)
       return float4(0,0,0,0);
 
