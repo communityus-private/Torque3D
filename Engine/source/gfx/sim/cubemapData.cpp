@@ -34,7 +34,6 @@
 #include "scene/sceneManager.h"
 #include "console/engineAPI.h"
 #include "math/mathUtils.h"
-
 #include "gfx/bitmap/cubemapSaver.h"
 
 IMPLEMENT_CONOBJECT( CubemapData );
@@ -145,10 +144,13 @@ void CubemapData::updateFaces()
       }
       else
       {
+         if (!mCubeFaceFile[i].isEmpty())
+         {
          if (!mCubeFace[i].set(mCubeFaceFile[i], &GFXStaticTextureProfile, avar("%s() - mCubeFace[%d] (line %d)", __FUNCTION__, i, __LINE__)))
          {
             initSuccess = false;
             Con::errorf("CubemapData::createMap - Failed to load texture '%s'", mCubeFaceFile[i].c_str());
+            }
          }
       }
    }
