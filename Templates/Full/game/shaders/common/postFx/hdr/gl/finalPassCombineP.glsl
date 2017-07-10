@@ -105,17 +105,5 @@ void main()
    _sample.g = texture( colorCorrectionTex, _sample.g ).g;
    _sample.b = texture( colorCorrectionTex, _sample.b ).b;
 
-   // Apply contrast
-   _sample.rgb = ((_sample.rgb - 0.5f) * Contrast) + 0.5f;
-
-   // Apply brightness
-   //_sample.rgb += Brightness;
-
-   //tonemapping - TODO fix up eye adaptation
-   if ( g_fEnableToneMapping > 0.0f )
-   {
-      _sample.rgb = tonemap(_sample.rgb);
-   }
-
    OUT_col = _sample;
 }

@@ -71,7 +71,7 @@ half4 InterpolateDof( half3 small, half3 med, half3 large, half t )
    // d0, the small to medium blur over distance d1, and the medium to  
    // large blur over distance d2, where d0 + d1 + d2 = 1.  
    //float4 dofLerpScale = float4( -1 / d0, -1 / d1, -1 / d2, 1 / d2 );  
-   //float4 dofLerpBias = float4( 1, (1 – d2) / d1, 1 / d2, (d2 – 1) / d2 );  
+   //float4 dofLerpBias = float4( 1, (1 ï¿½ d2) / d1, 1 / d2, (d2 ï¿½ 1) / d2 );  
    
    weights = half4(saturate( t * dofLerpScale + dofLerpBias ));  
    weights.yz = min( weights.yz, 1 - weights.xy );  

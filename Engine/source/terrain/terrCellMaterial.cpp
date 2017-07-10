@@ -166,6 +166,7 @@ void TerrainCellMaterial::_updateDefaultAnisotropy()
          } // for ( U32 m=0; m < pass.materials.size(); m++ )
 
          // Set the updated stateblock.
+         desc.setCullMode( GFXCullCCW );
          pass.stateBlock = GFX->createStateBlock( desc );
 
          //reflection
@@ -175,6 +176,7 @@ void TerrainCellMaterial::_updateDefaultAnisotropy()
          // Create the wireframe state blocks.
          GFXStateBlockDesc wireframe( desc );
          wireframe.fillMode = GFXFillWireframe;
+         wireframe.setCullMode( GFXCullCCW );
          pass.wireframeStateBlock = GFX->createStateBlock( wireframe );
 
       } // for ( U32 p=0; i < (*iter)->mPasses.size(); p++ )
@@ -326,6 +328,8 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
                                        bool reflectMat,
                                        bool baseOnly )
 {
+   if ( GFX->getPixelShaderVersion() < 3.0f )
+      baseOnly = true;
 
    // NOTE: At maximum we only try to combine sgMaxTerrainMaterialsPerPass materials 
    // into a single pass.  This is sub-optimal for the simplest
@@ -721,6 +725,7 @@ bool TerrainCellMaterial::_createPass( Vector<MaterialInfo*> *materials,
    // Create the wireframe state blocks.
    GFXStateBlockDesc wireframe( desc );
    wireframe.fillMode = GFXFillWireframe;
+   wireframe.setCullMode( GFXCullCCW );
    pass->wireframeStateBlock = GFX->createStateBlock( wireframe );
 
    return true;

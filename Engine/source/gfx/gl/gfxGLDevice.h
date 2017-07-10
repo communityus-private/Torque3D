@@ -116,7 +116,7 @@ public:
 
    virtual GFXShader* createShader();
       
-   virtual void clear( U32 flags, ColorI color, F32 z, U32 stencil );
+   virtual void clear( U32 flags, const LinearColorF& color, F32 z, U32 stencil );
    virtual bool beginSceneInternal();
    virtual void endSceneInternal();
 
@@ -171,7 +171,7 @@ protected:
 
    virtual void setLightInternal(U32 lightStage, const GFXLightInfo light, bool lightEnable);
    virtual void setLightMaterialInternal(const GFXLightMaterial mat);
-   virtual void setGlobalAmbientInternal(ColorF color);
+   virtual void setGlobalAmbientInternal(LinearColorF color);
 
    /// @name State Initalization.
    /// @{
@@ -256,7 +256,9 @@ private:
    
    GFXVertexBuffer* findVolatileVBO(U32 numVerts, const GFXVertexFormat *vertexFormat, U32 vertSize); ///< Returns an existing volatile VB which has >= numVerts and the same vert flags/size, or creates a new VB if necessary
    GFXPrimitiveBuffer* findVolatilePBO(U32 numIndices, U32 numPrimitives); ///< Returns an existing volatile PB which has >= numIndices, or creates a new PB if necessary
-   void vsyncCallback();
+
+   void vsyncCallback(); ///< Vsync callback
+   
    void initGLState(); ///< Guaranteed to be called after all extensions have been loaded, use to init card profiler, shader version, max samplers, etc.
    
    GFXFence* _createPlatformSpecificFence(); ///< If our platform (e.g. OS X) supports a fence extenstion (e.g. GL_APPLE_fence) this will create one, otherwise returns NULL

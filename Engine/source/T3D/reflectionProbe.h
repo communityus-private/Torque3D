@@ -106,8 +106,8 @@ private:
 
    //Indirect Lighting Contribution stuff
    IndrectLightingModeType mIndrectLightingModeType;
-   ColorF mAmbientColor;
-   ColorF mSphericalHarmonics;
+   LinearColorF mAmbientColor;
+   LinearColorF mSphericalHarmonics;
 
    //Reflection Contribution stuff
    ReflectionModeType mReflectionModeType;
@@ -214,18 +214,18 @@ public:
    F32 areaElement(F32 x, F32 y);
 
    //
-   ColorF decodeSH(Point3F normal);
+   LinearColorF decodeSH(Point3F normal);
 
    //
    void calcDirectionVector(U32 face, U32 face_x, U32 face_y, F32& out_x, F32& out_y, F32& out_z) const;
    F32 calcSolidAngle(U32 face, U32 x, U32 y) const;
-   ColorF sampleFace(U32 face, F32 s, F32 t);
-   ColorF readTexelClamped(U32 face, U32 x, U32 y);
+   LinearColorF sampleFace(U32 face, F32 s, F32 t);
+   LinearColorF readTexelClamped(U32 face, U32 x, U32 y);
    void computeTexCoords(F32 x, F32 y, F32 z, U32& out_face, F32& out_s, F32& out_t);
-   ColorF readTexel(U32 face, U32 x, U32 y) const;
+   LinearColorF readTexel(U32 face, U32 x, U32 y) const;
 
    //
-   ColorF sampleSide(U32 termindex, U32 sideIndex);
+   LinearColorF sampleSide(U32 termindex, U32 sideIndex);
    F32 harmonics(U32 termId, Point3F normal);
 
 

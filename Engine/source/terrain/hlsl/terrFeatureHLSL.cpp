@@ -860,6 +860,9 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
    detailTex->texture = true;
    detailTex->constNum = detailMap->constNum;
 
+   // If we're using SM 3.0 then take advantage of 
+   // dynamic branching to skip layers per-pixel.
+   if ( GFX->getPixelShaderVersion() >= 3.0f )
    meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
    meta->addStatement( new GenOp( "   {\r\n" ) );
 
@@ -963,6 +966,9 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
    Var *detailBlend = (Var*)LangElement::find( String::ToString( "detailBlend%d", normalIndex ) );
    AssertFatal( detailBlend, "The detail blend is missing!" );
 
+   // If we're using SM 3.0 then take advantage of 
+   // dynamic branching to skip layers per-pixel.
+   if ( GFX->getPixelShaderVersion() >= 3.0f )
    meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
 
    meta->addStatement( new GenOp( "   {\r\n" ) );
@@ -979,6 +985,7 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
    // We take two normal samples and lerp between them for
    // side projection layers... else a single sample.
    LangElement *texOp;
+   
    String name(String::ToString("normalMapTex%d", getProcessIndex()));
    Var *normalMapTex = (Var*)LangElement::find(name);
    if (!normalMapTex)

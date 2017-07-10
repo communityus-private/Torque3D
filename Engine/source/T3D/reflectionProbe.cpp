@@ -103,8 +103,8 @@ ReflectionProbe::ReflectionProbe()
    mProbeShapeType = ProbeRenderInst::Sphere;
 
    mIndrectLightingModeType = AmbientColor;
-   mAmbientColor = ColorF(1, 1, 1, 1);
-   mSphericalHarmonics = ColorF(0,0,0,1);
+   mAmbientColor = LinearColorF(1, 1, 1, 1);
+   mSphericalHarmonics = LinearColorF(0, 0, 0, 1);
 
    mReflectionModeType = BakedCubemap;
 
@@ -429,7 +429,7 @@ void ReflectionProbe::updateMaterial()
    }
    else
    {
-      mProbeInfo->mAmbient = ColorF(0, 0, 0, 0);
+      mProbeInfo->mAmbient = LinearColorF(0, 0, 0, 0);
    }
 
    mProbeInfo->mProbeShapeType = mProbeShapeType;
@@ -599,25 +599,25 @@ void ReflectionProbe::setPreviewMatParameters(SceneRenderState* renderState, Bas
    matParams->setSafe(invViewMat, worldToCameraXfm);
 }
 
-ColorF ReflectionProbe::decodeSH(Point3F normal)
+LinearColorF ReflectionProbe::decodeSH(Point3F normal)
 {
    float x = normal.x;
    float y = normal.y;
    float z = normal.z;
 
-   ColorF l00 = mProbeInfo->mSHTerms[0];
+   LinearColorF l00 = mProbeInfo->mSHTerms[0];
 
-   ColorF l10 = mProbeInfo->mSHTerms[1];
-   ColorF l11 = mProbeInfo->mSHTerms[2];
-   ColorF l12 = mProbeInfo->mSHTerms[3];
+   LinearColorF l10 = mProbeInfo->mSHTerms[1];
+   LinearColorF l11 = mProbeInfo->mSHTerms[2];
+   LinearColorF l12 = mProbeInfo->mSHTerms[3];
 
-   ColorF l20 = mProbeInfo->mSHTerms[4];
-   ColorF l21 = mProbeInfo->mSHTerms[5];
-   ColorF l22 = mProbeInfo->mSHTerms[6];
-   ColorF l23 = mProbeInfo->mSHTerms[7];
-   ColorF l24 = mProbeInfo->mSHTerms[8];
+   LinearColorF l20 = mProbeInfo->mSHTerms[4];
+   LinearColorF l21 = mProbeInfo->mSHTerms[5];
+   LinearColorF l22 = mProbeInfo->mSHTerms[6];
+   LinearColorF l23 = mProbeInfo->mSHTerms[7];
+   LinearColorF l24 = mProbeInfo->mSHTerms[8];
 
-   ColorF result = (
+   LinearColorF result = (
          l00 * mProbeInfo->mSHConstants[0] +
 
          l12 * mProbeInfo->mSHConstants[1] * x +
@@ -631,7 +631,7 @@ ColorF ReflectionProbe::decodeSH(Point3F normal)
          l24 * mProbeInfo->mSHConstants[4] * (x*x - y*y)
       );
 
-   return ColorF(mMax(result.red, 0), mMax(result.green, 0), mMax(result.blue, 0));
+   return LinearColorF(mMax(result.red, 0), mMax(result.green, 0), mMax(result.blue, 0));
 }
 
 MatrixF getSideMatrix(U32 side)
@@ -709,11 +709,11 @@ F32 ReflectionProbe::harmonics(U32 termId, Point3F normal)
    }
 }
 
-ColorF ReflectionProbe::sampleSide(U32 termindex, U32 sideIndex)
+LinearColorF ReflectionProbe::sampleSide(U32 termindex, U32 sideIndex)
 {
    MatrixF sideRot = getSideMatrix(sideIndex);
 
-   ColorF result = ColorF::ZERO;
+   LinearColorF result = LinearColorF::ZERO;
    F32 divider = 0;
 
    for (int y = 0; y<mCubemapResolution; y++)
@@ -726,8 +726,8 @@ ColorF ReflectionProbe::sampleSide(U32 termindex, U32 sideIndex)
 
          F32 minBrightness = Con::getFloatVariable("$pref::GI::Cubemap_Sample_MinBrightness", 0.001f);
 
-         ColorF texel = mCubeFaceBitmaps[sideIndex]->sampleTexel(y, x);
-         texel = ColorF(mMax(texel.red, minBrightness), mMax(texel.green, minBrightness), mMax(texel.blue, minBrightness)) * Con::getFloatVariable("$pref::GI::Cubemap_Gain", 1.5);
+         LinearColorF texel = mCubeFaceBitmaps[sideIndex]->sampleTexel(y, x);
+         texel = LinearColorF(mMax(texel.red, minBrightness), mMax(texel.green, minBrightness), mMax(texel.blue, minBrightness)) * Con::getFloatVariable("$pref::GI::Cubemap_Gain", 1.5);
 
          Point3F dir;
          sideRot.mulP(normal, &dir);
@@ -795,7 +795,7 @@ void ReflectionProbe::calculateSHTerms()
    for (U32 i = 0; i < 9; i++)
    {
       //Clear it, just to be sure
-      mProbeInfo->mSHTerms[i] = ColorF(0.f, 0.f, 0.f);
+      mProbeInfo->mSHTerms[i] = LinearColorF(0.f, 0.f, 0.f);
 
       //Now, encode for each side
       mProbeInfo->mSHTerms[i] = sampleSide(i, 0); //POS_X
@@ -821,14 +821,14 @@ void ReflectionProbe::calculateSHTerms()
          dSprintf(fileName, 256, "%s%s_DecodedFaces_%d.png", mReflectionPath.c_str(),
             mProbeUniqueID.c_str(), f);
 
-         ColorF color = decodeSH(cubemapFaceNormals[f]);
+         LinearColorF color = decodeSH(cubemapFaceNormals[f]);
 
          FileStream stream;
          if (stream.open(fileName, Torque::FS::File::Write))
          {
             GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
 
-            bitmap.fill(color);
+            bitmap.fill(color.toColorI());
 
             bitmap.writeBitmap("png", stream);
          }
@@ -840,14 +840,14 @@ void ReflectionProbe::calculateSHTerms()
          dSprintf(fileName, 256, "%s%s_SHTerms_%d.png", mReflectionPath.c_str(),
             mProbeUniqueID.c_str(), f);
 
-         ColorF color = mProbeInfo->mSHTerms[f];
+         LinearColorF color = mProbeInfo->mSHTerms[f];
 
          FileStream stream;
          if (stream.open(fileName, Torque::FS::File::Write))
          {
             GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
 
-            bitmap.fill(color);
+            bitmap.fill(color.toColorI());
 
             bitmap.writeBitmap("png", stream);
          }

@@ -196,7 +196,7 @@ void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const PlaneF& fv)
    internalSet(handle, fv);
 }
 
-void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const ColorF& fv)
+void GFXGLShaderConstBuffer::set(GFXShaderConstHandle* handle, const LinearColorF& fv)
 {
    internalSet(handle, fv);
 }
@@ -445,13 +445,6 @@ bool GFXGLShader::_init()
    // If either shader was present and failed to compile, bail.
    if(!compiledVertexShader || !compiledPixelShader)
       return false;
-   
-   //bind fragment out color
-   /*(mProgram, 0, "OUT_col");
-    glBindFragDataLocation(mProgram, 1, "OUT_col1");
-    glBindFragDataLocation(mProgram, 2, "OUT_col2");
-    glBindFragDataLocation(mProgram, 3, "OUT_col3");*/
-   
    
    // Link it!
    glLinkProgram( mProgram );

@@ -477,7 +477,7 @@ struct OccluderRenderInst : public RenderInst
 
 struct ProbeRenderInst : public RenderInst
 {
-   ColorF mAmbient;
+   LinearColorF mAmbient;
 
    MatrixF mTransform;
 
@@ -515,7 +515,7 @@ struct ProbeRenderInst : public RenderInst
    ProbeShapeType mProbeShapeType;
 
    //Spherical Harmonics data
-   ColorF mSHTerms[9];
+   LinearColorF mSHTerms[9];
    F32 mSHConstants[5];
 
 public:
@@ -536,8 +536,8 @@ public:
    VectorF getDirection() const { return mTransform.getForwardVector(); }
    void setDirection(const VectorF &val);
 
-   const ColorF& getAmbient() const { return mAmbient; }
-   void setAmbient(const ColorF &val) { mAmbient = val; }
+   const LinearColorF& getAmbient() const { return mAmbient; }
+   void setAmbient(const LinearColorF &val) { mAmbient = val; }
 
    void setPriority(F32 priority) { mPriority = priority; }
    F32 getPriority() const { return mPriority; }

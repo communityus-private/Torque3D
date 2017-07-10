@@ -1226,7 +1226,7 @@ void ConvexShape::_renderDebug( ObjectRenderInst *ri, SceneRenderState *state, B
 
          PrimBuild::begin( GFXLineList, edgeList.size() * 2 );
          
-         PrimBuild::color( ColorF(ColorI::WHITE) * 0.8f );
+         PrimBuild::color( LinearColorF(ColorI::WHITE) * 0.8f );
 
          for ( S32 j = 0; j < edgeList.size(); j++ )         
          {
@@ -1260,12 +1260,12 @@ void ConvexShape::_renderDebug( ObjectRenderInst *ri, SceneRenderState *state, B
       for ( S32 i = 0; i < faceList.size(); i++ )
       {
          ColorI color = faceColorsx[ i % 4 ];
-         ColorF tCol = ColorF(color);
+         LinearColorF tCol = LinearColorF(color);
          S32 div = ( i / 4 ) * 4;
          if ( div > 0 )
             tCol /= div;
          tCol.alpha = 1;
-         color = tCol;
+         color = tCol.toColorI();
 
          Point3F pnt;
          objToWorld.mulP( faceList[i].centroid, &pnt );
@@ -1298,12 +1298,12 @@ void ConvexShape::_renderDebug( ObjectRenderInst *ri, SceneRenderState *state, B
             objToWorld.mulP( p1 );
 
             ColorI color = faceColorsx[j % 4];
-            ColorF tCol = ColorF(color);
+            LinearColorF tCol = LinearColorF(color);
             S32 div = (j / 4) * 4;
             if (div > 0)
                tCol /= div;
             tCol.alpha = 1;
-            color = tCol;
+            color = tCol.toColorI();
             
             PrimBuild::color( color );
             PrimBuild::vertex3fv( p0 );            

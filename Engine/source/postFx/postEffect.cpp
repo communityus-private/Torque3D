@@ -280,7 +280,7 @@ PostEffect::PostEffect()
       mTargetViewport( PFXTargetViewport_TargetSize ),
       mTargetSize( Point2I::Zero ),
       mTargetFormat( GFXFormatR8G8B8A8 ),
-      mTargetClearColor( ColorF::BLACK ),
+      mTargetClearColor( LinearColorF::BLACK ),
       mOneFrameOnly( false ),
       mOnThisFrame( true ),
       mRTSizeSC( NULL ),
@@ -743,7 +743,7 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
    if (mAmbientColorSC->isValid() && state)
    {
-      const ColorF &sunlight = state->getAmbientLightColor();
+      const LinearColorF &sunlight = state->getAmbientLightColor();
       Point3F ambientColor( sunlight.red, sunlight.green, sunlight.blue );
 
       mShaderConsts->set( mAmbientColorSC, ambientColor );
@@ -764,7 +764,7 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
       if ( mWaterColorSC->isValid() )
       {
-         ColorF color( state->getSceneManager()->getWaterFogData().color );
+         LinearColorF color( state->getSceneManager()->getWaterFogData().color );
          mShaderConsts->set( mWaterColorSC, color );
       }
 

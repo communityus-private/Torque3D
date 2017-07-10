@@ -711,9 +711,9 @@ bool GBitmap::checkForTransparency()
 }
 
 //------------------------------------------------------------------------------
-ColorF GBitmap::sampleTexel(F32 u, F32 v) const
+LinearColorF GBitmap::sampleTexel(F32 u, F32 v) const
 {
-   ColorF col(0.5f, 0.5f, 0.5f);
+   LinearColorF col(0.5f, 0.5f, 0.5f);
    // normally sampling wraps all the way around at 1.0,
    // but locking doesn't support this, and we seem to calc
    // the uv based on a clamped 0 - 1...

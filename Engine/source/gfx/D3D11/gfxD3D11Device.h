@@ -143,6 +143,12 @@ protected:
 
    F32 mPixVersion;
 
+   D3D_FEATURE_LEVEL mFeatureLevel;
+   // Shader Model targers
+   String mVertexShaderTarget;
+   String mPixelShaderTarget;
+   // String for use with shader macros in the form of shader model version * 10
+   String mShaderModel;
    bool mDebugLayers;
 
    DXGI_SAMPLE_DESC mMultisampleDesc;
@@ -181,7 +187,7 @@ protected:
    virtual void setMatrix( GFXMatrixType /*mtype*/, const MatrixF &/*mat*/ ) { };
    virtual void setLightInternal(U32 /*lightStage*/, const GFXLightInfo /*light*/, bool /*lightEnable*/) { };
    virtual void setLightMaterialInternal(const GFXLightMaterial /*mat*/) { };
-   virtual void setGlobalAmbientInternal(ColorF /*color*/) { };
+   virtual void setGlobalAmbientInternal(LinearColorF /*color*/) { };
 
    // }
 
@@ -243,7 +249,7 @@ public:
 
    // Misc rendering control
    // {
-   virtual void clear( U32 flags, ColorI color, F32 z, U32 stencil );
+   virtual void clear( U32 flags, const LinearColorF& color, F32 z, U32 stencil );
    virtual bool beginSceneInternal();
    virtual void endSceneInternal();
 
@@ -251,6 +257,9 @@ public:
    virtual const RectI& getClipRect() const { return mClipRect; }
 
    // }   
+
+
+   
    /// @name Render Targets
    /// @{
    virtual void _updateRenderTargets();
@@ -307,6 +316,13 @@ public:
 
    // Default multisample parameters
    DXGI_SAMPLE_DESC getMultisampleType() const { return mMultisampleDesc; }
+
+   // Get feature level this gfx device supports
+   D3D_FEATURE_LEVEL getFeatureLevel() const { return mFeatureLevel; }
+   // Shader Model targers
+   const String &getVertexShaderTarget() const { return mVertexShaderTarget; }
+   const String &getPixelShaderTarget() const { return mPixelShaderTarget; }
+   const String &getShaderModel() const { return mShaderModel; }
 
    // grab the sampler map
    const SamplerMap &getSamplersMap() const { return mSamplersMap; }

@@ -1022,7 +1022,7 @@ void WaterObject::setShaderParams( SceneRenderState *state, BaseMatInstance *mat
    matParams->setSafe(paramHandles.mDistortionParamsSC, distortionParams );
 
    LightInfo *sun = LIGHTMGR->getSpecialLight(LightManager::slSunLightType);
-   const ColorF &sunlight = state->getAmbientLightColor();
+   const LinearColorF &sunlight = state->getAmbientLightColor();
    Point3F ambientColor = mEmissive ? Point3F::One : sunlight;
    matParams->setSafe(paramHandles.mAmbientColorSC, ambientColor );
    matParams->setSafe(paramHandles.mLightDirSC, sun->getDirection() );
@@ -1036,7 +1036,7 @@ void WaterObject::setShaderParams( SceneRenderState *state, BaseMatInstance *mat
    Point4F specularParams( mSpecularColor.red, mSpecularColor.green, mSpecularColor.blue, mSpecularPower );   
    if ( !mEmissive )
    {
-      const ColorF &sunColor = sun->getColor();
+      const LinearColorF &sunColor = sun->getColor();
       F32 brightness = sun->getBrightness();
       specularParams.x *= sunColor.red * brightness;
       specularParams.y *= sunColor.green * brightness;

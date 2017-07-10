@@ -654,7 +654,7 @@ bool ReflectProbeMatInstance::setupPass(SceneRenderState *state, const SceneData
    getMaterialParameters()->set(mLightMapParamsSC, lmParams->shadowDarkenColor);
    }
    else
-   getMaterialParameters()->set(mLightMapParamsSC, ColorF::WHITE);
+   getMaterialParameters()->set(mLightMapParamsSC, LinearColorF::WHITE);
    }*/
    bool bRetVal = Parent::setupPass(state, sgData);;
 

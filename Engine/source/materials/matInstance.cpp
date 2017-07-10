@@ -26,6 +26,7 @@
 #include "materials/materialManager.h"
 #include "materials/customMaterialDefinition.h"
 #include "materials/processedMaterial.h"
+#include "materials/processedFFMaterial.h"
 #include "materials/processedShaderMaterial.h"
 #include "materials/processedCustomMaterial.h"
 #include "materials/materialFeatureTypes.h"
@@ -140,7 +141,7 @@ void MatInstParameters::set(MaterialParameterHandle* handle, const Point4F& fv)
    MATINSTPARAMSET(handle, fv);
 }
 
-void MatInstParameters::set(MaterialParameterHandle* handle, const ColorF& fv)
+void MatInstParameters::set(MaterialParameterHandle* handle, const LinearColorF& fv)
 {
    MATINSTPARAMSET(handle, fv);
 }
@@ -341,16 +342,18 @@ bool MatInstance::processMaterial()
          }
          else
          {            
-            AssertWarn(custMat->mVersion == 0.0f, avar("Can't load CustomMaterial %s for %s", 
+            AssertWarn(custMat->mVersion == 0.0f, avar("Can't load CustomMaterial %s for %s, using generic FF fallback", 
                String(mMaterial->getName()).isEmpty() ? "Unknown" : mMaterial->getName(), custMat->mMapTo.c_str()));
-            return false;
+            mProcessedMaterial = new ProcessedFFMaterial(*mMaterial);
          }
       }
       else 
          mProcessedMaterial = new ProcessedCustomMaterial(*mMaterial);
    }
-   else
+   else if(GFX->getPixelShaderVersion() > 0.001)
       mProcessedMaterial = getShaderMaterial();
+   else
+      mProcessedMaterial = new ProcessedFFMaterial(*mMaterial);
 
    if (mProcessedMaterial)
    {

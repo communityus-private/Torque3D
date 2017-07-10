@@ -1040,14 +1040,14 @@ void TerrCell::getRenderPrimitive(  GFXPrimitive *prim,
 
 void TerrCell::renderBounds() const
 {
-   ColorF color;
+   LinearColorF color;
    color.interpolate( ColorI::RED, ColorI::GREEN, (F32)mLevel / 3.0f );
 
    GFXStateBlockDesc desc;
    desc.setZReadWrite( true, false );
    desc.fillMode = GFXFillWireframe;
    
-   GFX->getDrawUtil()->drawCube( desc, mBounds, color );
+   GFX->getDrawUtil()->drawCube( desc, mBounds, color.toColorI());
 }
 
 void TerrCell::preloadMaterials()
@@ -1060,7 +1060,8 @@ void TerrCell::preloadMaterials()
       TerrainCellMaterial *material = getMaterial();
       material->getReflectMat();
 
-      if ( dStrcmp( LIGHTMGR->getId(), "BLM" ) != 0)
+      if (  GFX->getPixelShaderVersion() > 2.0f && 
+            dStrcmp( LIGHTMGR->getId(), "BLM" ) != 0)
          material->getDeferredMat();
    }
 
