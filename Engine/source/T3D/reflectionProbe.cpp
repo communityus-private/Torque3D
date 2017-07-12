@@ -287,23 +287,40 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
       mathWrite(*stream, getScale());
    }
 
-   stream->write((U32)mProbeShapeType);
+   if (stream->writeFlag(mask & ShapeTypeMask))
+   {
+      stream->write((U32)mProbeShapeType);
+   }
 
-   stream->write((U32)mIndrectLightingModeType);
-   stream->write(mAmbientColor);
+   if (stream->writeFlag(mask & UpdateMask))
+   {
+      stream->write(mAmbientColor);
+      stream->writeFloat(mIntensity, 7);
+      stream->write(mRadius);
+   }
 
-   stream->write((U32)mReflectionModeType);
+   if (stream->writeFlag(mask & BakeInfoMask))
+   {
+      stream->write(mReflectionPath);
+      stream->write(mProbeUniqueID);
+   }
 
-   stream->writeFloat(mIntensity, 7);
-   stream->write(mRadius);
+   if (stream->writeFlag(mask & EnabledMask))
+   {
+      stream->writeFlag(mEnabled);
+   }
 
-   stream->write(mReflectionPath);
-   stream->write(mProbeUniqueID);
+   if (stream->writeFlag(mask & ModeMask))
+   {
+      stream->write((U32)mIndrectLightingModeType);
+      stream->write((U32)mReflectionModeType);
+   }
 
-   stream->writeFlag(mEnabled);
-
-   stream->writeFlag(mUseCubemap);
-   stream->write(mCubemapName);
+   if (stream->writeFlag(mask & CubemapMask))
+   {
+      stream->writeFlag(mUseCubemap);
+      stream->write(mCubemapName);
+   }
 
    return retMask;
 }
@@ -321,39 +338,64 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
       setTransform(mObjToWorld);
    }
 
-   U32 shapeType = ProbeRenderInst::Sphere;
-   stream->read(&shapeType);
-   mProbeShapeType = (ProbeRenderInst::ProbeShapeType)shapeType;
-
-   U32 indirectModeType = AmbientColor;
-   stream->read(&indirectModeType);
-   if ((IndrectLightingModeType)indirectModeType != NoIndirect)
+   if (stream->readFlag())  // ShapeTypeMask
    {
-      mIndrectLightingModeType = (IndrectLightingModeType)indirectModeType;
+      U32 shapeType = ProbeRenderInst::Sphere;
+      stream->read(&shapeType);
+
+      mProbeShapeType = (ProbeRenderInst::ProbeShapeType)shapeType;
+      createGeometry();
    }
 
-   stream->read(&mAmbientColor);
+   if (stream->readFlag())  // UpdateMask
+   {
+      stream->read(&mAmbientColor);
+      mIntensity = stream->readFloat(7);
+      stream->read(&mRadius);
+   }
 
-   U32 reflectModeType = BakedCubemap;
-   stream->read(&reflectModeType);
-   mReflectionModeType = (ReflectionModeType)reflectModeType;
+   if (stream->readFlag())  // BakeInfoMask
+   {
+      stream->read(&mReflectionPath);
+      stream->read(&mProbeUniqueID);
+   }
 
-   mIntensity = stream->readFloat(7);
-   stream->read(&mRadius);
+   if (stream->readFlag())  // EnabledMask
+   {
+      mEnabled = stream->readFlag();
+   }
 
-   stream->read(&mReflectionPath);
-   stream->read(&mProbeUniqueID);
+   bool isMaterialDirty = false;
 
-   mEnabled = stream->readFlag();
+   if (stream->readFlag())  // ModeMask
+   {
+      U32 indirectModeType = AmbientColor;
+      stream->read(&indirectModeType);
+      mIndrectLightingModeType = (IndrectLightingModeType)indirectModeType;
 
-   mUseCubemap = stream->readFlag();
-   stream->read(&mCubemapName);
+      U32 reflectModeType = BakedCubemap;
+      stream->read(&reflectModeType);
+      mReflectionModeType = (ReflectionModeType)reflectModeType;
 
-   if (mCubemapName.isNotEmpty() && mReflectionModeType == ReflectionModeType::StaticCubemap)
-      Sim::findObject(mCubemapName, mCubemap);
+      isMaterialDirty = true;
+   }
 
-   createGeometry();
-   updateMaterial();
+   if (stream->readFlag())  // CubemapMask
+   {
+      mUseCubemap = stream->readFlag();
+
+      stream->read(&mCubemapName);
+
+      if (mCubemapName.isNotEmpty() && mReflectionModeType == ReflectionModeType::StaticCubemap)
+         Sim::findObject(mCubemapName, mCubemap);
+
+      isMaterialDirty = true;
+   }
+
+   updateProbeParams();
+
+   if(isMaterialDirty)
+      updateMaterial();
 }
 
 void ReflectionProbe::createGeometry()
@@ -378,10 +420,39 @@ void ReflectionProbe::createGeometry()
 // Object Rendering
 //-----------------------------------------------------------------------------
 
-void ReflectionProbe::updateMaterial()
+void ReflectionProbe::updateProbeParams()
 {
    mProbeInfo->setPosition(getPosition());
 
+   //Update the bounds
+   mObjBox.minExtents.set(-1, -1, -1);
+   mObjBox.maxExtents.set(1, 1, 1);
+   mObjScale.set(mRadius / 2, mRadius / 2, mRadius / 2);
+
+   // Skip our transform... it just dirties mask bits.
+   Parent::setTransform(mObjToWorld);
+
+   resetWorldBox();
+
+   mProbeInfo->mBounds = mWorldBox;
+
+   mProbeInfo->mIntensity = mIntensity;
+   mProbeInfo->mRadius = mRadius;
+
+   if (mIndrectLightingModeType == AmbientColor)
+   {
+      mProbeInfo->mAmbient = mAmbientColor;
+   }
+   else
+   {
+      mProbeInfo->mAmbient = LinearColorF(0, 0, 0, 0);
+   }
+
+   mProbeInfo->mProbeShapeType = mProbeShapeType;
+}
+
+void ReflectionProbe::updateMaterial()
+{
    if (mReflectionModeType != DynamicCubemap)
    {
       if (!mCubemap)
@@ -420,25 +491,7 @@ void ReflectionProbe::updateMaterial()
       mProbeInfo->mCubemap = &mDynamicCubemap;
    }
 
-   mProbeInfo->mIntensity = mIntensity;
-   mProbeInfo->mRadius = mRadius;
-
-   if (mIndrectLightingModeType == AmbientColor)
-   {
-      mProbeInfo->mAmbient = mAmbientColor;
-   }
-   else
-   {
-      mProbeInfo->mAmbient = LinearColorF(0, 0, 0, 0);
-   }
-
-   mProbeInfo->mProbeShapeType = mProbeShapeType;
-
-   mProbeInfo->mBounds = mWorldBox;
-
    calculateSHTerms();
-
-   bool tump = true;
 }
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
@@ -569,6 +622,7 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    else
    {
       Box3F cube(mRadius);
+      cube.setCenter(getPosition());
       draw->drawCube(desc, cube, color);
    }
 }
@@ -1067,5 +1121,4 @@ DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath, S32 resoluti
    "@brief returns true if control object is inside the fog\n\n.")
 {
    object->bake(outputPath, resolution);
-   //object->renderFrame(false);
 }
