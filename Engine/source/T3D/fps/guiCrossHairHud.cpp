@@ -47,7 +47,8 @@ class GuiCrossHairHud : public GuiBitmapCtrl
    LinearColorF   mDamageFrameColor;
    Point2I  mDamageRectSize;
    Point2I  mDamageOffset;
-
+   PlatformTimer *   mFrameTime;
+   bool mWasInteracting;
 protected:
    void drawDamage(Point2I offset, F32 damage, F32 opacity);
 
@@ -55,7 +56,7 @@ public:
    GuiCrossHairHud();
 
    void onRender( Point2I, const RectI &);
-   bool testGuiInteraction();
+   void testGuiInteraction();
    static void initPersistFields();
    DECLARE_CONOBJECT( GuiCrossHairHud );
    DECLARE_CATEGORY( "Gui Game" );
@@ -96,7 +97,9 @@ GuiCrossHairHud::GuiCrossHairHud()
    mDamageFillColor.set( 0.0f, 1.0f, 0.0f, 1.0f );
    mDamageFrameColor.set( 1.0f, 0.6f, 0.0f, 1.0f );
    mDamageRectSize.set(50, 4);
-   mDamageOffset.set(0,32);
+   mDamageOffset.set(0, 32);
+   mFrameTime = PlatformTimer::create();
+   mWasInteracting = false;
 }
 
 void GuiCrossHairHud::initPersistFields()
@@ -112,17 +115,20 @@ void GuiCrossHairHud::initPersistFields()
 
 
 //-----------------------------------------------------------------------------
-bool GuiCrossHairHud::testGuiInteraction()
+void GuiCrossHairHud::testGuiInteraction()
 
 {
+   if (mFrameTime->getElapsedMs() < 16)
+      return;
+   mFrameTime->reset();
    bool interacting = false;
    // Must have a connection and player control object
    GameConnection* conn = GameConnection::getConnectionToServer();
    if (!conn)
-      return false;
+      return;
    ShapeBase* control = dynamic_cast<ShapeBase*>(conn->getControlObject());
    if (!control || !(control->getTypeMask() & ObjectMask) || !conn->isFirstPerson())
-      return false;
+      return;
    
    // Get control camera info
    MatrixF cam;
@@ -155,7 +161,7 @@ bool GuiCrossHairHud::testGuiInteraction()
    // Restore control object collision
    control->enableCollision();
    GuiTextureCanvas::setInteract(interacting, &info);
-   return interacting;
+   mWasInteracting = interacting;
 }
 
 void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
@@ -169,7 +175,8 @@ void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
       return;
 
    //if we're interacting with a gui, skip rendering
-   if (testGuiInteraction())
+   testGuiInteraction();
+   if (mWasInteracting)
       return;
 
    // Parent render.
@@ -220,7 +227,7 @@ void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
 */
 void GuiCrossHairHud::drawDamage(Point2I offset, F32 damage, F32 opacity)
 {
-   mDamageFillColor.alpha = mDamageFrameColor.alpha = opacity;
+   //mDamageFillColor.alpha = mDamageFrameColor.alpha = opacity;
 
    // Damage should be 0->1 (0 being no damage,or healthy), but
    // we'll just make sure here as we flip it.

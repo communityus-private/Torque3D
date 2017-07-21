@@ -137,7 +137,7 @@ void GuiTextureCanvas::setControl( GuiControl* control )
       mTextureHandle.set(  mGuiControl->getExtent().x, 
                            mGuiControl->getExtent().y, 
                            GFXFormatR8G8B8A8, 
-                           &GFXDefaultRenderTargetProfile, 
+                           &GFXRenderTargetProfile,
                            "" );
    }
 }
@@ -148,7 +148,7 @@ void GuiTextureCanvas::setCursorBitmap(const char *name)
    mCursorBitmap = StringTable->insert(name);
 
    if (*mCursorBitmap)
-      mCursorTextureHandle = GFXTexHandle(mCursorBitmap, &GFXDefaultStaticDiffuseProfile, "Adescription");
+      mCursorTextureHandle = GFXTexHandle(mCursorBitmap, &GFXStaticTextureProfile, "Adescription");
    else
       // Reset handles if UI object is hidden
       mCursorTextureHandle = NULL;
@@ -286,6 +286,7 @@ void GuiTextureCanvas::setInteract(bool interact, RayInfo* info)
             Point2F scaledCurPos = Point2F(info->mUVtexCoord.x * extent.x, info->mUVtexCoord.y * extent.y);
             sInteractingWith = mat->guiTexCanvas->getId();
             gCurPos = scaledCurPos;
+            mat->guiTexCanvas->refreshMouseControl();
          }
       }
    }
