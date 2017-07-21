@@ -63,28 +63,28 @@ GuiShapeEdPreview::GuiShapeEdPreview()
 :  mOrbitDist( 5.0f ),
    mMoveSpeed ( 1.0f ),
    mZoomSpeed ( 1.0f ),
-   mModel( NULL ),
    mGridDimension( 30, 30 ),
+   mModel( NULL ),
    mRenderGhost( false ),
    mRenderNodes( false ),
    mRenderBounds( false ),
    mRenderObjBox( false ),
    mRenderMounts( true ),
    mSunDiffuseColor( 255, 255, 255, 255 ),
-   mSunAmbientColor( 140, 140, 140, 255 ),
    mSelectedNode( -1 ),
+   mSunAmbientColor( 140, 140, 140, 255 ),
    mHoverNode( -1 ),
    mSelectedObject( -1 ),
-   mSelectedObjDetail( 0 ),
    mUsingAxisGizmo( false ),
-   mGizmoDragID( 0 ),
+   mSelectedObjDetail( 0 ),
    mEditingSun( false ),
+   mGizmoDragID( 0 ),
    mTimeScale( 1.0f ),
    mActiveThread( -1 ),
-   mLastRenderTime( 0 ),
    mFakeSun( NULL ),
-   mSunRot( 45.0f, 0, 135.0f ),
+   mLastRenderTime( 0 ),
    mCameraRot( 0, 0, 3.9f ),
+   mSunRot( 45.0f, 0, 135.0f ),
    mRenderCameraAxes( false ),
    mOrbitPos( 0, 0, 0 ),
    mFixedDetail( true ),
@@ -1433,7 +1433,7 @@ void GuiShapeEdPreview::renderWorld(const RectI &updateRect)
 
          GFXStateBlockDesc desc;
          desc.fillMode = GFXFillWireframe;
-         GFX->getDrawUtil()->drawCube( desc, boxSize, mModel->getShape()->center, ColorF::WHITE );
+         GFX->getDrawUtil()->drawCube( desc, boxSize, mModel->getShape()->center, ColorI::WHITE );
       }
 
       // Render the selected object bounding box
@@ -1450,7 +1450,7 @@ void GuiShapeEdPreview::renderWorld(const RectI &updateRect)
             const Box3F& bounds = mesh->getBounds();
             GFXStateBlockDesc desc;
             desc.fillMode = GFXFillWireframe;
-            GFX->getDrawUtil()->drawCube( desc, bounds.getExtents(), bounds.getCenter(), ColorF::RED );
+            GFX->getDrawUtil()->drawCube( desc, bounds.getExtents(), bounds.getCenter(), ColorI::RED );
 
             GFX->popWorldMatrix();
          }
@@ -1490,9 +1490,9 @@ void GuiShapeEdPreview::renderGui(Point2I offset, const RectI& updateRect)
    if ( mModel )
    {
       if ( mRenderNodes && mHoverNode != -1 )
-         renderNodeName( mHoverNode, ColorF::WHITE );
+         renderNodeName( mHoverNode, LinearColorF::WHITE );
       if ( mSelectedNode != -1 )
-         renderNodeName( mSelectedNode, ColorF::WHITE );
+         renderNodeName( mSelectedNode, LinearColorF::WHITE );
    }
 }
 
@@ -1530,7 +1530,7 @@ void GuiShapeEdPreview::renderSunDirection() const
    if ( mEditingSun )
    {
       // Render four arrows aiming in the direction of the sun's light
-      ColorI color( mFakeSun->getColor() );
+      ColorI color = LinearColorF( mFakeSun->getColor()).toColorI();
       F32 length = mModel->getShape()->bounds.len() * 0.8f;
 
       // Get the sun's vectors
@@ -1587,18 +1587,18 @@ void GuiShapeEdPreview::renderNodes() const
          if ( ( i == mSelectedNode ) || ( i == mHoverNode ) )
             continue;   
 
-         renderNodeAxes( i, ColorF::WHITE );
+         renderNodeAxes( i, LinearColorF::WHITE );
       }
 
       // Render the hovered node
       if ( mHoverNode != -1 )
-         renderNodeAxes( mHoverNode, ColorF::GREEN );
+         renderNodeAxes( mHoverNode, LinearColorF::GREEN );
    }
 
    // Render the selected node (even if mRenderNodes is false)
    if ( mSelectedNode != -1 )
    {
-      renderNodeAxes( mSelectedNode, ColorF::GREEN );
+      renderNodeAxes( mSelectedNode, LinearColorF::GREEN );
 
       const MatrixF& nodeMat = mModel->mNodeTransforms[mSelectedNode];
       mGizmo->set( nodeMat, nodeMat.getPosition(), Point3F::One);
@@ -1606,7 +1606,7 @@ void GuiShapeEdPreview::renderNodes() const
    }
 }
 
-void GuiShapeEdPreview::renderNodeAxes(S32 index, const ColorF& nodeColor) const
+void GuiShapeEdPreview::renderNodeAxes(S32 index, const LinearColorF& nodeColor) const
 {
    if(mModel->mNodeTransforms.size() <= index || index < 0)
       return;
@@ -1623,15 +1623,15 @@ void GuiShapeEdPreview::renderNodeAxes(S32 index, const ColorF& nodeColor) const
 
    GFX->pushWorldMatrix();
    GFX->multWorld( mModel->mNodeTransforms[index] );
-
-   GFX->getDrawUtil()->drawCube( desc, xAxis * scale, Point3F::Zero, nodeColor );
-   GFX->getDrawUtil()->drawCube( desc, yAxis * scale, Point3F::Zero, nodeColor );
-   GFX->getDrawUtil()->drawCube( desc, zAxis * scale, Point3F::Zero, nodeColor );
+   const ColorI color = LinearColorF(nodeColor).toColorI();
+   GFX->getDrawUtil()->drawCube( desc, xAxis * scale, Point3F::Zero, color );
+   GFX->getDrawUtil()->drawCube( desc, yAxis * scale, Point3F::Zero, color );
+   GFX->getDrawUtil()->drawCube( desc, zAxis * scale, Point3F::Zero, color );
 
    GFX->popWorldMatrix();
 }
 
-void GuiShapeEdPreview::renderNodeName(S32 index, const ColorF& textColor) const
+void GuiShapeEdPreview::renderNodeName(S32 index, const LinearColorF& textColor) const
 {
    if(index < 0 || index >= mModel->getShape()->nodes.size() || index >= mProjectedNodes.size())
       return;
@@ -1640,7 +1640,7 @@ void GuiShapeEdPreview::renderNodeName(S32 index, const ColorF& textColor) const
 
    Point2I pos( mProjectedNodes[index].x, mProjectedNodes[index].y + sNodeRectSize + 6 );
 
-   GFX->getDrawUtil()->setBitmapModulation( textColor );
+   GFX->getDrawUtil()->setBitmapModulation( LinearColorF(textColor).toColorI());
    GFX->getDrawUtil()->drawText( mProfile->mFont, pos, nodeName.c_str() );
 }
 

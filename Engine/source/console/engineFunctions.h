@@ -80,7 +80,7 @@ struct EngineFunctionDefaultArguments
 
 // Need byte-aligned packing for the default argument structures.
 #ifdef _WIN64
-#pragma pack( push, 4 )
+#pragma pack( push, 8 )
 #else
 #pragma pack( push, 1 )
 #endif
@@ -108,7 +108,17 @@ private:
       std::tie(std::get<I + (sizeof...(ArgTs) - sizeof...(TailTs))>(args)...) = defaultArgs;
    }
    
+#if _MSC_VER == 1910
+   template<typename ...TailTs>
+   struct DodgyVCHelper
+   {
+      using type = typename std::enable_if<sizeof...(TailTs) <= sizeof...(ArgTs), decltype(mArgs)>::type;
+   };
+
+   template<typename ...TailTs> using MaybeSelfEnabled = typename DodgyVCHelper<TailTs...>::type;
+#else
    template<typename ...TailTs> using MaybeSelfEnabled = typename std::enable_if<sizeof...(TailTs) <= sizeof...(ArgTs), decltype(mArgs)>::type;
+#endif
    
    template<typename ...TailTs> static MaybeSelfEnabled<TailTs...> tailInit(TailTs ...tail) {
       std::tuple<DefVST<ArgTs>...> argsT;

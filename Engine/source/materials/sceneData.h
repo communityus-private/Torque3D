@@ -49,9 +49,9 @@ struct SceneData
       /// @see RenderGlowMgr
       GlowBin,
 
-      /// The prepass render bin.
-      /// @RenderPrePassMgr
-      PrePassBin,
+      /// The deferred render bin.
+      /// @RenderDeferredMgr
+      DeferredBin,
    };
 
    /// This defines when we're rendering a special bin 
@@ -71,13 +71,13 @@ struct SceneData
    LightInfo* lights[8];
 
    ///
-   ColorF ambientLightColor;
+   LinearColorF ambientLightColor;
 
    // fog      
    F32 fogDensity;
    F32 fogDensityOffset;
    F32 fogHeightFalloff;
-   ColorF fogColor;
+   LinearColorF fogColor;
   
    // misc
    const MatrixF *objTrans;

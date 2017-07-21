@@ -103,7 +103,6 @@ Var* TerrainFeatGLSL::_getInDetailCoord( Vector<ShaderComponent*> &componentList
       inDet->setName( name );
       inDet->setStructName( "IN" );
       inDet->setType( "vec4" );
-      inDet->mapsToSampler = true;
    }
    
    return inDet;
@@ -122,7 +121,6 @@ Var* TerrainFeatGLSL::_getInMacroCoord( Vector<ShaderComponent*> &componentList 
       inDet->setName( name );
       inDet->setStructName( "IN" );
       inDet->setType( "vec4" );
-      inDet->mapsToSampler = true;
    }
 
    return inDet;
@@ -219,7 +217,6 @@ void TerrainBaseMapFeatGLSL::processVert( Vector<ShaderComponent*> &componentLis
    outTex->setName( "outTexCoord" );
    outTex->setStructName( "OUT" );
    outTex->setType( "vec3" );
-   outTex->mapsToSampler = true;
    meta->addStatement( new GenOp( "   @.xy = @.xy;\r\n", outTex, inTex ) );
 
    // If this shader has a side projected layer then we 
@@ -253,7 +250,7 @@ void TerrainBaseMapFeatGLSL::processPix(  Vector<ShaderComponent*> &componentLis
                                           const MaterialFeatureData &fd )
 {
    // grab connector texcoord register
-   Var *texCoord = getInTexCoord( "texCoord", "vec3", true, componentList );
+   Var *texCoord = getInTexCoord( "texCoord", "vec3", componentList );
 
    // create texture var
    Var *diffuseMap = new Var;
@@ -269,7 +266,6 @@ void TerrainBaseMapFeatGLSL::processPix(  Vector<ShaderComponent*> &componentLis
    baseColor->setType( "vec4" );
    baseColor->setName( "baseColor" );
    meta->addStatement( new GenOp( "   @ = tex2D( @, @.xy );\r\n", new DecOp( baseColor ), diffuseMap, texCoord ) );
-   meta->addStatement(new GenOp("   @ = toLinear(@);\r\n", baseColor, baseColor));
 
   ShaderFeature::OutputTarget target = ShaderFeature::DefaultTarget;
 
@@ -363,7 +359,6 @@ void TerrainDetailMapFeatGLSL::processVert(  Vector<ShaderComponent*> &component
    outTex->setName( String::ToString( "detCoord%d", detailIndex ) );
    outTex->setStructName( "OUT" );
    outTex->setType( "vec4" );
-   outTex->mapsToSampler = true;
 
    // Get the detail scale and fade info.
    Var *detScaleAndFade = new Var;
@@ -578,7 +573,7 @@ void TerrainDetailMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
       Var *normalMap = _getNormalMapTex();
 
       // Call the library function to do the rest.
-      if (fd.features.hasFeature(MFT_IsDXTnm, detailIndex))
+      if (fd.features.hasFeature(MFT_IsBC3nm, detailIndex))
       {
          meta->addStatement(new GenOp("   @.xy += parallaxOffsetDxtnm( @, @.xy, @, @.z * @ );\r\n",
          inDet, normalMap, inDet, negViewTS, detailInfo, detailBlend));
@@ -714,7 +709,6 @@ void TerrainMacroMapFeatGLSL::processVert(  Vector<ShaderComponent*> &componentL
    outTex->setName( String::ToString( "macroCoord%d", detailIndex ) );
    outTex->setStructName( "OUT" );
    outTex->setType( "vec4" );
-   outTex->mapsToSampler = true;
 
    // Get the detail scale and fade info.
    Var *detScaleAndFade = new Var;
@@ -911,8 +905,8 @@ U32 TerrainMacroMapFeatGLSL::getOutputTargets( const MaterialFeatureData &fd ) c
 void TerrainNormalMapFeatGLSL::processVert(  Vector<ShaderComponent*> &componentList, 
                                              const MaterialFeatureData &fd )
 {
-   // We only need to process normals during the prepass.
-   if ( !fd.features.hasFeature( MFT_PrePassConditioner ) )
+   // We only need to process normals during the deferred.
+   if ( !fd.features.hasFeature( MFT_DeferredConditioner ) )
       return;
 
    MultiLine *meta = new MultiLine;
@@ -933,7 +927,7 @@ void TerrainNormalMapFeatGLSL::processPix(   Vector<ShaderComponent*> &component
    Var *viewToTangent = getInViewToTangent( componentList );
 
    // This var is read from GBufferConditionerGLSL and 
-   // used in the prepass output.
+   // used in the deferred output.
    Var *gbNormal = (Var*)LangElement::find( "gbNormal" );
    if ( !gbNormal )
    {
@@ -1004,8 +998,8 @@ ShaderFeature::Resources TerrainNormalMapFeatGLSL::getResources( const MaterialF
 {
    Resources res;
 
-   // We only need to process normals during the prepass.
-   if ( fd.features.hasFeature( MFT_PrePassConditioner ) )
+   // We only need to process normals during the deferred.
+   if ( fd.features.hasFeature( MFT_DeferredConditioner ) )
    {
       // If this is the first normal map and there
       // are no parallax features then we will 

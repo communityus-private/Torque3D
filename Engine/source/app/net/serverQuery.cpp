@@ -223,8 +223,7 @@ struct ServerFilter
       Dedicated         = BIT(0),
       NotPassworded     = BIT(1),
       Linux             = BIT(2),
-      CurrentVersion    = BIT(7),
-      NotXenon          = BIT(6)
+      CurrentVersion    = BIT(6)
    };
 
    enum // Region mask flags
@@ -1740,9 +1739,7 @@ static void handleGameMasterInfoRequest( const NetAddress* address, U32 key, U8 
 #if defined(TORQUE_OS_LINUX) || defined(TORQUE_OS_OPENBSD)
       temp8 |= ServerInfo::Status_Linux;
 #endif
-#if defined(TORQUE_OS_XENON)
-      temp8 |= ServerInfo::Status_Xenon;
-#endif
+
       if ( Con::getBoolVariable( "Server::Dedicated" ) )
          temp8 |= ServerInfo::Status_Dedicated;
       if ( dStrlen( Con::getVariable( "pref::Server::Password" ) ) > 0 )
@@ -2004,9 +2001,7 @@ static void handleGameInfoRequest( const NetAddress* address, U32 key, U8 flags 
 #if defined(TORQUE_OS_LINUX) || defined(TORQUE_OS_OPENBSD)
       status |= ServerInfo::Status_Linux;
 #endif
-#if defined(TORQUE_OS_XENON)
-      status |= ServerInfo::Status_Xenon;
-#endif
+
       if ( Con::getBoolVariable( "Server::Dedicated" ) )
          status |= ServerInfo::Status_Dedicated;
       if ( dStrlen( Con::getVariable( "pref::Server::Password" ) ) )
@@ -2119,12 +2114,6 @@ static void handleGameInfoResponse( const NetAddress* address, BitStream* stream
          return;
       }
 
-      if ( sActiveFilter.filterFlags & ServerFilter::NotXenon && si->isXenon() )
-      {
-         Con::printf( "Server %s filtered out by no-xenon flag.", addrString );
-         removeServerInfo( address );
-         return;
-      }
    }
    si->status.set( ServerInfo::Status_Responded );
 

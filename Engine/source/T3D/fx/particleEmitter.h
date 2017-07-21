@@ -39,10 +39,6 @@
 #include "T3D/fx/particle.h"
 #endif
 
-#if defined(TORQUE_OS_XENON)
-#include "gfx/D3D9/360/gfx360MemVertexBuffer.h"
-#endif
-
 class RenderPassManager;
 class ParticleData;
 
@@ -128,11 +124,7 @@ class ParticleEmitter : public GameBase
 
   public:
 
-#if defined(TORQUE_OS_XENON)
-     typedef GFXVertexPCTT ParticleVertexType;
-#else
-     typedef GFXVertexPCT ParticleVertexType;
-#endif
+   typedef GFXVertexPCT ParticleVertexType;
 
    ParticleEmitter();
    ~ParticleEmitter();
@@ -142,7 +134,7 @@ class ParticleEmitter : public GameBase
    static Point3F mWindVelocity;
    static void setWindVelocity( const Point3F &vel ){ mWindVelocity = vel; }
    
-   ColorF getCollectiveColor();
+   LinearColorF getCollectiveColor();
 
    /// Sets sizes of particles based on sizelist provided
    /// @param   sizeList   List of sizes
@@ -150,7 +142,7 @@ class ParticleEmitter : public GameBase
 
    /// Sets colors for particles based on color list provided
    /// @param   colorList   List of colors
-   void setColors( ColorF *colorList );
+   void setColors( LinearColorF *colorList );
 
    ParticleEmitterData *getDataBlock(){ return mDataBlock; }
    bool onNewDataBlock( GameBaseData *dptr, bool reload );
@@ -204,16 +196,16 @@ class ParticleEmitter : public GameBase
    inline void setupBillboard( Particle *part,
                                Point3F *basePts,
                                const MatrixF &camView,
-                               const ColorF &ambientColor,
+                               const LinearColorF &ambientColor,
                                ParticleVertexType *lVerts );
 
    inline void setupOriented( Particle *part,
                               const Point3F &camPos,
-                              const ColorF &ambientColor,
+                              const LinearColorF &ambientColor,
                               ParticleVertexType *lVerts );
 
    inline void setupAligned(  const Particle *part, 
-                              const ColorF &ambientColor,
+                              const LinearColorF &ambientColor,
                               ParticleVertexType *lVerts );
 
    /// Updates the bounding box for the particle system
@@ -230,7 +222,7 @@ class ParticleEmitter : public GameBase
    // Rendering
   protected:
    void prepRenderImage( SceneRenderState *state );
-   void copyToVB( const Point3F &camPos, const ColorF &ambientColor );
+   void copyToVB( const Point3F &camPos, const LinearColorF &ambientColor );
 
    // PEngine interface
   private:
@@ -262,13 +254,9 @@ class ParticleEmitter : public GameBase
    S32       mElapsedTimeMS;
 
    F32       sizes[ ParticleData::PDC_NUM_KEYS ];
-   ColorF    colors[ ParticleData::PDC_NUM_KEYS ];
+   LinearColorF    colors[ ParticleData::PDC_NUM_KEYS ];
 
-#if defined(TORQUE_OS_XENON)
-   GFX360MemVertexBufferHandle<ParticleVertexType> mVertBuff;
-#else
    GFXVertexBufferHandle<ParticleVertexType> mVertBuff;
-#endif
 
    //   These members are for implementing a link-list of the active emitter 
    //   particles. Member part_store contains blocks of particles that can be
