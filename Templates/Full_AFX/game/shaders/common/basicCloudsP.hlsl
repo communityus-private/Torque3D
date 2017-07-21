@@ -20,7 +20,6 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "shaderModel.hlsl"
 #include "torque.hlsl"
 
 struct ConnectData

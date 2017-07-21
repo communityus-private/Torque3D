@@ -141,11 +141,11 @@ void afxPhraseEffectData::initPersistFields()
 {
   addField("duration",    TypeF32,      myOffset(duration),
     "Specifies a duration for the phrase-effect. If set to infinity, the phrase-effect "
-    "needs to have a phraseType of “continuous. Set infinite duration using "
+    "needs to have a phraseType of continuous. Set infinite duration using "
     "$AFX::INFINITE_TIME.");
   addField("numLoops",    TypeS32,      myOffset(n_loops),
     "Specifies the number of times the phrase-effect should loop. If set to infinity, "
-    "the phrase-effect needs to have a phraseType of “continuous”. Set infinite looping "
+    "the phrase-effect needs to have a phraseType of continuous. Set infinite looping "
     "using $AFX::INFINITE_REPEATS.");
   addField("triggerMask", TypeS32,      myOffset(trigger_mask),
     "Sets which bits to consider in the current trigger-state which consists of 32 "

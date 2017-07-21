@@ -110,7 +110,7 @@ ConnectData main( VertData IN )
    OUT.posPreWave = mul( texGen, OUT.posPreWave );
       
    // Calculate the undulation amount for this vertex.   
-   float2 undulatePos = mul( modelMat, float4( IN.undulateData.xy, 0, 1 ) );
+   float2 undulatePos = mul( modelMat, float4( IN.undulateData.xy, 0, 1 )).xy;
    //if ( undulatePos.x < 0 )
    //   undulatePos = IN.position.xy;
    

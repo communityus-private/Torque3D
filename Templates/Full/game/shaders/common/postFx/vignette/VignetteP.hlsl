@@ -28,11 +28,7 @@ uniform float Vmin;
 
 float4 main(PFXVertToPix IN) : TORQUE_TARGET0
 {
-<<<<<<< HEAD
-   float4 base = tTORQUE_TEX2D(backBuffer, IN.uv0);  
-=======
    float4 base = TORQUE_TEX2D(backBuffer, IN.uv0);  
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
    float dist = distance(IN.uv0, float2(0.5,0.5));
    base.rgb *= smoothstep(Vmax, Vmin, dist);
    return base;

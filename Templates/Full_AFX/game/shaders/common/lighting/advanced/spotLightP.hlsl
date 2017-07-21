@@ -20,23 +20,25 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "../../shaderModel.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
+
 #include "farFrustumQuad.hlsl"
 #include "lightingUtils.hlsl"
 #include "../../lighting.hlsl"
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
 #include "../../torque.hlsl"
-#include "../../shaderModelAutoGen.hlsl"
 
 struct ConvexConnectP
 {
-   float4 hpos : TORQUE_POSITION;
+   float4 pos : TORQUE_POSITION;
    float4 wsEyeDir : TEXCOORD0;
    float4 ssPos : TEXCOORD1;
    float4 vsEyeDir : TEXCOORD2;
 };
 
-TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
+TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,2);
 
@@ -46,6 +48,10 @@ TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap,2);
 TORQUE_UNIFORM_SAMPLER2D(cookieMap, 3);
 
 #endif
+
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
 
 uniform float4 rtParams0;
 
@@ -73,10 +79,29 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
    float3 ssPos = IN.ssPos.xyz / IN.ssPos.w;
    float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
    
+   // Emissive.
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, uvScene );   
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
+   {
+       return float4(0.0, 0.0, 0.0, 0.0);
+   }
+
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, uvScene );
+   float3 subsurface = float3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = float3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = float3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
-   float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, uvScene );
-   float3 normal = prepassSample.rgb;
-   float depth = prepassSample.a;
+   float4 deferredSample = TORQUE_DEFERRED_UNCONDITION( deferredBuffer, uvScene );
+   float3 normal = deferredSample.rgb;
+   float depth = deferredSample.a;
    
    // Eye ray - Eye -> Pixel
    float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
@@ -180,5 +205,5 @@ float4 main(   ConvexConnectP IN ) : TORQUE_TARGET0
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   return lightinfoCondition( lightColorOut, Sat_NL_Att, specular, addToResult );
+   return AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }

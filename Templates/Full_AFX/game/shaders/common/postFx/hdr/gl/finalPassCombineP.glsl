@@ -23,6 +23,7 @@
 #include "../../../gl/torque.glsl"
 #include "../../../gl/hlslCompat.glsl"
 #include "../../gl/postFX.glsl"
+#include "shadergen:/autogenConditioners.h"
 
 uniform sampler2D sceneTex;
 uniform sampler2D luminanceTex;
@@ -42,9 +43,10 @@ uniform vec3 g_fBlueShiftColor;
 uniform float g_fBloomScale;
 
 uniform float g_fOneOverGamma;
+uniform float Brightness;
+uniform float Contrast;
 
 out vec4 OUT_col;
-
 
 void main()
 {
@@ -72,6 +74,9 @@ void main()
       bloom.rgb = mix( bloom.rgb, rodColor, coef );
    }
 
+   // Add the bloom effect.
+   _sample += g_fBloomScale * bloom;
+   
    // Map the high range of color values into a range appropriate for
    // display, taking into account the user's adaptation level, 
    // white point, and selected value for for middle gray.
@@ -83,16 +88,10 @@ void main()
       _sample.rgb = mix( _sample.rgb, _sample.rgb * toneScalar, g_fEnableToneMapping );
    }
 
-   // Add the bloom effect.
-   _sample += g_fBloomScale * bloom;
-
    // Apply the color correction.
    _sample.r = texture( colorCorrectionTex, _sample.r ).r;
    _sample.g = texture( colorCorrectionTex, _sample.g ).g;
    _sample.b = texture( colorCorrectionTex, _sample.b ).b;
-
-   // Apply gamma correction
-   _sample.rgb = pow( abs(_sample.rgb), vec3(g_fOneOverGamma) );
 
    OUT_col = _sample;
 }

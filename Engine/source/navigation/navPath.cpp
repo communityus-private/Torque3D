@@ -170,7 +170,7 @@ const char *NavPath::getProtectedFrom(void *obj, const char *data)
    if(object->mFromSet)
       return data;
    else
-      return StringTable->insert("");
+      return StringTable->EmptyString();
 }
 
 const char *NavPath::getProtectedTo(void *obj, const char *data)
@@ -180,7 +180,7 @@ const char *NavPath::getProtectedTo(void *obj, const char *data)
    if(object->mToSet)
       return data;
    else
-      return StringTable->insert("");
+      return StringTable->EmptyString();
 }
 
 IRangeValidator ValidIterations(1, S32_MAX);
@@ -369,6 +369,7 @@ void NavPath::resize()
 
 bool NavPath::plan()
 {
+   PROFILE_SCOPE(NavPath_plan);
    // Initialise filter.
    mFilter.setIncludeFlags(mLinkTypes.getFlags());
 
@@ -430,15 +431,15 @@ bool NavPath::visitNext()
 
    if(dtStatusFailed(mQuery->findNearestPoly(from, extents, &mFilter, &startRef, NULL)) || !startRef)
    {
-      Con::errorf("No NavMesh polygon near visit point (%g, %g, %g) of NavPath %s",
-         start.x, start.y, start.z, getIdString());
+      //Con::errorf("No NavMesh polygon near visit point (%g, %g, %g) of NavPath %s",
+         //start.x, start.y, start.z, getIdString());
       return false;
    }
 
    if(dtStatusFailed(mQuery->findNearestPoly(to, extents, &mFilter, &endRef, NULL)) || !endRef)
    {
-      Con::errorf("No NavMesh polygon near visit point (%g, %g, %g) of NavPath %s",
-         end.x, end.y, end.z, getIdString());
+      //Con::errorf("No NavMesh polygon near visit point (%g, %g, %g) of NavPath %s",
+         //end.x, end.y, end.z, getIdString());
       return false;
    }
 
@@ -452,6 +453,7 @@ bool NavPath::visitNext()
 
 bool NavPath::update()
 {
+   PROFILE_SCOPE(NavPath_update);
    if(dtStatusInProgress(mStatus))
       mStatus = mQuery->updateSlicedFindPath(mMaxIterations, NULL);
    if(dtStatusSucceed(mStatus))
@@ -527,6 +529,7 @@ bool NavPath::finalise()
 
 void NavPath::processTick(const Move *move)
 {
+   PROFILE_SCOPE(NavPath_processTick);
    if(!mMesh)
       if(Sim::findObject(mMeshName.c_str(), mMesh))
          plan();

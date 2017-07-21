@@ -20,15 +20,17 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "../../shaderModel.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
+
 #include "farFrustumQuad.hlsl"
 #include "../../torque.hlsl"
 #include "../../lighting.hlsl"
 #include "lightingUtils.hlsl"
 #include "../shadowMap/shadowMapIO_HLSL.h"
 #include "softShadow.hlsl"
-#include "../../shaderModelAutoGen.hlsl"
 
-TORQUE_UNIFORM_SAMPLER2D(prePassBuffer, 0);
+TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(shadowMap, 1);
 TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 
@@ -36,6 +38,10 @@ TORQUE_UNIFORM_SAMPLER2D(dynamicShadowMap, 2);
 TORQUE_UNIFORM_SAMPLER2D(ssaoMask, 3);
 uniform float4 rtParams3;
 #endif
+//register 4?
+TORQUE_UNIFORM_SAMPLER2D(lightBuffer, 5);
+TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 6);
+TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 7);
 
 uniform float  lightBrightness;
 uniform float3 lightDirection;
@@ -185,13 +191,31 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
                                  dotNL,
                                  dot( finalMask, overDarkPSSM ) ) );
 };
-		
+
 float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
-{   
+{
+   // Emissive.
+   float4 matInfo = TORQUE_TEX2D( matInfoBuffer, IN.uv0 );   
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
+   {
+       return float4(1.0, 1.0, 1.0, 0.0);
+   }
+   
+   float4 colorSample = TORQUE_TEX2D( colorBuffer, IN.uv0 );
+   float3 subsurface = float3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = float3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = float3(0.337255, 0.772549, 0.262745);
+	}
    // Sample/unpack the normal/z data
-   float4 prepassSample = TORQUE_PREPASS_UNCONDITION( prePassBuffer, IN.uv0 );
-   float3 normal = prepassSample.rgb;
-   float depth = prepassSample.a;
+   float4 deferredSample = TORQUE_DEFERRED_UNCONDITION( deferredBuffer, IN.uv0 );
+   float3 normal = deferredSample.rgb;
+   float depth = deferredSample.a;
 
    // Use eye ray to get ws pos
    float4 worldPos = float4(eyePosWorld + IN.wsEyeRay * depth, 1.0f);
@@ -272,6 +296,7 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
                                     
    float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
    float3 lightColorOut = lightMapParams.rgb * lightColor.rgb;
+   
    float4 addToResult = (lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * saturate(dot(normalize(-IN.vsEyeRay), normal)) );
 
    // TODO: This needs to be removed when lightmapping is disabled
@@ -299,5 +324,5 @@ float4 main( FarFrustumQuadConnectP IN ) : TORQUE_TARGET0
       lightColorOut = debugColor;
    #endif
 
-   return lightinfoCondition( lightColorOut, Sat_NL_Att, specular, addToResult );  
+   return AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }

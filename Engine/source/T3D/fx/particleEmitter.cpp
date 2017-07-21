@@ -46,10 +46,6 @@
 #include "lighting/lightInfo.h"
 #include "console/engineAPI.h"
 
-#if defined(TORQUE_OS_XENON)
-#  include "gfx/D3D9/360/gfx360MemVertexBuffer.h"
-#endif
-
 #if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
 #include "afx/util/afxParticlePool.h"
 #endif // AFX CODE BLOCK (pooled-particles) >>
@@ -715,7 +711,7 @@ bool ParticleEmitterData::preload(bool server, String &errorStr)
      // load emitter texture if specified
      if (textureName && textureName[0])
      {
-       textureHandle = GFXTexHandle(textureName, &GFXDefaultStaticDiffuseProfile, avar("%s() - textureHandle (line %d)", __FUNCTION__, __LINE__));
+       textureHandle = GFXTexHandle(textureName, &GFXStaticTextureSRGBProfile, avar("%s() - textureHandle (line %d)", __FUNCTION__, __LINE__));
        if (!textureHandle)
        {
          errorStr = String::ToString("Missing particle emitter texture: %s", textureName);
@@ -813,11 +809,6 @@ void ParticleEmitterData::allocPrimBuffer( S32 overrideSize )
    U16 *ibIndices;
    GFXBufferType bufferType = GFXBufferTypeStatic;
 
-#ifdef TORQUE_OS_XENON
-   // Because of the way the volatile buffers work on Xenon this is the only
-   // way to do this.
-   bufferType = GFXBufferTypeVolatile;
-#endif
    primBuff.set( GFX, indexListSize, 0, bufferType );
    primBuff.lock( &ibIndices );
    dMemcpy( ibIndices, indices, indexListSize * sizeof(U16) );
@@ -1138,10 +1129,10 @@ bool ParticleEmitter::onNewDataBlock( GameBaseData *dptr, bool reload )
 //-----------------------------------------------------------------------------
 // getCollectiveColor
 //-----------------------------------------------------------------------------
-ColorF ParticleEmitter::getCollectiveColor()
+LinearColorF ParticleEmitter::getCollectiveColor()
 {
 	U32 count = 0;
-	ColorF color = ColorF(0.0f, 0.0f, 0.0f);
+	LinearColorF color = LinearColorF(0.0f, 0.0f, 0.0f);
 
    count = n_parts;
    for( Particle* part = part_list_head.next; part != NULL; part = part->next )
@@ -1251,7 +1242,7 @@ void ParticleEmitter::setSizes( F32 *sizeList )
 //-----------------------------------------------------------------------------
 // setColors
 //-----------------------------------------------------------------------------
-void ParticleEmitter::setColors( ColorF *colorList )
+void ParticleEmitter::setColors( LinearColorF *colorList )
 {
    for( S32 i=0; i<ParticleData::PDC_NUM_KEYS; i++ )
    {
@@ -1933,7 +1924,7 @@ S32 QSORT_CALLBACK cmpSortParticles(const void* p1, const void* p2)
       return -1;
 }
 
-void ParticleEmitter::copyToVB( const Point3F &camPos, const ColorF &ambientColor )
+void ParticleEmitter::copyToVB( const Point3F &camPos, const LinearColorF &ambientColor )
 {
    static Vector<SortParticle> orderedVector(__FILE__, __LINE__);
 
@@ -1961,22 +1952,9 @@ void ParticleEmitter::copyToVB( const Point3F &camPos, const ColorF &ambientColo
    }
    PROFILE_END();
 
-#if defined(TORQUE_OS_XENON)
-   // Allocate writecombined since we don't read back from this buffer (yay!)
-   if(mVertBuff.isNull())
-      mVertBuff = new GFX360MemVertexBuffer(GFX, 1, getGFXVertexFormat<ParticleVertexType>(), sizeof(ParticleVertexType), GFXBufferTypeDynamic, PAGE_WRITECOMBINE);
-   if( n_parts > mCurBuffSize )
-   {
-      mCurBuffSize = n_parts;
-      mVertBuff.resize(n_parts * 4);
-   }
-
-   ParticleVertexType *buffPtr = mVertBuff.lock();
-#else
    static Vector<ParticleVertexType> tempBuff(2048);
    tempBuff.reserve( n_parts*4 + 64); // make sure tempBuff is big enough
    ParticleVertexType *buffPtr = tempBuff.address(); // use direct pointer (faster)
-#endif
    
    if (mDataBlock->orientParticles)
    {
@@ -2110,9 +2088,6 @@ void ParticleEmitter::copyToVB( const Point3F &camPos, const ColorF &ambientColo
       PROFILE_END();
    }
 
-#if defined(TORQUE_OS_XENON)
-   mVertBuff.unlock();
-#else
    PROFILE_START(ParticleEmitter_copyToVB_LockCopy);
    // create new VB if emitter size grows
    if( !mVertBuff || n_parts > mCurBuffSize )
@@ -2125,7 +2100,6 @@ void ParticleEmitter::copyToVB( const Point3F &camPos, const ColorF &ambientColo
    dMemcpy( verts, tempBuff.address(), n_parts * 4 * sizeof(ParticleVertexType) );
    mVertBuff.unlock();
    PROFILE_END();
-#endif
 
    PROFILE_END();
 }
@@ -2136,7 +2110,7 @@ void ParticleEmitter::copyToVB( const Point3F &camPos, const ColorF &ambientColo
 void ParticleEmitter::setupBillboard( Particle *part,
                                       Point3F *basePts,
                                       const MatrixF &camView,
-                                      const ColorF &ambientColor,
+                                      const LinearColorF &ambientColor,
                                       ParticleVertexType *lVerts )
 {
    F32 width     = part->size * 0.5f;
@@ -2146,7 +2120,7 @@ void ParticleEmitter::setupBillboard( Particle *part,
    mSinCos(spinAngle, sy, cy);
 
    const F32 ambientLerp = mClampF( mDataBlock->ambientFactor, 0.0f, 1.0f );
-   ColorF partCol = mLerp( part->color, ( part->color * ambientColor ), ambientLerp );
+   LinearColorF partCol = mLerp( part->color, ( part->color * ambientColor ), ambientLerp );
 
    // fill four verts, use macro and unroll loop
    #define fillVert(){ \
@@ -2156,7 +2130,7 @@ void ParticleEmitter::setupBillboard( Particle *part,
       camView.mulV( lVerts->point );                        \
       lVerts->point *= width;                               \
       lVerts->point += part->pos;                           \
-      lVerts->color = partCol; } \
+      lVerts->color = partCol.toColorI(); } \
 
    // Here we deal with UVs for animated particle (billboard)
    if (part->dataBlock->animateTexture && !part->dataBlock->animTexFrames.empty())
@@ -2220,7 +2194,7 @@ void ParticleEmitter::setupBillboard( Particle *part,
 //-----------------------------------------------------------------------------
 void ParticleEmitter::setupOriented( Particle *part,
                                      const Point3F &camPos,
-                                     const ColorF &ambientColor,
+                                     const LinearColorF &ambientColor,
                                      ParticleVertexType *lVerts )
 {
    Point3F dir;
@@ -2249,8 +2223,8 @@ void ParticleEmitter::setupOriented( Particle *part,
    Point3F end = part->pos + dir;
 
    const F32 ambientLerp = mClampF( mDataBlock->ambientFactor, 0.0f, 1.0f );
-   ColorF partCol = mLerp( part->color, ( part->color * ambientColor ), ambientLerp );
-
+   LinearColorF partCol = mLerp( part->color, ( part->color * ambientColor ), ambientLerp );
+   const ColorI color = partCol.toColorI();
    // Here we deal with UVs for animated particle (oriented)
    if (part->dataBlock->animateTexture)
    { 
@@ -2262,55 +2236,55 @@ void ParticleEmitter::setupOriented( Particle *part,
       uv[1] = uv[0] + (part->dataBlock->animTexTiling.x + 1);
       uv[2] = uv[1] + 1;
       uv[3] = uv[0] + 1;
+      
+      lVerts->point = start + crossDir;
+      lVerts->color = color;
+      // Here and below, we copy UVs from particle datablock's current frame's UVs (oriented)
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[0]];
+      ++lVerts;
 
-     lVerts->point = start + crossDir;
-     lVerts->color = partCol;
-     // Here and below, we copy UVs from particle datablock's current frame's UVs (oriented)
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[0]];
-     ++lVerts;
+      lVerts->point = start - crossDir;
+      lVerts->color = color;
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[1]];
+      ++lVerts;
 
-     lVerts->point = start - crossDir;
-     lVerts->color = partCol;
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[1]];
-     ++lVerts;
+      lVerts->point = end - crossDir;
+      lVerts->color = color;
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[2]];
+      ++lVerts;
 
-     lVerts->point = end - crossDir;
-     lVerts->color = partCol;
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[2]];
-     ++lVerts;
+      lVerts->point = end + crossDir;
+      lVerts->color = color;
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[3]];
+      ++lVerts;
 
-     lVerts->point = end + crossDir;
-     lVerts->color = partCol;
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[3]];
-     ++lVerts;
-
-     return;
+      return;
    }
 
    lVerts->point = start + crossDir;
-   lVerts->color = partCol;
+   lVerts->color = color;
    // Here and below, we copy UVs from particle datablock's texCoords (oriented)
    lVerts->texCoord = part->dataBlock->texCoords[1];
    ++lVerts;
 
    lVerts->point = start - crossDir;
-   lVerts->color = partCol;
+   lVerts->color = color;
    lVerts->texCoord = part->dataBlock->texCoords[2];
    ++lVerts;
 
    lVerts->point = end - crossDir;
-   lVerts->color = partCol;
+   lVerts->color = color;
    lVerts->texCoord = part->dataBlock->texCoords[3];
    ++lVerts;
 
    lVerts->point = end + crossDir;
-   lVerts->color = partCol;
+   lVerts->color = color;
    lVerts->texCoord = part->dataBlock->texCoords[0];
    ++lVerts;
 }
 
 void ParticleEmitter::setupAligned( const Particle *part, 
-                                    const ColorF &ambientColor,
+                                    const LinearColorF &ambientColor,
                                     ParticleVertexType *lVerts )
 {
    // The aligned direction will always be normalized.
@@ -2360,8 +2334,8 @@ void ParticleEmitter::setupAligned( const Particle *part,
    Point3F end = part->pos + right;
 
    const F32 ambientLerp = mClampF( mDataBlock->ambientFactor, 0.0f, 1.0f );
-   ColorF partCol = mLerp( part->color, ( part->color * ambientColor ), ambientLerp );
-
+   LinearColorF partCol = mLerp( part->color, ( part->color * ambientColor ), ambientLerp );
+   const ColorI color = partCol.toColorI();
    // Here we deal with UVs for animated particle
    if (part->dataBlock->animateTexture)
    { 
@@ -2374,46 +2348,46 @@ void ParticleEmitter::setupAligned( const Particle *part,
       uv[2] = uv[1] + 1;
       uv[3] = uv[0] + 1;
 
-     lVerts->point = start + cross;
-      lVerts->color = partCol;
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[0]];
-     ++lVerts;
+      lVerts->point = start + cross;
+      lVerts->color = color;
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[0]];
+      ++lVerts;
 
-     lVerts->point = start - cross;
-      lVerts->color = partCol;
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[1]];
-     ++lVerts;
+      lVerts->point = start - cross;
+      lVerts->color = color;
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[1]];
+      ++lVerts;
 
-     lVerts->point = end - cross;
-      lVerts->color = partCol;
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[2]];
-     ++lVerts;
+      lVerts->point = end - cross;
+      lVerts->color = color;
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[2]];
+      ++lVerts;
 
-     lVerts->point = end + cross;
-      lVerts->color = partCol;
-     lVerts->texCoord = part->dataBlock->animTexUVs[uv[3]];
-     ++lVerts;
+      lVerts->point = end + cross;
+      lVerts->color = color;
+      lVerts->texCoord = part->dataBlock->animTexUVs[uv[3]];
+      ++lVerts;
    }
    else
    {
       // Here and below, we copy UVs from particle datablock's texCoords
       lVerts->point = start + cross;
-      lVerts->color = partCol;
+      lVerts->color = color;
       lVerts->texCoord = part->dataBlock->texCoords[0];
       ++lVerts;
 
       lVerts->point = start - cross;
-      lVerts->color = partCol;
+      lVerts->color = color;
       lVerts->texCoord = part->dataBlock->texCoords[1];
       ++lVerts;
 
       lVerts->point = end - cross;
-      lVerts->color = partCol;
+      lVerts->color = color;
       lVerts->texCoord = part->dataBlock->texCoords[2];
       ++lVerts;
 
       lVerts->point = end + cross;
-      lVerts->color = partCol;
+      lVerts->color = color;
       lVerts->texCoord = part->dataBlock->texCoords[3];
       ++lVerts;
    }

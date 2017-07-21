@@ -181,7 +181,7 @@ DefineConsoleFunction(NavMeshUpdateOne, void, (S32 meshid, S32 objid, bool remov
 NavMesh::NavMesh()
 {
    mTypeMask |= StaticShapeObjectType | MarkerObjectType;
-   mFileName = StringTable->insert("");
+   mFileName = StringTable->EmptyString();
    mNetFlags.clear(Ghostable);
 
    mSaveIntermediates = false;
@@ -211,7 +211,7 @@ NavMesh::NavMesh()
    mLargeCharacters = false;
    mVehicles = false;
 
-   mCoverSet = StringTable->insert("");
+   mCoverSet = StringTable->EmptyString();
    mInnerCover = false;
    mCoverDist = 1.0f;
    mPeekDist = 0.7f;
@@ -739,6 +739,7 @@ Box3F NavMesh::getTileBox(U32 id)
 
 void NavMesh::updateTiles(bool dirty)
 {
+   PROFILE_SCOPE(NavMesh_updateTiles);
    if(!isProperlyAdded())
       return;
 
@@ -793,6 +794,7 @@ void NavMesh::processTick(const Move *move)
 
 void NavMesh::buildNextTile()
 {
+   PROFILE_SCOPE(NavMesh_buildNextTile);
    if(!mDirtyTiles.empty())
    {
       // Pop a single dirty tile and process it.
@@ -1099,6 +1101,7 @@ unsigned char *NavMesh::buildTileData(const Tile &tile, TileData &data, U32 &dat
 /// this NavMesh object.
 void NavMesh::buildTiles(const Box3F &box)
 {
+   PROFILE_SCOPE(NavMesh_buildTiles);
    // Make sure we've already built or loaded.
    if(!nm)
       return;
@@ -1124,6 +1127,7 @@ DefineEngineMethod(NavMesh, buildTiles, void, (Box3F box),,
 
 void NavMesh::buildTile(const U32 &tile)
 {
+   PROFILE_SCOPE(NavMesh_buildTile);
    if(tile < mTiles.size())
    {
       mDirtyTiles.push_back_unique(tile);
@@ -1143,10 +1147,10 @@ void NavMesh::buildLinks()
       // Iterate over links
       for(U32 j = 0; j < mLinkIDs.size(); j++)
       {
-			if (mLinksUnsynced[j])
-			{
+         if (mLinksUnsynced[j])
+         {
          if(tile.box.isContained(getLinkStart(j)) ||
-					tile.box.isContained(getLinkEnd(j)))
+               tile.box.isContained(getLinkEnd(j)))
          {
             // Mark tile for build.
             mDirtyTiles.push_back_unique(i);
@@ -1161,7 +1165,7 @@ void NavMesh::buildLinks()
          }
       }
    }
-	}
+   }
    if(mDirtyTiles.size())
       ctx->startTimer(RC_TIMER_TOTAL);
 }

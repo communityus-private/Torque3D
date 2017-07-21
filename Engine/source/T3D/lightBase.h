@@ -59,7 +59,7 @@ protected:
 
    bool mIsEnabled;
 
-   ColorF mColor;
+   LinearColorF mColor;
 
    F32 mBrightness;
 

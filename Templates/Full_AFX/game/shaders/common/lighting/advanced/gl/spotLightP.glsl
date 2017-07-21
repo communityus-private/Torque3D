@@ -32,10 +32,12 @@
 in vec4 wsEyeDir;
 in vec4 ssPos;
 in vec4 vsEyeDir;
+in vec4 color;
 
 #define IN_wsEyeDir wsEyeDir
 #define IN_ssPos ssPos
 #define IN_vsEyeDir vsEyeDir
+#define IN_color color
 
 #ifdef USE_COOKIE_TEX
 
@@ -44,9 +46,13 @@ uniform sampler2D cookieMap;
 
 #endif
 
-uniform sampler2D prePassBuffer;
+uniform sampler2D deferredBuffer;
 uniform sampler2D shadowMap;
 uniform sampler2D dynamicShadowMap;
+
+uniform sampler2D lightBuffer;
+uniform sampler2D colorBuffer;
+uniform sampler2D matInfoBuffer;
 
 uniform vec4 rtParams0;
 
@@ -74,10 +80,30 @@ void main()
    vec3 ssPos = IN_ssPos.xyz / IN_ssPos.w;
    vec2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
 
+   // Emissive.
+   vec4 matInfo = texture( matInfoBuffer, uvScene );   
+   bool emissive = getFlag( matInfo.r, 0 );
+   if ( emissive )
+   {
+       OUT_col = vec4(0.0, 0.0, 0.0, 0.0);
+	   return;
+   }
+   
+   vec4 colorSample = texture( colorBuffer, uvScene );
+   vec3 subsurface = vec3(0.0,0.0,0.0); 
+   if (getFlag( matInfo.r, 1 ))
+   {
+      subsurface = colorSample.rgb;
+      if (colorSample.r>colorSample.g)
+         subsurface = vec3(0.772549, 0.337255, 0.262745);
+	  else
+         subsurface = vec3(0.337255, 0.772549, 0.262745);
+	}
+	
    // Sample/unpack the normal/z data
-   vec4 prepassSample = prepassUncondition( prePassBuffer, uvScene );
-   vec3 normal = prepassSample.rgb;
-   float depth = prepassSample.a;
+   vec4 deferredSample = deferredUncondition( deferredBuffer, uvScene );
+   vec3 normal = deferredSample.rgb;
+   float depth = deferredSample.a;
    
    // Eye ray - Eye -> Pixel
    vec3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN_vsEyeDir.xyz, vsFarPlane );
@@ -180,5 +206,5 @@ void main()
       addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
    }
 
-   OUT_col = lightinfoCondition( lightColorOut, Sat_NL_Att, specular, addToResult );
+   OUT_col = AL_DeferredOutput(lightColorOut+subsurface*(1.0-Sat_NL_Att), colorSample.rgb, matInfo, addToResult, specular, Sat_NL_Att);
 }

@@ -20,6 +20,7 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+#include "shadergen:/autogenConditioners.h"  
 #include "./postFx.hlsl"  
 #include "../torque.hlsl"
 
@@ -27,18 +28,23 @@ TORQUE_UNIFORM_SAMPLER2D(backBuffer, 0);
 TORQUE_UNIFORM_SAMPLER1D(colorCorrectionTex, 1);
 
 uniform float OneOverGamma;
+uniform float Brightness;
+uniform float Contrast;
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0  
 {
     float4 color = TORQUE_TEX2D(backBuffer, IN.uv0.xy);
 
    // Apply the color correction.
-   color.r = TORQUE_TEX1D(colorCorrectionTex, color.r).r;
-   color.g = TORQUE_TEX1D(colorCorrectionTex, color.g).g;
-   color.b = TORQUE_TEX1D(colorCorrectionTex, color.b).b;
+   color.r = TORQUE_TEX1D( colorCorrectionTex, color.r ).r;
+   color.g = TORQUE_TEX1D( colorCorrectionTex, color.g ).g;
+   color.b = TORQUE_TEX1D( colorCorrectionTex, color.b ).b;
 
-   // Apply gamma correction
-    color.rgb = pow( abs(color.rgb), OneOverGamma );
+   // Apply contrast
+   color.rgb = ((color.rgb - 0.5f) * Contrast) + 0.5f;
+ 
+   // Apply brightness
+   color.rgb += Brightness;
 
     return color;    
 }

@@ -20,29 +20,13 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-<<<<<<< HEAD
-=======
 #include "../../shaderModelAutoGen.hlsl"
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 #include "../../postfx/postFx.hlsl"
-#include "../../shaderModelAutoGen.hlsl"
 
-<<<<<<< HEAD
-TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex, 0);
-
+TORQUE_UNIFORM_SAMPLER2D(lightDeferredTex,0);
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {   
-   float3 lightcolor;   
-   float nl_Att, specular;   
-   lightinfoUncondition( TORQUE_TEX2D( lightPrePassTex, IN.uv0 ), lightcolor, nl_Att, specular );   
-   return float4( lightcolor, 1.0 );   
-=======
-TORQUE_UNIFORM_SAMPLER2D(lightPrePassTex,0);
-
-float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
-{   
-   float4 lightColor = TORQUE_TEX2D( lightPrePassTex, IN.uv0 );    
+   float4 lightColor = TORQUE_TEX2D( lightDeferredTex, IN.uv0 );    
    return float4( lightColor.rgb, 1.0 );   
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
 }

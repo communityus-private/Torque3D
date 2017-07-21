@@ -40,10 +40,10 @@ class afxSpellCastBar : public GuiControl, public afxProgressBase
   bool              want_border;
   bool              want_background;
   bool              use_alt_final_color;
-  ColorF            rgba_background;
-  ColorF            rgba_border;
-  ColorF            rgba_fill;
-  ColorF            rgba_fill_final;
+  LinearColorF            rgba_background;
+  LinearColorF            rgba_border;
+  LinearColorF            rgba_fill;
+  LinearColorF            rgba_fill_final;
 
   F32               fraction;
 
@@ -121,13 +121,13 @@ void afxSpellCastBar::initPersistFields()
 
 void afxSpellCastBar::onRender(Point2I offset, const RectI &updateRect)
 {
-  ColorF color;
+  LinearColorF color;
 
   // draw the background
   if (want_background)
   {
     color.set(rgba_background.red, rgba_background.green, rgba_background.blue, rgba_background.alpha*fade_amt); 
-    GFX->getDrawUtil()->drawRectFill(updateRect, color);
+    GFX->getDrawUtil()->drawRectFill(updateRect, color.toColorI());
   }
 
   // calculate the rectangle dimensions
@@ -140,13 +140,13 @@ void afxSpellCastBar::onRender(Point2I offset, const RectI &updateRect)
   else
     color.set(rgba_fill.red, rgba_fill.green, rgba_fill.blue, rgba_fill.alpha*fade_amt);
 
-  GFX->getDrawUtil()->drawRectFill(rect, color);
+  GFX->getDrawUtil()->drawRectFill(rect, color.toColorI());
 
   // draw the border
   if (want_border)
   {
     color.set(rgba_border.red, rgba_border.green, rgba_border.blue, rgba_border.alpha*fade_amt);
-    GFX->getDrawUtil()->drawRect(updateRect, color);
+    GFX->getDrawUtil()->drawRect(updateRect, color.toColorI());
   }
 }
 

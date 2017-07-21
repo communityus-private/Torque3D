@@ -106,7 +106,7 @@ float fresnel(float NdotV, float bias, float power)
 // Uniforms                                                                  
 //-----------------------------------------------------------------------------
 TORQUE_UNIFORM_SAMPLER2D(bumpMap,0);
-TORQUE_UNIFORM_SAMPLER2D(prepassTex, 1);
+TORQUE_UNIFORM_SAMPLER2D(deferredTex, 1);
 TORQUE_UNIFORM_SAMPLER2D(reflectMap, 2);
 TORQUE_UNIFORM_SAMPLER2D(refractBuff, 3);
 TORQUE_UNIFORM_SAMPLERCUBE(skyMap, 4);
@@ -153,9 +153,9 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    // Convert from WorldSpace to EyeSpace.
    float pixelDepth = PIXEL_DIST / farPlaneDist; 
    
-   float2 prepassCoord = viewportCoordToRenderTarget( IN.posPostWave, rtParams1 );
+   float2 deferredCoord = viewportCoordToRenderTarget( IN.posPostWave, rtParams1 );
 
-   float startDepth = TORQUE_PREPASS_UNCONDITION( prepassTex, prepassCoord ).w;  
+   float startDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, deferredCoord ).w;  
    
    // The water depth in world units of the undistorted pixel.
    float startDelta = ( startDepth - pixelDepth );
@@ -177,18 +177,14 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    float4 distortPos = IN.posPostWave;
    distortPos.xy += distortDelta;      
       
-   prepassCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );   
+   deferredCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );   
 
-   // Get prepass depth at the position of this distorted pixel.
-<<<<<<< HEAD
-   float prepassDepth = TORQUE_PREPASS_UNCONDITION(prepassTex, prepassCoord).w;
-=======
-   float prepassDepth = TORQUE_PREPASS_UNCONDITION( prepassTex, prepassCoord ).w;      
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
-   if ( prepassDepth > 0.99 )
-     prepassDepth = 5.0;
+   // Get deferred depth at the position of this distorted pixel.
+   float deferredDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, deferredCoord ).w;      
+   if ( deferredDepth > 0.99 )
+     deferredDepth = 5.0;
     
-   float delta = ( prepassDepth - pixelDepth ) * farPlaneDist;
+   float delta = ( deferredDepth - pixelDepth ) * farPlaneDist;
       
    if ( delta < 0.0 )
    {
@@ -201,7 +197,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    } 
    else
    {
-      float diff = ( prepassDepth - startDepth ) * farPlaneDist;
+      float diff = ( deferredDepth - startDepth ) * farPlaneDist;
    
       if ( diff < 0 )
       {
@@ -213,17 +209,13 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
          distortPos = IN.posPostWave;         
          distortPos.xy += distortDelta;    
         
-         prepassCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );
+         deferredCoord = viewportCoordToRenderTarget( distortPos, rtParams1 );
 
-         // Get prepass depth at the position of this distorted pixel.
-<<<<<<< HEAD
-         prepassDepth = TORQUE_PREPASS_UNCONDITION(prepassTex, prepassCoord).w;
-=======
-         prepassDepth = TORQUE_PREPASS_UNCONDITION( prepassTex, prepassCoord ).w;
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
-	 if ( prepassDepth > 0.99 )
-            prepassDepth = 5.0;
-         delta = ( prepassDepth - pixelDepth ) * farPlaneDist;
+         // Get deferred depth at the position of this distorted pixel.
+         deferredDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, deferredCoord ).w;
+	 if ( deferredDepth > 0.99 )
+            deferredDepth = 5.0;
+         delta = ( deferredDepth - pixelDepth ) * farPlaneDist;
       }
        
       if ( delta < 0.1 )
@@ -290,11 +282,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    foamColor.rgb *= FOAM_OPACITY * foamAmt * foamColor.a;
 
    // Get reflection map color.
-<<<<<<< HEAD
-   float4 refMapColor = hdrDecode( TORQUE_TEX2D( reflectMap, reflectCoord ) );  
-=======
    float4 refMapColor = TORQUE_TEX2D( reflectMap, reflectCoord );  
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
    
    // If we do not have a reflection texture then we use the cubemap.
    refMapColor = lerp( refMapColor, TORQUE_TEXCUBE( skyMap, reflectionVec ), NO_REFLECT );
@@ -323,10 +311,7 @@ float4 main( ConnectData IN ) : TORQUE_TARGET0
    
    // Calculate the water "base" color based on depth.
    float4 waterBaseColor = baseColor * TORQUE_TEX1D( depthGradMap, saturate( delta / depthGradMax ) );
-<<<<<<< HEAD
-=======
-   waterBaseColor = toLinear(waterBaseColor);
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
+   waterBaseColor = waterBaseColor;
       
    // Modulate baseColor by the ambientColor.
    waterBaseColor *= float4( ambientColor.rgb, 1 );     

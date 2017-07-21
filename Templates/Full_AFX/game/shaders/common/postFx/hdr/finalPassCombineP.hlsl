@@ -22,6 +22,7 @@
 
 #include "../../torque.hlsl"
 #include "../postFx.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(sceneTex, 0);
 TORQUE_UNIFORM_SAMPLER2D(luminanceTex, 1);
@@ -39,7 +40,8 @@ uniform float g_fEnableBlueShift;
 uniform float3 g_fBlueShiftColor;
 uniform float g_fBloomScale;
 uniform float g_fOneOverGamma;
-
+uniform float Brightness;
+uniform float Contrast;
 
 float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {
@@ -67,6 +69,9 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
       bloom.rgb = lerp( bloom.rgb, rodColor, coef );
    }
 
+   // Add the bloom effect.
+   sample += g_fBloomScale * bloom;
+   
    // Map the high range of color values into a range appropriate for
    // display, taking into account the user's adaptation level, 
    // white point, and selected value for for middle gray.
@@ -78,16 +83,10 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
       sample.rgb = lerp( sample.rgb, sample.rgb * toneScalar, g_fEnableToneMapping );
    }
 
-   // Add the bloom effect.
-   sample += g_fBloomScale * bloom;
-
    // Apply the color correction.
    sample.r = TORQUE_TEX1D( colorCorrectionTex, sample.r ).r;
    sample.g = TORQUE_TEX1D( colorCorrectionTex, sample.g ).g;
    sample.b = TORQUE_TEX1D( colorCorrectionTex, sample.b ).b;
-
-   // Apply gamma correction
-   sample.rgb = pow( abs(sample.rgb), g_fOneOverGamma );
 
    return sample;
 }

@@ -25,12 +25,6 @@
 struct CloudVert
 {
    float3 pos        : POSITION;
-<<<<<<< HEAD
-   float3 normal     : NORMAL;
-   float3 binormal   : BINORMAL;
-   float3 tangent    : TANGENT;
-=======
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
    float2 uv0        : TEXCOORD0;
 };
 
@@ -50,15 +44,9 @@ uniform float     texScale;
 ConnectData main( CloudVert IN )
 {
    ConnectData OUT;
-<<<<<<< HEAD
-   
-   OUT.hpos = mul(modelview, float4(IN.pos,1.0));
-   
-=======
 
    OUT.hpos = mul(modelview, float4(IN.pos,1.0));
 
->>>>>>> d93423ad510ce66434b84ece061254124d2f7db1
    float2 uv = IN.uv0;
    uv += texOffset;
    uv *= texScale;

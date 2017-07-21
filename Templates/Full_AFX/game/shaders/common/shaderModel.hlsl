@@ -54,8 +54,12 @@
    #endif
 
    //helper if you want to pass sampler/texture in a function
+   //2D
    #define TORQUE_SAMPLER2D(tex) sampler2D tex
    #define TORQUE_SAMPLER2D_MAKEARG(tex) tex
+   //Cube
+   #define TORQUE_SAMPLERCUBE(tex) samplerCUBE tex
+   #define TORQUE_SAMPLERCUBE_MAKEARG(tex) tex
 // Shader model 4.0+
 #elif TORQUE_SM >= 40
    #define TORQUE_POSITION SV_Position
@@ -74,15 +78,19 @@
    // Sampling functions
    #define TORQUE_TEX1D(tex,coords) texture_##tex.Sample(tex,coords)
    #define TORQUE_TEX2D(tex,coords) texture_##tex.Sample(tex,coords)
-   #define TORQUE_TEX2DPROJ(tex,coords) float2 uv = coords.xy / coords.w; texture_##tex.Sample(tex,uv)
+   #define TORQUE_TEX2DPROJ(tex,coords) texture_##tex.Sample(tex,coords.xy / coords.w)
    #define TORQUE_TEX3D(tex,coords) texture_##tex.Sample(tex,coords)
    #define TORQUE_TEXCUBE(tex,coords) texture_##tex.Sample(tex,coords)
    // The mipmap LOD is specified in coord.w
    #define TORQUE_TEX2DLOD(tex,coords) texture_##tex.SampleLevel(tex,coords.xy,coords.w)
 
    //helper if you want to pass sampler/texture in a function
+   //2D
    #define TORQUE_SAMPLER2D(tex) Texture2D texture_##tex, SamplerState tex
    #define TORQUE_SAMPLER2D_MAKEARG(tex) texture_##tex, tex
+   //Cube
+   #define TORQUE_SAMPLERCUBE(tex) TextureCube texture_##tex, SamplerState tex
+   #define TORQUE_SAMPLERCUBE_MAKEARG(tex) texture_##tex, tex
 #endif
 
 #endif // _TORQUE_SHADERMODEL_

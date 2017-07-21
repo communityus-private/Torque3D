@@ -32,13 +32,13 @@
 
 GuiGameListMenuCtrl::GuiGameListMenuCtrl()
  : mSelected(NO_ROW),
-   mHighlighted(NO_ROW),
-   mDebugRender(false)
+   mDebugRender(false),
+   mHighlighted(NO_ROW)
 {
    VECTOR_SET_ASSOCIATION(mRows);
 
    // initialize the control callbacks
-   mCallbackOnA = StringTable->insert("");
+   mCallbackOnA = StringTable->EmptyString();
    mCallbackOnB = mCallbackOnA;
    mCallbackOnX = mCallbackOnA;
    mCallbackOnY = mCallbackOnA;
@@ -572,7 +572,7 @@ StringTableEntry GuiGameListMenuCtrl::getRowLabel(S32 rowIndex) const
    if (! isValidRowIndex(rowIndex))
    {
       // not a valid row index, don't do anything
-      return StringTable->insert("");
+      return StringTable->EmptyString();
    }
    return mRows[rowIndex]->mLabel;
 }

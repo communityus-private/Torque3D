@@ -29,7 +29,7 @@
 #include "lighting/shadowMap/shadowMapPass.h"
 #include "lighting/shadowMap/lightShadowMap.h"
 #include "lighting/common/lightMapParams.h"
-#include "renderInstance/renderPrePassMgr.h"
+#include "renderInstance/renderDeferredMgr.h"
 #include "gfx/gfxTransformSaver.h"
 #include "scene/sceneManager.h"
 #include "scene/sceneRenderState.h"
@@ -130,7 +130,7 @@ AdvancedLightBinManager::AdvancedLightBinManager( AdvancedLightManager *lm /* = 
    // We want a full-resolution buffer
    mTargetSizeType = RenderTexTargetBinManager::WindowSize;
 
-   mMRTLightmapsDuringPrePass = false;
+   mMRTLightmapsDuringDeferred = false;
 
    Con::NotifyDelegate callback( this, &AdvancedLightBinManager::_deleteLightMaterials );
    Con::addVariableNotify( "$pref::Shadows::filterMode", callback );
@@ -253,7 +253,7 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
       return;
 
    // Clear as long as there isn't MRT population of light buffer with lightmap data
-   if ( !MRTLightmapsDuringPrePass() )
+   if ( !MRTLightmapsDuringDeferred() )
       GFX->clear(GFXClearTarget, ColorI(0, 0, 0, 0), 1.0f, 0);
 
    // Restore transforms
@@ -550,23 +550,23 @@ void AdvancedLightBinManager::setupSGData( SceneData &data, const SceneRenderSta
    }
 }
 
-void AdvancedLightBinManager::MRTLightmapsDuringPrePass( bool val )
+void AdvancedLightBinManager::MRTLightmapsDuringDeferred( bool val )
 {
    // Do not enable if the GFX device can't do MRT's
    if ( GFX->getNumRenderTargets() < 2 )
       val = false;
 
-   if ( mMRTLightmapsDuringPrePass != val )
+   if ( mMRTLightmapsDuringDeferred != val )
    {
-      mMRTLightmapsDuringPrePass = val;
+      mMRTLightmapsDuringDeferred = val;
 
-      // Reload materials to cause a feature recalculation on prepass materials
+      // Reload materials to cause a feature recalculation on deferred materials
       if(mLightManager->isActive())
          MATMGR->flushAndReInitInstances();
 
-      RenderPrePassMgr *prepass;
-      if ( Sim::findObject( "AL_PrePassBin", prepass ) && prepass->getTargetTexture( 0 ) )
-         prepass->updateTargets();
+      RenderDeferredMgr *deferred;
+      if ( Sim::findObject( "AL_DeferredBin", deferred ) && deferred->getTargetTexture( 0 ) )
+         deferred->updateTargets();
    }
 }
 
@@ -645,7 +645,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
    MaterialParameters *matParams = matInstance->getMaterialParameters();
 
    // Set color in the right format, set alpha to the luminance value for the color.
-   ColorF col = lightInfo->getColor();
+   LinearColorF col = lightInfo->getColor();
 
    // TODO: The specularity control of the light
    // is being scaled by the overall lumiance.
@@ -658,7 +658,7 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
    F32 lumiance = mDot(*((const Point3F *)&lightInfo->getColor()), colorToLumiance );
    col.alpha *= lumiance;
 
-   matParams->setSafe( lightColor, col.toLinear() );
+   matParams->setSafe( lightColor, col );
    matParams->setSafe( lightBrightness, lightInfo->getBrightness() );
 
    switch( lightInfo->getType() )
@@ -672,9 +672,9 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
 
          // Set small number for alpha since it represents existing specular in
          // the vector light. This prevents a divide by zero.
-         ColorF ambientColor = renderState->getAmbientLightColor();
+         LinearColorF ambientColor = renderState->getAmbientLightColor();
          ambientColor.alpha = 0.00001f;
-         matParams->setSafe( lightAmbient, ambientColor.toLinear() );
+         matParams->setSafe( lightAmbient, ambientColor );
 
          // If no alt color is specified, set it to the average of
          // the ambient and main color to avoid artifacts.
@@ -682,13 +682,13 @@ void AdvancedLightBinManager::LightMaterialInfo::setLightParameters( const Light
          // TODO: Trilight disabled until we properly implement it
          // in the light info!
          //
-         //ColorF lightAlt = lightInfo->getAltColor();
-         ColorF lightAlt( ColorF::BLACK ); // = lightInfo->getAltColor();
+         //LinearColorF lightAlt = lightInfo->getAltColor();
+         LinearColorF lightAlt( LinearColorF::BLACK ); // = lightInfo->getAltColor();
          if ( lightAlt.red == 0.0f && lightAlt.green == 0.0f && lightAlt.blue == 0.0f )
             lightAlt = (lightInfo->getColor() + renderState->getAmbientLightColor()) / 2.0f;
 
-         ColorF trilightColor = lightAlt;
-         matParams->setSafe(lightTrilight, trilightColor.toLinear());
+         LinearColorF trilightColor = lightAlt;
+         matParams->setSafe(lightTrilight, trilightColor);
       }
       break;
 
@@ -787,7 +787,7 @@ bool LightMatInstance::setupPass( SceneRenderState *state, const SceneData &sgDa
          getMaterialParameters()->set( mLightMapParamsSC, lmParams->shadowDarkenColor );
       }
       else
-         getMaterialParameters()->set( mLightMapParamsSC, ColorF::WHITE );
+         getMaterialParameters()->set( mLightMapParamsSC, LinearColorF::WHITE );
    }
 
    // Now override stateblock with our own
@@ -834,21 +834,21 @@ bool LightMatInstance::init( const FeatureSet &features, const GFXVertexFormat *
    // in the same way.
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = false;
-   litState.stencilMask = RenderPrePassMgr::OpaqueDynamicLitMask | RenderPrePassMgr::OpaqueStaticLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
    mLitState[DynamicLight] = GFX->createStateBlock(litState);
 
    // StaticLightNonLMGeometry State: This will treat non-lightmapped geometry
    // in the usual way, but will not effect lightmapped geometry.
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = false;
-   litState.stencilMask = RenderPrePassMgr::OpaqueDynamicLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask;
    mLitState[StaticLightNonLMGeometry] = GFX->createStateBlock(litState);
 
    // StaticLightLMGeometry State: This will add specular information (alpha) but
    // multiply-darken color information. 
    litState.blendDest = GFXBlendSrcColor;
    litState.blendSrc = GFXBlendZero;
-   litState.stencilMask = RenderPrePassMgr::OpaqueStaticLitMask;
+   litState.stencilMask = RenderDeferredMgr::OpaqueStaticLitMask;
    litState.separateAlphaBlendDefined = true;
    litState.separateAlphaBlendEnable = true;
    litState.separateAlphaBlendSrc = GFXBlendOne;

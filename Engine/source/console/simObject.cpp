@@ -97,7 +97,7 @@ SimObject::SimObject()
    mFlags.set( ModStaticFields | ModDynamicFields );
 
    mFieldDictionary = NULL;
-   mCanSaveFieldDictionary	=	true;
+   mCanSaveFieldDictionary =  true;
 
    mClassName = NULL;
    mSuperClassName = NULL;
@@ -637,7 +637,7 @@ void SimObject::setDeclarationLine(U32 lineNumber)
 bool SimObject::registerObject()
 {
    AssertFatal( !mFlags.test( Added ), "reigsterObject - Object already registered!");
-	mFlags.clear(Deleted | Removed);
+   mFlags.clear(Deleted | Removed);
 
    if(smForceId)
    {
@@ -654,11 +654,11 @@ bool SimObject::registerObject()
    AssertFatal(Sim::gIdDictionary && Sim::gNameDictionary, 
       "SimObject::registerObject - tried to register an object before Sim::init()!");
 
-   Sim::gIdDictionary->insert(this);	
+   Sim::gIdDictionary->insert(this);   
 
    Sim::gNameDictionary->insert(this);
 
-	// Notify object
+   // Notify object
    bool ret = onAdd();
 
    if(!ret)
@@ -706,10 +706,10 @@ void SimObject::deleteObject()
 
 void SimObject::_destroySelf()
 {
-	AssertFatal( !isDeleted(), "SimObject::destroySelf - Object has already been deleted" );
-	AssertFatal( !isRemoved(), "SimObject::destroySelf - Object in the process of being removed" );
+   AssertFatal( !isDeleted(), "SimObject::destroySelf - Object has already been deleted" );
+   AssertFatal( !isRemoved(), "SimObject::destroySelf - Object in the process of being removed" );
 
-	mFlags.set( Deleted );
+   mFlags.set( Deleted );
 
    if( mFlags.test( Added ) )
       unregisterObject();
@@ -1419,7 +1419,7 @@ void SimObject::dumpClassHierarchy()
    while(pRep)
    {
       Con::warnf("%s ->", pRep->getClassName());
-      pRep	=	pRep->getParentClass();
+      pRep  =  pRep->getParentClass();
    }
 }
 
@@ -1487,7 +1487,7 @@ bool SimObject::isChildOfGroup(SimGroup* pGroup)
    if(pGroup == dynamic_cast<SimGroup*>(this))
       return true;
 
-   SimGroup* temp	=	mGroup;
+   SimGroup* temp =  mGroup;
    while(temp)
    {
       if(temp == pGroup)
@@ -3013,7 +3013,7 @@ DefineConsoleMethod( SimObject, isMemberOfClass, bool, ( const char* className )
          return true;
       }
 
-      pRep	=	pRep->getParentClass();
+      pRep  =  pRep->getParentClass();
    }
 
    return false;
