@@ -318,8 +318,8 @@ singleton GFXStateBlockData( PFX_DOFFinalStateBlock )
 
 singleton ShaderData( PFX_DOFDownSampleShader )
 {      
-   DXVertexShaderFile 	= "shaders/common/postFx/dof/DOF_DownSample_V.hlsl";   
-   DXPixelShaderFile 	= "shaders/common/postFx/dof/DOF_DownSample_P.hlsl";            
+   DXVertexShaderFile 	= "shaders/common/postFx/dof/DOF_DownSample_V.hlsl";
+   DXPixelShaderFile 	= "shaders/common/postFx/dof/DOF_DownSample_P.hlsl";
    
    OGLVertexShaderFile  = "shaders/common/postFx/dof/gl/DOF_DownSample_V.glsl";
    OGLPixelShaderFile   = "shaders/common/postFx/dof/gl/DOF_DownSample_P.glsl";
@@ -352,7 +352,7 @@ singleton ShaderData( PFX_DOFBlurXShader : PFX_DOFBlurYShader )
 singleton ShaderData( PFX_DOFCalcCoCShader )
 {   
    DXVertexShaderFile 	= "shaders/common/postFx/dof/DOF_CalcCoC_V.hlsl";
-   DXPixelShaderFile 	= "shaders/common/postFx/dof/DOF_CalcCoC_P.hlsl";         
+   DXPixelShaderFile 	= "shaders/common/postFx/dof/DOF_CalcCoC_P.hlsl"; 
    
    OGLVertexShaderFile  = "shaders/common/postFx/dof/gl/DOF_CalcCoC_V.glsl";
    OGLPixelShaderFile   = "shaders/common/postFx/dof/gl/DOF_CalcCoC_P.glsl"; 
@@ -366,7 +366,7 @@ singleton ShaderData( PFX_DOFCalcCoCShader )
 singleton ShaderData( PFX_DOFSmallBlurShader )
 {   
    DXVertexShaderFile 	= "shaders/common/postFx/dof/DOF_SmallBlur_V.hlsl";
-   DXPixelShaderFile 	= "shaders/common/postFx/dof/DOF_SmallBlur_P.hlsl";            
+   DXPixelShaderFile 	= "shaders/common/postFx/dof/DOF_SmallBlur_P.hlsl";
    
    OGLVertexShaderFile  = "shaders/common/postFx/dof/gl/DOF_SmallBlur_V.glsl";
    OGLPixelShaderFile   = "shaders/common/postFx/dof/gl/DOF_SmallBlur_P.glsl";
@@ -430,7 +430,7 @@ singleton PostEffect( DOFPostEffect )
    shader = PFX_DOFDownSampleShader;
    stateBlock = PFX_DOFDownSampleStateBlock;
    texture[0] = "$backBuffer";
-   texture[1] = "#prepass";
+   texture[1] = "#deferred";
    target = "#shrunk";
    targetScale = "0.25 0.25";   
    
@@ -485,7 +485,7 @@ singleton PostEffect( DOFFinalPFX )
    texture[0] = "$backBuffer";
    texture[1] = "$inTex";
    texture[2] = "#largeBlur";   
-   texture[3] = "#prepass";   
+   texture[3] = "#deferred";   
    target = "$backBuffer";
 };
 

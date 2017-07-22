@@ -94,7 +94,7 @@ function ppOptionsEnableDOF::onAction(%this)
    %toEnable = PostFXManager.getEnableResultFromControl(%this);
    PostFXManager.settingsEffectSetEnabled("DOF", %toEnable);
 }
- 
+
 function ppOptionsEnableVignette::onAction(%this)
 { 
    %toEnable = PostFXManager.getEnableResultFromControl(%this);

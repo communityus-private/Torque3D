@@ -152,7 +152,7 @@ function enableOculusVRDisplay(%gameConnection, %trueStereoRendering)
    setOVRHMDAsGameConnectionDisplayDevice(%gameConnection);
    PlayGui.renderStyle = "stereo side by side";
    setOptimalOVRCanvasSize(Canvas);
-   
+
    if (!isObject(OculusCanvas))
    {
       new GuiOffscreenCanvas(OculusCanvas) {
@@ -160,13 +160,13 @@ function enableOculusVRDisplay(%gameConnection, %trueStereoRendering)
          targetName = "oculusCanvas";
          dynamicTarget = true;
       };
-      }
+   }
 
    if (!isObject(OculusVROverlay))
-      {
+   {
       exec("./oculusVROverlay.gui");
    }
-   
+
    OculusCanvas.setContent(OculusVROverlay);
    OculusCanvas.setCursor(DefaultCursor);
    PlayGui.setStereoGui(OculusCanvas);
@@ -193,7 +193,7 @@ function disableOculusVRDisplay(%gameConnection)
 
    if (isObject(gameConnection))
    {
-   %gameConnection.clearDisplayDevice();
+      %gameConnection.clearDisplayDevice();
    }
    PlayGui.renderStyle = "standard";
 }

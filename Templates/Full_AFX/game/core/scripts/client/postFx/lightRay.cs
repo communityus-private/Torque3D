@@ -34,12 +34,12 @@ singleton ShaderData( LightRayOccludeShader )
 {
    DXVertexShaderFile 	= "shaders/common/postFx/postFxV.hlsl";
    DXPixelShaderFile 	= "shaders/common/postFx/lightRay/lightRayOccludeP.hlsl";
-
+   
    OGLVertexShaderFile  = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile   = "shaders/common/postFx/lightRay/gl/lightRayOccludeP.glsl";
    
    samplerNames[0] = "$backBuffer";
-   samplerNames[1] = "$prepassTex";
+   samplerNames[1] = "$deferredTex";
 
    pixVersion = 3.0;   
 };
@@ -77,7 +77,7 @@ singleton PostEffect( LightRayPostFX )
    shader = LightRayOccludeShader;
    stateBlock = LightRayStateBlock;
    texture[0] = "$backBuffer";
-   texture[1] = "#prepass";
+   texture[1] = "#deferred";
    target = "$outTex";
    targetFormat = "GFXFormatR16G16B16A16F";
       

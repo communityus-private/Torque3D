@@ -32,7 +32,7 @@ singleton ShaderData( OVRMonoToStereoShader )
 {
    DXVertexShaderFile 	= "shaders/common/postFx/postFxV.hlsl";
    DXPixelShaderFile 	= "shaders/common/postFx/oculusvr/monoToStereoP.hlsl";
-
+   
    //OGLVertexShaderFile  = "shaders/common/postFx/gl/postFxV.hlsl";
    //OGLPixelShaderFile   = "shaders/common/postFx/oculusvr/gl/monoToStereoP.glsl";
    

@@ -31,8 +31,6 @@ $Client::missionSeq = -1;
 // Called when mission is started.
 function clientStartMission()
 {
-   resetSelectronStyle(); // AFX MOD: reset demo selectron to the default
-
    // The client recieves a mission start right before
    // being dropped into the game.
    physicsStartSimulation( "client" );
@@ -54,8 +52,6 @@ function clientStartMission()
 // mission end client command).
 function clientEndMission()
 {
-   afxEndMissionNotify(); // AFX MOD
-
    // Stop physics simulation on client.
    physicsStopSimulation( "client" );
 
