@@ -577,6 +577,11 @@ LightingShaderConstants* AdvancedLightManager::getLightingShaderConstants(GFXSha
       mLastShader = shader;
    }
 
+   if (shader->getPixelShaderFile().startsWith("dfd"))
+   {
+      bool tmp = true;
+   }
+
    // Make sure that our current lighting constants are initialized
    if (!mLastConstants->mInit)
       mLastConstants->init(shader);

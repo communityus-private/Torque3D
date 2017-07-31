@@ -46,6 +46,9 @@
 #ifndef _GFXPRIMITIVEBUFFER_H_
 #include "gfx/gfxPrimitiveBuffer.h"
 #endif
+#ifndef PROBEMANAGER_H
+#include "lighting/probeManager.h"
+#endif
 
 class SceneRenderState;
 class ISceneObject;
@@ -506,13 +509,7 @@ struct ProbeRenderInst : public RenderInst
    U32 numVerts;
    Vector< U32 > numIndicesForPoly;
 
-   enum ProbeShapeType
-   {
-      Sphere = 0,            ///< Sphere shaped
-      Box = 1,               ///< Box-based shape
-   };
-
-   ProbeShapeType mProbeShapeType;
+   ProbeInfo::ProbeShapeType mProbeShapeType;
 
    //Spherical Harmonics data
    LinearColorF mSHTerms[9];
@@ -524,7 +521,8 @@ public:
    ~ProbeRenderInst();
 
    // Copies data passed in from light
-   void set(const ProbeRenderInst *light);
+   void set(const ProbeRenderInst *probeInfo);
+   void set(const ProbeInfo *probeInfo);
 
    // Accessors
    const MatrixF& getTransform() const { return mTransform; }

@@ -41,7 +41,7 @@ new SimGroup(MissionGroup) {
       azimuth = "290";
       elevation = "50";
       color = "1 1 1 1";
-      ambient = "1 0.991393 0.991393 1";
+      ambient = "0.473532 0.473532 0.473532 1";
       brightness = "1";
       castShadows = "1";
       staticRefreshFreq = "250";
@@ -147,9 +147,9 @@ new SimGroup(MissionGroup) {
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
       surface = "0.707107 0 0 0.707107 0 0.5 0";
-      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-014";
-      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-008";
-      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-008";
+      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
+      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
+      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
    };
    new ConvexShape() {
       Material = "Grid512_Red_Mat";
@@ -162,9 +162,9 @@ new SimGroup(MissionGroup) {
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
       surface = "0.707107 0 0 0.707107 0 0.5 0";
-      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-014";
-      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-008";
-      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-008";
+      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
+      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
+      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
    };
    new ConvexShape() {
       Material = "Grid512_Green_Mat";
@@ -177,9 +177,9 @@ new SimGroup(MissionGroup) {
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
       surface = "0.707107 0 0 0.707106 0 0.5 0";
-      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-014";
-      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-008";
-      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-008";
+      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
+      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
+      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
    };
    new ConvexShape() {
       Material = "Grid512_Grey_Mat";
@@ -192,13 +192,13 @@ new SimGroup(MissionGroup) {
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
       surface = "0.707107 0 0 0.707106 0 0.5 0";
-      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-014";
-      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-008";
-      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-008";
+      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
+      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
+      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
    };
    new ConvexShape() {
       Material = "Grid512_Blue_Mat";
-      position = "0.470302 -4.43964 5";
+      position = "0.470302 -5.04199 5";
       rotation = "1 0 0 0";
       scale = "10 1 10";
       canSave = "1";
@@ -207,9 +207,9 @@ new SimGroup(MissionGroup) {
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
       surface = "0.707107 0 0 0.707106 0 0.5 0";
-      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-014";
-      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-008";
-      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-008";
+      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
+      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
+      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
    };
    new ConvexShape() {
       Material = "Grid512_Grey_Mat";
@@ -222,9 +222,9 @@ new SimGroup(MissionGroup) {
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
       surface = "0.707107 0 0 0.707107 0 0.5 0";
-      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-014";
-      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-008";
-      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-008";
+      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
+      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
+      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
    };
    new ConvexShape() {
       Material = "Grid512_Grey_Mat";
@@ -237,9 +237,40 @@ new SimGroup(MissionGroup) {
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
       surface = "0.707107 0 0 0.707106 0 0.5 0";
-      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-014";
-      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-008";
-      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-008";
+      surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
+      surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
+      surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
+   };
+   new PointLight() {
+      radius = "10";
+      isEnabled = "1";
+      color = "0.887923 1 0.008023 1";
+      brightness = "1";
+      castShadows = "0";
+      staticRefreshFreq = "250";
+      dynamicRefreshFreq = "8";
+      priority = "1";
+      animate = "1";
+      animationPeriod = "1";
+      animationPhase = "1";
+      flareScale = "1";
+      attenuationRatio = "0 1 1";
+      shadowType = "DualParaboloidSinglePass";
+      texSize = "512";
+      overDarkFactor = "2000 1000 500 100";
+      shadowDistance = "400";
+      shadowSoftness = "0.15";
+      numSplits = "1";
+      logWeight = "0.91";
+      fadeStartDistance = "0";
+      lastSplitTerrainOnly = "0";
+      representedInLightmap = "0";
+      shadowDarkenColor = "0 0 0 -1";
+      includeLightmappedGeometryInShadow = "0";
+      position = "0 0.555882 4.56352";
+      rotation = "1 0 0 0";
+      canSave = "1";
+      canSaveDynamicFields = "1";
    };
 };
 //--- OBJECT WRITE END ---

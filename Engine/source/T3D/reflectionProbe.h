@@ -41,6 +41,10 @@
 #include "renderInstance/renderPassManager.h"
 #endif
 
+#ifndef PROBEMANAGER_H
+#include "lighting/probeManager.h"
+#endif
+
 class BaseMatInstance;
 
 
@@ -106,9 +110,9 @@ private:
    //--------------------------------------------------------------------------
    // Rendering variables
    //--------------------------------------------------------------------------
-   ProbeRenderInst::ProbeShapeType mProbeShapeType;
+   ProbeInfo::ProbeShapeType mProbeShapeType;
 
-   ProbeRenderInst* mProbeInfo;
+   ProbeInfo* mProbeInfo;
 
    //Indirect Lighting Contribution stuff
    IndrectLightingModeType mIndrectLightingModeType;
@@ -241,7 +245,7 @@ public:
    void bake(String outputPath, S32 resolution);
 };
 
-typedef ProbeRenderInst::ProbeShapeType ReflectProbeType;
+typedef ProbeInfo::ProbeShapeType ReflectProbeType;
 DefineEnumType(ReflectProbeType);
 
 typedef ReflectionProbe::IndrectLightingModeType IndrectLightingModeEnum;
