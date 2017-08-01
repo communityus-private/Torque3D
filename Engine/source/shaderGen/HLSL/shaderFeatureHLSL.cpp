@@ -3054,7 +3054,7 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    //meta->addStatement(new GenOp("   @ = abs(dot(@,@);\r\n", new DecOp(nDotL), wsView, wsNormal));
 
    Var *probeVec = new Var("probeVec", "float3");
-   meta->addStatement(new GenOp("   @ = normalize(@[0] - @);\r\n", new DecOp(probeVec), inProbePos, wsPosition));
+   meta->addStatement(new GenOp("   @ = @[0] - @;\r\n", new DecOp(probeVec), inProbePos, wsPosition));
 
    Var *nDotL = new Var("nDotL", "float");
    meta->addStatement(new GenOp("   @ = abs(dot(@, @));\r\n", new DecOp(nDotL), probeVec, wsNormal));
@@ -3062,7 +3062,7 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    meta->addStatement(new GenOp("      \r\n"));
 
    Var *reflectDir = new Var("reflectDir", "float3");
-   meta->addStatement(new GenOp("   @ = reflect(-float4(@,1),float4(@,@)).xyz;\r\n", new DecOp(reflectDir), wsView, wsNormal, nDotL));
+   meta->addStatement(new GenOp("   @ = reflect(-float4(@,0),float4(@,@)).xyz;\r\n", new DecOp(reflectDir), wsView, wsNormal, nDotL));
 
    meta->addStatement(new GenOp("      \r\n"));
 
