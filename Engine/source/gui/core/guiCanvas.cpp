@@ -57,10 +57,13 @@
 
 #include "gfx/gfxInit.h"
 #include "core/util/journal/process.h"
+#include "gui/core/guiTextureCanvas.h" 
 
 #ifdef TORQUE_GFX_STATE_DEBUG
 #include "gfx/gfxDebugStateTracker.h"
 #endif
+
+#include "GuiTextureCanvas.h"
 
 IMPLEMENT_CONOBJECT(GuiCanvas);
 
@@ -1885,6 +1888,9 @@ void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
    PROFILE_START(GFXBeginScene);
 
    bool beginSceneRes = GFX->beginScene();
+
+   // Update the offscreen gui texture canvases.
+   GuiTextureCanvas::updateCanvases();
 
    PROFILE_END();
 

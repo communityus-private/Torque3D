@@ -30,7 +30,8 @@
 #include "T3D/shapeBase.h"
 #include "gfx/gfxDrawUtil.h"
 #include "console/engineAPI.h"
-
+#include "gui/core/guiTextureCanvas.h"
+#include "T3D/tsStatic.h"
 
 //-----------------------------------------------------------------------------
 /// Vary basic cross hair hud.
@@ -46,7 +47,8 @@ class GuiCrossHairHud : public GuiBitmapCtrl
    LinearColorF   mDamageFrameColor;
    Point2I  mDamageRectSize;
    Point2I  mDamageOffset;
-
+   PlatformTimer *   mFrameTime;
+   bool mWasInteracting;
 protected:
    void drawDamage(Point2I offset, F32 damage, F32 opacity);
 
@@ -54,6 +56,7 @@ public:
    GuiCrossHairHud();
 
    void onRender( Point2I, const RectI &);
+   void testGuiInteraction();
    static void initPersistFields();
    DECLARE_CONOBJECT( GuiCrossHairHud );
    DECLARE_CATEGORY( "Gui Game" );
@@ -94,7 +97,9 @@ GuiCrossHairHud::GuiCrossHairHud()
    mDamageFillColor.set( 0.0f, 1.0f, 0.0f, 1.0f );
    mDamageFrameColor.set( 1.0f, 0.6f, 0.0f, 1.0f );
    mDamageRectSize.set(50, 4);
-   mDamageOffset.set(0,32);
+   mDamageOffset.set(0, 32);
+   mFrameTime = PlatformTimer::create();
+   mWasInteracting = false;
 }
 
 void GuiCrossHairHud::initPersistFields()
@@ -110,6 +115,54 @@ void GuiCrossHairHud::initPersistFields()
 
 
 //-----------------------------------------------------------------------------
+void GuiCrossHairHud::testGuiInteraction()
+
+{
+   if (mFrameTime->getElapsedMs() < 16)
+      return;
+   mFrameTime->reset();
+   bool interacting = false;
+   // Must have a connection and player control object
+   GameConnection* conn = GameConnection::getConnectionToServer();
+   if (!conn)
+      return;
+   ShapeBase* control = dynamic_cast<ShapeBase*>(conn->getControlObject());
+   if (!control || !(control->getTypeMask() & ObjectMask) || !conn->isFirstPerson())
+      return;
+   
+   // Get control camera info
+   MatrixF cam;
+   Point3F camPos;
+   conn->getControlCameraTransform(0, &cam);
+   cam.getColumn(3, &camPos);
+
+   // Extend the camera vector to create an endpoint for our ray
+   Point3F endPos;
+   cam.getColumn(1, &endPos);
+   endPos *= GuiTextureCanvas::getRayLength();
+   endPos += camPos;
+
+   // Collision info. We're going to be running LOS tests and we
+   // don't want to collide with the control object.
+   static U32 losMask = TerrainObjectType | ShapeBaseObjectType | StaticShapeObjectType;
+   control->disableCollision();
+
+   RayInfo info;
+   info.generateTexCoord = true;
+   if (gClientContainer.castRay(camPos, endPos, losMask, &info)) {
+      // Hit something... but we'll only display health for named
+      // ShapeBase objects.  Could mask against the object type here
+      // and do a static cast if it's a ShapeBaseObjectType, but this
+      // isn't a performance situation, so I'll just use dynamic_cast.
+      if (TSStatic * obj = dynamic_cast<TSStatic*>(info.object))
+         interacting = GuiTextureCanvas::castRay(obj, camPos, endPos, &info);
+   }
+
+   // Restore control object collision
+   control->enableCollision();
+   GuiTextureCanvas::setInteract(interacting, &info);
+   mWasInteracting = interacting;
+}
 
 void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
 {
@@ -119,6 +172,11 @@ void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
       return;
    GameBase* control = dynamic_cast<GameBase*>(conn->getCameraObject());
    if (!control || !(control->getTypeMask() & ObjectMask) || !conn->isFirstPerson())
+      return;
+
+   //if we're interacting with a gui, skip rendering
+   testGuiInteraction();
+   if (mWasInteracting)
       return;
 
    // Parent render.
@@ -138,7 +196,7 @@ void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
 
    // Collision info. We're going to be running LOS tests and we
    // don't want to collide with the control object.
-   static U32 losMask = TerrainObjectType | ShapeBaseObjectType;
+   static U32 losMask = TerrainObjectType | ShapeBaseObjectType | StaticShapeObjectType;
    control->disableCollision();
 
    RayInfo info;
@@ -148,11 +206,13 @@ void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
       // and do a static cast if it's a ShapeBaseObjectType, but this
       // isn't a performance situation, so I'll just use dynamic_cast.
       if (ShapeBase* obj = dynamic_cast<ShapeBase*>(info.object))
+      {
          if (obj->getShapeName()) {
             offset.x = updateRect.point.x + updateRect.extent.x / 2;
             offset.y = updateRect.point.y + updateRect.extent.y / 2;
             drawDamage(offset + mDamageOffset, obj->getDamageValue(), 1);
          }
+      }
    }
 
    // Restore control object collision
@@ -167,7 +227,7 @@ void GuiCrossHairHud::onRender(Point2I offset, const RectI &updateRect)
 */
 void GuiCrossHairHud::drawDamage(Point2I offset, F32 damage, F32 opacity)
 {
-   mDamageFillColor.alpha = mDamageFrameColor.alpha = opacity;
+   //mDamageFillColor.alpha = mDamageFrameColor.alpha = opacity;
 
    // Damage should be 0->1 (0 being no damage,or healthy), but
    // we'll just make sure here as we flip it.

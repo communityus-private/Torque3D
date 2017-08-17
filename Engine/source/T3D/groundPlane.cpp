@@ -254,7 +254,7 @@ bool GroundPlane::castRay( const Point3F& start, const Point3F& end, RayInfo* in
       info->object = this;
       info->distance = 0;
       info->faceDot = 0;
-      info->texCoord.set( 0, 0 );
+      info->mUVtexCoord.set(0, 0);
       return true;
    }
 
