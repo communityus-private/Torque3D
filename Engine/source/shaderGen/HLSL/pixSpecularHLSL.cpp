@@ -150,7 +150,6 @@ void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const
    specularMapTex->constNum = specularMap->constNum;
    LangElement *texOp = new GenOp("@.Sample(@, @)", specularMapTex, specularMap, texCoord);
 
-
    Var *specularColor = new Var( "specularColor", "float4" );
    Var *metalness = (Var*)LangElement::find("metalness");
    if (!metalness) metalness = new Var("metalness", "float");

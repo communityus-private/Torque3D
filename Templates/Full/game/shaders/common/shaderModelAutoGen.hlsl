@@ -26,7 +26,6 @@
 #include "shadergen:/autogenConditioners.h"
 
 // Portability helpers for autogenConditioners
-
 #if TORQUE_SM >= 40
    #define TORQUE_DEFERRED_UNCONDITION(tex, coords) deferredUncondition(tex, texture_##tex, coords)
 #endif

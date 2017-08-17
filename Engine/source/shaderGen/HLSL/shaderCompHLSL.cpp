@@ -123,47 +123,61 @@ Var * ShaderConnectorHLSL::getIndexedElement(U32 index, RegisterType type, U32 n
    }
 
    case RT_TANGENT:
-   {
-      Var *newVar = new Var;
-      mElementList.push_back(newVar);
-      newVar->setConnectName("TANGENT");
-      newVar->rank = 3;
-      return newVar;
-   }
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+         newVar->setConnectName( "TANGENT" );
+         newVar->rank = 3;
+         return newVar;
+      }
 
    case RT_COLOR:
-   {
-      Var *newVar = new Var;
-      mElementList.push_back(newVar);
-      newVar->setConnectName("COLOR");
-      newVar->rank = 4;
-      return newVar;
-   }
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+         newVar->setConnectName( "COLOR" );
+         newVar->rank = 4;
+         return newVar;
+      }
 
    case RT_TEXCOORD:
-   {
-      Var *newVar = new Var;
-      mElementList.push_back(newVar);
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
 
-      // This was needed for hardware instancing, but
-      // i don't really remember why right now.
-      if (index > mCurTexElem)
-         mCurTexElem = index + 1;
+         // This was needed for hardware instancing, but
+         // i don't really remember why right now.
+         if ( index > mCurTexElem )
+            mCurTexElem = index + 1;
 
-      char out[32];
-      dSprintf((char*)out, sizeof(out), "TEXCOORD%d", index);
-      newVar->setConnectName(out);
-      newVar->constNum = index;
-      newVar->arraySize = numElements;
-      newVar->rank = 5 + index;
+         char out[32];
+         dSprintf( (char*)out, sizeof(out), "TEXCOORD%d", index );
+         newVar->setConnectName( out );
+         newVar->constNum = index;
+         newVar->arraySize = numElements;
+         newVar->rank = 5 + index;
 
-      return newVar;
-   }
+         return newVar;
+      }
 
    case RT_BLENDINDICES:
-   {
-      Var *newVar = new Var;
-      mElementList.push_back(newVar);
+      {
+         Var *newVar = new Var;
+         mElementList.push_back( newVar );
+
+         // This was needed for hardware instancing, but
+         // i don't really remember why right now.
+         if ( index > mCurBlendIndicesElem )
+            mCurBlendIndicesElem = index + 1;
+
+         char out[32];
+         dSprintf( (char*)out, sizeof(out), "BLENDINDICES%d", index );
+         newVar->setConnectName( out );
+         newVar->constNum = index;
+         newVar->arraySize = numElements;
+
+         return newVar;
+      }
 
       // This was needed for hardware instancing, but
       // i don't really remember why right now.

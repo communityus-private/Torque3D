@@ -560,7 +560,7 @@ void TerrainDetailMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
 
    // Get the detail texture.
    Var *detailMap = new Var;
-   detailMap->setType("SamplerState");
+   detailMap->setType( "SamplerState" );
    detailMap->setName( String::ToString( "detailMap%d", detailIndex ) );
    detailMap->uniform = true;
    detailMap->sampler = true;
@@ -863,7 +863,7 @@ void TerrainMacroMapFeatHLSL::processPix(   Vector<ShaderComponent*> &componentL
    // If we're using SM 3.0 then take advantage of 
    // dynamic branching to skip layers per-pixel.
    if ( GFX->getPixelShaderVersion() >= 3.0f )
-   meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
+      meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
    meta->addStatement( new GenOp( "   {\r\n" ) );
 
    // Note that we're doing the standard greyscale detail 
@@ -969,7 +969,7 @@ void TerrainNormalMapFeatHLSL::processPix(   Vector<ShaderComponent*> &component
    // If we're using SM 3.0 then take advantage of 
    // dynamic branching to skip layers per-pixel.
    if ( GFX->getPixelShaderVersion() >= 3.0f )
-   meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
+      meta->addStatement( new GenOp( "   if ( @ > 0.0f )\r\n", detailBlend ) );
 
    meta->addStatement( new GenOp( "   {\r\n" ) );
 
@@ -1054,8 +1054,8 @@ void TerrainLightMapFeatHLSL::processPix( Vector<ShaderComponent*> &componentLis
 
    // Get the lightmap texture.
    Var *lightMap = new Var;
-   lightMap->setType("SamplerState");
-   lightMap->setName("lightMapTex");
+   lightMap->setType( "SamplerState" );
+   lightMap->setName( "lightMapTex" );
    lightMap->uniform = true;
    lightMap->sampler = true;
    lightMap->constNum = Var::getTexUnitNum();

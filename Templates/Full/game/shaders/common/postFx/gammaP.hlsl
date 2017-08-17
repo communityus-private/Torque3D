@@ -46,5 +46,5 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    // Apply brightness
    //color.rgb += Brightness;
    
-   return color;    
+   return color;
 }

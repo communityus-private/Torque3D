@@ -80,10 +80,8 @@ class GFXD3D11WindowTarget : public GFXWindowTarget
 
    /// Maximum size we can render to.
    Point2I mSize;
-
    /// D3D presentation info.
    DXGI_SWAP_CHAIN_DESC mPresentationParams;
-
    /// Internal interface that notifies us we need to reset our video mode.
    void resetMode();
 

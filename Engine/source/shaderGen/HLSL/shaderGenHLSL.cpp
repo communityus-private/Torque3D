@@ -66,8 +66,6 @@ void ShaderGenPrinterHLSL::printPixelShaderOutputStruct(Stream& stream, const Ma
       if ( featureData.features.hasFeature( *info.type ) )
          numMRTs |= info.feature->getOutputTargets( featureData );
    }
-
-
    WRITESTR("struct Fragout\r\n");
    WRITESTR("{\r\n");
 

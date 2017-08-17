@@ -166,7 +166,7 @@ protected:
 
    virtual GFXD3D11VertexBuffer* findVBPool( const GFXVertexFormat *vertexFormat, U32 numVertsNeeded );
    virtual GFXD3D11VertexBuffer* createVBPool( const GFXVertexFormat *vertexFormat, U32 vertSize );
-   
+
    // State overrides
    // {
 
@@ -325,7 +325,6 @@ public:
    const String &getShaderModel() const { return mShaderModel; }
 
    // grab the sampler map
-   const SamplerMap &getSamplersMap() const { return mSamplersMap; }
    SamplerMap &getSamplersMap(){ return mSamplersMap; }
 };
 

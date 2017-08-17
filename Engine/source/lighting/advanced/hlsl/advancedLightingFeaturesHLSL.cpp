@@ -79,45 +79,44 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
                                              const MaterialFeatureData &fd )
 {
    // Skip deferred features, and use forward shading instead
-
    if ( !fd.features[MFT_isDeferred] )
    {
-      Parent::processPix(componentList, fd);
+      Parent::processPix( componentList, fd );
       return;
    }
 
    MultiLine *meta = new MultiLine;
 
-   ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>(componentList[C_CONNECTOR]);
-   Var *ssPos = connectComp->getElement(RT_TEXCOORD);
-   ssPos->setName("screenspacePos");
-   ssPos->setStructName("IN");
-   ssPos->setType("float4");
+   ShaderConnector *connectComp = dynamic_cast<ShaderConnector *>( componentList[C_CONNECTOR] );
+   Var *ssPos = connectComp->getElement( RT_TEXCOORD );
+   ssPos->setName( "screenspacePos" );
+   ssPos->setStructName( "IN" );
+   ssPos->setType( "float4" );
 
    Var *uvScene = new Var;
-   uvScene->setType("float2");
-   uvScene->setName("uvScene");
-   LangElement *uvSceneDecl = new DecOp(uvScene);
+   uvScene->setType( "float2" );
+   uvScene->setName( "uvScene" );
+   LangElement *uvSceneDecl = new DecOp( uvScene );
 
    String rtParamName = String::ToString("rtParams%s", "directLightingBuffer");
    Var *rtParams = (Var*)LangElement::find(rtParamName);
    if (!rtParams)
    {
       rtParams = new Var;
-      rtParams->setType("float4");
-      rtParams->setName(rtParamName);
+      rtParams->setType( "float4" );
+      rtParams->setName( rtParamName );
       rtParams->uniform = true;
       rtParams->constSortPos = cspPass;
    }
 
-   meta->addStatement(new GenOp("   @ = @.xy / @.w;\r\n", uvSceneDecl, ssPos, ssPos)); // get the screen coord... its -1 to +1
-   meta->addStatement(new GenOp("   @ = ( @ + 1.0 ) / 2.0;\r\n", uvScene, uvScene)); // get the screen coord to 0 to 1
-   meta->addStatement(new GenOp("   @.y = 1.0 - @.y;\r\n", uvScene, uvScene)); // flip the y axis 
-   meta->addStatement(new GenOp("   @ = ( @ * @.zw ) + @.xy;\r\n", uvScene, uvScene, rtParams, rtParams)); // scale it down and offset it to the rt size
+   meta->addStatement( new GenOp( "   @ = @.xy / @.w;\r\n", uvSceneDecl, ssPos, ssPos ) ); // get the screen coord... its -1 to +1
+   meta->addStatement( new GenOp( "   @ = ( @ + 1.0 ) / 2.0;\r\n", uvScene, uvScene ) ); // get the screen coord to 0 to 1
+   meta->addStatement( new GenOp( "   @.y = 1.0 - @.y;\r\n", uvScene, uvScene ) ); // flip the y axis 
+   meta->addStatement( new GenOp( "   @ = ( @ * @.zw ) + @.xy;\r\n", uvScene, uvScene, rtParams, rtParams) ); // scale it down and offset it to the rt size
 
    Var *lightInfoSamp = new Var;
-   lightInfoSamp->setType("float4");
-   lightInfoSamp->setName("lightInfoSample");
+   lightInfoSamp->setType( "float4" );
+   lightInfoSamp->setName( "lightInfoSample" );
 
    // create texture var
    Var *lightInfoBuffer = new Var;
@@ -136,15 +135,15 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
 
    // Declare the RTLighting variables in this feature, they will either be assigned
    // in this feature, or in the tonemap/lightmap feature
-   Var *d_lightcolor = new Var("d_lightcolor", "float3");
-   meta->addStatement(new GenOp("   @;\r\n", new DecOp(d_lightcolor)));
+   Var *d_lightcolor = new Var( "d_lightcolor", "float3" );
+   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( d_lightcolor ) ) );
 
-   Var *d_NL_Att = new Var("d_NL_Att", "float");
-   meta->addStatement(new GenOp("   @;\r\n", new DecOp(d_NL_Att)));
+   Var *d_NL_Att = new Var( "d_NL_Att", "float" );
+   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( d_NL_Att ) ) );
 
-   Var *d_specular = new Var("d_specular", "float");
-   meta->addStatement(new GenOp("   @;\r\n", new DecOp(d_specular)));
-
+   Var *d_specular = new Var( "d_specular", "float" );
+   meta->addStatement( new GenOp( "   @;\r\n", new DecOp( d_specular ) ) );
+   
 
    // Perform the uncondition here.
    String unconditionLightInfo = String::ToLower( AdvancedLightBinManager::smBufferName ) + "Uncondition";
@@ -154,12 +153,12 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
    // If this has an interlaced pre-pass, do averaging here
    if( fd.features[MFT_InterlacedDeferred] )
    {
-      Var *oneOverTargetSize = (Var*)LangElement::find("oneOverTargetSize");
-      if (!oneOverTargetSize)
+      Var *oneOverTargetSize = (Var*) LangElement::find( "oneOverTargetSize" );
+      if( !oneOverTargetSize )
       {
          oneOverTargetSize = new Var;
-         oneOverTargetSize->setType("float2");
-         oneOverTargetSize->setName("oneOverTargetSize");
+         oneOverTargetSize->setType( "float2" );
+         oneOverTargetSize->setName( "oneOverTargetSize" );
          oneOverTargetSize->uniform = true;
          oneOverTargetSize->constSortPos = cspPass;
       }
@@ -171,12 +170,11 @@ void DeferredRTLightingFeatHLSL::processPix( Vector<ShaderComponent*> &component
       meta->addStatement( new GenOp("   @ = lerp(@, id_lightcolor, 0.5);\r\n", d_lightcolor, d_lightcolor ) );
       meta->addStatement( new GenOp("   @ = lerp(@, id_NL_Att, 0.5);\r\n", d_NL_Att, d_NL_Att ) );
       meta->addStatement( new GenOp("   @ = lerp(@, id_specular, 0.5);\r\n", d_specular, d_specular ) );
-
    }
 
    // This is kind of weak sauce
-   if (!fd.features[MFT_VertLit] && !fd.features[MFT_ToneMap] && !fd.features[MFT_LightMap] && !fd.features[MFT_SubSurface])
-      meta->addStatement(new GenOp("   @;\r\n", assignColor(new GenOp("float4(@, 1.0)", d_lightcolor), Material::Mul)));
+   if( !fd.features[MFT_VertLit] && !fd.features[MFT_ToneMap] && !fd.features[MFT_LightMap] && !fd.features[MFT_SubSurface] )
+      meta->addStatement( new GenOp( "   @;\r\n", assignColor( new GenOp( "float4(@, 1.0)", d_lightcolor ), Material::Mul ) ) );
 
    output = meta;
 }
@@ -276,7 +274,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
    {
       MultiLine *meta = new MultiLine;
 
-      Var *viewToTangent = getInViewToTangent(componentList);
+      Var *viewToTangent = getInViewToTangent( componentList );
 
       // create texture var
       Var *bumpMap = getNormalMapTex();
@@ -287,16 +285,16 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
 
       // create bump normal
       Var *bumpNorm = new Var;
-      bumpNorm->setName("bumpNormal");
-      bumpNorm->setType("float4");
+      bumpNorm->setName( "bumpNormal" );
+      bumpNorm->setType( "float4" );
 
-      LangElement *bumpNormDecl = new DecOp(bumpNorm);
-      meta->addStatement(expandNormalMap(texOp, bumpNormDecl, bumpNorm, fd));
+      LangElement *bumpNormDecl = new DecOp( bumpNorm );
+      meta->addStatement( expandNormalMap( texOp, bumpNormDecl, bumpNorm, fd ) );
 
       // If we have a detail normal map we add the xy coords of
       // it to the base normal map.  This gives us the effect we
       // want with few instructions and minial artifacts.
-      if (fd.features.hasFeature(MFT_DetailNormalMap))
+      if ( fd.features.hasFeature( MFT_DetailNormalMap ) )
       {
          bumpMap = new Var;
          bumpMap->setType( "SamplerState" );
@@ -315,16 +313,16 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
          texOp = new GenOp("@.Sample(@, @)", detailNormalTex, bumpMap, texCoord);
 
          Var *detailBump = new Var;
-         detailBump->setName("detailBump");
-         detailBump->setType("float4");
-         meta->addStatement(expandNormalMap(texOp, new DecOp(detailBump), detailBump, fd));
+         detailBump->setName( "detailBump" );
+         detailBump->setType( "float4" );
+         meta->addStatement( expandNormalMap( texOp, new DecOp( detailBump ), detailBump, fd ) );
 
          Var *detailBumpScale = new Var;
-         detailBumpScale->setType("float");
-         detailBumpScale->setName("detailBumpStrength");
+         detailBumpScale->setType( "float" );
+         detailBumpScale->setName( "detailBumpStrength" );
          detailBumpScale->uniform = true;
          detailBumpScale->constSortPos = cspPass;
-         meta->addStatement(new GenOp("   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale));
+         meta->addStatement( new GenOp( "   @.xy += @.xy * @;\r\n", bumpNorm, detailBump, detailBumpScale ) );
       }
       if (fd.features.hasFeature(MFT_NormalDamage))
       {
@@ -383,13 +381,13 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
       // which helps alot on older Geforce cards.
       //
       Var *gbNormal = new Var;
-      gbNormal->setName("gbNormal");
-      gbNormal->setType("half3");
-      LangElement *gbNormalDecl = new DecOp(gbNormal);
+      gbNormal->setName( "gbNormal" );
+      gbNormal->setType( "half3" );
+      LangElement *gbNormalDecl = new DecOp( gbNormal );
 
       // Normalize is done later... 
       // Note: The reverse mul order is intentional. Affine matrix.
-      meta->addStatement(new GenOp("   @ = (half3)mul( @.xyz, @ );\r\n", gbNormalDecl, bumpNorm, viewToTangent));
+      meta->addStatement( new GenOp( "   @ = (half3)mul( @.xyz, @ );\r\n", gbNormalDecl, bumpNorm, viewToTangent ) );
 
       output = meta;
       return;
@@ -463,24 +461,24 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
                !fd.features[MFT_isDeferred] || 
                !fd.features[MFT_RTLighting] )
    {
-      Parent::processPix(componentList, fd);
+      Parent::processPix( componentList, fd );
       return;
    }
-   else if (fd.features[MFT_PixSpecular] && !fd.features[MFT_SpecularMap])
+   else if ( fd.features[MFT_PixSpecular] && !fd.features[MFT_SpecularMap] )
    {
-      Var *bumpSample = (Var *)LangElement::find("bumpSample");
-      if (bumpSample == NULL)
+      Var *bumpSample = (Var *)LangElement::find( "bumpSample" );
+      if( bumpSample == NULL )
       {
          Var *texCoord = getInTexCoord( "texCoord", "float2", componentList );
 
          Var *bumpMap = getNormalMapTex();
-         Var *bumpMapTex = (Var *)LangElement::find("bumpMapTex");
 
          bumpSample = new Var;
-         bumpSample->setType("float4");
-         bumpSample->setName("bumpSample");
+         bumpSample->setType( "float4" );
+         bumpSample->setName( "bumpSample" );
+         LangElement *bumpSampleDecl = new DecOp( bumpSample );
 
-         LangElement *bumpSampleDecl = new DecOp(bumpSample);
+         Var *bumpMapTex = (Var *)LangElement::find("bumpMapTex");
          output = new GenOp("   @ = @.Sample(@, @);\r\n", bumpSampleDecl, bumpMapTex, bumpMap, texCoord);
          return;
       }
@@ -755,8 +753,8 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
    }
 
    Var *minnaertConstant = new Var;
-   minnaertConstant->setType("float");
-   minnaertConstant->setName("minnaertConstant");
+   minnaertConstant->setType( "float" );
+   minnaertConstant->setName( "minnaertConstant" );
    minnaertConstant->uniform = true;
    minnaertConstant->constSortPos = cspPotentialPrimitive;
 
@@ -777,13 +775,13 @@ void DeferredMinnaertHLSL::processPix( Vector<ShaderComponent*> &componentList,
    deferredTex->constNum = deferredBuffer->constNum;
 
    // Texture coord
-   Var *uvScene = (Var*)LangElement::find("uvScene");
+   Var *uvScene = (Var*) LangElement::find( "uvScene" );
    AssertFatal(uvScene != NULL, "Unable to find UVScene, no RTLighting feature?");
 
    MultiLine *meta = new MultiLine;
 
    // Get the world space view vector.
-   Var *wsViewVec = getWsView(getInWsPosition(componentList), meta);
+   Var *wsViewVec = getWsView( getInWsPosition( componentList ), meta );
 
    String unconditionDeferredMethod = String::ToLower(RenderDeferredMgr::BufferName) + "Uncondition";
 

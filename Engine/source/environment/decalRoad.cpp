@@ -732,6 +732,7 @@ void DecalRoad::prepRenderImage( SceneRenderState* state )
    MathUtils::getZBiasProjectionMatrix( gDecalBias, frustum, tempMat );
    coreRI.projection = tempMat;
 
+
    coreRI.type = RenderPassManager::RIT_DecalRoad;
    coreRI.vertBuff = &mVB;
    coreRI.primBuff = &mPB;
