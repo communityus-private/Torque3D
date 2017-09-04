@@ -35,6 +35,8 @@
 #include "lighting/advanced/advancedLightBinManager.h"
 #include "ts/tsShape.h"
 
+#include "shaderGen/shaderGen.h"
+
 LangElement * ShaderFeatureGLSL::setupTexSpaceMat( Vector<ShaderComponent*> &, // componentList
                                                    Var **texSpaceMat )
 {
@@ -830,7 +832,7 @@ Var* ShaderFeatureGLSL::addOutDetailTexCoord(   Vector<ShaderComponent*> &compon
 //****************************************************************************
 
 DiffuseMapFeatGLSL::DiffuseMapFeatGLSL()
-: mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/torque.glsl"))
+: mTorqueDep(ShaderGen::smCommonShaderPath + String("/gl/torque.glsl"))
 {
 	addDependency(&mTorqueDep);
 }
@@ -1972,7 +1974,7 @@ void ReflectCubeFeatGLSL::setTexData(  Material::StageData &stageDat,
 //****************************************************************************
 
 RTLightingFeatGLSL::RTLightingFeatGLSL()
-   : mDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/lighting.glsl" ))
+   : mDep(ShaderGen::smCommonShaderPath + String("/gl/lighting.glsl" ))
 {
    addDependency( &mDep );
 }
@@ -2197,7 +2199,7 @@ ShaderFeature::Resources RTLightingFeatGLSL::getResources( const MaterialFeature
 //****************************************************************************
 
 FogFeatGLSL::FogFeatGLSL()
-   : mFogDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/torque.glsl" ))
+   : mFogDep(ShaderGen::smCommonShaderPath + String("/gl/torque.glsl" ))
 {
    addDependency( &mFogDep );
 }
@@ -2327,7 +2329,7 @@ ShaderFeature::Resources FogFeatGLSL::getResources( const MaterialFeatureData &f
 //****************************************************************************
 
 VisibilityFeatGLSL::VisibilityFeatGLSL()
-   : mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/torque.glsl" ))
+   : mTorqueDep(ShaderGen::smCommonShaderPath + String("/gl/torque.glsl" ))
 {
    addDependency( &mTorqueDep );
 }
@@ -2493,7 +2495,7 @@ void RenderTargetZeroGLSL::processPix( Vector<ShaderComponent*> &componentList, 
 //****************************************************************************
 
 HDROutGLSL::HDROutGLSL()
-   : mTorqueDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/torque.glsl" ))
+   : mTorqueDep(ShaderGen::smCommonShaderPath + String("/gl/torque.glsl" ))
 {
    addDependency( &mTorqueDep );
 }
@@ -2514,7 +2516,7 @@ void HDROutGLSL::processPix(  Vector<ShaderComponent*> &componentList,
 #include "T3D/fx/groundCover.h"
 
 FoliageFeatureGLSL::FoliageFeatureGLSL()
-: mDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/foliage.glsl" ))
+: mDep(ShaderGen::smCommonShaderPath + String("/gl/foliage.glsl" ))
 {
    addDependency( &mDep );
 }
@@ -2660,7 +2662,7 @@ void ParticleNormalFeatureGLSL::processVert(Vector<ShaderComponent*> &componentL
 //****************************************************************************
 
 ImposterVertFeatureGLSL::ImposterVertFeatureGLSL()
-   :  mDep(String(Con::getVariable("$Core::CommonShaderPath")) + String("/gl/imposter.glsl" ))
+   :  mDep(ShaderGen::smCommonShaderPath + String("/gl/imposter.glsl" ))
 {
    addDependency( &mDep );
 }
