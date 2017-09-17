@@ -80,6 +80,7 @@ function ESnapOptions::setGridSnapSize( %this )
 function ESnapOptions::toggleRenderSnapBounds( %this )
 {
    EWorldEditor.softSnapRender( ESnapOptionsTabSoft-->RenderSnapBounds.getValue() );
+   EWorldEditor.softSnapSizeByBounds(ESnapOptionsTabSoft-->RenderSnapBounds.getValue());
 }
 
 function ESnapOptions::toggleRenderSnappedTriangle( %this )

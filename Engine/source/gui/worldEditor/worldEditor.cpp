@@ -909,7 +909,11 @@ void WorldEditor::softSnapSelection(Selection* sel, U8 modifier, Point3F gizmoPo
       SceneObject* so = foundobjs[i];
       polys.setTransform(&(so->getTransform()), so->getScale());
       polys.setObject(so);
-      so->buildPolyList(PLC_Selection, &polys, mSoftSnapPreBounds, sphere);
+
+	  if (mSoftSnapSizeByBounds)
+		  polys.addBox(so->getObjBox());
+	  else
+		  so->buildPolyList(PLC_Selection, &polys, mSoftSnapPreBounds, sphere);
    }
 
    // Calculate sticky point
