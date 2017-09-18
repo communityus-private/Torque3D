@@ -51,6 +51,7 @@ struct Token
 %token <i> rwFOR rwFOREACH rwFOREACHSTR rwIN rwDATABLOCK rwSWITCH rwCASE rwSWITCHSTR
 %token <i> rwCASEOR rwPACKAGE rwNAMESPACE rwCLASS
 %token <i> rwASSERT
+%token <i> rwTYPENONE rwTYPEFLOAT rwTYPEINT rwTYPEBOOL rwTYPESTRING
 %token ILLEGAL_TOKEN
 %{
         /* Constants and Identifier Definitions */
@@ -133,6 +134,8 @@ struct Token
 %type <slot>   slot_acc
 %type <intslot>   intslot_acc
 %type <stmt>   expression_stmt
+%type <i>   var_type_opt
+%type <i>   var_type
 %type <var>    var_list
 %type <var>    var_list_decl
 %type <asn>    assign_op_struct
@@ -235,14 +238,35 @@ var_list_decl
    | var_list
      { $$ = $1; }
    ;
-
+   
 var_list
-   : VAR
-      { $$ = VarNode::alloc( $1.lineNumber, $1.value, NULL ); }
-   | var_list ',' VAR
-      { $$ = $1; ((StmtNode*)($1))->append((StmtNode*)VarNode::alloc( $3.lineNumber, $3.value, NULL ) ); }
+   : var_type_opt VAR
+      { $$ = VarNode::alloc( $2.lineNumber, $2.value, NULL, (($1.value == -1) ? -1 : $1.value) ); }
+   | var_list ',' var_type_opt VAR
+      { $$ = $1; ((StmtNode*)($1))->append((StmtNode*)VarNode::alloc( $3.lineNumber, $4.value, NULL, (($3.value == -1) ? -1 : $3.value) ) ); }
    ;
 
+var_type_opt
+   :
+     { 
+	    Token<int> tmp;
+		tmp.value = -1;
+	    $$ = tmp; 
+	 }
+   | var_type
+     { $$ = $1; }
+   
+var_type
+   : rwTYPEBOOL
+     { $$ = $1; }
+   | rwTYPEFLOAT
+     { $$ = $1; }
+   | rwTYPEINT
+     { $$ = $1; }
+   | rwTYPESTRING
+     { $$ = $1; }
+   ;   
+   
 datablock_decl
    : rwDATABLOCK class_name_expr '(' expr parent_block ')'  '{' slot_assign_list_opt '}' ';'
       { $$ = ObjectDeclNode::alloc( $1.lineNumber, $2, $4, NULL, $5.value, $8, NULL, true, false, false); }
@@ -453,9 +477,9 @@ expr
    | STRATOM
       { $$ = StrConstNode::alloc( $1.lineNumber, $1.value, false); }
    | VAR
-      { $$ = (ExprNode*)VarNode::alloc( $1.lineNumber, $1.value, NULL); }
+      { $$ = (ExprNode*)VarNode::alloc( $1.lineNumber, $1.value, NULL, -1); }
    | VAR '[' aidx_expr ']'
-      { $$ = (ExprNode*)VarNode::alloc( $1.lineNumber, $1.value, $3 ); }
+      { $$ = (ExprNode*)VarNode::alloc( $1.lineNumber, $1.value, $3, -1 ); }
    | rwDEFINE '(' var_list_decl ')' '{' statement_list '}'
       {
          const U32 bufLen = 64;
@@ -528,6 +552,8 @@ stmt_expr
       { $$ = $1; }      
    | object_decl
       { $$ = $1; }
+   | var_type VAR
+      { $$ = DeclareVarExprNode::alloc( $2.lineNumber, $2.value, $1.value); }
    | VAR '=' expr
       { $$ = AssignExprNode::alloc( $1.lineNumber, $1.value, NULL, $3); }
    | VAR '[' aidx_expr ']' '=' expr

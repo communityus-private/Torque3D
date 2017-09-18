@@ -1003,6 +1003,57 @@ TypeReq AssignExprNode::getPreferredType()
    return expr->getPreferredType();
 }
 
+//-------------------------------------------------------------
+
+U32 DeclareVarExprNode::compile(CodeStream &codeStream, U32 ip, TypeReq type)
+{
+	// OP_DECLARE_VAR
+	// type
+	// varName
+	// OP_SAVEVAR
+
+	codeStream.emit(OP_DECLARE_VAR);
+	codeStream.emit(type);
+	codeStream.emitSTE(varName);
+	switch (getPreferredType())
+	{
+	case TypeReqString:
+		codeStream.emit(OP_SAVEVAR_STR);
+		break;
+	case TypeReqUInt:
+		codeStream.emit(OP_SAVEVAR_UINT);
+		break;
+	case TypeReqFloat:
+		codeStream.emit(OP_SAVEVAR_FLT);
+		break;
+	case TypeReqBool:
+		codeStream.emit(OP_SAVEVAR_BOOL);
+		break;
+	default:
+		AssertFatal(false, "You should never hit this. How dare you not use a type.");
+	}
+	return ip;
+}
+
+TypeReq DeclareVarExprNode::getPreferredType()
+{
+	switch (varType)
+	{
+	case rwTYPEFLOAT:
+		return TypeReq::TypeReqFloat;
+	case rwTYPEINT:
+		return TypeReq::TypeReqUInt;
+	case rwTYPEBOOL:
+		return TypeReq::TypeReqBool;
+	case rwTYPESTRING:
+		return TypeReq::TypeReqString;
+	}
+
+	// SHOULD NEVER HIT HERE AS WE REQUIRE A TYPE.
+	AssertFatal(false, "You somehow managed to declare a variable without specifing its type? Wow.");
+	return TypeReq::TypeReqVar;
+}
+
 //------------------------------------------------------------
 
 static void getAssignOpTypeOp(S32 op, TypeReq &type, U32 &operand)

@@ -280,7 +280,7 @@ Dictionary::Entry *Dictionary::lookup(StringTableEntry name)
    return NULL;
 }
 
-Dictionary::Entry *Dictionary::add(StringTableEntry name)
+Dictionary::Entry *Dictionary::add(StringTableEntry name, TypeReq varType)
 {
    // Try to find an existing match.
    //printf("Add Variable %s\n", name);
@@ -329,7 +329,7 @@ Dictionary::Entry *Dictionary::add(StringTableEntry name)
    // Add the new entry.
 
    ret = hashTable->mChunker.alloc();
-   constructInPlace( ret, name );
+   constructInPlace( ret, name, varType );
    U32 idx = HashPointer(name) % hashTable->size;
    ret->nextEntry = hashTable->data[idx];
    hashTable->data[idx] = ret;
@@ -451,8 +451,9 @@ const char *Dictionary::tabComplete(const char *prevText, S32 baseLen, bool fFor
 
 char *typeValueEmpty = "";
 
-Dictionary::Entry::Entry(StringTableEntry in_name)
+Dictionary::Entry::Entry(StringTableEntry in_name, TypeReq type)
 {
+   varType = type;
    name = in_name;
    value.type = ConsoleValue::TypeInternalString;
    notify = NULL;
