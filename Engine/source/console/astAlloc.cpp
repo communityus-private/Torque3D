@@ -268,13 +268,14 @@ AssignExprNode *AssignExprNode::alloc( S32 lineNumber, StringTableEntry varName,
    return ret;
 }
 
-DeclareVarExprNode *DeclareVarExprNode::alloc(S32 lineNumber, StringTableEntry name, S32 type)
+DeclareVarExprNode *DeclareVarExprNode::alloc(S32 lineNumber, StringTableEntry name, S32 type, ExprNode *expr )
 {
 	DeclareVarExprNode *ret = (DeclareVarExprNode *) consoleAlloc(sizeof(DeclareVarExprNode));
 	constructInPlace(ret);
 	ret->dbgLineNumber = lineNumber;
 	ret->varName = name;
 	ret->varType = type;
+	ret->expr = expr;
 
 	return ret;
 }
@@ -427,12 +428,13 @@ ObjectDeclNode *ObjectDeclNode::alloc( S32 lineNumber, ExprNode *classNameExpr, 
    return ret;
 }
 
-FunctionDeclStmtNode *FunctionDeclStmtNode::alloc( S32 lineNumber, StringTableEntry fnName, StringTableEntry nameSpace, VarNode *args, StmtNode *stmts )
+FunctionDeclStmtNode *FunctionDeclStmtNode::alloc( S32 lineNumber, StringTableEntry fnName, StringTableEntry nameSpace, VarNode *args, StmtNode *stmts, S32 returnType )
 {
    FunctionDeclStmtNode *ret = (FunctionDeclStmtNode *) consoleAlloc(sizeof(FunctionDeclStmtNode));
    constructInPlace(ret);
    ret->dbgLineNumber = lineNumber;
    ret->fnName = fnName;
+   ret->returnType = returnType;
    ret->args = args;
    ret->stmts = stmts;
    ret->nameSpace = nameSpace;

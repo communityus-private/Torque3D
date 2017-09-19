@@ -18,6 +18,8 @@
 
 #define YYSSIZE 350
 
+#define TS_NO_TYPE_DEFINED -1
+
 int outtext(char *fmt, ...);
 extern int serrors;
 
@@ -157,7 +159,6 @@ struct Token
 %right '!' '~' opPLUSPLUS opMINUSMINUS UNARY
 %left '.'
 %left opINTNAME opINTNAMER
-
 %%
 
 start
@@ -227,9 +228,13 @@ stmt
 
 fn_decl_stmt
    : rwDEFINE IDENT '(' var_list_decl ')' '{' statement_list '}'
-      { $$ = FunctionDeclStmtNode::alloc( $1.lineNumber, $2.value, NULL, $4, $7 ); }
-    | rwDEFINE IDENT opCOLONCOLON IDENT '(' var_list_decl ')' '{' statement_list '}'
-     { $$ = FunctionDeclStmtNode::alloc( $1.lineNumber, $4.value, $2.value, $6, $9 ); }
+      { $$ = FunctionDeclStmtNode::alloc( $1.lineNumber, $2.value, NULL, $4, $7, TS_NO_TYPE_DEFINED ); }
+   | rwDEFINE IDENT '(' var_list_decl ')' opINTNAME var_type '{' statement_list '}' 
+      { $$ = FunctionDeclStmtNode::alloc( $1.lineNumber, $2.value, NULL, $4, $9, $7.value ) }
+   | rwDEFINE IDENT opCOLONCOLON IDENT '(' var_list_decl ')' '{' statement_list '}'
+     { $$ = FunctionDeclStmtNode::alloc( $1.lineNumber, $4.value, $2.value, $6, $9, TS_NO_TYPE_DEFINED ); }
+   | rwDEFINE IDENT opCOLONCOLON IDENT '(' var_list_decl ')' opINTNAME var_type '{' statement_list '}'
+     { $$ = FunctionDeclStmtNode::alloc( $1.lineNumber, $4.value, $2.value, $6, $11, $9.value ); }     
    ;
 
 var_list_decl
@@ -241,16 +246,16 @@ var_list_decl
    
 var_list
    : var_type_opt VAR
-      { $$ = VarNode::alloc( $2.lineNumber, $2.value, NULL, (($1.value == -1) ? -1 : $1.value) ); }
+      { $$ = VarNode::alloc( $2.lineNumber, $2.value, NULL, $1.value ); }
    | var_list ',' var_type_opt VAR
-      { $$ = $1; ((StmtNode*)($1))->append((StmtNode*)VarNode::alloc( $3.lineNumber, $4.value, NULL, (($3.value == -1) ? -1 : $3.value) ) ); }
+      { $$ = $1; ((StmtNode*)($1))->append((StmtNode*)VarNode::alloc( $4.lineNumber, $4.value, NULL,  $3.value ) ); }
    ;
 
 var_type_opt
    :
      { 
 	    Token<int> tmp;
-		tmp.value = -1;
+       tmp.value = TS_NO_TYPE_DEFINED;
 	    $$ = tmp; 
 	 }
    | var_type
@@ -486,7 +491,22 @@ expr
          UTF8 buffer[bufLen];
          dSprintf(buffer, bufLen, "__anonymous_function%d", gAnonFunctionID++);
          StringTableEntry fName = StringTable->insert(buffer);
-         StmtNode *fndef = FunctionDeclStmtNode::alloc($1.lineNumber, fName, NULL, $3, $6);
+         StmtNode *fndef = FunctionDeclStmtNode::alloc($1.lineNumber, fName, NULL, $3, $6, TS_NO_TYPE_DEFINED);
+
+         if(!gAnonFunctionList)
+            gAnonFunctionList = fndef;
+         else
+            gAnonFunctionList->append(fndef);
+
+         $$ = StrConstNode::alloc( $1.lineNumber, (UTF8*)fName, false );
+      }
+   | rwDEFINE '(' var_list_decl ')' opINTNAME var_type '{' statement_list '}'
+      {
+         const U32 bufLen = 64;
+         UTF8 buffer[bufLen];
+         dSprintf(buffer, bufLen, "__anonymous_function%d", gAnonFunctionID++);
+         StringTableEntry fName = StringTable->insert(buffer);
+         StmtNode *fndef = FunctionDeclStmtNode::alloc($1.lineNumber, fName, NULL, $3, $8, $6.value);
 
          if(!gAnonFunctionList)
             gAnonFunctionList = fndef;
@@ -553,7 +573,9 @@ stmt_expr
    | object_decl
       { $$ = $1; }
    | var_type VAR
-      { $$ = DeclareVarExprNode::alloc( $2.lineNumber, $2.value, $1.value); }
+      { $$ = DeclareVarExprNode::alloc( $2.lineNumber, $2.value, $1.value, NULL); }
+   | var_type VAR '=' expr
+      { $$ = DeclareVarExprNode::alloc( $2.lineNumber, $2.value, $1.value, $4); }      
    | VAR '=' expr
       { $$ = AssignExprNode::alloc( $1.lineNumber, $1.value, NULL, $3); }
    | VAR '[' aidx_expr ']' '=' expr

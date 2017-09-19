@@ -1007,30 +1007,50 @@ TypeReq AssignExprNode::getPreferredType()
 
 U32 DeclareVarExprNode::compile(CodeStream &codeStream, U32 ip, TypeReq type)
 {
-	// OP_DECLARE_VAR
-	// type
-	// varName
-	// OP_SAVEVAR
+	// IF we have an expr
+	//    eval expr
+	//    OP_DECLARE_VAR
+	//    type
+	//    varName
+	//    OP_SAVEVAR
+	// ELSE
+	//    OP_DECLARE_VAR
+	//    type
+	//    varName
 
-	codeStream.emit(OP_DECLARE_VAR);
-	codeStream.emit(type);
-	codeStream.emitSTE(varName);
-	switch (getPreferredType())
+	precompileIdent(varName);
+
+	TypeReq preferredType = getPreferredType();
+
+	if (expr != NULL)
 	{
-	case TypeReqString:
-		codeStream.emit(OP_SAVEVAR_STR);
-		break;
-	case TypeReqUInt:
-		codeStream.emit(OP_SAVEVAR_UINT);
-		break;
-	case TypeReqFloat:
-		codeStream.emit(OP_SAVEVAR_FLT);
-		break;
-	case TypeReqBool:
-		codeStream.emit(OP_SAVEVAR_BOOL);
-		break;
-	default:
-		AssertFatal(false, "You should never hit this. How dare you not use a type.");
+		ip = expr->compile(codeStream, ip, preferredType);
+		codeStream.emit(OP_DECLARE_VAR);
+		codeStream.emit(type);
+		codeStream.emitSTE(varName);
+		switch (preferredType)
+		{
+		case TypeReqString:
+			codeStream.emit(OP_SAVEVAR_STR);
+			break;
+		case TypeReqUInt:
+			codeStream.emit(OP_SAVEVAR_UINT);
+			break;
+		case TypeReqFloat:
+			codeStream.emit(OP_SAVEVAR_FLT);
+			break;
+		case TypeReqBool:
+			codeStream.emit(OP_SAVEVAR_BOOL);
+			break;
+		default:
+			AssertFatal(false, "You should never hit this. How dare you not use a type.");
+		}
+	}
+	else
+	{
+		codeStream.emit(OP_DECLARE_VAR);
+		codeStream.emit(type);
+		codeStream.emitSTE(varName);
 	}
 	return ip;
 }

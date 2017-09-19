@@ -375,8 +375,9 @@ struct DeclareVarExprNode : ExprNode
 {
 	StringTableEntry varName;
 	S32 varType;
+	ExprNode *expr;
 
-	static DeclareVarExprNode *alloc(S32 lineNumber, StringTableEntry name, S32 type);
+	static DeclareVarExprNode *alloc(S32 lineNumber, StringTableEntry name, S32 type, ExprNode *expr );
 
 	U32 compile(CodeStream &codeStream, U32 ip, TypeReq type);
 	TypeReq getPreferredType();
@@ -580,8 +581,9 @@ struct FunctionDeclStmtNode : StmtNode
    StringTableEntry package;
    U32 endOffset;
    U32 argc;
+   S32 returnType;
 
-   static FunctionDeclStmtNode *alloc( S32 lineNumber, StringTableEntry fnName, StringTableEntry nameSpace, VarNode *args, StmtNode *stmts );
+   static FunctionDeclStmtNode *alloc( S32 lineNumber, StringTableEntry fnName, StringTableEntry nameSpace, VarNode *args, StmtNode *stmts, S32 returnType );
    
    U32 compileStmt(CodeStream &codeStream, U32 ip);
    void setPackage(StringTableEntry packageName);
