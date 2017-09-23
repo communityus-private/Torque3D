@@ -269,6 +269,19 @@ inline void ExprEvalState::setCurVarNameCreate(StringTableEntry name)
    }
 }
 
+inline void ExprEvalState::setDeclareVarNameCreate(StringTableEntry name, TypeReq type)
+{
+	if (name[0] == '$')
+		currentVariable = globalVars.add(name, type);
+	else if (getStackDepth() > 0)
+		currentVariable = getCurrentFrame().add(name, type);
+	else
+	{
+		currentVariable = NULL;
+		Con::warnf(ConsoleLogEntry::Script, "Declaring local variable ... failed: %s", name);
+	}
+}
+
 //------------------------------------------------------------
 
 inline S32 ExprEvalState::getIntVariable()
@@ -578,6 +591,7 @@ ConsoleValueRef CodeBlock::exec(U32 ip, const char *functionName, Namespace *thi
    if ( telDebuggerOn && setFrame < 0 )
       TelDebugger->pushStackFrame();
 
+   TypeReq varType;
    StringTableEntry var, objParent;
    StringTableEntry fnName;
    StringTableEntry fnNamespace, fnPackage;
@@ -1461,6 +1475,23 @@ breakContinue:
             curFNDocBlock = NULL;
             curNSDocBlock = NULL;
             break;
+
+		 case OP_DECLARE_VAR:
+			 varType = static_cast<TypeReq>(code[ip++]);
+			 var = CodeToSTE(code, ip);
+			 ip += 2;
+
+			 // See OP_SETCURVAR
+			 prevField = NULL;
+			 prevObject = NULL;
+			 curObject = NULL;
+
+			 gEvalState.setDeclareVarNameCreate(var, varType);
+
+			 // See OP_SETCURVAR for why we do this.
+			 curFNDocBlock = NULL;
+			 curNSDocBlock = NULL;
+			 break;
 
          case OP_LOADVAR_UINT:
             intStack[_UINT+1] = gEvalState.getIntVariable();

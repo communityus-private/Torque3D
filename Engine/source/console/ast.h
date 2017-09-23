@@ -34,9 +34,10 @@ class CodeStream;
 /// due to incorrect compiler optimization.
 //#define DEBUG_AST_NODES
 
-enum TypeReq
+enum TypeReq : U32
 {
    TypeReqNone,
+   TypeReqBool,
    TypeReqUInt,
    TypeReqFloat,
    TypeReqString,
@@ -295,8 +296,9 @@ struct VarNode : ExprNode
 {
    StringTableEntry varName;
    ExprNode *arrayIndex;
+   S32 variableType;
 
-   static VarNode *alloc( S32 lineNumber, StringTableEntry varName, ExprNode *arrayIndex );
+   static VarNode *alloc( S32 lineNumber, StringTableEntry varName, ExprNode *arrayIndex, S32 type );
   
    U32 compile(CodeStream &codeStream, U32 ip, TypeReq type);
    TypeReq getPreferredType();
@@ -367,6 +369,19 @@ struct AssignExprNode : ExprNode
    U32 compile(CodeStream &codeStream, U32 ip, TypeReq type);
    TypeReq getPreferredType();
    DBG_STMT_TYPE(AssignExprNode);
+};
+
+struct DeclareVarExprNode : ExprNode
+{
+	StringTableEntry varName;
+	S32 varType;
+	ExprNode *expr;
+
+	static DeclareVarExprNode *alloc(S32 lineNumber, StringTableEntry name, S32 type, ExprNode *expr );
+
+	U32 compile(CodeStream &codeStream, U32 ip, TypeReq type);
+	TypeReq getPreferredType();
+	DBG_STMT_TYPE(DeclareVarExprNode);
 };
 
 struct AssignDecl
@@ -566,8 +581,9 @@ struct FunctionDeclStmtNode : StmtNode
    StringTableEntry package;
    U32 endOffset;
    U32 argc;
+   S32 returnType;
 
-   static FunctionDeclStmtNode *alloc( S32 lineNumber, StringTableEntry fnName, StringTableEntry nameSpace, VarNode *args, StmtNode *stmts );
+   static FunctionDeclStmtNode *alloc( S32 lineNumber, StringTableEntry fnName, StringTableEntry nameSpace, VarNode *args, StmtNode *stmts, S32 returnType );
    
    U32 compileStmt(CodeStream &codeStream, U32 ip);
    void setPackage(StringTableEntry packageName);

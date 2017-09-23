@@ -38,6 +38,7 @@
 #ifndef _DATACHUNKER_H_
    #include "core/dataChunker.h"
 #endif
+#include "console/ast.h"
 
 
 /// @ingroup console_system Console System
@@ -283,6 +284,7 @@ public:
 
    struct Entry
    {
+      TypeReq varType;
       StringTableEntry name;
       ConsoleValue value;
       Entry *nextEntry;
@@ -302,6 +304,7 @@ public:
    public:
 
       Entry() {
+         varType = TypeReq::TypeReqNone;
          name = NULL;
          notify = NULL;
          nextEntry = NULL;
@@ -310,7 +313,7 @@ public:
          value.init();
       }
       
-      Entry(StringTableEntry name);
+      Entry(StringTableEntry name, TypeReq type = TypeReq::TypeReqNone);
       ~Entry();
       
       Entry *mNext;
@@ -425,7 +428,7 @@ public:
    ~Dictionary();
 
    Entry *lookup(StringTableEntry name);
-   Entry *add(StringTableEntry name);
+   Entry *add(StringTableEntry name, TypeReq type = TypeReq::TypeReqNone);
    void setState(ExprEvalState *state, Dictionary* ref=NULL);
    void remove(Entry *);
    void reset();
@@ -504,6 +507,7 @@ public:
 
    void setCurVarName(StringTableEntry name);
    void setCurVarNameCreate(StringTableEntry name);
+   void setDeclareVarNameCreate(StringTableEntry name, TypeReq type);
 
    S32 getIntVariable();
    F64 getFloatVariable();

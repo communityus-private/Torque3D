@@ -212,6 +212,10 @@ HEXDIGIT [a-fA-F0-9]
 "namespace" { CMDlval.i = MakeToken< int >( rwNAMESPACE, lineIndex ); return(rwNAMESPACE); }
 "true"      { CMDlval.i = MakeToken< int >( 1, lineIndex ); return INTCONST; }
 "false"     { CMDlval.i = MakeToken< int >( 0, lineIndex ); return INTCONST; }
+"float"     { CMDlval.i = MakeToken< int >( rwTYPEFLOAT, lineIndex); return(rwTYPEFLOAT); }
+"int"       { CMDlval.i = MakeToken< int >( rwTYPEINT, lineIndex); return(rwTYPEINT); }
+"bool"      { CMDlval.i = MakeToken< int >( rwTYPEBOOL, lineIndex); return (rwTYPEBOOL); }
+"string"    { CMDlval.i = MakeToken< int >( rwTYPESTRING, lineIndex); return (rwTYPESTRING); }
 {VAR}       { return(Sc_ScanVar()); }
 {ID}        { return Sc_ScanIdent(); }
 0[xX]{HEXDIGIT}+ return(Sc_ScanHex());
