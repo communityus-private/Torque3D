@@ -49,6 +49,7 @@ MODULE_BEGIN( ShaderGen )
 
 MODULE_END;
 
+String ShaderGen::smCommonShaderPath("shaders/common");
 
 ShaderGen::ShaderGen()
 {
@@ -94,6 +95,8 @@ void ShaderGen::initShaderGen()
    const GFXAdapterType adapterType = GFX->getAdapterType();
    if (!mInitDelegates[adapterType])
       return;
+
+   smCommonShaderPath = String(Con::getVariable("$Core::CommonShaderPath", "shaders/common"));
 
    mInitDelegates[adapterType](this);
    mFeatureInitSignal.trigger( adapterType );
