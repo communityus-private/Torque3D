@@ -1230,123 +1230,122 @@ bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
    // Even if loadShape succeeds, there may not actually be
    // a shape assigned to this object.
    if (bool(mDataBlock->mShape)) {
-      delete mShapeInstance;
-      if (isClientObject() && mDataBlock->txr_tag_remappings.size() > 0)
-      {
-         // temporarily substitute material tags with alternates
-         TSMaterialList* mat_list = mDataBlock->mShape->materialList;
-         if (mat_list)
-         {
-            for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
-            {
-               ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
-               Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
-               for (S32 j = 0; j < mat_names.size(); j++) 
-               {
-                  if (mat_names[j].compare(remap->old_tag, dStrlen(remap->old_tag), String::NoCase) == 0)
-                  {
-                     mat_names[j] = String(remap->new_tag);
-                     mat_names[j].insert(0,'#');
-                     break;
-                  }
-               }
-            }
-         }
-      }
-      mShapeInstance = new TSShapeInstance(mDataBlock->mShape, isClientObject());
-      if (isClientObject())
-      {
-         mShapeInstance->setUserObject( this );
-         mShapeInstance->cloneMaterialList();
-      }
+	   delete mShapeInstance;
+	   if (isClientObject() && mDataBlock->txr_tag_remappings.size() > 0)
+	   {
+		   // temporarily substitute material tags with alternates
+		   TSMaterialList* mat_list = mDataBlock->mShape->materialList;
+		   if (mat_list)
+		   {
+			   for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
+			   {
+				   ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
+				   Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
+				   for (S32 j = 0; j < mat_names.size(); j++)
+				   {
+					   if (mat_names[j].compare(remap->old_tag, dStrlen(remap->old_tag), String::NoCase) == 0)
+					   {
+						   mat_names[j] = String(remap->new_tag);
+						   mat_names[j].insert(0, '#');
+						   break;
+					   }
+				   }
+			   }
+		   }
+	   }
+	   mShapeInstance = new TSShapeInstance(mDataBlock->mShape, isClientObject());
+	   if (isClientObject())
+	   {
+		   mShapeInstance->setUserObject(this);
+		   mShapeInstance->cloneMaterialList();
 
-         // restore the material tags to original form
-         if (mDataBlock->txr_tag_remappings.size() > 0)
-         {
-            TSMaterialList* mat_list = mDataBlock->mShape->materialList;
-            if (mat_list)
-            {
-               for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
-               {
-                  ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
-                  Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
-                  for (S32 j = 0; j < mat_names.size(); j++) 
-                  {
-                     String::SizeType len = mat_names[j].length();
-                     if (len > 1)
-                     {
-                        String temp_name = mat_names[j].substr(1,len-1);
-                        if (temp_name.compare(remap->new_tag, dStrlen(remap->new_tag)) == 0)
-                        {
-                           mat_names[j] = String(remap->old_tag);
-                           break;
-                        }
-                     }
-                  }
-               }
-            }
-         }
-      }
+		   // restore the material tags to original form
+		   if (mDataBlock->txr_tag_remappings.size() > 0)
+		   {
+			   TSMaterialList* mat_list = mDataBlock->mShape->materialList;
+			   if (mat_list)
+			   {
+				   for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
+				   {
+					   ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
+					   Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
+					   for (S32 j = 0; j < mat_names.size(); j++)
+					   {
+						   String::SizeType len = mat_names[j].length();
+						   if (len > 1)
+						   {
+							   String temp_name = mat_names[j].substr(1, len - 1);
+							   if (temp_name.compare(remap->new_tag, dStrlen(remap->new_tag)) == 0)
+							   {
+								   mat_names[j] = String(remap->old_tag);
+								   break;
+							   }
+						   }
+					   }
+				   }
+			   }
+		   }
+	   }
 
-      mObjBox = mDataBlock->mShape->bounds;
-      resetWorldBox();
+	   mObjBox = mDataBlock->mShape->bounds;
+	   resetWorldBox();
 
-      // Set the initial mesh hidden state.
-      mMeshHidden.setSize( mDataBlock->mShape->objects.size() );
-      mMeshHidden.clear();
+	   // Set the initial mesh hidden state.
+	   mMeshHidden.setSize(mDataBlock->mShape->objects.size());
+	   mMeshHidden.clear();
 
-      // Initialize the threads
-      for (U32 i = 0; i < MaxScriptThreads; i++) {
-         Thread& st = mScriptThread[i];
-         if (st.sequence != -1) {
-            // TG: Need to see about suppressing non-cyclic sounds
-            // if the sequences were activated before the object was
-            // ghosted.
-            // TG: Cyclic animations need to have a random pos if
-            // they were started before the object was ghosted.
+	   // Initialize the threads
+	   for (U32 i = 0; i < MaxScriptThreads; i++) {
+		   Thread& st = mScriptThread[i];
+		   if (st.sequence != -1) {
+			   // TG: Need to see about suppressing non-cyclic sounds
+			   // if the sequences were activated before the object was
+			   // ghosted.
+			   // TG: Cyclic animations need to have a random pos if
+			   // they were started before the object was ghosted.
 
-            // If there was something running on the old shape, the thread
-            // needs to be reset. Otherwise we assume that it's been
-            // initialized either by the constructor or from the server.
-            bool reset = st.thread != 0;
-            st.thread = 0;
-            
-            // New datablock/shape may not actually HAVE this sequence.
-            // In that case stop playing it.
-            
-            AssertFatal( prevDB != NULL, "ShapeBase::onNewDataBlock - how did you have a sequence playing without a prior datablock?" );
-   
-            const TSShape *prevShape = prevDB->mShape;
-            const TSShape::Sequence &prevSeq = prevShape->sequences[st.sequence];
-            const String &prevSeqName = prevShape->names[prevSeq.nameIndex];
+			   // If there was something running on the old shape, the thread
+			   // needs to be reset. Otherwise we assume that it's been
+			   // initialized either by the constructor or from the server.
+			   bool reset = st.thread != 0;
+			   st.thread = 0;
 
-            st.sequence = mDataBlock->mShape->findSequence( prevSeqName );
+			   // New datablock/shape may not actually HAVE this sequence.
+			   // In that case stop playing it.
 
-            if ( st.sequence != -1 )
-            {
-               setThreadSequence( i, st.sequence, reset );                              
-            }            
-         }
-      }
+			   AssertFatal(prevDB != NULL, "ShapeBase::onNewDataBlock - how did you have a sequence playing without a prior datablock?");
 
-      if (mDataBlock->damageSequence != -1) {
-         mDamageThread = mShapeInstance->addThread();
-         mShapeInstance->setSequence(mDamageThread,
-                                     mDataBlock->damageSequence,0);
-      }
-      if (mDataBlock->hulkSequence != -1) {
-         mHulkThread = mShapeInstance->addThread();
-         mShapeInstance->setSequence(mHulkThread,
-                                     mDataBlock->hulkSequence,0);
-      }
+			   const TSShape *prevShape = prevDB->mShape;
+			   const TSShape::Sequence &prevSeq = prevShape->sequences[st.sequence];
+			   const String &prevSeqName = prevShape->names[prevSeq.nameIndex];
 
-      if( isGhost() )
-      {
-         // Reapply the current skin
-         mAppliedSkinName = "";
-         reSkin();
-      }
+			   st.sequence = mDataBlock->mShape->findSequence(prevSeqName);
 
+			   if (st.sequence != -1)
+			   {
+				   setThreadSequence(i, st.sequence, reset);
+			   }
+		   }
+	   }
+
+	   if (mDataBlock->damageSequence != -1) {
+		   mDamageThread = mShapeInstance->addThread();
+		   mShapeInstance->setSequence(mDamageThread,
+			   mDataBlock->damageSequence, 0);
+	   }
+	   if (mDataBlock->hulkSequence != -1) {
+		   mHulkThread = mShapeInstance->addThread();
+		   mShapeInstance->setSequence(mHulkThread,
+			   mDataBlock->hulkSequence, 0);
+	   }
+
+	   if (isGhost())
+	   {
+		   // Reapply the current skin
+		   mAppliedSkinName = "";
+		   reSkin();
+	   }
+   }
    //
    mEnergy = 0;
    mDamage = 0;
