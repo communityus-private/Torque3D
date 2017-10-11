@@ -1346,7 +1346,6 @@ bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
          mAppliedSkinName = "";
          reSkin();
       }
-   }
 
    //
    mEnergy = 0;
