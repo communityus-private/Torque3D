@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        obj-select -- object selection functionality
-//        is-camera -- Adds a test for determining if object is a camera.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _SCENEOBJECT_H_
@@ -788,7 +784,6 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
    public:
       GFXTextureObject* mAccuTex;
       GFXCubemap *mEnvMap;
-      // AFX CODE BLOCK (obj-select) <<
       //   mSelectionFlags field keeps track of flags related to object selection.
       //     PRE_SELECTED marks an object as pre-selected (object under cursor)
       //     SELECTED marks an object as selected (a target)
@@ -802,14 +797,10 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
       virtual void setSelectionFlags(U8 flags) { mSelectionFlags = flags; }
       U8 getSelectionFlags() const { return mSelectionFlags; }
       bool needsSelectionHighlighting() const { return (mSelectionFlags != 0); }
-      // AFX CODE BLOCK (obj-select) >>
-   
-      // AFX CODE BLOCK (is-camera) <<
       //   This should only return true if the object represents an independent camera
       //   as opposed to something like a Player that has a built-in camera that requires
       //   special calculations to determine the view transform.
       virtual bool isCamera() const { return false; }
-      // AFX CODE BLOCK (is-camera) >>
 };
 
 #endif  // _SCENEOBJECT_H_

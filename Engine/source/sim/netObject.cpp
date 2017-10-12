@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        scope-tracking -- changes related to the tracking of AFX constraint objects as
-//            they move in and out of scope.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -37,9 +33,7 @@
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 
-// AFX CODE BLOCK (scope-tracking) <<
 #include "afx/arcaneFX.h"
-// AFX CODE BLOCK (scope-tracking) >>
 
 IMPLEMENT_CONOBJECT(NetObject);
 
@@ -59,11 +53,9 @@ NetObject::NetObject()
    mPrevDirtyList = NULL;
    mNextDirtyList = NULL;
    mDirtyMaskBits = 0;
-   // AFX CODE BLOCK (scope-tracking) <<
    scope_id = 0;
    scope_refs = 0;
    scope_registered = false;
-   // AFX CODE BLOCK (scope-tracking) >>
 }
 
 NetObject::~NetObject()
@@ -478,8 +470,6 @@ DefineEngineMethod( NetObject, isServerObject, bool, (),,
 //{
 //   return object->isServerObject();
 //}
-
-// AFX CODE BLOCK (scope-tracking) <<
 U16 NetObject::addScopeRef() 
 { 
    if (scope_refs == 0)
@@ -502,4 +492,3 @@ void NetObject::removeScopeRef()
       onScopeIdChange();
    }
 }
-// AFX CODE BLOCK (scope-tracking) >>

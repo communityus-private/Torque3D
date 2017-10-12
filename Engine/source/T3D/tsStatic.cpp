@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        polysoup-zodiacs -- Changes made for rendering zodiacs on polysoup objects.
-//        special-types -- defines type bits for interior-like and terrain-like types. -- defines a type bit for polysoup objects.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -63,9 +59,7 @@ using namespace Torque;
 
 extern bool gEditingMission;
 
-// AFX CODE BLOCK (polysoup-zodiacs) <<
 #include "afx/ce/afxZodiacMgr.h"
-// AFX CODE BLOCK (polysoup-zodiacs) >>
 
 IMPLEMENT_CO_NETOBJECT_V1(TSStatic);
 
@@ -138,13 +132,11 @@ TSStatic::TSStatic()
    mCollisionType = CollisionMesh;
    mDecalType = CollisionMesh;
 
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
    mIgnoreZodiacs = false;
    mHasGradients = false;
    mInvertGradientRange = false;
    mGradientRangeUser.set(0.0f, 180.0f);
    afxZodiacData::convertGradientRangeFromDegrees(mGradientRange, mGradientRangeUser);
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
 }
 
 TSStatic::~TSStatic()
@@ -243,15 +235,12 @@ void TSStatic::initPersistFields()
 
    endGroup("Debug");
 
-   // AFX CODE BLOCK (polysoup-zodiacs) (special-types) <<
    addGroup("AFX");
    addField("ignoreZodiacs",         TypeBool,       Offset(mIgnoreZodiacs,       TSStatic));
    addField("useGradientRange",      TypeBool,       Offset(mHasGradients,        TSStatic));
    addField("gradientRange",         TypePoint2F,    Offset(mGradientRangeUser,   TSStatic));
    addField("invertGradientRange",   TypeBool,       Offset(mInvertGradientRange, TSStatic));
    endGroup("AFX");
-   // AFX CODE BLOCK (polysoup-zodiacs) (special-types) >>
-
    Parent::initPersistFields();
 }
 
@@ -354,10 +343,8 @@ bool TSStatic::_createShape()
 {
    // Cleanup before we create.
    mCollisionDetails.clear();
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
    mDecalDetails.clear();
    mDecalDetailsPtr = 0;
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
    mLOSDetails.clear();
    SAFE_DELETE( mPhysicsRep );
    SAFE_DELETE( mShapeInstance );
@@ -394,11 +381,8 @@ bool TSStatic::_createShape()
       mShapeInstance->cloneMaterialList();
    }
 
-   // AFX CODE BLOCK (selection-highlight) <<
    if (isClientObject())
       mShapeInstance->cloneMaterialList();
-   // AFX CODE BLOCK (selection-highlight) >>
-
    if( isGhost() )
    {
       // Reapply the current skin
@@ -441,10 +425,8 @@ void TSStatic::prepCollision()
 
    // Cleanup any old collision data
    mCollisionDetails.clear();
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
    mDecalDetails.clear();
    mDecalDetailsPtr = 0;
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
    mLOSDetails.clear();
    mConvexList->nukeList();
 
@@ -467,11 +449,6 @@ void TSStatic::prepCollision()
       mShape->findColDetails( mDecalType == VisibleMesh, &mDecalDetails, 0 );
       mDecalDetailsPtr = &mDecalDetails;
    }
-   /* ORIGINAL CODE
-   if ( mCollisionType == CollisionMesh || mCollisionType == VisibleMesh )
-      mShape->findColDetails( mCollisionType == VisibleMesh, &mCollisionDetails, &mLOSDetails );
-   */
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
 
    _updatePhysics();
 }
@@ -757,11 +734,8 @@ void TSStatic::prepRenderImage( SceneRenderState* state )
    }
    mShapeInstance->render( rdata );
 
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
    if (!mIgnoreZodiacs && mDecalDetailsPtr != 0)
       afxZodiacMgr::renderPolysoupZodiacs(state, this);
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
-
    if ( mRenderNormalScalar > 0 )
    {
       ObjectRenderInst *ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
@@ -877,6 +851,13 @@ U32 TSStatic::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
    }
    // AFX CODE BLOCK (polysoup-zodiacs) >>
 
+   stream->writeFlag(mIgnoreZodiacs);
+   if (stream->writeFlag(mHasGradients))
+   {
+      stream->writeFlag(mInvertGradientRange);
+      stream->write(mGradientRange.x);
+      stream->write(mGradientRange.y);
+   }
    if ( mLightPlugin )
       retMask |= mLightPlugin->packUpdate(this, AdvancedStaticOptionsMask, con, mask, stream);
 
@@ -971,6 +952,14 @@ void TSStatic::unpackUpdate(NetConnection *con, BitStream *stream)
    }
    // AFX CODE BLOCK (polysoup-zodiacs) >>
 
+   mIgnoreZodiacs = stream->readFlag();
+   mHasGradients = stream->readFlag();
+   if (mHasGradients)
+   {
+      mInvertGradientRange = stream->readFlag();
+      stream->read(&mGradientRange.x);
+      stream->read(&mGradientRange.y);
+   }
    if ( mLightPlugin )
    {
       mLightPlugin->unpackUpdate(this, con, stream);
@@ -983,10 +972,7 @@ void TSStatic::unpackUpdate(NetConnection *con, BitStream *stream)
 
    if ( isProperlyAdded() )
       _updateShouldTick();
-
-   // AFX CODE BLOCK (special-types) <<
    set_special_typing();
-   // AFX CODE BLOCK (special-types) >>
 }
 
 //----------------------------------------------------------------------------
@@ -1097,13 +1083,11 @@ bool TSStatic::buildPolyList(PolyListContext context, AbstractPolyList* polyList
          polyList->addBox( mObjBox );
       else if ( meshType == VisibleMesh )
           mShapeInstance->buildPolyList( polyList, 0 );
-      // AFX CODE BLOCK (special-types) <<
       else if (context == PLC_Decal && mDecalDetailsPtr != 0)
       {
          for ( U32 i = 0; i < mDecalDetailsPtr->size(); i++ )
             mShapeInstance->buildPolyListOpcode( (*mDecalDetailsPtr)[i], polyList, box );
       }
-      // AFX CODE BLOCK (special-types) >>
       else
       {
          // Everything else is done from the collision meshes
@@ -1437,7 +1421,6 @@ DefineEngineMethod( TSStatic, getModelFile, const char *, (),,
    return object->getShapeFileName();
 }
 
-// AFX CODE BLOCK (special-types) <<
 void TSStatic::set_special_typing()
 {
    if (mCollisionType == VisibleMesh || mCollisionType == CollisionMesh)
@@ -1445,9 +1428,6 @@ void TSStatic::set_special_typing()
    else
       mTypeMask &= ~InteriorLikeObjectType;
 }
-// AFX CODE BLOCK (special-types) >>
-
-// AFX CODE BLOCK (polysoup-zodiacs) (special-types) <<
 void TSStatic::onStaticModified(const char* slotName, const char*newValue)
 {
    if (slotName == afxZodiacData::GradientRangeSlot)
@@ -1458,9 +1438,6 @@ void TSStatic::onStaticModified(const char* slotName, const char*newValue)
 
    set_special_typing();
 }
-// AFX CODE BLOCK (polysoup-zodiacs) (special-types) >>
-
-// AFX CODE BLOCK (selection-highlight) <<
 void TSStatic::setSelectionFlags(U8 flags)
 {
    Parent::setSelectionFlags(flags);
@@ -1478,4 +1455,3 @@ void TSStatic::setSelectionFlags(U8 flags)
       bmi->setSelectionHighlighting(needsSelectionHighlighting());  
    }  
 }
-// AFX CODE BLOCK (selection-highlight) >>

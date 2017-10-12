@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        localRenderViz -- Implements per-light renderViz setting.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _LIGHTBASE_H_
@@ -140,11 +137,8 @@ public:
    virtual void pauseAnimation( void );
    virtual void playAnimation( void );
    virtual void playAnimation( LightAnimData *animData );
-
-   // AFX CODE BLOCK (localRenderViz) <<
 protected:
    bool mLocalRenderViz;
-   // AFX CODE BLOCK (localRenderViz) >>
 };
 
 #endif // _LIGHTBASE_H_

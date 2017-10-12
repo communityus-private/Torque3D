@@ -23,11 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//           enhanced-physical-zone -- PhysicalZone object enhanced to allow orientation
-//               add radial forces.
-//           pz-opt -- PhysicalZone network optimizations.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "T3D/physicalZone.h"
@@ -43,11 +38,8 @@
 #include "gfx/gfxDrawUtil.h"
 #include "console/engineAPI.h"
 
-// AFX CODE BLOCK (enhanced-physical-zone) <<
 //#include "console/engineTypes.h"
 #include "sim/netConnection.h"
-// AFX CODE BLOCK (enhanced-physical-zone) >>
-
 IMPLEMENT_CO_NETOBJECT_V1(PhysicalZone);
 
 ConsoleDocClass( PhysicalZone,
@@ -118,13 +110,10 @@ PhysicalZone::PhysicalZone()
 
    mConvexList = new Convex;
    mActive = true;
-
-   // AFX CODE BLOCK (enhanced-physical-zone) <<
    force_type = VECTOR;
    force_mag = 0.0f;
    orient_force = false;
    fade_amt = 1.0f;
-   // AFX CODE BLOCK (enhanced-physical-zone) >>
 }
 
 PhysicalZone::~PhysicalZone()
@@ -133,7 +122,6 @@ PhysicalZone::~PhysicalZone()
    mConvexList = NULL;
 }
 
-// AFX CODE BLOCK (enhanced-physical-zone) <<
 ImplementEnumType( PhysicalZone_ForceType, "Possible physical zone force types.\n" "@ingroup PhysicalZone\n\n" )
    { PhysicalZone::VECTOR,          "vector",        "..." },
    { PhysicalZone::SPHERICAL,       "spherical",     "..." },
@@ -142,7 +130,6 @@ ImplementEnumType( PhysicalZone_ForceType, "Possible physical zone force types.\
    { PhysicalZone::SPHERICAL,       "sphere",        "..." },
    { PhysicalZone::CYLINDRICAL,     "cylinder",      "..." },
 EndImplementEnumType;
-// AFX CODE BLOCK (enhanced-physical-zone) >>
 
 //--------------------------------------------------------------------------
 void PhysicalZone::consoleInit()
@@ -162,13 +149,10 @@ void PhysicalZone::initPersistFields()
       "point followed by three vectors representing the edges extending from the corner." );
    endGroup("Misc");
 
-   // AFX CODE BLOCK (enhanced-physical-zone) <<
    addGroup("AFX");
    addField("forceType", TYPEID<PhysicalZone::ForceType>(), Offset(force_type, PhysicalZone));
    addField("orientForce", TypeBool, Offset(orient_force, PhysicalZone));
    endGroup("AFX");
-   // AFX CODE BLOCK (enhanced-physical-zone) >>
-   
    Parent::initPersistFields();
 }
 
@@ -198,7 +182,6 @@ bool PhysicalZone::onAdd()
    Polyhedron temp = mPolyhedron;
    setPolyhedron(temp);
 
-   // AFX CODE BLOCK (enhanced-physical-zone) <<
    switch (force_type)
    {
    case SPHERICAL:
@@ -212,8 +195,6 @@ bool PhysicalZone::onAdd()
       }
       break;
    }
-   // AFX CODE BLOCK (enhanced-physical-zone) >>
-
    addToScene();
 
    return true;
@@ -251,9 +232,7 @@ void PhysicalZone::setTransform(const MatrixF & mat)
       setMaskBits(MoveMask);
    /* ORIGINAL CODE
    if (isServerObject())
-      setMaskBits(InitialUpdateMask);
-   */
-   // AFX CODE BLOCK (pz-opt) >>
+      setMaskBits(MoveMask);
 }
 
 
@@ -304,7 +283,6 @@ U32 PhysicalZone::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
    U32 i;
    U32 retMask = Parent::packUpdate(con, mask, stream);
 
-   // AFX CODE BLOCK (enhanced-physical-zone)(pz-opt) <<
    if (stream->writeFlag(mask & PolyhedronMask)) 
    {
       // Write the polyhedron
@@ -347,166 +325,92 @@ U32 PhysicalZone::packUpdate(NetConnection* con, U32 mask, BitStream* stream)
       U8 fade_byte = (U8)(fade_amt*255.0f);
       stream->write(fade_byte);
    }
-
-   stream->writeFlag(mActive);
-   /* ORIGINAL CODE
-   if (stream->writeFlag((mask & InitialUpdateMask) != 0)) {
-      // Note that we don't really care about efficiency here, since this is an
-      //  edit-only ghost...
-      mathWrite(*stream, mObjToWorld);
-      mathWrite(*stream, mObjScale);
-
-      // Write the polyhedron
-      stream->write(mPolyhedron.pointList.size());
-      for (i = 0; i < mPolyhedron.pointList.size(); i++)
-         mathWrite(*stream, mPolyhedron.pointList[i]);
-
-      stream->write(mPolyhedron.planeList.size());
-      for (i = 0; i < mPolyhedron.planeList.size(); i++)
-         mathWrite(*stream, mPolyhedron.planeList[i]);
-
-      stream->write(mPolyhedron.edgeList.size());
-      for (i = 0; i < mPolyhedron.edgeList.size(); i++) {
-         const Polyhedron::Edge& rEdge = mPolyhedron.edgeList[i];
-
-         stream->write(rEdge.face[0]);
-         stream->write(rEdge.face[1]);
-         stream->write(rEdge.vertex[0]);
-         stream->write(rEdge.vertex[1]);
-      }
-
-      stream->write(mVelocityMod);
-      stream->write(mGravityMod);
-      mathWrite(*stream, mAppliedForce);
-      stream->writeFlag(mActive);
-   } else {
-      stream->writeFlag(mActive);
-   }
    */
    // AFX CODE BLOCK (enhanced-physical-zone)(pz-opt) >>
 
-   return retMask;
+   stream->writeFlag(mActive);
+
+     return retMask;
 }
 
 void PhysicalZone::unpackUpdate(NetConnection* con, BitStream* stream)
 {
-   Parent::unpackUpdate(con, stream);
+	Parent::unpackUpdate(con, stream);
 
-   // AFX CODE BLOCK (enhanced-physical-zone)(pz-opt) <<
-   bool new_ph = false;
-   if (stream->readFlag()) // PolyhedronMask
-   {
-      U32 i, size;
-      Polyhedron tempPH;
+	// AFX CODE BLOCK (enhanced-physical-zone)(pz-opt) <<
+	bool new_ph = false;
+	if (stream->readFlag()) // PolyhedronMask
+	{
+		U32 i, size;
+		Polyhedron tempPH;
 
-      // Read the polyhedron
-      stream->read(&size);
-      tempPH.pointList.setSize(size);
-      for (i = 0; i < tempPH.pointList.size(); i++)
-         mathRead(*stream, &tempPH.pointList[i]);
+		// Read the polyhedron
+		stream->read(&size);
+		tempPH.pointList.setSize(size);
+		for (i = 0; i < tempPH.pointList.size(); i++)
+			mathRead(*stream, &tempPH.pointList[i]);
 
-      stream->read(&size);
-      tempPH.planeList.setSize(size);
-      for (i = 0; i < tempPH.planeList.size(); i++)
-         mathRead(*stream, &tempPH.planeList[i]);
+		stream->read(&size);
+		tempPH.planeList.setSize(size);
+		for (i = 0; i < tempPH.planeList.size(); i++)
+			mathRead(*stream, &tempPH.planeList[i]);
 
-      stream->read(&size);
-      tempPH.edgeList.setSize(size);
-      for (i = 0; i < tempPH.edgeList.size(); i++) {
-         Polyhedron::Edge& rEdge = tempPH.edgeList[i];
+		stream->read(&size);
+		tempPH.edgeList.setSize(size);
+		for (i = 0; i < tempPH.edgeList.size(); i++) {
+			Polyhedron::Edge& rEdge = tempPH.edgeList[i];
 
-         stream->read(&rEdge.face[0]);
-         stream->read(&rEdge.face[1]);
-         stream->read(&rEdge.vertex[0]);
-         stream->read(&rEdge.vertex[1]);
-      }
+			stream->read(&rEdge.face[0]);
+			stream->read(&rEdge.face[1]);
+			stream->read(&rEdge.vertex[0]);
+			stream->read(&rEdge.vertex[1]);
+		}
 
-      setPolyhedron(tempPH);
-      new_ph = true;
-   }
+		setPolyhedron(tempPH);
+		new_ph = true;
+	}
 
-   if (stream->readFlag()) // MoveMask
-   {
-      MatrixF temp;
-      stream->readAffineTransform(&temp);
+	if (stream->readFlag()) // MoveMask
+	{
+		MatrixF temp;
+		stream->readAffineTransform(&temp);
 
-      Point3F tempScale;
-      mathRead(*stream, &tempScale);
+		Point3F tempScale;
+		mathRead(*stream, &tempScale);
 
-      //if (!new_ph)
-      //{
-      //  Polyhedron rPolyhedron = mPolyhedron;
-      //  setPolyhedron(rPolyhedron);
-      //}
-      setScale(tempScale);
-      setTransform(temp);
-   }
+		//if (!new_ph)
+		//{
+		//  Polyhedron rPolyhedron = mPolyhedron;
+		//  setPolyhedron(rPolyhedron);
+		//}
+		setScale(tempScale);
+		setTransform(temp);
+	}
 
-   if (stream->readFlag()) //SettingsMask
-   {
-      stream->read(&mVelocityMod);
-      stream->read(&mGravityMod);
-      mathRead(*stream, &mAppliedForce);
-      force_type = stream->readInt(FORCE_TYPE_BITS); // AFX
-      orient_force = stream->readFlag(); // AFX
-   }
+	if (stream->readFlag()) //SettingsMask
+	{
+		stream->read(&mVelocityMod);
+		stream->read(&mGravityMod);
+		mathRead(*stream, &mAppliedForce);
+		force_type = stream->readInt(FORCE_TYPE_BITS); // AFX
+		orient_force = stream->readFlag(); // AFX
+	}
 
-   if (stream->readFlag()) //FadeMask
-   {
-      U8 fade_byte;
-      stream->read(&fade_byte);
-      fade_amt = ((F32)fade_byte)/255.0f;
-   }
-   else
-      fade_amt = 1.0f;
+	if (stream->readFlag()) //FadeMask
+	{
+		U8 fade_byte;
+		stream->read(&fade_byte);
+		fade_amt = ((F32)fade_byte) / 255.0f;
+	}
+	else
+		fade_amt = 1.0f;
 
-   mActive = stream->readFlag();
-   /* ORIGINAL CODE
-   if (stream->readFlag()) {
-      U32 i, size;
-      MatrixF temp;
-      Point3F tempScale;
-      Polyhedron tempPH;
-
-      // Transform
-      mathRead(*stream, &temp);
-      mathRead(*stream, &tempScale);
-
-      // Read the polyhedron
-      stream->read(&size);
-      tempPH.pointList.setSize(size);
-      for (i = 0; i < tempPH.pointList.size(); i++)
-         mathRead(*stream, &tempPH.pointList[i]);
-
-      stream->read(&size);
-      tempPH.planeList.setSize(size);
-      for (i = 0; i < tempPH.planeList.size(); i++)
-         mathRead(*stream, &tempPH.planeList[i]);
-
-      stream->read(&size);
-      tempPH.edgeList.setSize(size);
-      for (i = 0; i < tempPH.edgeList.size(); i++) {
-         Polyhedron::Edge& rEdge = tempPH.edgeList[i];
-
-         stream->read(&rEdge.face[0]);
-         stream->read(&rEdge.face[1]);
-         stream->read(&rEdge.vertex[0]);
-         stream->read(&rEdge.vertex[1]);
-      }
-
-      stream->read(&mVelocityMod);
-      stream->read(&mGravityMod);
-      mathRead(*stream, &mAppliedForce);
-
-      setPolyhedron(tempPH);
-      setScale(tempScale);
-      setTransform(temp);
-      mActive = stream->readFlag();
-   } else {
-      mActive = stream->readFlag();
-   }
-   */
-   // AFX CODE BLOCK (enhanced-physical-zone)(pz-opt) >>
+	mActive = stream->readFlag();
+	mIFF = stream->readFlag();
+	if (mIFF)
+	{
+		mTeamId = stream->readInt(8);
+	}
 }
 
 
@@ -625,7 +529,6 @@ void PhysicalZone::deactivate()
    mActive = false;
 }
 
-// AFX CODE BLOCK (enhanced-physical-zone) <<
 void PhysicalZone::onStaticModified(const char* slotName, const char*newValue)
 {
    if (dStricmp(slotName, "appliedForce") == 0 || dStricmp(slotName, "forceType") == 0)
@@ -726,4 +629,3 @@ void PhysicalZone::unregisterExcludedObject(SceneObject* obj)
          return;
       }
 }
-// AFX CODE BLOCK (enhanced-physical-zone) >>

@@ -23,12 +23,7 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
-
 #ifndef _SFXDESCRIPTION_H_
 #define _SFXDESCRIPTION_H_
 
@@ -201,12 +196,9 @@ class SFXDescription : public SimDataBlock
       /// Validates the description fixing any
       /// parameters that are out of range.
       void validate();
-
-      // AFX CODE BLOCK (datablock-temp-clone) <<
    public:
       SFXDescription(const SFXDescription&, bool);
       virtual bool allowSubstitutions() const { return true; }
-      // AFX CODE BLOCK (datablock-temp-clone) >>
 };
 
 

@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Change Summary:
-//        terrain-zodiacs -- implement zodiac rendering on regular terrain. 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -53,11 +50,8 @@
 
 #include "gfx/gfxDrawUtil.h"
 
-// AFX CODE BLOCK (terrain-zodiacs) <<
 #include "afx/arcaneFX.h"
 #include "afx/ce/afxZodiacMgr.h"
-// AFX CODE BLOCK (terrain-zodiacs) >>
-
 #include "gfx/gfxTransformSaver.h"
 #include "gfx/bitmap/gBitmap.h"
 #include "gfx/bitmap/ddsFile.h"
@@ -434,10 +428,7 @@ void TerrainBlock::_renderBlock( SceneRenderState *state )
    if ( isColorDrawPass )
       lm = LIGHTMGR;
 
-   // AFX CODE BLOCK (terrain-zodiacs) <<
    bool has_zodiacs = afxZodiacMgr::doesBlockContainZodiacs(state, this);
-   // AFX CODE BLOCK (terrain-zodiacs) >>
-
    for ( U32 i=0; i < renderCells.size(); i++ )
    {
       TerrCell *cell = renderCells[i];
@@ -500,11 +491,8 @@ void TerrainBlock::_renderBlock( SceneRenderState *state )
 
       inst->defaultKey = (U32)cell->getMaterials();
 
-      // AFX CODE BLOCK (terrain-zodiacs) <<
       if (has_zodiacs)
          afxZodiacMgr::renderTerrainZodiacs(state, this, cell);
-      // AFX CODE BLOCK (terrain-zodiacs) >>
-
       // Submit it for rendering.
       renderPass->addInst( inst );
    }

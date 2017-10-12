@@ -28,7 +28,6 @@
 //        substitutions -- Implementation of special substitution statements on
 //            datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
-
 #ifndef _CONSOLEOBJECT_H_
 #define _CONSOLEOBJECT_H_
 
@@ -484,6 +483,7 @@ public:
       FIELD_HideInInspectors     = BIT( 0 ),    ///< Do not show the field in inspectors.
       FIELD_ComponentInspectors = BIT(1),       ///< Custom fields used by components. They are likely to be non-standard size/configuration, so 
                                                 ///< They are handled specially
+      FIELD_CustomInspectors = BIT(2),          ///< Display as a button in inspectors.
    };
 
    struct Field
@@ -501,9 +501,7 @@ public:
             setDataFn( NULL ),
             getDataFn( NULL )
       {
-         // AFX CODE BLOCK (substitutions) <<
          doNotSubstitute = keepClearSubsOnly = false;
-         // AFX CODE BLOCK (substitutions) >>
       }
 
       StringTableEntry pFieldname;    ///< Name of the field.
@@ -521,10 +519,8 @@ public:
       TypeValidator *validator;     ///< Validator, if any.
       SetDataNotify  setDataFn;     ///< Set data notify Fn
       GetDataNotify  getDataFn;     ///< Get data notify Fn
-      // AFX CODE BLOCK (substitutions) <<
       bool           doNotSubstitute;
       bool           keepClearSubsOnly;
-      // AFX CODE BLOCK (substitutions) >>
       WriteDataNotify writeDataFn;  ///< Function to determine whether data should be written or not.
    };
    typedef Vector<Field> FieldList;
@@ -1070,11 +1066,9 @@ public:
 
    static ConsoleObject* __findObject( const char* ) { return NULL; }
    static const char* __getObjectId( ConsoleObject* ) { return ""; }
-   // AFX CODE BLOCK (substitutions) <<
 protected:
    static bool disableFieldSubstitutions(const char* in_pFieldname);
    static bool onlyKeepClearSubstitutions(const char* in_pFieldname);
-   // AFX CODE BLOCK (substitutions) >>
 };
 
 #define addNamedField(fieldName,type,className) addField(#fieldName, type, Offset(fieldName,className))

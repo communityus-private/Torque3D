@@ -23,14 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        canvas -- Added a way for a child control to handle an event but still have
-//            GuiCanvas::processInputEvent() return false, therefore allowing the event
-//            to also be handled by the ActionMap. (see DemoGame::processInputEvent()) 
-//            Also added methods for clearing "down" status of mouse buttons in cases
-//            where ActionMap grabs the mouse for dragging and masks the up events from
-//            GuiCanvas.           
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -629,19 +621,11 @@ bool GuiCanvas::tabPrev(void)
 // AFX CODE BLOCK (canvas) >>
 bool GuiCanvas::processInputEvent(InputEventInfo &inputEvent)
 {
-   // AFX CODE BLOCK (canvas) <<
    mConsumeLastInputEvent = true;
-   // AFX CODE BLOCK (canvas) >>
-
-	// First call the general input handler (on the extremely off-chance that it will be handled):
-	if (mFirstResponder &&  mFirstResponder->onInputEvent(inputEvent))
+   // First call the general input handler (on the extremely off-chance that it will be handled):
+   if (mFirstResponder &&  mFirstResponder->onInputEvent(inputEvent))
    {
-		// AFX CODE BLOCK (canvas) <<
-		return mConsumeLastInputEvent;  
-		/* ORIGINAL CODE
-		return(true);
-		*/
-		// AFX CODE BLOCK (canvas) >>
+		return mConsumeLastInputEvent;
    }
 
    switch (inputEvent.deviceType)
@@ -713,22 +697,12 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
             if (inputEvent.modifier & SI_SHIFT)
             {
                if(tabPrev())
-                  // AFX CODE BLOCK (canvas) <<
                   return mConsumeLastInputEvent;
-                  /* ORIGINAL CODE
-                  return true;
-                  */
-                  // AFX CODE BLOCK (canvas) >>
             }
             else if (inputEvent.modifier == 0)
             {
                if(tabNext())
-                  // AFX CODE BLOCK (canvas) <<
                   return mConsumeLastInputEvent;
-                  /* ORIGINAL CODE
-                  return true;
-                  */
-                  // AFX CODE BLOCK (canvas) >>
             }
          }
       }
@@ -739,24 +713,14 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyPress(mAcceleratorMap[i].index);
-            // AFX CODE BLOCK (canvas) <<
             return mConsumeLastInputEvent;
-            /* ORIGINAL CODE
-            return true;
-            */
-            // AFX CODE BLOCK (canvas) >>
          }
       }
    }
    else if(inputEvent.action == SI_BREAK)
    {
       if(mFirstResponder && mFirstResponder->onKeyUp(mLastEvent))
-         // AFX CODE BLOCK (canvas) <<
          return mConsumeLastInputEvent;
-         /* ORIGINAL CODE
-         return true;
-         */
-         // AFX CODE BLOCK (canvas) >>
 
       //see if there's an accelerator
       for (U32 i = 0; i < mAcceleratorMap.size(); i++)
@@ -764,12 +728,7 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyRelease(mAcceleratorMap[i].index);
-            // AFX CODE BLOCK (canvas) <<
             return mConsumeLastInputEvent;
-            /* ORIGINAL CODE
-            return true;
-            */
-            // AFX CODE BLOCK (canvas) >>
          }
       }
    }
@@ -781,24 +740,14 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyPress(mAcceleratorMap[i].index);
-            // AFX CODE BLOCK (canvas) <<
             return mConsumeLastInputEvent;
-            /* ORIGINAL CODE
-            return true;
-            */
-            // AFX CODE BLOCK (canvas) >>
          }
       }
 
       if(mFirstResponder)
       {
-         // AFX CODE BLOCK (canvas) <<
          bool ret = mFirstResponder->onKeyRepeat(mLastEvent);
          return ret && mConsumeLastInputEvent;
-         /* ORIGINAL CODE
-         return mFirstResponder->onKeyRepeat(mLastEvent);
-         */
-         // AFX CODE BLOCK (canvas) >>
       }
    }
    return false;
@@ -875,12 +824,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          rootMiddleMouseDragged(mLastEvent);
       else
          rootMouseMove(mLastEvent);
-      // AFX CODE BLOCK (canvas) <<
       return mConsumeLastInputEvent;
-      /* ORIGINAL CODE
-      return true;
-      */
-      // AFX CODE BLOCK (canvas) >>
    }
    else if ( inputEvent.objInst == SI_ZAXIS
              || inputEvent.objInst == SI_RZAXIS )
@@ -939,12 +883,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
             rootMouseUp(mLastEvent);
          }
 
-         // AFX CODE BLOCK (canvas) <<
          return mConsumeLastInputEvent;
-         /* ORIGINAL CODE
-         return true;
-         */
-         // AFX CODE BLOCK (canvas) >>
       }
       else if(inputEvent.objInst == KEY_BUTTON1) // right button
       {
@@ -975,12 +914,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          else // it was a mouse up
             rootRightMouseUp(mLastEvent);
 
-         // AFX CODE BLOCK (canvas) <<
          return mConsumeLastInputEvent;
-         /* ORIGINAL CODE
-         return true;
-         */
-         // AFX CODE BLOCK (canvas) >>
       }
       else if(inputEvent.objInst == KEY_BUTTON2) // middle button
       {
@@ -1011,12 +945,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          else // it was a mouse up
             rootMiddleMouseUp(mLastEvent);
 
-         // AFX CODE BLOCK (canvas) <<
-         return mConsumeLastInputEvent;  
-         /* ORIGINAL CODE
-         return true;
-         */
-         // AFX CODE BLOCK (canvas) >>
+         return mConsumeLastInputEvent;
       }
    }
    return false;
@@ -1898,6 +1827,7 @@ void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
    if (GuiOffscreenCanvas::sList.size() != 0)
    {
       // Reset the entire state since oculus shit will have barfed it.
+
       GFX->updateStates(true);
 
       for (Vector<GuiOffscreenCanvas*>::iterator itr = GuiOffscreenCanvas::sList.begin(); itr != GuiOffscreenCanvas::sList.end(); itr++)
@@ -2911,7 +2841,6 @@ ConsoleMethod( GuiCanvas, cursorNudge, void, 4, 4, "x, y" )
 {
    object->cursorNudge(dAtof(argv[2]), dAtof(argv[3]));
 }
-// AFX CODE BLOCK (canvas) <<
 // This function allows resetting of the video-mode from script. It was motivated by
 // the need to temporarily disable vsync during datablock cache load to avoid a 
 // significant slowdown.
@@ -2931,4 +2860,3 @@ ConsoleMethod( GuiCanvas, resetVideoMode, void, 2,2, "()")
       }
    }
 }
-// AFX CODE BLOCK (canvas) >>

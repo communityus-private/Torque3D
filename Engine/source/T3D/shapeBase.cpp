@@ -23,19 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        vis-feat -- Addition of a shader visibility feature.
-//        remap-txr-tags -- runtime reassignment of texture tag names. (Useful for
-//            splitting up tags with the same name in order to map different materials
-//            to them.)
-//        enhanced-physical-zone -- PhysicalZone object enhanced to allow orientation
-//            add radial forces.
-//        bbox-check -- a change that allows disabling of a confusing error message.
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
-//        collision-events -- detects object collisions for use with AFX collision event
-//            effects.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -213,18 +200,10 @@ ShapeBaseData::ShapeBaseData()
    inheritEnergyFromMount( false )
 {      
    dMemset( mountPointNode, -1, sizeof( S32 ) * SceneObject::NumMountPoints );
-
-   // AFX CODE BLOCK (remap-txr-tags) <<
    remap_txr_tags = NULL;
    remap_buffer = NULL;
-   // AFX CODE BLOCK (remap-txr-tags) >>
-   
-   // AFX CODE BLOCK (bbox-check) <<
    silent_bbox_check = false;
-   // AFX CODE BLOCK (bbox-check) >>
 }
-
-// AFX CODE BLOCK (datablock-temp-clone) <<
 ShapeBaseData::ShapeBaseData(const ShapeBaseData& other, bool temp_clone) : GameBaseData(other, temp_clone)
 {
    shadowEnable = other.shadowEnable;
@@ -284,7 +263,6 @@ ShapeBaseData::ShapeBaseData(const ShapeBaseData& other, bool temp_clone) : Game
    txr_tag_remappings = other.txr_tag_remappings;
    silent_bbox_check = other.silent_bbox_check;
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
 
 struct ShapeBaseDataProto
 {
@@ -317,10 +295,8 @@ static ShapeBaseDataProto gShapeBaseDataProto;
 
 ShapeBaseData::~ShapeBaseData()
 {
-   // AFX CODE BLOCK (remap-txr-tags) <<
    if (remap_buffer && !isTempClone())
       dFree(remap_buffer);
-   // AFX CODE BLOCK (remap-txr-tags) >>
 }
 
 bool ShapeBaseData::preload(bool server, String &errorStr)
@@ -430,17 +406,13 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
 
             if (!mShape->bounds.isContained(collisionBounds.last()))
             {
-               // AFX CODE BLOCK (bbox-check) <<
                if (!silent_bbox_check)
-               // AFX CODE BLOCK (bbox-check) >>
                Con::warnf("Warning: shape %s collision detail %d (Collision-%d) bounds exceed that of shape.", shapeName, collisionDetails.size() - 1, collisionDetails.last());
                collisionBounds.last() = mShape->bounds;
             }
             else if (collisionBounds.last().isValidBox() == false)
             {
-               // AFX CODE BLOCK (bbox-check) <<
                if (!silent_bbox_check)
-               // AFX CODE BLOCK (bbox-check) >>
                Con::errorf("Error: shape %s-collision detail %d (Collision-%d) bounds box invalid!", shapeName, collisionDetails.size() - 1, collisionDetails.last());
                collisionBounds.last() = mShape->bounds;
             }
@@ -512,8 +484,6 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
       F32 w = mShape->bounds.len_y() / 2;
       if (cameraMaxDist < w)
          cameraMaxDist = w;
-
-      // AFX CODE BLOCK (remap-txr-tags) <<
       // just parse up the string and collect the remappings in txr_tag_remappings.
       if (!server && remap_txr_tags != NULL && remap_txr_tags != StringTable->insert(""))
       {
@@ -537,7 +507,6 @@ bool ShapeBaseData::preload(bool server, String &errorStr)
             remap_token = dStrtok(NULL, " \t");
          }
       }
-      // AFX CODE BLOCK (remap-txr-tags) >>
    }
 
    if(!server)
@@ -711,19 +680,12 @@ void ShapeBaseData::initPersistFields()
 
    endGroup( "Reflection" );
 
-
-   // AFX CODE BLOCK (remap-txr-tags)(bbox-check) <<
    addField("remapTextureTags",      TypeString,   Offset(remap_txr_tags, ShapeBaseData));
    addField("silentBBoxValidation",  TypeBool,     Offset(silent_bbox_check, ShapeBaseData));
-   // AFX CODE BLOCK (remap-txr-tags)(bbox-check) >>
-
-   // AFX CODE BLOCK (substitutions) <<
    // disallow some field substitutions
    onlyKeepClearSubstitutions("debris"); // subs resolving to "~~", or "~0" are OK
    onlyKeepClearSubstitutions("explosion");
    onlyKeepClearSubstitutions("underwaterExplosion");
-   // AFX CODE BLOCK (substitutions) >>
-   
    Parent::initPersistFields();
 }
 
@@ -876,11 +838,8 @@ void ShapeBaseData::packData(BitStream* stream)
    //stream->write(reflectMinDist);
    //stream->write(reflectMaxDist);
    //stream->write(reflectDetailAdjust);
-
-   // AFX CODE BLOCK (remap-txr-tags)(bbox-check) <<
    stream->writeString(remap_txr_tags);
    stream->writeFlag(silent_bbox_check);
-   // AFX CODE BLOCK (remap-txr-tags)(bbox-check) >>
 }
 
 void ShapeBaseData::unpackData(BitStream* stream)
@@ -982,11 +941,8 @@ void ShapeBaseData::unpackData(BitStream* stream)
    //stream->read(&reflectMinDist);
    //stream->read(&reflectMaxDist);
    //stream->read(&reflectDetailAdjust);
-
-   // AFX CODE BLOCK (remap-txr-tags)(bbox-check) <<
    remap_txr_tags = stream->readSTString();
    silent_bbox_check = stream->readFlag();
-   // AFX CODE BLOCK (remap-txr-tags)(bbox-check) >>
 }
 
 
@@ -1089,8 +1045,6 @@ ShapeBase::ShapeBase()
 
    for (i = 0; i < MaxTriggerKeys; i++)
       mTrigger[i] = false;
-
-   // AFX CODE BLOCK (anim-clip) <<
    anim_clip_flags = 0;
    last_anim_id = -1;
    last_anim_tag = 0;         
@@ -1098,7 +1052,6 @@ ShapeBase::ShapeBase()
    saved_seq_id = -1;
    saved_pos = 0.0f;
    saved_rate = 1.0f;
-   // AFX CODE BLOCK (anim-clip) >>
 }
 
 
@@ -1247,7 +1200,6 @@ void ShapeBase::onSceneRemove()
 
 bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
 {
-   // AFX CODE BLOCK (anim-clip) <<
    // need to destroy blend-clips or we crash
    if (isGhost())
    {
@@ -1258,8 +1210,6 @@ bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
          blend_clips.erase_fast(i);
       }
    }
-   // AFX CODE BLOCK (anim-clip) >>
-
    ShapeBaseData *prevDB = dynamic_cast<ShapeBaseData*>( mDataBlock );
 
    bool isInitialDataBlock = ( mDataBlock == 0 );
@@ -1278,135 +1228,122 @@ bool ShapeBase::onNewDataBlock( GameBaseData *dptr, bool reload )
    // Even if loadShape succeeds, there may not actually be
    // a shape assigned to this object.
    if (bool(mDataBlock->mShape)) {
-      delete mShapeInstance;
+	   delete mShapeInstance;
+	   if (isClientObject() && mDataBlock->txr_tag_remappings.size() > 0)
+	   {
+		   // temporarily substitute material tags with alternates
+		   TSMaterialList* mat_list = mDataBlock->mShape->materialList;
+		   if (mat_list)
+		   {
+			   for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
+			   {
+				   ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
+				   Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
+				   for (S32 j = 0; j < mat_names.size(); j++)
+				   {
+					   if (mat_names[j].compare(remap->old_tag, dStrlen(remap->old_tag), String::NoCase) == 0)
+					   {
+						   mat_names[j] = String(remap->new_tag);
+						   mat_names[j].insert(0, '#');
+						   break;
+					   }
+				   }
+			   }
+		   }
+	   }
+	   mShapeInstance = new TSShapeInstance(mDataBlock->mShape, isClientObject());
+	   if (isClientObject())
+	   {
+		   mShapeInstance->setUserObject(this);
+		   mShapeInstance->cloneMaterialList();
 
-      // AFX CODE BLOCK (remap-txr-tags) <<
-      if (isClientObject() && mDataBlock->txr_tag_remappings.size() > 0)
-      {
-         // temporarily substitute material tags with alternates
-         TSMaterialList* mat_list = mDataBlock->mShape->materialList;
-         if (mat_list)
-         {
-            for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
-            {
-               ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
-               Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
-               for (S32 j = 0; j < mat_names.size(); j++) 
-               {
-                  if (mat_names[j].compare(remap->old_tag, dStrlen(remap->old_tag), String::NoCase) == 0)
-                  {
-                     mat_names[j] = String(remap->new_tag);
-                     mat_names[j].insert(0,'#');
-                     break;
-                  }
-               }
-            }
-         }
-      }
-      // AFX CODE BLOCK (remap-txr-tags) >>
+		   // restore the material tags to original form
+		   if (mDataBlock->txr_tag_remappings.size() > 0)
+		   {
+			   TSMaterialList* mat_list = mDataBlock->mShape->materialList;
+			   if (mat_list)
+			   {
+				   for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
+				   {
+					   ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
+					   Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
+					   for (S32 j = 0; j < mat_names.size(); j++)
+					   {
+						   String::SizeType len = mat_names[j].length();
+						   if (len > 1)
+						   {
+							   String temp_name = mat_names[j].substr(1, len - 1);
+							   if (temp_name.compare(remap->new_tag, dStrlen(remap->new_tag)) == 0)
+							   {
+								   mat_names[j] = String(remap->old_tag);
+								   break;
+							   }
+						   }
+					   }
+				   }
+			   }
+		   }
+	   }
 
-      mShapeInstance = new TSShapeInstance(mDataBlock->mShape, isClientObject());
+	   mObjBox = mDataBlock->mShape->bounds;
+	   resetWorldBox();
 
-      // AFX CODE BLOCK (remap-txr-tags) <<
-      if (isClientObject())
-      {
-         mShapeInstance->setUserObject( this );
-         mShapeInstance->cloneMaterialList();
-      }
+	   // Set the initial mesh hidden state.
+	   mMeshHidden.setSize(mDataBlock->mShape->objects.size());
+	   mMeshHidden.clear();
 
-         // restore the material tags to original form
-         if (mDataBlock->txr_tag_remappings.size() > 0)
-         {
-            TSMaterialList* mat_list = mDataBlock->mShape->materialList;
-            if (mat_list)
-            {
-               for (S32 i = 0; i < mDataBlock->txr_tag_remappings.size(); i++)
-               {
-                  ShapeBaseData::TextureTagRemapping* remap = &mDataBlock->txr_tag_remappings[i];
-                  Vector<String> & mat_names = (Vector<String>&) mat_list->getMaterialNameList();
-                  for (S32 j = 0; j < mat_names.size(); j++) 
-                  {
-                     String::SizeType len = mat_names[j].length();
-                     if (len > 1)
-                     {
-                        String temp_name = mat_names[j].substr(1,len-1);
-                        if (temp_name.compare(remap->new_tag, dStrlen(remap->new_tag)) == 0)
-                        {
-                           mat_names[j] = String(remap->old_tag);
-                           break;
-                        }
-                     }
-                  }
-               }
-            }
-         }
-      }
-      /* ORIGINAL CODE
-      if (isClientObject())
-         mShapeInstance->cloneMaterialList();
-      */
-      // AFX CODE BLOCK (remap-txr-tags) >>
+	   // Initialize the threads
+	   for (U32 i = 0; i < MaxScriptThreads; i++) {
+		   Thread& st = mScriptThread[i];
+		   if (st.sequence != -1) {
+			   // TG: Need to see about suppressing non-cyclic sounds
+			   // if the sequences were activated before the object was
+			   // ghosted.
+			   // TG: Cyclic animations need to have a random pos if
+			   // they were started before the object was ghosted.
 
-      mObjBox = mDataBlock->mShape->bounds;
-      resetWorldBox();
+			   // If there was something running on the old shape, the thread
+			   // needs to be reset. Otherwise we assume that it's been
+			   // initialized either by the constructor or from the server.
+			   bool reset = st.thread != 0;
+			   st.thread = 0;
 
-      // Set the initial mesh hidden state.
-      mMeshHidden.setSize( mDataBlock->mShape->objects.size() );
-      mMeshHidden.clear();
+			   // New datablock/shape may not actually HAVE this sequence.
+			   // In that case stop playing it.
 
-      // Initialize the threads
-      for (U32 i = 0; i < MaxScriptThreads; i++) {
-         Thread& st = mScriptThread[i];
-         if (st.sequence != -1) {
-            // TG: Need to see about suppressing non-cyclic sounds
-            // if the sequences were activated before the object was
-            // ghosted.
-            // TG: Cyclic animations need to have a random pos if
-            // they were started before the object was ghosted.
+			   AssertFatal(prevDB != NULL, "ShapeBase::onNewDataBlock - how did you have a sequence playing without a prior datablock?");
 
-            // If there was something running on the old shape, the thread
-            // needs to be reset. Otherwise we assume that it's been
-            // initialized either by the constructor or from the server.
-            bool reset = st.thread != 0;
-            st.thread = 0;
-            
-            // New datablock/shape may not actually HAVE this sequence.
-            // In that case stop playing it.
-            
-            AssertFatal( prevDB != NULL, "ShapeBase::onNewDataBlock - how did you have a sequence playing without a prior datablock?" );
-   
-            const TSShape *prevShape = prevDB->mShape;
-            const TSShape::Sequence &prevSeq = prevShape->sequences[st.sequence];
-            const String &prevSeqName = prevShape->names[prevSeq.nameIndex];
+			   const TSShape *prevShape = prevDB->mShape;
+			   const TSShape::Sequence &prevSeq = prevShape->sequences[st.sequence];
+			   const String &prevSeqName = prevShape->names[prevSeq.nameIndex];
 
-            st.sequence = mDataBlock->mShape->findSequence( prevSeqName );
+			   st.sequence = mDataBlock->mShape->findSequence(prevSeqName);
 
-            if ( st.sequence != -1 )
-            {
-               setThreadSequence( i, st.sequence, reset );                              
-            }            
-         }
-      }
+			   if (st.sequence != -1)
+			   {
+				   setThreadSequence(i, st.sequence, reset);
+			   }
+		   }
+	   }
 
-      if (mDataBlock->damageSequence != -1) {
-         mDamageThread = mShapeInstance->addThread();
-         mShapeInstance->setSequence(mDamageThread,
-                                     mDataBlock->damageSequence,0);
-      }
-      if (mDataBlock->hulkSequence != -1) {
-         mHulkThread = mShapeInstance->addThread();
-         mShapeInstance->setSequence(mHulkThread,
-                                     mDataBlock->hulkSequence,0);
-      }
+	   if (mDataBlock->damageSequence != -1) {
+		   mDamageThread = mShapeInstance->addThread();
+		   mShapeInstance->setSequence(mDamageThread,
+			   mDataBlock->damageSequence, 0);
+	   }
+	   if (mDataBlock->hulkSequence != -1) {
+		   mHulkThread = mShapeInstance->addThread();
+		   mShapeInstance->setSequence(mHulkThread,
+			   mDataBlock->hulkSequence, 0);
+	   }
 
-      if( isGhost() )
-      {
-         // Reapply the current skin
-         mAppliedSkinName = "";
-         reSkin();
-      }
+	   if (isGhost())
+	   {
+		   // Reapply the current skin
+		   mAppliedSkinName = "";
+		   reSkin();
+	   }
    }
-
    //
    mEnergy = 0;
    mDamage = 0;
@@ -3804,15 +3741,41 @@ void ShapeBase::setCurrentWaterObject( WaterObject *obj )
 
 void ShapeBase::setTransform(const MatrixF & mat)
 {
-   Parent::setTransform(mat);
+	Parent::setTransform(mat);
 
-   // Accumulation and environment mapping
-   if (isClientObject() && mShapeInstance)
-   {
-      if (mShapeInstance->hasAccumulation())
-         AccumulationVolume::updateObject(this);
-      EnvVolume::updateObject(this);
-   }
+	// Accumulation and environment mapping
+	if (isClientObject() && mShapeInstance)
+	{
+		if (mShapeInstance->hasAccumulation())
+			AccumulationVolume::updateObject(this);
+		EnvVolume::updateObject(this);
+	}
+}
+
+void ShapeBase::notifyCollisionCallbacks(SceneObject* obj, const VectorF& vel)
+{
+   for (S32 i = 0; i < collision_callbacks.size(); i++)
+      if (collision_callbacks[i])
+         collision_callbacks[i]->collisionNotify(this, obj, vel);
+}
+
+void ShapeBase::registerCollisionCallback(CollisionEventCallback* ce_cb)
+{
+   for (S32 i = 0; i < collision_callbacks.size(); i++)
+      if (collision_callbacks[i] == ce_cb)
+         return;
+
+   collision_callbacks.push_back(ce_cb);
+}
+
+void ShapeBase::unregisterCollisionCallback(CollisionEventCallback* ce_cb)
+{
+   for (S32 i = 0; i < collision_callbacks.size(); i++)
+      if (collision_callbacks[i] == ce_cb)
+      {
+         collision_callbacks.erase(i);
+         return;
+      }
 }
 
 // AFX CODE BLOCK (collision-events) <<
@@ -5240,8 +5203,6 @@ DefineEngineMethod( ShapeBase, getModelFile, const char *, (),,
    return datablock->getDataField( fieldName, NULL );
 }
 
-// AFX CODE BLOCK (anim-clip) <<
-
 U32 ShapeBase::unique_anim_tag_counter = 1;
 
 U32 ShapeBase::playBlendAnimation(S32 seq_id, F32 pos, F32 rate)
@@ -5420,9 +5381,6 @@ F32 ShapeBase::getAnimationDuration(const char* name)
 {
    return getAnimationDurationByID(getAnimationID(name));
 }
-// AFX CODE BLOCK (anim-clip) >>
-
-// AFX CODE BLOCK (selection-highlight) <<
 void ShapeBase::setSelectionFlags(U8 flags)
 {
    Parent::setSelectionFlags(flags);
@@ -5440,4 +5398,3 @@ void ShapeBase::setSelectionFlags(U8 flags)
       bmi->setSelectionHighlighting(needsSelectionHighlighting());  
    }  
 }
-// AFX CODE BLOCK (selection-highlight) >>

@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        terrain-zodiacs -- Changes made for rendering zodiacs on regular terrain.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _TERRCELL_H_
@@ -234,7 +231,6 @@ public:
    void renderBounds() const;
 
    /// @}
-   // AFX CODE BLOCK (terrain-zodiacs) <<
 protected:
    Point3F* zode_vertexBuffer;
    void createZodiacVertexBuffer();
@@ -242,7 +238,6 @@ public:
    const Point3F* getZodiacVertexBuffer();
    void deleteZodiacVertexBuffer();
    static void createZodiacPrimBuffer(U16** primBuffer);
-   // AFX CODE BLOCK (terrain-zodiacs) >>
 };
 
 inline F32 TerrCell::getDistanceTo( const Point3F &pt ) const

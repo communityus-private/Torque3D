@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        packet-overflow-checks -- Monitor packet sizes to avoid packet overflow, especially
-//            when dynamic variables are used for AFX effect parameterization.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _BITSTREAM_H_
@@ -263,9 +259,7 @@ public:
    U32  getPosition() const;
    bool setPosition(const U32 in_newPosition);
    U32  getStreamSize();
-   // AFX CODE BLOCK (packet-overflow-checks) <<
    S32  getMaxWriteBitNum() const { return maxWriteBitNum; }
-   // AFX CODE BLOCK (packet-overflow-checks) >>
 };
 
 class ResizeBitStream : public BitStream

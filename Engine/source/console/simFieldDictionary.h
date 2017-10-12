@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-field-mgmt -- Enhancements to dynamic field handling that allow for
-//            name filtering and replacement limiting.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _SIMFIELDDICTIONARY_H_
@@ -99,11 +95,8 @@ public:
    U32   getNumFields() const { return mNumFields; }
 
    Entry  *operator[](U32 index);
-
-   // AFX CODE BLOCK (enhanced-field-mgmt) <<
    void setFieldValue(StringTableEntry slotName, const char *value, ConsoleBaseType *type, bool no_replace);
    void assignFrom(SimFieldDictionary *dict, const char* filter, bool no_replace);
-   // AFX CODE BLOCK (enhanced-field-mgmt) >>
 };
 
 class SimFieldDictionaryIterator

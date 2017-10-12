@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-field-mgmt -- Enhancements to dynamic field handling that allow for
-//            name filtering and replacement limiting.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -370,9 +366,6 @@ SimFieldDictionary::Entry* SimFieldDictionaryIterator::operator*()
 {
    return(mEntry);
 }
-
-// AFX CODE BLOCK (enhanced-field-mgmt) <<
-//
 // A variation of the stock SimFieldDictionary::setFieldValue(), this method adds the
 // <no_replace> argument which, when true, prohibits the replacement of fields that
 // already have a value. 
@@ -380,7 +373,6 @@ SimFieldDictionary::Entry* SimFieldDictionaryIterator::operator*()
 // AFX uses this when an effects-choreographer (afxMagicSpell, afxEffectron) is created 
 // using the new operator. It prevents any in-line effect parameters from being overwritten
 // by default parameters that are copied over later.
-//
 void SimFieldDictionary::setFieldValue(StringTableEntry slotName, const char *value, ConsoleBaseType *type, bool no_replace)
 {
    if (!no_replace)
@@ -403,13 +395,10 @@ void SimFieldDictionary::setFieldValue(StringTableEntry slotName, const char *va
 
    addEntry( bucket, slotName, type, dStrdup( value ) );
 }
-
-//
 // A variation of the stock SimFieldDictionary::assignFrom(), this method adds <no_replace>
 // and <filter> arguments. When true, <no_replace> prohibits the replacement of fields that already
 // have a value. When <filter> is specified, only fields with leading characters that exactly match
 // the characters in <filter> are copied.
-//
 void SimFieldDictionary::assignFrom(SimFieldDictionary *dict, const char* filter, bool no_replace)
 {
    dsize_t filter_len = (filter) ? dStrlen(filter) : 0;
@@ -435,4 +424,3 @@ void SimFieldDictionary::assignFrom(SimFieldDictionary *dict, const char* filter
                setFieldValue(walk->slotName, walk->value, walk->type, no_replace);
    }
 }
-// AFX CODE BLOCK (enhanced-field-mgmt) >>
