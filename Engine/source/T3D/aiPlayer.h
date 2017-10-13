@@ -54,6 +54,9 @@ private:
    MoveState mMoveState;
    F32 mMoveSpeed;
    F32 mMoveTolerance;                 // Distance from destination before we stop
+   F32 mMinFlockDistance;              // min flocking seperation distance
+   F32 mMaxFlockDistance;              // max flocking clustering distance
+   F32 mMinSideStepDist;               // Distance from destination before we stop moving out of the way
    F32 mAttackRadius;                  // Distance to trigger weaponry calcs
    Point3F mMoveDestination;           // Destination for movement
    Point3F mLastLocation;              // For stuck check

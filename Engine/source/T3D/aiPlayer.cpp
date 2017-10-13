@@ -93,6 +93,7 @@ ConsoleDocClass( AIPlayer,
  */
 AIPlayer::AIPlayer()
 {
+   mTypeMask |= AIObjectType;
    mMoveDestination.set( 0.0f, 0.0f, 0.0f );
    mMoveSpeed = 1.0f;
    mMoveTolerance = 0.25f;
@@ -417,6 +418,89 @@ bool AIPlayer::getAIMove(Move *movePtr)
       }
    }
 #endif // TORQUE_NAVIGATION_ENABLED
+
+   disableCollision();
+   Point3F pos = getBoxCenter();
+   F32 searchRad = (mMinFlockDistance + mMaxFlockDistance) * 2;
+   Point3F searchArea = Point3F(searchRad, searchRad, getObjBox().maxExtents.z / 2);
+
+   Point3F dest = mMoveDestination;
+   dest.z = mMoveDestination.z;
+   if (mAimObject && (mAimObject->getPosition() - location).len() > mMinSideStepDist)
+   {
+	   //find closest object
+	   SimpleQueryList sql;
+	   Box3F queryBox = Box3F(pos - searchArea, pos + searchArea);
+	   getContainer()->findObjects(queryBox, AIObjectType, SimpleQueryList::insertionCallback, &sql);
+	   Point3F partnerOffset = Point3F::Zero;
+	   U32 found = 0;
+
+	   //avoid bots that are too close
+	   for (U32 i = 0; i < sql.mList.size(); i++)
+	   {
+		   if (sql.mList[i] == this)
+			   continue;
+
+		   Point3F objectCenter = sql.mList[i]->getBoxCenter();
+		   Point2F botRad = Point2F(getObjBox().len_x(), getObjBox().len_y());
+		   Point2F objRad = Point2F(sql.mList[i]->getObjBox().len_x(), sql.mList[i]->getObjBox().len_y());
+
+		   F32 radii = mMinFlockDistance * 2;
+
+		   Point3F offset = (pos - objectCenter);
+		   offset.z = 0;
+		   F32 offsetLen = offset.lenSquared() - radii;
+		   if (mMinFlockDistance && (offsetLen < (mMinFlockDistance*mMinFlockDistance)))
+		   {
+			   found++;
+			   offset.z = 0;
+			   partnerOffset += offset;
+		   }
+	   }
+	   //if we don't have to worry about bumping into one another, see about grouping up
+	   if (found == 0)
+	   {
+		   for (U32 i = 0; i < sql.mList.size(); i++)
+		   {
+			   Point3F objectCenter = sql.mList[i]->getBoxCenter();
+			   Point2F botRad = Point2F(getObjBox().len_x(), getObjBox().len_y());
+			   Point2F objRad = Point2F(sql.mList[i]->getObjBox().len_x(), sql.mList[i]->getObjBox().len_y());
+
+			   Point3F offset = (pos - objectCenter);
+			   offset.z = 0;
+			   found++;
+			   partnerOffset -= offset;
+		   }
+	   }
+	   if (found>0)
+	   {
+		   partnerOffset.z = 0;
+		   if (partnerOffset.lenSquared() > (mMinFlockDistance*mMinFlockDistance))
+		   {
+			   partnerOffset.normalizeSafe();
+			   dest += partnerOffset*mMinFlockDistance;
+			   dest.z = mMoveDestination.z;
+
+			   //avoid objects in the way
+			   RayInfo info;
+			   if (getContainer()->castRay(pos, dest, sAIPlayerLoSMask, &info))
+			   {
+				   Point3F blockerPos = info.object->getPosition();
+				   Point3F blockerOffset = (info.point - dest);
+				   blockerOffset.z = 0;
+				   blockerOffset.normalizeSafe();
+				   dest += blockerOffset;
+			   }
+			   //make sure we don't run off a cliff
+			   if (getContainer()->castRay(dest + Point3F(0, 0, mDataBlock->maxStepHeight), dest - Point3F(0, 0, mDataBlock->maxStepHeight), sAIPlayerLoSMask, &info))
+			   {
+				   mMoveState = ModeMove;
+				   mMoveDestination = dest;
+			   }
+		   }
+	   }
+   }
+   enableCollision();
 
    // Orient towards the aim point, aim object, or towards
    // our destination.

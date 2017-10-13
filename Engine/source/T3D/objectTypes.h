@@ -160,8 +160,10 @@ enum SceneObjectTypes
    InteriorLikeObjectType =  BIT(24),
    TerrainLikeObjectType = BIT(25),
 #if defined(AFX_CAP_AFXMODEL_TYPE) 
-   afxModelObjectType = BIT(26)
-#endif 
+   afxModelObjectType = BIT(26),
+#endif
+   /// Tag For Bots
+   AIObjectType = BIT(27)
 };
 
 enum SceneObjectTypeMasks : U32
