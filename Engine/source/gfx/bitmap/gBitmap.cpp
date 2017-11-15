@@ -297,6 +297,7 @@ void GBitmap::allocateBitmap(const U32 in_width, const U32 in_height, const bool
      case GFXFormatR8G8B8X8:
      case GFXFormatR8G8B8A8:     mBytesPerPixel = 4;
       break;
+	 case GFXFormatL16:
      case GFXFormatR5G6B5:
      case GFXFormatR5G5B5A1:     mBytesPerPixel = 2;
       break;
@@ -370,6 +371,7 @@ void GBitmap::allocateBitmapWithMips(const U32 in_width, const U32 in_height, co
    case GFXFormatR8G8B8X8:
    case GFXFormatR8G8B8A8:     mBytesPerPixel = 4;
       break;
+   case GFXFormatL16:
    case GFXFormatR5G6B5:
    case GFXFormatR5G5B5A1:     mBytesPerPixel = 2;
       break;
@@ -678,6 +680,7 @@ bool GBitmap::checkForTransparency()
    {
       // Non-transparent formats
       case GFXFormatL8:
+	  case GFXFormatL16:
       case GFXFormatR8G8B8:
       case GFXFormatR5G6B5:
          break;
@@ -713,31 +716,31 @@ bool GBitmap::checkForTransparency()
 //------------------------------------------------------------------------------
 LinearColorF GBitmap::sampleTexel(F32 u, F32 v) const
 {
-   LinearColorF col(0.5f, 0.5f, 0.5f);
-   // normally sampling wraps all the way around at 1.0,
-   // but locking doesn't support this, and we seem to calc
-   // the uv based on a clamped 0 - 1...
-   Point2F max((F32)(getWidth()-1), (F32)(getHeight()-1));
-   Point2F posf;
-   posf.x = mClampF(((u) * max.x), 0.0f, max.x);
-   posf.y = mClampF(((v) * max.y), 0.0f, max.y);
-   Point2I posi((S32)posf.x, (S32)posf.y);
+	LinearColorF col(0.5f, 0.5f, 0.5f);
+	// normally sampling wraps all the way around at 1.0,
+	// but locking doesn't support this, and we seem to calc
+	// the uv based on a clamped 0 - 1...
+	Point2F max((F32)(getWidth()-1), (F32)(getHeight()-1));
+	Point2F posf;
+	posf.x = mClampF(((u) * max.x), 0.0f, max.x);
+	posf.y = mClampF(((v) * max.y), 0.0f, max.y);
+	Point2I posi((S32)posf.x, (S32)posf.y);
 
-   const U8 *buffer = getBits();
-   U32 lexelindex = ((posi.y * getWidth()) + posi.x) * mBytesPerPixel;
+	const U8 *buffer = getBits();
+	U32 lexelindex = ((posi.y * getWidth()) + posi.x) * mBytesPerPixel;
 
-   if(mBytesPerPixel == 2)
-   {
-      //U16 *buffer = (U16 *)lockrect->pBits;
-   }
-   else if(mBytesPerPixel > 2)
-   {     
-      col.red = F32(buffer[lexelindex + 0]) / 255.0f;
+	if(mBytesPerPixel == 2)
+	{
+		//U16 *buffer = (U16 *)lockrect->pBits;
+	}
+	else if(mBytesPerPixel > 2)
+	{		
+		col.red = F32(buffer[lexelindex + 0]) / 255.0f;
       col.green = F32(buffer[lexelindex + 1]) / 255.0f;
-      col.blue = F32(buffer[lexelindex + 2]) / 255.0f;
-   }
+		col.blue = F32(buffer[lexelindex + 2]) / 255.0f;
+	}
 
-   return col;
+	return col;
 }
 
 //--------------------------------------------------------------------------
@@ -753,7 +756,8 @@ bool GBitmap::getColor(const U32 x, const U32 y, ColorI& rColor) const
      case GFXFormatL8:
       rColor.set( *pLoc, *pLoc, *pLoc, *pLoc );
       break;
-
+	 case GFXFormatL16:
+		 rColor.set(U8(U16(pLoc[0] + pLoc[2] << 8)),0,0,0);
      case GFXFormatR8G8B8:
      case GFXFormatR8G8B8X8:
         rColor.set( pLoc[0], pLoc[1], pLoc[2], 255 );
@@ -801,6 +805,10 @@ bool GBitmap::setColor(const U32 x, const U32 y, const ColorI& rColor)
      case GFXFormatL8:
       *pLoc = rColor.alpha;
       break;
+
+	 case GFXFormatL16:
+		 dMemcpy(pLoc, &rColor, 2 * sizeof(U8));
+		 break;
 
      case GFXFormatR8G8B8:
       dMemcpy( pLoc, &rColor, 3 * sizeof( U8 ) );
@@ -1121,6 +1129,7 @@ bool GBitmap::read(Stream& io_rStream)
       break;
      case GFXFormatR8G8B8A8:       mBytesPerPixel = 4;
       break;
+	 case GFXFormatL16:
      case GFXFormatR5G6B5:
      case GFXFormatR5G5B5A1:    mBytesPerPixel = 2;
       break;
