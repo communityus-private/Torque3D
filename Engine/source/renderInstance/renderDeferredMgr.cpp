@@ -621,10 +621,7 @@ void ProcessedDeferredMaterial::_determineFeatures( U32 stageNum,
       newFeatures.addFeature(MFT_DiffuseMap);
    }
    newFeatures.addFeature( MFT_DiffuseColor );
-
-   if (mMaterial->mFlipRB[stageNum])
-      newFeatures.addFeature(MFT_FlipRB);
-
+   
    if (mMaterial->mInvertSmoothness[stageNum])
       newFeatures.addFeature(MFT_InvertSmoothness);
 

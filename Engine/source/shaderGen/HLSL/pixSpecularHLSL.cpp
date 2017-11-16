@@ -157,16 +157,9 @@ void SpecularMapHLSL::processPix( Vector<ShaderComponent*> &componentList, const
    if (!smoothness) smoothness = new Var("smoothness", "float");
    MultiLine * meta = new MultiLine;
 
-   if (fd.features[MFT_FlipRB])
-   {
-      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(metalness), texOp));
-      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(smoothness), texOp));
-   }
-   else
-   {
-      meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
-      meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
-   }
+   meta->addStatement(new GenOp("   @ = @.r;\r\n", new DecOp(smoothness), texOp));
+   meta->addStatement(new GenOp("   @ = @.b;\r\n", new DecOp(metalness), texOp));
+
    if (fd.features[MFT_InvertSmoothness])
       meta->addStatement(new GenOp("   @ = 1.0-@;\r\n", smoothness, smoothness));
    meta->addStatement(new GenOp("   @ = @.ggga;\r\n", new DecOp(specularColor), texOp));
