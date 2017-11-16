@@ -46,7 +46,6 @@ ImplementFeatureType( MFT_DiffuseColor, MFG_Texture, 5.0f, true );
 ImplementFeatureType( MFT_DiffuseVertColor, MFG_Texture, 6.0f, true );
 ImplementFeatureType( MFT_AlbedoDamage, MFG_Texture, 6.5f, true);
 ImplementFeatureType( MFT_AlphaTest, MFG_Texture, 7.0f, true );
-ImplementFeatureType( MFT_FlipRB, U32(-1), -1, true);
 ImplementFeatureType(MFT_InvertSmoothness, U32(-1), -1, true);
 ImplementFeatureType( MFT_SpecularMap, MFG_Texture, 8.0f, true );
 ImplementFeatureType( MFT_CompositeDamage, MFG_Texture, 9.0f, true );

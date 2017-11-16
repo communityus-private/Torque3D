@@ -303,9 +303,6 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
 
    // First we add all the features which the 
    // material has defined.
-   if (mMaterial->mFlipRB[stageNum])
-      fd.features.addFeature(MFT_FlipRB);
-
    if (mMaterial->mInvertSmoothness[stageNum])
       fd.features.addFeature(MFT_InvertSmoothness);
 

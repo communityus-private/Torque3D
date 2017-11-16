@@ -458,11 +458,15 @@ void ProcessedMaterial::_setStageData()
          if(!mStages[i].getTex( MFT_DetailNormalMap ))
             mMaterial->logError("Failed to load normal map %s for stage %i", _getTexturePath(mMaterial->mDetailNormalMapFilename[i]).c_str(), i);
       }
-      
+
+	  GFXTextureProfile profile = GFXStaticTextureProfile;
+	  if (mMaterial->mIsSRGb[i])
+		  profile = GFXStaticTextureSRGBProfile;
+
       // SpecularMap
       if( mMaterial->mSpecularMapFilename[i].isNotEmpty() )
       {
-         mStages[i].setTex( MFT_SpecularMap, _createTexture( mMaterial->mSpecularMapFilename[i], &GFXStaticTextureProfile) );
+         mStages[i].setTex( MFT_SpecularMap, _createTexture( mMaterial->mSpecularMapFilename[i], &profile) );
          if(!mStages[i].getTex( MFT_SpecularMap ))
             mMaterial->logError("Failed to load specular map %s for stage %i", _getTexturePath(mMaterial->mSpecularMapFilename[i]).c_str(), i);
       }
@@ -476,7 +480,7 @@ void ProcessedMaterial::_setStageData()
             inputKey[3] = NULL;
             mStages[i].setTex(MFT_SpecularMap, _createCompositeTexture(mMaterial->mRoughMapFilename[i], mMaterial->mAOMapFilename[i],
                                                                        mMaterial->mMetalMapFilename[i], "",
-                                                                       inputKey, &GFXStaticTextureProfile));
+                                                                       inputKey, &profile));
             if (!mStages[i].getTex(MFT_SpecularMap))
                mMaterial->logError("Failed to load specular map %s for stage %i", _getTexturePath(mMaterial->mSpecularMapFilename[i]).c_str(), i);
          }
@@ -499,7 +503,7 @@ void ProcessedMaterial::_setStageData()
       // DamageMap -Composite
       if (mMaterial->mCompositeDamageMapFilename[i].isNotEmpty())
       {
-         mStages[i].setTex(MFT_CompositeDamage, _createTexture(mMaterial->mCompositeDamageMapFilename[i], &GFXStaticTextureProfile));
+         mStages[i].setTex(MFT_CompositeDamage, _createTexture(mMaterial->mCompositeDamageMapFilename[i], &profile));
          if (!mStages[i].getTex(MFT_CompositeDamage))
             mMaterial->logError("Failed to load composite damage map %s for stage %i", _getTexturePath(mMaterial->mCompositeDamageMapFilename[i]).c_str(), i);
       }
