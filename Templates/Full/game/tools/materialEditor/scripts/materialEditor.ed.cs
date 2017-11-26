@@ -896,7 +896,7 @@ function MaterialEditorGui::guiSync( %this, %material )
       MaterialEditorPropertiesWindow-->toneMapNameText.setText( (%material).toneMap[%layer] );
       MaterialEditorPropertiesWindow-->toneMapDisplayBitmap.setBitmap( (%material).toneMap[%layer] );
    }
-   MaterialEditorPropertiesWindow-->FlipRBCheckbox.setValue((%material).FlipRB[%layer]);
+   MaterialEditorPropertiesWindow-->isSRGBCheckbox.setValue((%material).isSRGB[%layer]);
    MaterialEditorPropertiesWindow-->invertSmoothnessCheckbox.setValue((%material).invertSmoothness[%layer]);
       
    if((%material).specularMap[%layer] $= "") 

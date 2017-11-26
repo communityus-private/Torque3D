@@ -266,7 +266,7 @@ void AdvancedLightBinManager::render( SceneRenderState *state )
    sgData.init( state );
 
    // There are cases where shadow rendering is disabled.
-   const bool disableShadows = /*state->isReflectPass() || */ShadowMapPass::smDisableShadows;
+   const bool disableShadows = state->isReflectPass() || ShadowMapPass::smDisableShadows;
 
    // Pick the right material for rendering the sunlight... we only
    // cast shadows when its enabled and we're not in a reflection.

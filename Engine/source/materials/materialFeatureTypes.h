@@ -130,7 +130,6 @@ DeclareFeatureType( MFT_VertLitTone );
 DeclareFeatureType( MFT_StaticCubemap );
 DeclareFeatureType( MFT_CubeMap );
 DeclareFeatureType( MFT_PixSpecular );
-DeclareFeatureType( MFT_FlipRB );
 DeclareFeatureType( MFT_InvertSmoothness );
 DeclareFeatureType( MFT_SpecularMap );
 DeclareFeatureType( MFT_GlossMap );

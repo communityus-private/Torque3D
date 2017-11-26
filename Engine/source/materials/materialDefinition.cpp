@@ -121,7 +121,7 @@ Material::Material()
       mMetalness[i] = 0.0f;
 
       mPixelSpecular[i] = false;
-      mFlipRB[i] = false;
+	  mIsSRGb[i] = false;
       mInvertSmoothness[i] = false;
 
       msmoothnessChan[i] = 0;
@@ -296,7 +296,7 @@ void Material::initPersistFields()
       addField("accuSpecular",   TypeF32, Offset(mAccuSpecular, Material), MAX_STAGES,
          "Changes specularity to this value where the accumulated material is present.");
 
-      addField("FlipRB", TypeBool, Offset(mFlipRB, Material), MAX_STAGES,
+      addField("isSRGb", TypeBool, Offset(mIsSRGb, Material), MAX_STAGES,
          "Substance Designer Workaround.");
 
       addField("invertSmoothness", TypeBool, Offset(mInvertSmoothness, Material), MAX_STAGES,
