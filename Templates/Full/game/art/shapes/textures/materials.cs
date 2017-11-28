@@ -14,6 +14,9 @@ singleton Material(PBRTEST_PBRMetal)
    roughness0 = "1";
    pixelSpecular0 = "0";
    invertSmoothness[0] = "1";
+   isSRGb[0] = "1";
+   specularPower0 = "0.415939";
+   specular0 = "0.9 0.9 0.9 1";
 };
 
 singleton Material(PBRTEST_PBRWood)
@@ -31,6 +34,9 @@ singleton Material(PBRTEST_PBRWood)
    metalChan[0] = "3";
    roughness0 = "1";
    pixelSpecular0 = "0";
+   isSRGb[0] = "1";
+   specularPower0 = "0.415939";
+   specular0 = "0.9 0.9 0.9 1";
 };
 
 singleton Material(PBRTest2Mat)
@@ -51,6 +57,7 @@ singleton Material(PBRTest2Mat)
    specular0 = "0.9 0.9 0.9 1";
    translucent = "0";
    diffuseMap[0] = "art/shapes/textures/T3D_Metal_6_basecolor.png";
+   isSRGb[0] = "1";
 };
 
 singleton Material(PBRTest2Mat)
@@ -82,6 +89,9 @@ singleton Material(PBRTEST_PBRstone)
    materialTag0 = "Miscellaneous";
    pixelSpecular0 = "0";
    metalChan[0] = "3";
+   isSRGb[0] = "1";
+   specularPower0 = "0.415939";
+   specular0 = "0.9 0.9 0.9 1";
 };
 
 singleton Material(pbrGrid)
