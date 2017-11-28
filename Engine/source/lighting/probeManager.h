@@ -296,6 +296,25 @@ protected:
    ProbeShaderConstants* mLastConstants;
 };
 
+ProbeManager* ProbeManager::getProbeManager()
+{
+	if (smProbeManager == nullptr)
+	{
+		ProbeManager* probeManager = new ProbeManager();
+
+		if (gClientSceneGraph != nullptr)
+		{
+			probeManager->activate(gClientSceneGraph);
+		}
+		else
+		{
+			delete probeManager;
+		}
+	}
+
+	return smProbeManager;
+}
+
 /// Returns the current active light manager.
 #define PROBEMGR ProbeManager::getProbeManager()
 

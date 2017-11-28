@@ -233,24 +233,6 @@ void ProbeManager::activate( SceneManager *sceneManager )
    smProbeManager = this;
 }
 
-ProbeManager* ProbeManager::getProbeManager() 
-{ 
-   if (smProbeManager == nullptr)
-   {
-      ProbeManager* probeManager = new ProbeManager();
-
-      if (gClientSceneGraph != nullptr)
-      {
-         probeManager->activate(gClientSceneGraph);
-      }
-      else
-      {
-         delete probeManager;
-      }
-   }
-
-   return smProbeManager; 
-}
 IMPLEMENT_GLOBAL_CALLBACK( onProbeManagerDeactivate, void, ( const char *name ), ( name ),
    "A callback called by the engine when a light manager is deactivated.\n"
    "@param name The name of the light manager being deactivated.\n"
