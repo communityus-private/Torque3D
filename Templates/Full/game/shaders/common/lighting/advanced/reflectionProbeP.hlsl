@@ -198,16 +198,6 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
           worldPos.x < bbMin.x || worldPos.y < bbMin.y || worldPos.z < bbMin.z)
           clip(-1);
 
-       //eyevec clip, if we're inside
-       /*nrdir = normalize(lightVec);
-       rbmax = (bbMax - worldPos.xyz) / nrdir;
-       rbmin = (bbMin - worldPos.xyz) / nrdir;
-
-       rbminmax = (nrdir > 0.0) ? rbmax : rbmin;
-       float faa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
-       //if (dot(lightVec, normal)<0.0f)
-          clip(fa);*/
-
        float3 posOnBox = worldPos.xyz + nrdir * fa;
        reflectionVec = posOnBox - probeWSPos;
 
@@ -225,41 +215,4 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
     return float4(color.rgb, alpha);
 
-    /*float3 wPos = worldPos.rgb;
-
-    //box proj?
-    float3 rdir = reflect(IN.wsEyeDir.rgb, normalize(wsNormal));
-
-    //
-    float3 nrdir = normalize(rdir);
-    float3 rbmax = ((volumePosition + volumeSize) - wPos) / nrdir;
-    float3 rbmin = (volumeStart - wPos) / nrdir;
-
-    float3 rbminmax = (nrdir>0.0) ? rbmax : rbmin;
-    float fa = min(min(rbminmax.x,rbminmax.y),rbminmax.z);
-
-    float3 posOnBox = wPos + nrdir*fa;
-    rdir = posOnBox - volumePosition;
-
-    color = TORQUE_TEXCUBELOD(cubeMap, float4(rdir,1));*/
-
-    //sphere projection?
-    /*float3 EnvMapOffset = float3(1 / volumeSize.x, 1 / volumeSize.x, 1 / volumeSize.x);
-    float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),nDotL)).rgb;
-
-    float3 ReflDirectionWS = EnvMapOffset * (worldPos.rgb - volumePosition) + reflectionVec;
-
-    //float3 reflectionVec = reflect(rDir, float4(normalize(wsNormal),nDotL)).rgb;
-    float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 6.0);//bump up to 6 for finalization
-    float4 ref = float4(ReflDirectionWS, smoothness);
-
-    color = TORQUE_TEXCUBELOD(cubeMap, ref);*/
-
-    //classic maths
-    /*float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),nDotL)).rgb;
-    float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 12.0);//bump up to 8 for finalization
-    float4 ref = float4(reflectionVec, smoothness);
-    color = TORQUE_TEXCUBELOD(cubeMap, ref);
-    color.a = 1;
-    color *= Intensity * 3;*/
 }
