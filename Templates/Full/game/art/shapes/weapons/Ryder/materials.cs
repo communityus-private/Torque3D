@@ -39,7 +39,6 @@ singleton Material(TP_Ryder_Base)
    mapTo = "TP_Ryder_Base";
    diffuseMap[0] = "./TP_Ryder_D.dds";
    normalMap[0] = "./TP_Ryder_N.dds";
-   specularMap[0] = "./TP_Ryder_D.dds";
    specular[0] = "1.0 1.0 1.0 1";
    specularPower[0] = "10";
    translucentBlendOp = "None";
