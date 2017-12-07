@@ -1240,7 +1240,7 @@ void TerrainCompositeMapFeatGLSL::processPix(Vector<ShaderComponent*> &component
 	// We take two normal samples and lerp between them for
 	// side projection layers... else a single sample.
 	LangElement *texOp;
-
+	
 	if (fd.features.hasFeature(MFT_TerrainSideProject, compositeIndex))
 	{
 		texOp = new GenOp("lerp( tex2D( @, @.yz ), tex2D( @, @.xz ), @.z )",
@@ -1294,6 +1294,7 @@ ShaderFeature::Resources TerrainCompositeMapFeatGLSL::getResources(const Materia
 {
 	Resources res;
 	res.numTex = 1;
+	res.numTexReg += 1;
 	return res;
 }
 
