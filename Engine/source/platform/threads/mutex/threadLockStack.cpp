@@ -26,11 +26,12 @@
 
 #include "core/util/stdExtensions.h"
 
-#include <boost/thread/recursive_mutex.hpp>
+#include <mutex>
 
 #include <iomanip>
 #include <fstream>
 #include <time.h>
+#include <sstream>
 
 namespace MutexDetails
 {
@@ -153,7 +154,7 @@ std::string LockStack::makeDescription() const
 
 struct GlobalLockStackPool::MutexData
 {
-	boost::recursive_timed_mutex mutex;
+	std::recursive_timed_mutex mutex;
 };
 
 

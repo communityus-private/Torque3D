@@ -26,6 +26,7 @@
 #include "platform/types.h"
 #include "platform/threads/spinLock.h"
 #include "platform/threads/mutex/mutexInternalApiMacros.h"
+#include "core/util/tSingleton.h"
 
 #include <string>
 #include <vector>

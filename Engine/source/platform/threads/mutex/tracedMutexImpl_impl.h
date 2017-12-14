@@ -32,14 +32,14 @@
 
 #include "platform/threads/mutex/mutexSettings.h"
 
-#include <boost/thread/recursive_mutex.hpp>
+#include <mutex>
 
 namespace MutexDetails
 {
 
 struct TracedMutexImpl::MutexData
 {
-	boost::recursive_timed_mutex mutex;
+	std::recursive_timed_mutex mutex;
 };
 
 TracedMutexImpl::TracedMutexImpl(const char* name)
