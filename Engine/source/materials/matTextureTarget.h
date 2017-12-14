@@ -53,7 +53,7 @@ public:
    
    ///
    static NamedTexTarget* find( const String &name );
-
+   static void sCleanUp();
    ///
    NamedTexTarget();
 
