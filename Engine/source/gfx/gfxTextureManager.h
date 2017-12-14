@@ -45,6 +45,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "platform/threads/mutex.h"
+
 namespace Torque
 {
    class Path;
@@ -168,6 +170,10 @@ public:
 
    ///
    void reloadTextures();
+   void sheduleReloadTextures();
+   void reloadTextures(std::unordered_map<GFXTextureObject*, Resource<DDSFile>>& ddsFiles,
+	   std::unordered_map<GFXTextureObject*, Resource<GBitmap>>& bmpFiles);
+   void dumpTextures();
 
    /// This releases cached textures that have not
    /// been referenced for a period of time.
@@ -416,6 +422,10 @@ protected:
 
    /// The texture event signal.
    static EventSignal smEventSignal;
+
+protected:
+	// Mutex for hash table cache, linked list, cubemap table and waiting for delete texture list
+	Mutex                  mMutex;
 };
 
 

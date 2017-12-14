@@ -74,6 +74,7 @@ void GFXTextureManager::init()
 }
 
 GFXTextureManager::GFXTextureManager()
+	: mMutex("GFXTextureManager::mMutex")
 {
    mListHead = mListTail = NULL;
    mTextureManagerState = GFXTextureManager::Living;
@@ -135,6 +136,8 @@ void GFXTextureManager::kill()
    // so we don't leak any textures.
    cleanupCache();
 
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
+
    GFXTextureObject *curr = mListHead;
    GFXTextureObject *temp;
 
@@ -178,6 +181,9 @@ void GFXTextureManager::zombify()
 
 void GFXTextureManager::resurrect()
 {
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
+	MutexHandle gfxHandle = TORQUE_LOCK(GFX->mMutex);
+
    // Reupload all the device copies of the textures.
    GFXTextureObject *temp = mListHead;
 
@@ -186,6 +192,7 @@ void GFXTextureManager::resurrect()
       refreshTexture( temp );
       temp = temp->mNext;
    }
+   mutexHandle.unlock();
 
    // Notify callback registries.
    smEventSignal.trigger( GFXResurrect );
@@ -1190,7 +1197,8 @@ void GFXTextureManager::hashInsert( GFXTextureObject *object )
 {
    if ( object->mTextureLookupName.isEmpty() )
       return;
-      
+
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    U32 key = object->mTextureLookupName.getHashCaseInsensitive() % mHashCount;
    object->mHashNext = mHashTable[key];
    mHashTable[key] = object;
@@ -1200,6 +1208,8 @@ void GFXTextureManager::hashRemove( GFXTextureObject *object )
 {
    if ( object->mTextureLookupName.isEmpty() )
       return;
+
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    U32 key = object->mTextureLookupName.getHashCaseInsensitive() % mHashCount;
    GFXTextureObject **walk = &mHashTable[key];
@@ -1218,6 +1228,8 @@ GFXTextureObject* GFXTextureManager::hashFind( const String &name )
 {
    if ( name.isEmpty() )
       return NULL;
+
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    U32 key = name.getHashCaseInsensitive() % mHashCount;
    GFXTextureObject *walk = mHashTable[key];
@@ -1243,6 +1255,8 @@ void GFXTextureManager::refreshTexture(GFXTextureObject *texture)
 
 void GFXTextureManager::_linkTexture( GFXTextureObject *obj )
 {
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
+
    // info for the profile
    GFXTextureProfile::updateStatsForCreation(obj);
 
@@ -1270,6 +1284,8 @@ void GFXTextureManager::deleteTexture( GFXTextureObject *texture )
       texture->mTextureLookupName.c_str()
    );
    #endif
+
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    if( mListHead == texture )
       mListHead = texture->mNext;
@@ -1376,10 +1392,12 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
 GFXCubemap* GFXTextureManager::createCubemap( const Torque::Path &path )
 {
    // Very first thing... check the cache.
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    CubemapTable::Iterator iter = mCubemapTable.find( path.getFullPath() );
    if ( iter != mCubemapTable.end() )
       return iter->value;
 
+   mutexHandle.unlock();
    // Not in the cache... we have to load it ourselves.
 
    // First check for a DDS file.
@@ -1405,6 +1423,7 @@ GFXCubemap* GFXTextureManager::createCubemap( const Torque::Path &path )
    cubemap->_setPath( path.getFullPath() );
 
    // Store the cubemap into the cache.
+   MutexHandle mutexHandle2 = TORQUE_LOCK(mMutex);
    mCubemapTable.insertUnique( path.getFullPath(), cubemap );
 
    return cubemap;
@@ -1416,6 +1435,7 @@ void GFXTextureManager::releaseCubemap( GFXCubemap *cubemap )
       return;
 
    const String &path = cubemap->getPath();
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    CubemapTable::Iterator iter = mCubemapTable.find( path );
    if ( iter != mCubemapTable.end() && iter->value == cubemap )
@@ -1430,6 +1450,7 @@ void GFXTextureManager::releaseCubemap( GFXCubemap *cubemap )
 
 void GFXTextureManager::_onFileChanged( const Torque::Path &path )
 {
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    String pathNoExt = Torque::Path::Join( path.getRoot(), ':', path.getPath() );
    pathNoExt = Torque::Path::Join( pathNoExt, '/', path.getFileName() );
 
@@ -1458,6 +1479,9 @@ void GFXTextureManager::_onFileChanged( const Torque::Path &path )
 
 void GFXTextureManager::reloadTextures()
 {
+	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
+	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
+
    GFXTextureObject *tex = mListHead;
 
    while ( tex != NULL ) 
@@ -1483,6 +1507,159 @@ void GFXTextureManager::reloadTextures()
 
       tex = tex->mNext;
    }
+}
+
+void GFXTextureManager::reloadTextures(std::unordered_map<GFXTextureObject*, Resource<DDSFile>>& ddsFiles, std::unordered_map<GFXTextureObject*, Resource<GBitmap>>& bmpFiles)
+{
+	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
+	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
+
+	for (GFXTextureObject* tex = mListHead; tex != nullptr; tex = tex->mNext)
+	{
+		auto dds = ddsFiles.find(tex);
+		if (dds != ddsFiles.end())
+		{
+			_createTexture(dds->second, dds->first->mProfile, false, dds->first);
+		}
+		else
+		{
+			auto bmp = bmpFiles.find(tex);
+			if (bmp != bmpFiles.end())
+			{
+				_createTexture(bmp->second, bmp->first->mTextureLookupName, bmp->first->mProfile, false, bmp->first);
+			}
+		}
+	}
+}
+
+class LoadTexturesWorker : public ThreadPool::WorkItem
+{
+public:
+
+	LoadTexturesWorker(std::unordered_map<GFXTextureObject*, Resource<DDSFile>>&& ddsFiles,
+		std::unordered_map<GFXTextureObject*, Resource<GBitmap>>&& bmpFiles)
+		: mDDSFiles(std::move(ddsFiles)), mBMPFiles(std::move(bmpFiles))
+	{
+		mFlags |= FlagMainThreadOnly;
+	}
+
+	void execute() override
+	{
+		TEXMGR->reloadTextures(mDDSFiles, mBMPFiles);
+		Con::printf("Seasons: static textures reloaded");
+	}
+
+private:
+	std::unordered_map<GFXTextureObject*, Resource<DDSFile>> mDDSFiles;
+	std::unordered_map<GFXTextureObject*, Resource<GBitmap>> mBMPFiles;
+};
+
+class LoadTexturesSyncWorker : public ThreadPool::WorkItem
+{
+public:
+
+	LoadTexturesSyncWorker()
+	{
+		mFlags |= FlagDoesSynchronousIO;
+	}
+
+	void execute() override
+	{
+		std::unordered_map<GFXTextureObject*, Resource<DDSFile>> ddsFiles;
+		std::unordered_map<GFXTextureObject*, Resource<GBitmap>> bmpFiles;
+
+		for (const auto& data : mData)
+		{
+			if (data.path.getExtension().equal(sgDDSExt, String::NoCase))
+			{
+				Resource<DDSFile> dds = DDSFile::create(data.path, data.scalePower);
+				dds.load(true);
+
+				if (dds)
+				{
+					ddsFiles[data.tex] = dds;
+				}
+			}
+			else
+			{
+				Resource<GBitmap> bmp = BitmapFileLoader::load(data.path);
+
+				if (bmp)
+				{
+					bmpFiles[data.tex] = bmp;
+				}
+			}
+		}
+
+		ThreadPool::instance()->queueWorkItem(new LoadTexturesWorker(std::move(ddsFiles), std::move(bmpFiles)));
+	}
+
+	void addTexture(GFXTextureObject* tex, const Torque::Path path, U32 scalePower)
+	{
+		Data data;
+		data.tex = tex;
+		data.path = path;
+		data.scalePower = scalePower;
+		mData.push_back(data);
+	}
+
+private:
+	struct Data
+	{
+		GFXTextureObject* tex;
+		Torque::Path path;
+		U32 scalePower;
+	};
+
+	std::vector<Data> mData;
+};
+
+void GFXTextureManager::sheduleReloadTextures()
+{
+	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
+	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
+
+	auto worker = std::make_unique<LoadTexturesSyncWorker>();
+
+	for (auto tex = mListHead; tex != nullptr; tex = tex->mNext)
+	{
+		Torque::Path path(tex->mPath);
+		if (!path.isEmpty())
+		{
+			//hack: rename texture
+			String fileName = path.getFileName();
+			static auto removeSuffix = [](const String& suffix, String& file) -> bool
+			{
+				auto pos = file.find(suffix);
+				if (pos != String::NPos && pos == file.length() - suffix.length())
+				{
+					file.erase(pos, suffix.length());
+					return true;
+				}
+				return false;
+			};
+
+			removeSuffix(GFX_SEASONS->getSuffix(Season::Autumn), fileName) || removeSuffix(GFX_SEASONS->getSuffix(Season::Winter), fileName) || removeSuffix(GFX_SEASONS->getSuffix(Season::Spring), fileName);
+			String seasonFile = fileName + GFX_SEASONS->getSuffix();
+			if (Torque::FS::IsFile(path.getPath() + "/" + seasonFile + "." + path.getExtension()))
+			{
+				path.setFileName(seasonFile);
+			}
+			else
+			{
+				path.setFileName(fileName);
+			}
+
+			if (tex->mPath != path)
+			{
+				tex->mPath = path;
+				const U32 scalePower = TEXMGR->getTextureDownscalePower(tex->mProfile);
+				worker->addTexture(tex, path, scalePower);
+			}
+		}
+	}
+
+	ThreadPool::instance()->queueWorkItem(worker.release());
 }
 
 DefineEngineFunction( flushTextureCache, void, (),,
