@@ -98,7 +98,9 @@ LockStack::~LockStack()
 LockStack::EntryID LockStack::push(LockState state)
 {
 	auto lock = StdX::Lock(mSpinLock);
-	assert(mStack.empty() || mStack.back().lockState.locked);
+	AssertFatal(!mStack.empty(), "Can't push an empty Stack!");
+	AssertFatal(!mStack.back().lockState.locked, "Attemptempting to acquire a Thread Lock more than once!");
+
 	mStack.emplace_back(state);
 	return mStack.size() - 1;
 }
@@ -114,8 +116,8 @@ void LockStack::lock(LockStack::EntryID id)
 	// One might wonder - why have `id` parameter at all in this method?
 	// It is present to make public API of LockStack clearer (you lock() what you
 	// push()) and to add additional layer of debug checks.
-	assert(!mStack.empty() && id == mStack.size() - 1);
-	assert(!mStack.back().lockState.locked);
+	AssertFatal(!(!mStack.empty() && id == mStack.size() - 1), avar("Improper Thread Locking order of operations: (%i != %i)", id, mStack.size() - 1));
+	AssertFatal(mStack.back().lockState.locked, "Thread Lock not Aquired!");
 	mStack.back().lockState.locked = true;
 }
 
