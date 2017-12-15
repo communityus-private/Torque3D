@@ -28,11 +28,11 @@
 extern U32 HashPointer(StringTableEntry e);
 
 SimNameDictionary::SimNameDictionary()
+	: mMutex("SimNameDictionary::mMutex")
 {
 #ifndef USE_NEW_SIMDICTIONARY
    hashTable = NULL;
 #endif
-   mutex = Mutex::createMutex();
 }
 
 SimNameDictionary::~SimNameDictionary()
@@ -40,7 +40,6 @@ SimNameDictionary::~SimNameDictionary()
 #ifndef USE_NEW_SIMDICTIONARY
    delete[] hashTable;
 #endif
-   Mutex::destroyMutex(mutex);
 }
 
 void SimNameDictionary::insert(SimObject* obj)
@@ -53,7 +52,7 @@ void SimNameDictionary::insert(SimObject* obj)
    if (checkForDup)
       Con::warnf("Warning! You have a duplicate datablock name of %s. This can cause problems. You should rename one of them.", obj->objectName);
 
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 #ifndef USE_NEW_SIMDICTIONARY
    if (!hashTable)
    {
@@ -102,7 +101,6 @@ void SimNameDictionary::insert(SimObject* obj)
 #else
    root[obj->objectName] = obj;
 #endif
-   Mutex::unlockMutex(mutex);
 }
 
 SimObject* SimNameDictionary::find(StringTableEntry name)
@@ -112,7 +110,7 @@ SimObject* SimNameDictionary::find(StringTableEntry name)
    if (!hashTable)
       return NULL;
 
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 
    S32 idx = HashPointer(name) % hashTableSize;
    SimObject *walk = hashTable[idx];
@@ -120,13 +118,11 @@ SimObject* SimNameDictionary::find(StringTableEntry name)
    {
       if (walk->objectName == name)
       {
-         Mutex::unlockMutex(mutex);
          return walk;
       }
       walk = walk->nextNameObject;
    }
 
-   Mutex::unlockMutex(mutex);
    return NULL;
 #else
    Mutex::lockMutex(mutex);
@@ -142,7 +138,7 @@ void SimNameDictionary::remove(SimObject* obj)
    if (!obj || !obj->objectName)
       return;
 
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 #ifndef USE_NEW_SIMDICTIONARY
    SimObject **walk = &hashTable[HashPointer(obj->objectName) % hashTableSize];
    while (*walk)
@@ -153,7 +149,6 @@ void SimNameDictionary::remove(SimObject* obj)
          obj->nextNameObject = nullptr;
          hashEntryCount--;
 
-         Mutex::unlockMutex(mutex);
          return;
       }
       walk = &((*walk)->nextNameObject);
@@ -163,12 +158,12 @@ void SimNameDictionary::remove(SimObject* obj)
    if (root.find(name) != root.end())
       root.erase(name);
 #endif
-   Mutex::unlockMutex(mutex);
 }
 
 //----------------------------------------------------------------------------
 
 SimManagerNameDictionary::SimManagerNameDictionary()
+	: mMutex("SimManagerNameDictionary::mMutex")
 {
 #ifndef USE_NEW_SIMDICTIONARY
    hashTable = new SimObject *[DefaultTableSize];
@@ -177,7 +172,6 @@ SimManagerNameDictionary::SimManagerNameDictionary()
 
    dMemset(hashTable, 0, sizeof(hashTable[0]) * hashTableSize);
 #endif
-   mutex = Mutex::createMutex();
 }
 
 SimManagerNameDictionary::~SimManagerNameDictionary()
@@ -185,7 +179,6 @@ SimManagerNameDictionary::~SimManagerNameDictionary()
 #ifndef USE_NEW_SIMDICTIONARY
    delete[] hashTable;
 #endif
-   Mutex::destroyMutex(mutex);
 }
 
 void SimManagerNameDictionary::insert(SimObject* obj)
@@ -193,7 +186,7 @@ void SimManagerNameDictionary::insert(SimObject* obj)
    if (!obj || !obj->objectName)
       return;
 
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 #ifndef USE_NEW_SIMDICTIONARY
    S32 idx = HashPointer(obj->objectName) % hashTableSize;
    obj->nextManagerNameObject = hashTable[idx];
@@ -233,14 +226,13 @@ void SimManagerNameDictionary::insert(SimObject* obj)
 #else
    root[obj->objectName] = obj;
 #endif
-   Mutex::unlockMutex(mutex);
 }
 
 SimObject* SimManagerNameDictionary::find(StringTableEntry name)
 {
    // NULL is a valid lookup - it will always return NULL
 
-   Mutex::lockMutex(mutex);
+	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 
 #ifndef USE_NEW_SIMDICTIONARY
    S32 idx = HashPointer(name) % hashTableSize;
@@ -249,12 +241,10 @@ SimObject* SimManagerNameDictionary::find(StringTableEntry name)
    {
       if (walk->objectName == name)
       {
-         Mutex::unlockMutex(mutex);
          return walk;
       }
       walk = walk->nextManagerNameObject;
    }
-   Mutex::unlockMutex(mutex);
 
    return NULL;
 #else
@@ -271,7 +261,7 @@ void SimManagerNameDictionary::remove(SimObject* obj)
       return;
 
 #ifndef USE_NEW_SIMDICTIONARY
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 
    SimObject **walk = &hashTable[HashPointer(obj->objectName) % hashTableSize];
    while (*walk)
@@ -282,7 +272,6 @@ void SimManagerNameDictionary::remove(SimObject* obj)
          obj->nextManagerNameObject = nullptr;
          hashEntryCount--;
 
-         Mutex::unlockMutex(mutex);
          return;
       }
       walk = &((*walk)->nextManagerNameObject);
@@ -292,23 +281,21 @@ void SimManagerNameDictionary::remove(SimObject* obj)
    if (root.find(name) != root.end())
       root.erase(name);
 #endif
-   Mutex::unlockMutex(mutex);
 }
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
 SimIdDictionary::SimIdDictionary()
+	: mMutex("SimIdDictionary::mMutex")
 {
 #ifndef USE_NEW_SIMDICTIONARY
    dMemset(table, 0, sizeof(table[0]) * DefaultTableSize);
 #endif
-   mutex = Mutex::createMutex();
 }
 
 SimIdDictionary::~SimIdDictionary()
 {
-   Mutex::destroyMutex(mutex);
 }
 
 
@@ -318,7 +305,7 @@ void SimIdDictionary::insert(SimObject* obj)
    if (!obj)
       return;
 
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 #ifndef USE_NEW_SIMDICTIONARY
    S32 idx = obj->getId() & TableBitMask;
    obj->nextIdObject = table[idx];
@@ -327,12 +314,11 @@ void SimIdDictionary::insert(SimObject* obj)
 #else
    root[obj->getId()] = obj;
 #endif
-   Mutex::unlockMutex(mutex);
 }
 
 SimObject* SimIdDictionary::find(S32 id)
 {
-   Mutex::lockMutex(mutex);
+	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 #ifndef USE_NEW_SIMDICTIONARY
    S32 idx = id & TableBitMask;
    SimObject *walk = table[idx];
@@ -340,12 +326,10 @@ SimObject* SimIdDictionary::find(S32 id)
    {
       if (walk->getId() == U32(id))
       {
-         Mutex::unlockMutex(mutex);
          return walk;
       }
       walk = walk->nextIdObject;
    }
-   Mutex::unlockMutex(mutex);
 
    return NULL;
 #else
@@ -361,7 +345,7 @@ void SimIdDictionary::remove(SimObject* obj)
    if (!obj)
       return;
 
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 #ifndef USE_NEW_SIMDICTIONARY
    SimObject **walk = &table[obj->getId() & TableBitMask];
    while (*walk && *walk != obj)
@@ -371,7 +355,6 @@ void SimIdDictionary::remove(SimObject* obj)
 #else
    root.erase(obj->getId());
 #endif
-   Mutex::unlockMutex(mutex);
 }
 
 //---------------------------------------------------------------------------

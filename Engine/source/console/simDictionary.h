@@ -85,7 +85,7 @@ class SimNameDictionary
    StringDictDef root;
 #endif
 
-   void *mutex;
+   Mutex mMutex;
 
 public:
    void insert(SimObject* obj);
@@ -111,7 +111,7 @@ class SimManagerNameDictionary
    StringDictDef root;
 #endif
 
-   void *mutex;
+   Mutex mMutex;
 
 public:
    void insert(SimObject* obj);
@@ -140,7 +140,7 @@ class SimIdDictionary
    SimObjectIdDictDef root;
 #endif
 
-   void *mutex;
+   Mutex mMutex;
 
 public:
    void insert(SimObject* obj);
