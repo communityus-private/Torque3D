@@ -72,28 +72,21 @@ void IMessageListener::onRemoveFromQueue(StringTableEntry queue)
 //-----------------------------------------------------------------------------
 typedef struct _DispatchData
 {
-   void *mMutex;
+   Mutex mMutex;
+   MutexHandle mMutexHandle;
    SimpleHashTable<MessageQueue> mQueues;
    U32 mLastAnonQueueID;
 
    _DispatchData()
+	   : mMutex("GFXTextureManager::mMutex")
    {
-      mMutex = Mutex::createMutex();
       mLastAnonQueueID = 0;
    }
 
    ~_DispatchData()
    {
-      if(Mutex::lockMutex( mMutex ) )
-      {
-         mQueues.clearTables();
-
-         Mutex::unlockMutex( mMutex );
-      }
-
-      Mutex::destroyMutex( mMutex );
-      //SAFE_DELETE(mMutex);
-      mMutex = NULL;
+	   mMutexHandle = TORQUE_LOCK(mMutex);
+	   mQueues.clearTables();
    }
 
    const char *makeAnonQueueName()
@@ -119,8 +112,8 @@ static _DispatchData& _dispatcherGetGDispatchData()
 
 bool isQueueRegistered(const char *name)
 {
-   MutexHandle mh;
-   if(mh.lock(gDispatchData.mMutex, true))
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if(mh.isLocked())
    {
       return gDispatchData.mQueues.retreive(name) != NULL;
    }
@@ -133,23 +126,23 @@ void registerMessageQueue(const char *name)
    if(isQueueRegistered(name))
       return;
 
-   if(Mutex::lockMutex( gDispatchData.mMutex, true ))
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if (mh.isLocked())
    {
       MessageQueue *queue = new MessageQueue;
       queue->mQueueName = StringTable->insert(name);
       gDispatchData.mQueues.insert(queue, name);
-
-      Mutex::unlockMutex( gDispatchData.mMutex );
    }
 }
 
 extern const char * registerAnonMessageQueue()
 {
    const char *name = NULL;
-   if(Mutex::lockMutex( gDispatchData.mMutex, true ))
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if (mh.isLocked())
    {
       name = gDispatchData.makeAnonQueueName();
-      Mutex::unlockMutex( gDispatchData.mMutex );
+	  mh.unlock();
    }
 
    if(name)
@@ -160,8 +153,8 @@ extern const char * registerAnonMessageQueue()
 
 void unregisterMessageQueue(const char *name)
 {
-   MutexHandle mh;
-   if(mh.lock(gDispatchData.mMutex, true))
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if (mh.isLocked())
    {
       MessageQueue *queue = gDispatchData.mQueues.remove(name);
       if(queue == NULL)
@@ -186,9 +179,8 @@ bool registerMessageListener(const char *queue, IMessageListener *listener)
    if(! isQueueRegistered(queue))
       registerMessageQueue(queue);
 
-   MutexHandle mh;
-
-   if(! mh.lock(gDispatchData.mMutex, true))
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if (!mh.isLocked())
       return false;
 
    MessageQueue *q = gDispatchData.mQueues.retreive(queue);
@@ -214,9 +206,8 @@ void unregisterMessageListener(const char *queue, IMessageListener *listener)
    if(! isQueueRegistered(queue))
       return;
 
-   MutexHandle mh;
-
-   if(! mh.lock(gDispatchData.mMutex, true))
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if (!mh.isLocked())
       return;
 
    MessageQueue *q = gDispatchData.mQueues.retreive(queue);
@@ -242,10 +233,9 @@ bool dispatchMessage( const char* queue, const char* msg, const char* data)
 {
    AssertFatal( queue != NULL, "Dispatcher::dispatchMessage - Got a NULL queue name" );
    AssertFatal( msg != NULL, "Dispatcher::dispatchMessage - Got a NULL message" );
-
-   MutexHandle mh;
-
-   if(! mh.lock(gDispatchData.mMutex, true))
+   
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if (!mh.isLocked())
       return true;
 
    MessageQueue *q = gDispatchData.mQueues.retreive(queue);
@@ -261,14 +251,13 @@ bool dispatchMessage( const char* queue, const char* msg, const char* data)
 
 bool dispatchMessageObject(const char *queue, Message *msg)
 {
-   MutexHandle mh;
-
    if(msg == NULL)
       return true;
 
    msg->addReference();
 
-   if(! mh.lock(gDispatchData.mMutex, true))
+   MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
+   if (!mh.isLocked())
    {
       msg->freeReference();
       return true;
@@ -310,6 +299,7 @@ bool dispatchMessageObject(const char *queue, Message *msg)
 
 MessageQueue * getMessageQueue(const char *name)
 {
+	MutexHandle mh = TORQUE_TRY_LOCK(gDispatchData.mMutex);
    return gDispatchData.mQueues.retreive(name);
 }
 

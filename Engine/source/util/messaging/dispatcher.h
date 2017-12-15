@@ -242,26 +242,11 @@ extern bool dispatchMessageObject(const char *queue, Message *msg);
 
 /// @name Internal Functions
 // @{
-
-//-----------------------------------------------------------------------------
-/// @brief Internal function: Lock the dispatcher mutex.
-/// @return true for success, false for failure
-/// @see unlockDispatcherMutex()
-//-----------------------------------------------------------------------------
-extern bool lockDispatcherMutex();
-
-//-----------------------------------------------------------------------------
-/// @brief Internal function: Unlock the dispatcher mutex.
-/// @see lockDispatcherMutex()
-//-----------------------------------------------------------------------------
-extern void unlockDispatcherMutex();
-
 //-----------------------------------------------------------------------------
 /// @brief Internal function: obtain message queue. Dispatcher mutex must be locked.
 /// 
 /// @param name Name of the queue
 /// @return Message queue
-/// @see lockDispatcherMutex(), unlockDispatcherMutex()
 //-----------------------------------------------------------------------------
 extern MessageQueue *getMessageQueue(const char *name);
 
