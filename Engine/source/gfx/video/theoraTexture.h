@@ -59,7 +59,7 @@
    #include "platform/typetraits.h"
 #endif
 
-
+#include "platform/threads/threadPool.h"
 
 class SFXDescription;
 class SFXSound;

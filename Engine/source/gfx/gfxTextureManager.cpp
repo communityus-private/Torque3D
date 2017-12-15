@@ -35,6 +35,7 @@
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 #include "materials/matTextureTarget.h"
+#include "platform/threads/threadPool.h"
 
 using namespace Torque;
 
@@ -1570,10 +1571,9 @@ public:
 
 		for (const auto& data : mData)
 		{
-			if (data.path.getExtension().equal(sgDDSExt, String::NoCase))
+			if (data.path.getExtension().equal(sDDSExt, String::NoCase))
 			{
-				Resource<DDSFile> dds = DDSFile::create(data.path, data.scalePower);
-				dds.load(true);
+				Resource<DDSFile> dds = DDSFile::load(data.path, data.scalePower);
 
 				if (dds)
 				{
@@ -1582,7 +1582,7 @@ public:
 			}
 			else
 			{
-				Resource<GBitmap> bmp = BitmapFileLoader::load(data.path);
+				Resource<GBitmap> bmp = GBitmap::load(data.path);
 
 				if (bmp)
 				{
@@ -1628,27 +1628,8 @@ void GFXTextureManager::sheduleReloadTextures()
 		{
 			//hack: rename texture
 			String fileName = path.getFileName();
-			static auto removeSuffix = [](const String& suffix, String& file) -> bool
-			{
-				auto pos = file.find(suffix);
-				if (pos != String::NPos && pos == file.length() - suffix.length())
-				{
-					file.erase(pos, suffix.length());
-					return true;
-				}
-				return false;
-			};
+			path.setFileName(fileName);
 
-			removeSuffix(GFX_SEASONS->getSuffix(Season::Autumn), fileName) || removeSuffix(GFX_SEASONS->getSuffix(Season::Winter), fileName) || removeSuffix(GFX_SEASONS->getSuffix(Season::Spring), fileName);
-			String seasonFile = fileName + GFX_SEASONS->getSuffix();
-			if (Torque::FS::IsFile(path.getPath() + "/" + seasonFile + "." + path.getExtension()))
-			{
-				path.setFileName(seasonFile);
-			}
-			else
-			{
-				path.setFileName(fileName);
-			}
 
 			if (tex->mPath != path)
 			{

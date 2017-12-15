@@ -125,10 +125,9 @@ SimObject* SimNameDictionary::find(StringTableEntry name)
 
    return NULL;
 #else
-   Mutex::lockMutex(mutex);
+   MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
    StringDictDef::iterator it = root.find(name);
    SimObject* f = (it == root.end() ? NULL : it->second);
-   Mutex::unlockMutex(mutex);
    return f;
 #endif
 }
@@ -250,7 +249,6 @@ SimObject* SimManagerNameDictionary::find(StringTableEntry name)
 #else
    StringDictDef::iterator it = root.find(name);
    SimObject* f = (it == root.end() ? NULL : it->second);
-   Mutex::unlockMutex(mutex);
    return f;
 #endif
 }
@@ -335,7 +333,6 @@ SimObject* SimIdDictionary::find(S32 id)
 #else
    SimObjectIdDictDef::iterator it = root.find(id);
    SimObject* f = (it == root.end() ? NULL : it->second);
-   Mutex::unlockMutex(mutex);
    return f;
 #endif
 }

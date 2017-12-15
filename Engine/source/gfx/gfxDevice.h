@@ -58,6 +58,10 @@
 #include "platform/platformTimer.h"
 #endif
 
+#ifndef _PLATFORM_THREADS_MUTEX_MUTEX_H_
+#include "platform/threads/mutex.h"
+#endif
+
 class FontRenderBatcher;
 class GFont;
 class GFXCardProfiler;

@@ -1366,8 +1366,8 @@ static void* alloc(dsize_t size, bool array, const char* fileName, const U32 lin
    gCurrAlloc++;
 
 #ifdef TORQUE_MULTITHREAD
-   if(!gReentrantGuard)
-      Mutex::unlockMutex(gMemMutex);
+   if (!gReentrantGuard)
+	   mutexHandle.unlock();
 #endif
 
    return basePtr;
@@ -1525,7 +1525,7 @@ static void* realloc(void* mem, dsize_t size, const char* fileName, const U32 li
       //validate();
       PROFILE_END();
 #ifdef TORQUE_MULTITHREAD
-      Mutex::unlockMutex(gMemMutex);
+	  mutexHandle.unlock();
 #endif
       return mem;
    }
@@ -1534,7 +1534,7 @@ static void* realloc(void* mem, dsize_t size, const char* fileName, const U32 li
       checkUnusedAlloc((FreeHeader *) hdr, size);
       PROFILE_END();
 #ifdef TORQUE_MULTITHREAD
-      Mutex::unlockMutex(gMemMutex);
+	  mutexHandle.unlock();
 #endif
       return mem;
    }
@@ -1554,7 +1554,7 @@ static void* realloc(void* mem, dsize_t size, const char* fileName, const U32 li
    hdr->flags |= Reallocated;
 
 #ifdef TORQUE_MULTITHREAD
-   Mutex::unlockMutex(gMemMutex);
+   mutexHandle.unlock();
 #endif
    return ret;
 }
