@@ -24,7 +24,7 @@
 
 #include "platform/threads/threadSafeRefCount.h"
 #include "platform/threads/thread.h"
-#include "platform/threads/mutex/mutex.h"
+#include "platform/threads/mutex.h"
 #include "core/util/command.h"
 
 #include <queue>

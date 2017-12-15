@@ -45,7 +45,7 @@
 #endif
 
 #ifdef TORQUE_MULTITHREAD
-void * gMemMutex = NULL;
+Mutex gMemMutex("gMemMutex");
 #endif
    
 //-------------------------------------- Make sure we don't have the define set
@@ -437,10 +437,7 @@ static void validateTree()
 void validate()
 {
 #ifdef TORQUE_MULTITHREAD
-   if(!gMemMutex)
-      gMemMutex = Mutex::createMutex();
-
-   Mutex::lockMutex(gMemMutex);
+   MutexHandle mutexHandle = TORQUE_LOCK(gMemMutex);
 #endif
 
 
@@ -464,7 +461,7 @@ void validate()
    }
 
 #ifdef TORQUE_MULTITHREAD
-   Mutex::unlockMutex(gMemMutex);
+   mutexHandle.unlock();
 #endif
 }
 
@@ -1275,12 +1272,12 @@ static void* alloc(dsize_t size, bool array, const char* fileName, const U32 lin
    if(!gMemMutex && !gReentrantGuard)
    {
       gReentrantGuard = true;
-      gMemMutex = Mutex::createMutex();
       gReentrantGuard = false;
    }
 
+   MutexHandle mutexHandle;
    if(!gReentrantGuard)
-      Mutex::lockMutex(gMemMutex);
+	   mutexHandle = TORQUE_LOCK(gMemMutex);
 
 #endif
 
@@ -1290,7 +1287,7 @@ static void* alloc(dsize_t size, bool array, const char* fileName, const U32 lin
    {
 #ifdef TORQUE_MULTITHREAD
       if(!gReentrantGuard)
-         Mutex::unlockMutex(gMemMutex);
+		  mutexHandle.unlock();
 #endif
       return NULL;
    }
@@ -1386,13 +1383,7 @@ static void free(void* mem, bool array)
       return;
 
 #ifdef TORQUE_MULTITHREAD
-   if(!gMemMutex)
-      gMemMutex = Mutex::createMutex();
-
-   if( mem != gMemMutex )
-      Mutex::lockMutex(gMemMutex);
-   else
-      gMemMutex = NULL;
+   MutexHandle mutexHandle = TORQUE_LOCK(gMemMutex);
 #endif
 
    PROFILE_START(MemoryFree);
@@ -1455,7 +1446,7 @@ static void free(void* mem, bool array)
 //   validate();
 
 #ifdef TORQUE_MULTITHREAD
-   Mutex::unlockMutex(gMemMutex);
+   mutexHandle.unlock();
 #endif
 }
 #endif
@@ -1472,10 +1463,8 @@ static void* realloc(void* mem, dsize_t size, const char* fileName, const U32 li
       return alloc(size, false, fileName, line);
 
 #ifdef TORQUE_MULTITHREAD
-   if(!gMemMutex)
-      gMemMutex = Mutex::createMutex();
 
-   Mutex::lockMutex(gMemMutex);
+   MutexHandle mutexHandle = TORQUE_LOCK(gMemMutex);
 #endif
 
    AllocatedHeader* hdr = ((AllocatedHeader *)mem) - 1;
@@ -1491,7 +1480,7 @@ static void* realloc(void* mem, dsize_t size, const char* fileName, const U32 li
    if(oldSize == size)
    {
 #ifdef TORQUE_MULTITHREAD
-      Mutex::unlockMutex(gMemMutex);
+	   mutexHandle.unlock();
 #endif
       return mem;
    }

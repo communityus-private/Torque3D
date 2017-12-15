@@ -131,7 +131,7 @@ protected:
    void addSheet(void);
    void assignSheet(S32 sheetNum, GBitmap *bmp);
 
-   void *mMutex;
+   Mutex mMutex;
 
 private:
    static const U32 csm_fileVersion;

@@ -57,7 +57,7 @@ namespace Sim
 SimTime gCurrentTime;
 SimTime gTargetTime;
 
-void *gEventQueueMutex;
+Mutex gEventQueueMutex("gEventQueueMutex");
 SimEvent *gEventQueue;
 U32 gEventSequence;
 
@@ -70,13 +70,12 @@ static void initEventQueue()
    gTargetTime = 0;
    gEventSequence = 1;
    gEventQueue = NULL;
-   gEventQueueMutex = Mutex::createMutex();
 }
 
 static void shutdownEventQueue()
 {
    // Delete all pending events
-   Mutex::lockMutex(gEventQueueMutex);
+	MutexHandle mutexHandle = TORQUE_LOCK(gEventQueueMutex);
    SimEvent *walk = gEventQueue;
    while(walk)
    {
@@ -84,8 +83,6 @@ static void shutdownEventQueue()
       delete walk;
       walk = temp;
    }
-   Mutex::unlockMutex(gEventQueueMutex);
-   Mutex::destroyMutex(gEventQueueMutex);
 }
 
 //---------------------------------------------------------------------------
@@ -97,7 +94,7 @@ U32 postEvent(SimObject *destObject, SimEvent* event,U32 time)
       "Sim::postEvent() - Event time must be greater than or equal to the current time." );
    AssertFatal(destObject, "Sim::postEvent() - Destination object for event doesn't exist.");
 
-   Mutex::lockMutex(gEventQueueMutex);
+   MutexHandle mutexHandle = TORQUE_LOCK(gEventQueueMutex);
 
    if( time == -1 ) // FIXME: a smart compiler will remove this check. - see http://garagegames.com/community/resources/view/19785 for a fix
       time = gCurrentTime;
@@ -108,10 +105,7 @@ U32 postEvent(SimObject *destObject, SimEvent* event,U32 time)
 
    if(!destObject)
    {
-      delete event;
-
-      Mutex::unlockMutex(gEventQueueMutex);
-
+      delete event;	  
       return InvalidEventId;
    }
    event->sequenceCount = gEventSequence++;
@@ -130,9 +124,7 @@ U32 postEvent(SimObject *destObject, SimEvent* event,U32 time)
    *walk = event;
 
    U32 seqCount = event->sequenceCount;
-
-   Mutex::unlockMutex(gEventQueueMutex);
-
+   
    return seqCount;
 }
 
@@ -141,7 +133,7 @@ U32 postEvent(SimObject *destObject, SimEvent* event,U32 time)
 
 void cancelEvent(U32 eventSequence)
 {
-   Mutex::lockMutex(gEventQueueMutex);
+	MutexHandle mutexHandle = TORQUE_LOCK(gEventQueueMutex);
 
    SimEvent **walk = &gEventQueue;
    SimEvent *current;
@@ -152,19 +144,16 @@ void cancelEvent(U32 eventSequence)
       {
          *walk = current->nextEvent;
          delete current;
-         Mutex::unlockMutex(gEventQueueMutex);
          return;
       }
       else
          walk = &(current->nextEvent);
    }
-
-   Mutex::unlockMutex(gEventQueueMutex);
 }
 
 void cancelPendingEvents(SimObject *obj)
 {
-   Mutex::lockMutex(gEventQueueMutex);
+	MutexHandle mutexHandle = TORQUE_LOCK(gEventQueueMutex);
 
    SimEvent **walk = &gEventQueue;
    SimEvent *current;
@@ -179,7 +168,6 @@ void cancelPendingEvents(SimObject *obj)
       else
          walk = &(current->nextEvent);
    }
-   Mutex::unlockMutex(gEventQueueMutex);
 }
 
 //---------------------------------------------------------------------------
@@ -187,31 +175,26 @@ void cancelPendingEvents(SimObject *obj)
 
 bool isEventPending(U32 eventSequence)
 {
-   Mutex::lockMutex(gEventQueueMutex);
+	MutexHandle mutexHandle = TORQUE_LOCK(gEventQueueMutex);
 
    for(SimEvent *walk = gEventQueue; walk; walk = walk->nextEvent)
       if(walk->sequenceCount == eventSequence)
       {
-         Mutex::unlockMutex(gEventQueueMutex);
          return true;
       }
-   Mutex::unlockMutex(gEventQueueMutex);
    return false;
 }
 
 U32 getEventTimeLeft(U32 eventSequence)
 {
-   Mutex::lockMutex(gEventQueueMutex);
+	MutexHandle mutexHandle = TORQUE_LOCK(gEventQueueMutex);
 
    for(SimEvent *walk = gEventQueue; walk; walk = walk->nextEvent)
       if(walk->sequenceCount == eventSequence)
       {
          SimTime t = walk->time - getCurrentTime();
-         Mutex::unlockMutex(gEventQueueMutex);
          return t;
       }
-
-   Mutex::unlockMutex(gEventQueueMutex);
 
    return 0;   
 }
@@ -240,7 +223,7 @@ void advanceToTime(SimTime targetTime)
    AssertFatal(targetTime >= getCurrentTime(), 
       "Sim::advanceToTime() - Target time is less than the current time." );
 
-   Mutex::lockMutex(gEventQueueMutex);
+   MutexHandle mutexHandle = TORQUE_LOCK(gEventQueueMutex);
 
    gTargetTime = targetTime;
    while(gEventQueue && gEventQueue->time <= targetTime)
@@ -257,8 +240,6 @@ void advanceToTime(SimTime targetTime)
       delete event;
    }
    gCurrentTime = targetTime;
-
-   Mutex::unlockMutex(gEventQueueMutex);
 }
 
 void advanceTime(SimTime delta)

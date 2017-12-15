@@ -115,7 +115,6 @@ class SimSet : public SimObject, public TamlChildren
    protected:
 
       SimObjectList objectList;
-      void *mMutex;
 
       /// Signal that is triggered when objects are added or removed from the set.
       SetModificationSignal mSetModificationSignal;
@@ -132,6 +131,7 @@ class SimSet : public SimObject, public TamlChildren
 
       SimSet();
       ~SimSet();
+      Mutex mMutex;
 
       /// Return the signal that is triggered when an object is added to or removed
       /// from the set.
@@ -245,21 +245,7 @@ class SimSet : public SimObject, public TamlChildren
       void findObjectByCallback( bool ( *fn )( T* ), Vector<T*>& foundObjects );   
       
       SimObject* getRandom();
-
-      inline void lock()
-      {
-         #ifdef TORQUE_MULTITHREAD
-         Mutex::lockMutex(mMutex);
-         #endif
-      }
-
-      void unlock()
-      {
-         #ifdef TORQUE_MULTITHREAD
-         Mutex::unlockMutex(mMutex);
-         #endif
-      }
-
+	  
       #ifdef TORQUE_DEBUG_GUARD
       inline void _setVectorAssoc( const char *file, const U32 line )
       {

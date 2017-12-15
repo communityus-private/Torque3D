@@ -194,6 +194,7 @@ Resource<GFont> GFont::create(const String &faceName, U32 size, const char *cach
 //-------------------------------------------------------------------------
 
 GFont::GFont()
+	: mMutex("GFont::mMutex")
 {
    VECTOR_SET_ASSOCIATION(mCharInfoList);
    VECTOR_SET_ASSOCIATION(mTextureSheets);
@@ -206,9 +207,7 @@ GFont::GFont()
    mPlatformFont = NULL;
    mSize = 0;
    mCharSet = 0;
-   mNeedSave = false;
-   
-   mMutex = Mutex::createMutex();
+   mNeedSave = false;   
 }
 
 GFont::~GFont()
@@ -237,8 +236,6 @@ GFont::~GFont()
       mTextureSheets[i] = NULL;
 
    SAFE_DELETE(mPlatformFont);
-   
-   Mutex::destroyMutex(mMutex);
 }
 
 void GFont::dumpInfo() const
@@ -278,7 +275,7 @@ bool GFont::loadCharInfo(const UTF16 ch)
 
     if(mPlatformFont && mPlatformFont->isValidChar(ch))
     {
-        Mutex::lockMutex(mMutex); // the CharInfo returned by mPlatformFont is static data, must protect from changes.
+		MutexHandle mutexHandle = TORQUE_LOCK(mMutex); // the CharInfo returned by mPlatformFont is static data, must protect from changes.
         PlatformFont::CharInfo &ci = mPlatformFont->getCharInfo(ch);
         if(ci.bitmapData)
             addBitmap(ci);
@@ -286,9 +283,7 @@ bool GFont::loadCharInfo(const UTF16 ch)
         mCharInfoList.push_back(ci);
         mRemapTable[ch] = mCharInfoList.size() - 1;
         
-        mNeedSave = true;
-        
-        Mutex::unlockMutex(mMutex);
+        mNeedSave = true;        
         return true;
     }
 

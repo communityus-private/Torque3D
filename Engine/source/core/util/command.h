@@ -24,7 +24,7 @@
 
 #ifndef _CORE_UTIL_COMMAND_H_
 #define _CORE_UTIL_COMMAND_H_
-
+#include "console/console.h"
 #include "core/util/command_impl.h"
 
 #include <future>

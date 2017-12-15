@@ -117,16 +117,15 @@ IMPLEMENT_CALLBACK( SimSet, onObjectRemoved, void, ( SimObject* object ), ( obje
 //-----------------------------------------------------------------------------
 
 SimSet::SimSet()
+	: mMutex("SimSet::mMutex")
 {
    VECTOR_SET_ASSOCIATION( objectList );
-   mMutex = Mutex::createMutex();
 }
 
 //-----------------------------------------------------------------------------
 
 SimSet::~SimSet()
 {
-   Mutex::destroyMutex( mMutex );
 }
 
 //-----------------------------------------------------------------------------
@@ -136,14 +135,14 @@ void SimSet::addObject( SimObject* obj )
    // Prevent SimSet being added to itself.
    if( obj == this )
       return;
-      
-   lock();
+
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    
    const bool added = objectList.pushBack( obj );
    if( added )
       deleteNotify( obj );
    
-   unlock();
+   mutexHandle.unlock();
 
    if( added )
    {
@@ -157,13 +156,13 @@ void SimSet::addObject( SimObject* obj )
 
 void SimSet::removeObject( SimObject* obj )
 {
-   lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    
    const bool removed = objectList.remove( obj );
    if( removed )
       clearNotify( obj );
-   
-   unlock();
+
+   mutexHandle.unlock();
 
    if( removed )
    {
@@ -179,14 +178,14 @@ void SimSet::pushObject( SimObject* obj )
 {
    if( obj == this )
       return;
-      
-   lock();
+
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    
    bool added = objectList.pushBackForce( obj );
    if( added )
       deleteNotify( obj );
-      
-   unlock();
+
+   mutexHandle.unlock();
 
    if( added )
    {
@@ -206,12 +205,12 @@ void SimSet::popObject()
       return;
    }
 
-   lock();
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    SimObject* object = objectList.last();
    objectList.pop_back();
 
    clearNotify( object );
-   unlock();
+   mutexHandle.unlock();
    
    getSetModificationSignal().trigger( SetObjectRemoved, this, object );
    if( object->isProperlyAdded() )
@@ -222,9 +221,8 @@ void SimSet::popObject()
 
 void SimSet::scriptSort( const String &scriptCallbackFn )
 {
-   lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    objectList.scriptSort( scriptCallbackFn );
-   unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -279,8 +277,7 @@ U32 SimSet::sizeRecursive()
 
 bool SimSet::reOrder( SimObject *obj, SimObject *target )
 {
-   MutexHandle handle;
-   handle.lock(mMutex);
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    iterator itrS, itrD;
    if ( (itrS = find(begin(),end(),obj)) == end() )
@@ -337,8 +334,7 @@ void SimSet::onDeleteNotify(SimObject *object)
 
 void SimSet::onRemove()
 {
-   MutexHandle handle;
-   handle.lock( mMutex );
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    if( !objectList.empty() )
    {
@@ -351,9 +347,7 @@ void SimSet::onRemove()
             ptr >= objectList.begin(); ptr -- )
          clearNotify( *ptr );
    }
-
-   handle.unlock();
-
+   
    Parent::onRemove();
 }
 
@@ -361,8 +355,7 @@ void SimSet::onRemove()
 
 void SimSet::write(Stream &stream, U32 tabStop, U32 flags)
 {
-   MutexHandle handle;
-   handle.lock(mMutex);
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    // export selected only?
    if((flags & SelectedOnly) && !isSelected())
@@ -399,12 +392,12 @@ void SimSet::write(Stream &stream, U32 tabStop, U32 flags)
 
 void SimSet::clear()
 {
-   lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    
    while( !empty() )
       popObject();
       
-   unlock();
+   mutexHandle.unlock();
 
    getSetModificationSignal().trigger( SetCleared, this, NULL );
 }
@@ -414,7 +407,7 @@ void SimSet::clear()
 //UNSAFE
 void SimSet::deleteAllObjects()
 {
-   lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    while( !empty() )
    {
       SimObject* object = objectList.last();
@@ -422,7 +415,6 @@ void SimSet::deleteAllObjects()
 
       object->deleteObject();
    }
-   unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -430,14 +422,13 @@ void SimSet::deleteAllObjects()
 SimObject* SimSet::findObject( SimObject* object )
 {
    bool found = false;
-   lock();
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    for( SimSet::iterator iter = begin(); iter != end(); ++ iter )
       if( *iter == object )
       {
          found = true;
          break;
       }
-   unlock();
    
    if( found )
       return object;
@@ -457,19 +448,17 @@ SimObject* SimSet::findObject( const char *namePath )
    StringTableEntry stName = StringTable->lookupn(namePath, len);
    if(!stName)
       return NULL;
-
-   lock();
+   
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    for(SimSet::iterator i = begin(); i != end(); i++)
    {
       if((*i)->getName() == stName)
       {
-         unlock();
          if(namePath[len] == 0)
             return *i;
          return (*i)->findObject(namePath + len + 1);
       }
    }
-   unlock();
    return NULL;
 }
 
@@ -633,7 +622,7 @@ void SimGroup::_addObject( SimObject* obj, bool forcePushBack )
    if( obj->getGroup() == this )
       return;
 
-   lock();
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    
    obj->incRefCount();
    
@@ -654,8 +643,6 @@ void SimGroup::_addObject( SimObject* obj, bool forcePushBack )
    else
       obj->decRefCount();
    
-   unlock();
-
    // SimObjects will automatically remove them from their group
    // when deleted so we don't hook up a delete notification.
 }
@@ -671,9 +658,8 @@ void SimGroup::addObject( SimObject* obj )
 
 void SimGroup::removeObject( SimObject* obj )
 {
-   lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    _removeObjectNoLock( obj );
-   unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -706,8 +692,7 @@ void SimGroup::pushObject( SimObject* object )
 
 void SimGroup::popObject()
 {
-   MutexHandle handle;
-   handle.lock( mMutex );
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    if( objectList.empty() )
    {
@@ -735,21 +720,20 @@ void SimGroup::popObject()
 
 void SimGroup::onRemove()
 {
-   lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    if( !objectList.empty() )
    {
       objectList.sortId();
       clear();
    }
    SimObject::onRemove();
-   unlock();
 }
 
 //-----------------------------------------------------------------------------
 
 void SimGroup::clear()
 {
-   lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    while( size() > 0 )
    {
       SimObject* object = objectList.last();
@@ -768,7 +752,7 @@ void SimGroup::clear()
       else
          object->decRefCount();      
    }
-   unlock();
+   mutexHandle.unlock();
 
    getSetModificationSignal().trigger( SetCleared, this, NULL );
 }
@@ -876,7 +860,7 @@ SimObject* SimGroupIterator::operator++()
 DefineEngineMethod( SimSet, listObjects, void, (),,
    "Dump a list of all objects contained in the set to the console." )
 {
-   object->lock();
+	MutexHandle mutexHandle = TORQUE_LOCK(object->mMutex);
    SimSet::iterator itr;
    for(itr = object->begin(); itr != object->end(); itr++)
    {
@@ -890,7 +874,6 @@ DefineEngineMethod( SimSet, listObjects, void, (),,
          Con::printf("   %d: %s %s", obj->getId(), obj->getClassName(),
          isSet ? "(g)" : "");
    }
-   object->unlock();
 }
 
 //-----------------------------------------------------------------------------
@@ -934,12 +917,11 @@ ConsoleMethod( SimSet, remove, void, 3, 0,
    for(S32 i = 2; i < argc; i++)
    {
       SimObject *obj = Sim::findObject(argv[i]);
-      object->lock();
+	  MutexHandle mutexHandle = TORQUE_LOCK(object->mMutex);
       if(obj && object->find(object->begin(),object->end(),obj) != object->end())
          object->removeObject(obj);
       else
          Con::printf("Set::remove: Object \"%s\" does not exist in set", (const char*)argv[i]);
-      object->unlock();
    }
 }
 
@@ -1058,19 +1040,17 @@ DefineEngineMethod( SimSet, getObjectIndex, S32, ( SimObject* obj ),,
    if( !obj )
       return -1;
 
-   object->lock();
+   MutexHandle mutexHandle = TORQUE_LOCK(object->mMutex);
    S32 count = 0;
    for( SimSet::iterator i = object->begin(); i != object->end(); i++)
    {
       if( *i == obj )
       {
-         object->unlock();
          return count;
       }
 
       ++count;
    }
-   object->unlock();
 
    return -1;
 }

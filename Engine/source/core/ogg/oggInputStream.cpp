@@ -33,7 +33,8 @@
 //-----------------------------------------------------------------------------
 
 OggDecoder::OggDecoder( const ThreadSafeRef< OggInputStream >& stream )
-   : mOggStream( stream )
+   : mOggStream( stream ),
+	 mMutex("OggDecoder::mMutex")
 {
 }
 
@@ -50,8 +51,7 @@ void OggDecoder::_setStartPage( ogg_page* startPage )
 
 bool OggDecoder::_readNextPacket( ogg_packet* packet )
 {
-   MutexHandle mutex;
-   mutex.lock( &mMutex, true );
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
       
    while( 1 )
    {
@@ -81,8 +81,7 @@ bool OggDecoder::_readNextPacket( ogg_packet* packet )
 
 bool OggDecoder::_nextPacket()
 {
-   MutexHandle mutex;
-   mutex.lock( &mMutex, true );
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    
    ogg_packet packet;
    
@@ -102,7 +101,8 @@ bool OggDecoder::_nextPacket()
 
 OggInputStream::OggInputStream( Stream* stream )
    : mIsAtEnd( false ),
-     mStream( stream )
+     mStream( stream ),
+	 mMutex("OggInputStream::mMutex")
 {
    ogg_sync_init( &mOggSyncState );
    
@@ -130,8 +130,7 @@ OggDecoder* OggInputStream::getDecoder( const String& name ) const
 
 bool OggInputStream::isAtEnd()
 {
-   MutexHandle mutex;
-   mutex.lock( &mMutex, true );
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    
    return mIsAtEnd;
 }
@@ -231,8 +230,7 @@ void OggInputStream::_pushNextPage( ogg_page* page )
 {
    for( U32 i = 0; i < mDecoders.size(); ++ i )
    {
-      MutexHandle mutex;
-      mutex.lock( &mDecoders[ i ]->mMutex, true );
+	  MutexHandle mutexHandle = TORQUE_LOCK(&mDecoders[i]->mMutex);
       
       ogg_stream_pagein( &mDecoders[ i ]->mOggStreamState, page );
    }
@@ -246,7 +244,7 @@ bool OggInputStream::_requestData()
    // another thread gets to push a page that has been read earlier.
    
    MutexHandle mutex;
-   mutex.lock( &mMutex, true );
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    ogg_page nextPage;
    
