@@ -25,7 +25,7 @@
 #include "gfx/bitmap/ddsFile.h"
 #include "platform/threads/threadPool.h"
 #include "squish/squish.h"
-
+#include "T3D/gameBase/processList.h"
 namespace ImageUtil
 {
    // get squish quality flag
@@ -123,15 +123,14 @@ namespace ImageUtil
       // We got this far, so assume we can finish (gosh I hope so)
       srcDDS->mFormat = compressFormat;
       srcDDS->mFlags.set(DDSFile::CompressedData);
-
-      //grab global thread pool
-      ThreadPool* pThreadPool = &ThreadPool::GLOBAL();
-
+	  
       if (cubemap)
       {
          static U32 nCubeFaces = 6;
          Vector<U8*> dstDataStore;
          dstDataStore.setSize(nCubeFaces * mipCount);
+
+		 Vector<ThreadSafeRef<CompressJob>> itemList;
 
          for (S32 cubeFace = 0; cubeFace < nCubeFaces; cubeFace++)
          {
@@ -145,13 +144,19 @@ namespace ImageUtil
                dstDataStore[dataIndex] = dstBits;
 
                ThreadSafeRef<CompressJob> item(new CompressJob(srcBits, dstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality));
-               pThreadPool->queueWorkItem(item);
-
+               ThreadPool::instance()->queueWorkItem(item);
+			   itemList.push_back(item);
             }
          }
 
          //wait for work items to finish
-         pThreadPool->waitForAllItems();
+		 while (itemList.size())
+		 {
+			 for (U32 i = itemList.size(); i >0; i--)
+				 if (itemList[i]->isCompleted())
+					 itemList.erase(i);
+			 _sleep(TickMs);
+		 }
 
          for (S32 cubeFace = 0; cubeFace < nCubeFaces; cubeFace++)
          {
@@ -174,6 +179,8 @@ namespace ImageUtil
          DDSFile::SurfaceData *pNewSurface = new DDSFile::SurfaceData();
          //no point using threading if only 1 mip
          const bool useThreading = bool(mipCount > 1);
+
+		 Vector<ThreadSafeRef<CompressJob>> itemList;
          for (U32 currentMip = 0; currentMip < mipCount; currentMip++)
          {
             const U8 *pSrcBits = pSrcSurface->mMips[currentMip];
@@ -186,15 +193,24 @@ namespace ImageUtil
             {
                // Create CompressJob item
                ThreadSafeRef<CompressJob> item(new CompressJob(pSrcBits, pDstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality));
-               pThreadPool->queueWorkItem(item);
+			   ThreadPool::instance()->queueWorkItem(item);
+			   itemList.push_back(item);
             }
             else
                rawCompress(pSrcBits, pDstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality);
 
          }
          //block and wait for CompressJobs to finish
-         if(useThreading)
-            pThreadPool->waitForAllItems();
+		 if (useThreading)
+		 {
+			 while (itemList.size())
+			 {
+				 for (U32 i = itemList.size(); i > 0; i--)
+					 if (itemList[i]->isCompleted())
+						 itemList.erase(i);
+				 _sleep(TickMs);
+			 }
+		 }
 
          // Now delete the source surface and replace with new compressed surface
          srcDDS->mSurfaces.pop_back();

@@ -84,6 +84,7 @@ public:
 		inline bool isPending()             const { return mStatus.load(std::memory_order_relaxed) == StatusPending; }
 		inline bool isRunning()             const { return mStatus.load(std::memory_order_relaxed) == StatusRunning; }
 		inline bool isFinished()            const { return mStatus.load(std::memory_order_relaxed) == StatusFinished; }
+		inline bool isCompleted()           const { return (isPending() || isRunning()) && !isFinished(); }
 	};
 
 private:
