@@ -128,6 +128,14 @@ public:
 	bool processMainThreadItem();
 	void processAllMainThreadItems();
 	bool isPoolThreadID(U32 threadID) const;
+
+
+	/// Force all work items to execute on main thread;
+	/// turns this into a single-threaded system.
+	/// Primarily useful to find whether malfunctions are caused
+	/// by parallel execution or not.
+	static bool smForceAllMainThread;
+	static bool& getForceAllMainThread() { return smForceAllMainThread; }
 };
 
 namespace Async

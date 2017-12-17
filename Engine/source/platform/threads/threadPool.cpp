@@ -26,6 +26,8 @@
 
 #include "console/console.h"
 
+bool ThreadPool::smForceAllMainThread;
+
 void ThreadWorkerThunk(void* arg)
 {
 	ThreadPool* pool = static_cast<ThreadPool*>(arg);
@@ -142,11 +144,13 @@ void ThreadPool::shutdown()
 
 void ThreadPool::queueWorkItem(WorkItem* item)
 {
+	bool executeRightAway = (getForceAllMainThread());
+
 	{
 		item->addRef();
 		item->mStatus.store(WorkItem::StatusPending, std::memory_order_relaxed);
 
-		if (!item->isMainThreadOnly())
+		if (!item->isMainThreadOnly() && !executeRightAway)
 		{
 			std::unique_lock<std::mutex> lock(mMutex);
 			mWorkItems.push(item);
