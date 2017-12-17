@@ -623,7 +623,7 @@ bool StandardMainLoop::doMainLoop()
       if(!Process::processEvents())
          keepRunning = false;
 
-      ThreadPool::processMainThreadWorkItems();
+	  ThreadPool::instance()->processAllMainThreadItems();
       Sampler::endFrame();
       PROFILE_END_NAMED(MainLoop);
    }
