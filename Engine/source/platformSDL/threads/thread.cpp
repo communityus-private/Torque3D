@@ -146,7 +146,7 @@ void Thread::_setName( const char* )
 
 U32 ThreadManager::getCurrentThreadId()
 {
-   return (U32)SDL_ThreadID();
+   return (U32)std::this_thread::get_id();
 }
 
 bool ThreadManager::compare(U32 threadId_1, U32 threadId_2)
