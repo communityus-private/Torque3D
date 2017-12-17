@@ -151,11 +151,11 @@ class TheoraTexture : private IOutputStream< TheoraTextureFrame* >,
       /// Loading directly into textures moves the costly uploads out of the main thread into worker
       /// threads.  The downside to this is that since we cannot do GFX work on the worker threads,
       /// we need to expect textures to get to us in locked state.
-      class FrameReadItem : public ThreadWorkItem
+	class FrameReadItem : public ThreadPool::WorkItem
       {
          public:
          
-            typedef ThreadWorkItem Parent;
+		typedef ThreadPool::WorkItem Parent;
             
          protected:
          
@@ -176,8 +176,7 @@ class TheoraTexture : private IOutputStream< TheoraTextureFrame* >,
          public:
          
             ///
-            FrameReadItem( AsyncBufferedInputStream< TheoraTextureFrame*, IInputStream< OggTheoraFrame* >* >* stream,
-                           ThreadPool::Context* context );
+		FrameReadItem(AsyncBufferedInputStream<TheoraTextureFrame*, IInputStream<OggTheoraFrame*>*>* stream);
       };
       
       /// Stream filter that turns a stream of OggTheoraFrames into a buffered background stream of TheoraTextureFrame

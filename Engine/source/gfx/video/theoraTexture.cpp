@@ -87,8 +87,8 @@ static const char* GetPixelFormatName( OggTheoraDecoder::EPixelFormat format )
 
 //-----------------------------------------------------------------------------
 
-TheoraTexture::FrameReadItem::FrameReadItem( AsyncBufferedInputStream< TheoraTextureFrame*, IInputStream< OggTheoraFrame* >* >* stream, ThreadContext* context )
-   : Parent( context ),
+TheoraTexture::FrameReadItem::FrameReadItem(AsyncBufferedInputStream<TheoraTextureFrame*, IInputStream<OggTheoraFrame*>*>* stream)
+	: Parent(),
      mFrameStream( dynamic_cast< FrameStream* >( stream ) )
 {
    AssertFatal( mFrameStream != NULL, "TheoraTexture::FrameReadItem::FrameReadItem() - expecting stream of type 'FrameStream'" );
@@ -201,21 +201,12 @@ TheoraTexture::FrameStream::FrameStream( AsyncState* asyncState, bool looping )
 
 void TheoraTexture::FrameStream::acquireTextureLocks()
 {
-   for( U32 i = 0; i < NUM_FRAME_RECORDS; ++ i )
-      if( !mFrames[ i ].mLockedRect )
-         mFrames[ i ].mLockedRect = mFrames[ i ].mTexture.lock();
 }
 
 //-----------------------------------------------------------------------------
 
 void TheoraTexture::FrameStream::releaseTextureLocks()
 {
-   for( U32 i = 0; i < NUM_FRAME_RECORDS; ++ i )
-      if( mFrames[ i ].mLockedRect )
-      {
-         mFrames[ i ].mTexture.unlock();
-         mFrames[ i ].mLockedRect = NULL;
-      }
 }
 
 //=============================================================================
@@ -233,6 +224,7 @@ TheoraTexture::AsyncState::AsyncState( const ThreadSafeRef< OggInputStream >& og
    if( mTheoraDecoder )
    {
       mTheoraDecoder->setTimeSource( this );
+		MutexHandle mutexHandle = TORQUE_LOCK(GFX->mMutex);
       mFrameStream = new FrameStream( this, looping );
    }
 }
@@ -334,7 +326,6 @@ void TheoraTexture::_onTextureEvent( GFXTexCallbackCode code )
          {
             // Blast out work items and then release all texture locks.
             
-            ThreadPool::GLOBAL().flushWorkItems();
             mAsyncState->getFrameStream()->releaseTextureLocks();
             
             // The Theora decoder does not implement seeking at the moment,
