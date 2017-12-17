@@ -106,9 +106,6 @@ class AsyncBufferedInputStream : public IInputStreamFilter< T, Stream >,
       /// List of buffered elements.
       ElementList mBufferedElements;
 	  
-      /// The thread context used for prioritizing read items in the pool.
-      ThreadContext* mThreadContext;
-
       /// Request the next element from the underlying stream.
       virtual void _requestNext() = 0;
 
@@ -123,8 +120,6 @@ class AsyncBufferedInputStream : public IInputStreamFilter< T, Stream >,
       /// @param numSourceElementsToRead Total number of elements to read from "stream".
       /// @param numReadAhead Number of packets to read and buffer in advance.
       /// @param isLooping If true, the packet stream will loop infinitely over the source stream.
-      /// @param pool The ThreadPool to use for asynchronous packet reads.
-      /// @param context The ThreadContext to place asynchronous packet reads in.
       AsyncBufferedInputStream(  const Stream& stream,
                                  U32 numSourceElementsToRead = 0,
                                  U32 numReadAhead = DEFAULT_STREAM_LOOKAHEAD,
@@ -156,9 +151,7 @@ AsyncBufferedInputStream< T, Stream >::AsyncBufferedInputStream
          (  const Stream& stream,
             U32 numSourceElementsToRead,
             U32 numReadAhead,
-            bool isLooping,
-            ThreadPool* threadPool,
-            ThreadContext* threadContext )
+            bool isLooping )
    : Parent( stream ),
      mIsLooping( isLooping ),
      mIsStopped( false ),
@@ -273,11 +266,11 @@ U32 AsyncBufferedInputStream< T, Stream >::read( ElementType* buffer, U32 num )
 
 /// Asynchronous work item for reading an element from the source stream.
 template< typename T, typename Stream = IInputStream< T >* >
-class AsyncBufferedReadItem : public ThreadWorkItem
+class AsyncBufferedReadItem : public ThreadPool::WorkItem
 {
    public:
 
-      typedef ThreadWorkItem Parent;
+      typedef ThreadPool::WorkItem Parent;
       typedef ThreadSafeRef< AsyncBufferedInputStream< T, Stream > > AsyncStreamRef;
       
    protected:
@@ -350,9 +343,9 @@ class AsyncSingleBufferedInputStream : public AsyncBufferedInputStream< T, Strea
       virtual void _requestNext();
 
       /// Create a new work item that reads the next element.
-      virtual void _newReadItem( ThreadSafeRef< ThreadWorkItem >& outRef )
+      virtual void _newReadItem( ThreadSafeRef< ThreadPool::WorkItem >& outRef )
       {
-         outRef = new ReadItem( this, this->mThreadContext );
+         outRef = new ReadItem( this );
       }
             
    public:
@@ -364,7 +357,6 @@ class AsyncSingleBufferedInputStream : public AsyncBufferedInputStream< T, Strea
       /// @param numReadAhead Number of packets to read and buffer in advance.
       /// @param isLooping If true, the packet stream will loop infinitely over the source stream.
       /// @param pool The ThreadPool to use for asynchronous packet reads.
-      /// @param context The ThreadContext to place asynchronous packet reads in.
       AsyncSingleBufferedInputStream(  const Stream& stream,
                                        U32 numSourceElementsToRead = 0,
                                        U32 numReadAhead = Parent::DEFAULT_STREAM_LOOKAHEAD,
@@ -373,8 +365,7 @@ class AsyncSingleBufferedInputStream : public AsyncBufferedInputStream< T, Strea
                      numSourceElementsToRead,
                      numReadAhead,
                      isLooping,
-                     pool,
-                     context ) {}
+                     pool ) {}
 };
 
 //-----------------------------------------------------------------------------
@@ -400,7 +391,7 @@ void AsyncSingleBufferedInputStream< T, Stream, ReadItem >::_requestNext()
    if( !this->mIsLooping && this->mNumRemainingSourceElements != U32_MAX )
       -- this->mNumRemainingSourceElements;
       
-   ThreadSafeRef< ThreadWorkItem > workItem;
+   ThreadSafeRef< ThreadPool::WorkItem > workItem;
    _newReadItem( workItem );
    ThreadPool::instance()->queueWorkItem( workItem );
 }

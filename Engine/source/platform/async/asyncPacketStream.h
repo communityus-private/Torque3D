@@ -112,9 +112,8 @@ class AsyncPacketBufferedInputStream : public AsyncBufferedInputStream< Packet*,
 
             PacketReadItem( const ThreadSafeRef< AsyncPacketBufferedInputStream< Stream, Packet > >& asyncStream,
                             PacketType* packet,
-                            U32 numElements,
-                            ThreadPool::Context* context = NULL )
-               : Parent( asyncStream->getSourceStream(), numElements, 0, *packet, false, 0, context ),
+                            U32 numElements )
+               : Parent( asyncStream->getSourceStream(), numElements, 0, *packet, false, 0 ),
                  mAsyncStream( asyncStream ),
                  mPacket( packet ) {}
 
@@ -204,7 +203,7 @@ class AsyncPacketBufferedInputStream : public AsyncBufferedInputStream< Packet*,
                                  PacketType* packet,
                                  U32 numElements )
       {
-         outRef = new PacketReadItem( this, packet, numElements, this->mThreadContext );
+         outRef = new PacketReadItem( this, packet, numElements );
       }
 
    public:
@@ -220,8 +219,6 @@ class AsyncPacketBufferedInputStream : public AsyncBufferedInputStream< Packet*,
       /// @param numSourceElementsToRead Number of elements to read from "stream".
       /// @param numReadAhead Number of packets to read and buffer in advance.
       /// @param isLooping If true, the packet stream will loop infinitely over the source stream.
-      /// @param pool The ThreadPool to use for asynchronous packet reads.
-      /// @param context The ThreadContext to place asynchronous packet reads in.
       AsyncPacketBufferedInputStream( const Stream& stream,
                               U32 packetSize,
                               U32 numSourceElementsToRead = 0,
@@ -238,10 +235,8 @@ AsyncPacketBufferedInputStream< Stream, Packet >::AsyncPacketBufferedInputStream
             U32 packetSize,
             U32 numSourceElementsToRead,
             U32 numReadAhead,
-            bool isLooping,
-            ThreadPool* threadPool,
-            ThreadContext* threadContext )
-   : Parent( stream, numSourceElementsToRead, numReadAhead, isLooping, threadPool, threadContext ),
+            bool isLooping)
+   : Parent( stream, numSourceElementsToRead, numReadAhead, isLooping ),
      mPacketSize( packetSize ),
      mNextPacketIndex( 0 ),
      mNumTotalSourceElements( numSourceElementsToRead )

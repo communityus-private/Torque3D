@@ -63,8 +63,7 @@ SFXAsyncStream::SFXAsyncStream(  const SFXStreamRef& stream,
                    ? dynamic_cast< IPositionable< U32 >* >( stream.ptr() )->getPosition()
                    : 0 ),
                numReadAhead,
-               isLooping,
-               &THREAD_POOL() ),
+               isLooping ),
      mReadSilenceAtEnd( false )
 {
 }

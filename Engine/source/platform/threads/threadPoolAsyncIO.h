@@ -95,8 +95,7 @@ class AsyncIOItem : public ThreadPool::WorkItem
       ///
       /// If the stream uses implicit positioning, then the supplied "offsetInStream"
       /// is meaningless and ignored.
-      AsyncIOItem( StreamType* stream, U32 numElements, OffsetType offsetInStream,
-                   ThreadContext* context = 0 )
+      AsyncIOItem( StreamType* stream, U32 numElements, OffsetType offsetInStream)
          : Parent( context ),
            mStream( stream ),
            mNumElements( numElements ),
@@ -106,8 +105,7 @@ class AsyncIOItem : public ThreadPool::WorkItem
       /// Construct a read item on "stream" that stores data into the given "buffer".
       ///
       AsyncIOItem( StreamType* stream, BufferType& buffer, U32 offsetInBuffer,
-                   U32 numElements, OffsetType offsetInStream, bool takeOwnershipOfBuffer = true,
-                   ThreadContext* context = 0 )
+                   U32 numElements, OffsetType offsetInStream, bool takeOwnershipOfBuffer = true)
          : Parent( context ),
            mBuffer( buffer ),
            mStream( stream ),
@@ -193,17 +191,16 @@ class AsyncReadItem : public AsyncIOItem< T, Stream >
       /// @param offsetInStream The offset at which to read from the stream;
       ///   ignored if the stream uses implicit positioning
       /// @param context The tread pool context to place the item into.
-      AsyncReadItem( StreamType* stream, U32 numElements, OffsetType offsetInStream,
-                     ThreadContext* context = 0 )
-         : Parent( stream, numElements, offsetInStream, context )
+      AsyncReadItem( StreamType* stream, U32 numElements, OffsetType offsetInStream)
+         : Parent( stream, numElements, offsetInStream)
       {
          _prep();
       }
 
       AsyncReadItem( StreamType* stream, U32 numElements, OffsetType offsetInStream,
                      BufferType& buffer, bool takeOwnershipOfBuffer = false,
-                     U32 offsetInBuffer = 0, ThreadContext* context = 0 )
-         : Parent( stream, buffer, offsetInBuffer, numElements, offsetInStream, takeOwnershipOfBuffer, context )
+                     U32 offsetInBuffer = 0)
+         : Parent( stream, buffer, offsetInBuffer, numElements, offsetInStream, takeOwnershipOfBuffer )
       {
          _prep();
       }
@@ -306,8 +303,8 @@ class AsyncWriteItem : public AsyncIOItem< T, Stream >
 
       AsyncWriteItem( StreamType* stream, U32 numElements, OffsetType offsetInStream,
                       BufferType& buffer, bool takeOwnershipOfBuffer = true,
-                      U32 offsetInBuffer = 0, ThreadContext* context = 0 )
-         : Parent( stream, buffer, offsetInBuffer, numElements, offsetInStream, takeOwnershipOfBuffer, context )
+                      U32 offsetInBuffer = 0 )
+         : Parent( stream, buffer, offsetInBuffer, numElements, offsetInStream, takeOwnershipOfBuffer )
       {
          _prep( stream );
       }
