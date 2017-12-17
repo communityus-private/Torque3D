@@ -264,8 +264,6 @@ void StandardMainLoop::init()
    Platform::init();    // platform specific initialization
    RedBook::init();
    Platform::initConsole();
-   
-   ThreadPool::GlobalThreadPool::createSingleton();
 
    // Initialize modules.
    
@@ -349,7 +347,7 @@ void StandardMainLoop::shutdown()
    
    EngineModuleManager::shutdownSystem();
    
-   ThreadPool::GlobalThreadPool::deleteSingleton();
+   ThreadPool::instance()->shutdown();
 
 #ifdef TORQUE_ENABLE_VFS
    closeEmbeddedVFSArchive();

@@ -226,9 +226,7 @@ class AsyncPacketBufferedInputStream : public AsyncBufferedInputStream< Packet*,
                               U32 packetSize,
                               U32 numSourceElementsToRead = 0,
                               U32 numReadAhead = Parent::DEFAULT_STREAM_LOOKAHEAD,
-                              bool isLooping = false,
-                              ThreadPool* pool = &ThreadPool::GLOBAL(),
-                              ThreadContext* context = ThreadContext::ROOT_CONTEXT() );
+                              bool isLooping = false);
       
       /// @return the size of stream packets returned by this stream in number of elements.
       U32 getPacketSize() const { return mPacketSize; }
@@ -320,7 +318,7 @@ void AsyncPacketBufferedInputStream< Stream, Packet >::_requestNext()
 
    ThreadSafeRef< PacketReadItem > workItem;
    _newReadItem( workItem, packet, numElements );
-   this->mThreadPool->queueWorkItem( workItem );
+   ThreadPool::instance()->queueWorkItem( workItem );
 }
 
 #undef DEBUG_SPEW

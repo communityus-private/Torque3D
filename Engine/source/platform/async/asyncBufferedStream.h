@@ -105,10 +105,7 @@ class AsyncBufferedInputStream : public IInputStreamFilter< T, Stream >,
 
       /// List of buffered elements.
       ElementList mBufferedElements;
-
-      /// The thread pool to which read items are queued.
-      ThreadPool* mThreadPool;
-
+	  
       /// The thread context used for prioritizing read items in the pool.
       ThreadContext* mThreadContext;
 
@@ -131,9 +128,7 @@ class AsyncBufferedInputStream : public IInputStreamFilter< T, Stream >,
       AsyncBufferedInputStream(  const Stream& stream,
                                  U32 numSourceElementsToRead = 0,
                                  U32 numReadAhead = DEFAULT_STREAM_LOOKAHEAD,
-                                 bool isLooping = false,
-                                 ThreadPool* pool = &ThreadPool::GLOBAL(),
-                                 ThreadContext* context = ThreadContext::ROOT_CONTEXT() );
+                                 bool isLooping = false );
 
       virtual ~AsyncBufferedInputStream();
       
@@ -169,9 +164,7 @@ AsyncBufferedInputStream< T, Stream >::AsyncBufferedInputStream
      mIsStopped( false ),
      mNumRemainingSourceElements( numSourceElementsToRead ),
      mNumBufferedElements( 0 ),
-     mMaxBufferedElements( numReadAhead ),
-     mThreadPool( threadPool ),
-     mThreadContext( threadContext )
+     mMaxBufferedElements( numReadAhead )
 {
    if( mIsLooping )
    {
@@ -375,9 +368,7 @@ class AsyncSingleBufferedInputStream : public AsyncBufferedInputStream< T, Strea
       AsyncSingleBufferedInputStream(  const Stream& stream,
                                        U32 numSourceElementsToRead = 0,
                                        U32 numReadAhead = Parent::DEFAULT_STREAM_LOOKAHEAD,
-                                       bool isLooping = false,
-                                       ThreadPool* pool = &ThreadPool::GLOBAL(),
-                                       ThreadContext* context = ThreadContext::ROOT_CONTEXT() )
+                                       bool isLooping = false )
          : Parent(   stream,
                      numSourceElementsToRead,
                      numReadAhead,
@@ -411,7 +402,7 @@ void AsyncSingleBufferedInputStream< T, Stream, ReadItem >::_requestNext()
       
    ThreadSafeRef< ThreadWorkItem > workItem;
    _newReadItem( workItem );
-   this->mThreadPool->queueWorkItem( workItem );
+   ThreadPool::instance()->queueWorkItem( workItem );
 }
 
 #endif // !_ASYNCBUFFEREDSTREAM_H_

@@ -69,9 +69,8 @@ struct NetAsync::NameLookupWorkItem : public ThreadPool::WorkItem
 {
    typedef ThreadPool::WorkItem Parent;
 
-   NameLookupWorkItem( NameLookupRequest& request, ThreadPool::Context* context = 0 )
-      : Parent( context ),
-        mRequest( request )
+   NameLookupWorkItem( NameLookupRequest& request )
+      : mRequest( request )
    {
    }
 
@@ -133,7 +132,7 @@ void NetAsync::queueLookup(const char* remoteAddr, NetSocket socket)
    dStrncpy(lookupRequest.remoteAddr, remoteAddr, sizeof(lookupRequest.remoteAddr));
 
    ThreadSafeRef< NameLookupWorkItem > workItem( new NameLookupWorkItem( lookupRequest ) );
-   ThreadPool::GLOBAL().queueWorkItem( workItem );
+   ThreadPool::instance()->queueWorkItem( workItem );
 }
 
 bool NetAsync::checkLookup(NetSocket socket, void* out_h_addr, 
