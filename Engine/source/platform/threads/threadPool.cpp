@@ -25,6 +25,7 @@
 #include "threadPool.h"
 
 #include "console/console.h"
+#include "console/consoleTypes.h"
 
 bool ThreadPool::smForceAllMainThread;
 

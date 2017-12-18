@@ -358,19 +358,6 @@ enum
 /// @note Don't use this directly but rather use THREAD_POOL() instead.
 ///   This way, the sound code may be easily switched to using a common
 ///   pool later on.
-class SFXThreadPool : public ThreadPool, public ManagedSingleton< SFXThreadPool >
-{
-   public:
-   
-      typedef ThreadPool Parent;
-      
-      /// Create a ThreadPool called "SFX" with two threads.
-      SFXThreadPool()
-         : Parent( "SFX", 2 ) {}
-         
-      // For ManagedSingleton.
-      static const char* getSingletonName() { return "SFXThreadPool"; }
-};
 
 /// Dedicated thread that does sound buffer updates.
 /// May be NULL if sound API used does not do asynchronous buffer
@@ -397,12 +384,6 @@ extern ThreadSafeRef< SFXBufferProcessList > gBufferUpdateList;
 /// SFXDevice itself on the main thread.  A bit of overhead but only a fraction of
 /// the buffers will ever undergo this procedure.
 extern ThreadSafeDeque< SFXBuffer* > gDeadBufferList;
-
-/// Return the thread pool used for SFX work.
-inline ThreadPool& THREAD_POOL()
-{
-   return *( SFXThreadPool::instance() );
-}
 
 /// Return the dedicated SFX update thread; NULL if updating on the main thread.
 inline ThreadSafeRef< SFXUpdateThread > UPDATE_THREAD()

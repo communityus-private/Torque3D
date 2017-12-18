@@ -72,7 +72,8 @@ SFXALVoice::SFXALVoice( const OPENALFNTABLE &oalft,
       mSourceName( sourceName ),
       mResumeAtSampleOffset( -1.0f ),
       mSampleOffset( 0 ),
-      mOpenAL( oalft )
+      mOpenAL( oalft ),
+	  mMutex("SFXALVoice::mMutex")
 {
    AL_SANITY_CHECK();
 }

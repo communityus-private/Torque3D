@@ -303,16 +303,6 @@ MessageQueue * getMessageQueue(const char *name)
    return gDispatchData.mQueues.retreive(name);
 }
 
-extern bool lockDispatcherMutex()
-{
-   return Mutex::lockMutex(gDispatchData.mMutex);
-}
-
-extern void unlockDispatcherMutex()
-{
-   Mutex::unlockMutex(gDispatchData.mMutex);
-}
-
 } // end namespace Dispatcher
 
 //-----------------------------------------------------------------------------

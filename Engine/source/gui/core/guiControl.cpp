@@ -1836,8 +1836,7 @@ void GuiControl::write(Stream &stream, U32 tabStop, U32 flags)
 
       if ((steName != NULL) && (steName != StringTable->insert("null")) && getName())
       {
-         MutexHandle handle;
-         handle.lock(mMutex);
+		  MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
 
          // export selected only?
          if ((flags & SelectedOnly) && !isSelected())

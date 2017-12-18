@@ -202,7 +202,8 @@ SFXSystem::SFXSystem()
       mStatAmbientUpdateTime( 0 ),
       mDopplerFactor( 0.5 ),
       mRolloffFactor( 1.0 ),
-      mSoundscapeMgr( NULL )
+      mSoundscapeMgr( NULL ),
+	  mMutex("SFXSystem::mMutex")
 {
    VECTOR_SET_ASSOCIATION( mSounds );
    VECTOR_SET_ASSOCIATION( mPlayOnceSources );
@@ -366,10 +367,6 @@ void SFXSystem::init()
       SFXFileStream::registerExtension( ".ogg", ( SFXFILESTREAM_CREATE_FN ) SFXVorbisStream::create );
    #endif
    
-   // Create the stream thread pool.
-   
-   SFXInternal::SFXThreadPool::createSingleton();
-
    // Note: If you have provider specific file types you should
    // register them in the provider initialization.
 
@@ -390,10 +387,6 @@ void SFXSystem::destroy()
 
    delete smSingleton;
    smSingleton = NULL;
-   
-   // Destroy the stream thread pool
-
-   SFXInternal::SFXThreadPool::deleteSingleton();
 }
 
 //-----------------------------------------------------------------------------

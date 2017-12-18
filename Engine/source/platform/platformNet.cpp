@@ -156,16 +156,15 @@ public:
    };
 
    Vector<EntryType> mSocketList;
-   Mutex *mMutex;
+   Mutex mMutex;
 
    ReservedSocketList()
+	   :mMutex("ReservedSocketList::mMutex")
    {
-      mMutex = new Mutex;
    }
 
    ~ReservedSocketList()
    {
-      delete mMutex;
    }
 
    inline void modify() { Mutex::lockMutex(mMutex); }

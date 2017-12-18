@@ -105,8 +105,7 @@ void SFXALBuffer::write( SFXInternal::SFXStreamPacket* const* packets, U32 num )
       return;
    }
 
-   MutexHandle mutex;
-   mutex.lock( &_getUniqueVoice()->mMutex, true );
+   MutexHandle mutexHandle = TORQUE_LOCK(_getUniqueVoice()->mMutex);
 
    // Unqueue processed packets.
 
@@ -177,8 +176,7 @@ void SFXALBuffer::_flush()
 
    _getUniqueVoice()->_stop();
 
-   MutexHandle mutex;
-   mutex.lock( &_getUniqueVoice()->mMutex, true );
+   MutexHandle mutexHandle = TORQUE_LOCK(_getUniqueVoice()->mMutex);
 
    ALuint source = _getUniqueVoice()->mSourceName;
 

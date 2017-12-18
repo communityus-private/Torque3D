@@ -230,7 +230,7 @@ void OggInputStream::_pushNextPage( ogg_page* page )
 {
    for( U32 i = 0; i < mDecoders.size(); ++ i )
    {
-	  MutexHandle mutexHandle = TORQUE_LOCK(&mDecoders[i]->mMutex);
+	   MutexHandle mutexHandle = TORQUE_LOCK(mDecoders[i]->mMutex);
       
       ogg_stream_pagein( &mDecoders[ i ]->mOggStreamState, page );
    }

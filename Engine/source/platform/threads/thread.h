@@ -19,6 +19,16 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+// Torque3D Streaming MOD
+// Copyright (c) DedicatedLogic, 2013
+// Copyright (c) Sergey "Aneroun" Egorov (aneroun@mail.ru, aneroun@afterworld.ru)
+//  - streaming, mount system fix
+// Copyright (c) Fyodor "Bank" Osokin
+//  - shape alloc fix, mount system fix
+// Copyright (c) Rene Damm.
+//  - T4 based code
+//-----------------------------------------------------------------------------
+
 
 #ifndef _PLATFORM_THREADS_THREAD_H_
 #define _PLATFORM_THREADS_THREAD_H_
@@ -111,6 +121,13 @@ public:
 
    /// Returns the platform specific thread id for this thread.
    U32 getId();
+
+protected:
+	const char* mThreadName;
+
+public:
+	void setName(const char* name) { _setName(name); mThreadName = name; }
+	const char* getName() const { return mThreadName; }
 };
 
 
@@ -144,6 +161,7 @@ class ThreadManager
    
 public:
    ThreadManager()
+		: poolLock("ThreadManager::poolLock mutex")
    {
       VECTOR_SET_ASSOCIATION( threadPool );
    }
@@ -165,6 +183,10 @@ public:
    /// the thread, so use ThreadManager::compare() to compare thread ids.
    static U32 getCurrentThreadId();
 
+	static void _suspendResumeThreads(bool doSuspend);
+	static void suspendAllThreads();
+	static void resumeAllThreads();
+
    /// Returns the platform specific thread id ot the main thread.
    static U32 getMainThreadId() { return smMainThreadId.get(); }
    
@@ -172,17 +194,16 @@ public:
    static void addThread(Thread* thread)
    {
       ThreadManager &manager = *ManagedSingleton< ThreadManager >::instance();
-      manager.poolLock.lock();
+		MutexHandle mutexHandle = TORQUE_LOCK(manager.poolLock);
       Thread *alreadyAdded = getThreadById(thread->getId());
       if(!alreadyAdded)
          manager.threadPool.push_back(thread);
-      manager.poolLock.unlock();
    }
 
    static void removeThread(Thread* thread)
    {
       ThreadManager &manager = *ManagedSingleton< ThreadManager >::instance();
-      manager.poolLock.lock();
+      MutexHandle mutexHandle = TORQUE_LOCK(manager.poolLock);
       
       U32 threadID = thread->getId();
       for(U32 i = 0;i < manager.threadPool.size();++i)
@@ -193,8 +214,6 @@ public:
             break;
          }
       }
-      
-      manager.poolLock.unlock();
    }
    
    /// Searches the pool of known threads for a thread whose id is equivalent to
@@ -205,18 +224,17 @@ public:
       Thread* ret = NULL;
       
       ThreadManager &manager = *ManagedSingleton< ThreadManager >::instance();
-      manager.poolLock.lock();
+      MutexHandle mutexHandle = TORQUE_LOCK(manager.poolLock);
       Vector<Thread*> &pool = manager.threadPool;
-      for( S32 i = pool.size() - 1; i >= 0; i--)
+      for( ptrdiff_t i = pool.size() - 1; i >= 0; i--)
       {
-         Thread* p = pool[i];
+         Thread* p = pool[(U32)i];
          if(compare(p->getId(), threadid))
          {
             ret = p;
             break;
          }
       }
-      manager.poolLock.unlock();
       return ret;
    }
 

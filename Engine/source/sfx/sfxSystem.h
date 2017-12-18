@@ -36,6 +36,9 @@
    #include "platform/threads/threadSafeRefCount.h"
 #endif
 
+#ifndef _PLATFORM_THREADS_MUTEX_MUTEX_H_
+   #include "platform/threads/mutex.h"
+#endif
 
 class SFXTrack;
 class SFXDevice;
@@ -435,6 +438,8 @@ class SFXSystem
       
       ///
       void notifyTrackChanged( SFXTrack* track );
+
+	  Mutex mMutex;
 };
 
 

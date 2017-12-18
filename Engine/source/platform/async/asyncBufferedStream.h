@@ -306,8 +306,7 @@ class AsyncBufferedReadItem : public ThreadPool::WorkItem
 
       ///
       AsyncBufferedReadItem(
-         const AsyncStreamRef& asyncStream,
-         ThreadPool::Context* context = NULL
+         const AsyncStreamRef& asyncStream
       )
          : Parent( context ),
            mAsyncStream( asyncStream ),

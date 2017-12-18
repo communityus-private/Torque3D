@@ -105,11 +105,7 @@ void SFXDevice::_releaseAllResources()
       if( !( *buffer )->isDead() )
          ( *buffer )->destroySelf();
    mBuffers.clear();
-
-   // Flush all asynchronous requests.
-
-   THREAD_POOL().flushWorkItems();
-
+      
    // Clean out the buffer update list and kill
    // all buffers that surfaced on the dead list.
    // Now the sound buffers are really gone.

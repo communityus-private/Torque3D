@@ -607,8 +607,7 @@ String String::intern() const
       
    // Lock the string table.
          
-   MutexHandle mutex;
-   mutex.lock( &sInternTable->mMutex );
+   MutexHandle mutexHandleThis = TORQUE_LOCK(sInternTable->mMutex);
    
    // Lookup.
    
