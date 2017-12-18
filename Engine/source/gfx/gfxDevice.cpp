@@ -90,6 +90,7 @@ GFXDevice::DeviceEventSignal& GFXDevice::getDeviceEventSignal()
 }
 
 GFXDevice::GFXDevice() 
+	: mMutex("GFXDevice::mMutex")
 {    
    VECTOR_SET_ASSOCIATION( mVideoModes );
    VECTOR_SET_ASSOCIATION( mRTStack );

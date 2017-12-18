@@ -151,7 +151,7 @@ void SimPersistSet::resolvePIDs()
    if( mIsResolvingPIDs )
       return;
 
-   lock();
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    mIsResolvingPIDs = true;
 
    for( U32 i = 0; i < mUnresolvedPIDs.size(); ++ i )
@@ -164,7 +164,6 @@ void SimPersistSet::resolvePIDs()
       }
 
    mIsResolvingPIDs = false;
-   unlock();
 }
 
 //-----------------------------------------------------------------------------

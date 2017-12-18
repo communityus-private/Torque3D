@@ -82,8 +82,8 @@ bool WorldEditorSelection::objInSet( SimObject* obj )
 {
    if( !mIsResolvingPIDs )
       resolvePIDs();
-      
-   lock();
+
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
       
    bool result = false;
    for( iterator iter = begin(); iter != end(); ++ iter )
@@ -101,8 +101,6 @@ bool WorldEditorSelection::objInSet( SimObject* obj )
          break;
       }
    }
-   
-   unlock();
    
    return result;
 }

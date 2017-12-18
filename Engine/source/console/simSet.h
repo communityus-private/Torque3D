@@ -306,7 +306,7 @@ void SimSet::findObjectByType( Vector<T*> &foundObjects )
    T *curObj;
    SimSet *curSet;
 
-   lock();
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    // Loop through our child objects.
 
@@ -330,8 +330,6 @@ void SimSet::findObjectByType( Vector<T*> &foundObjects )
    curObj = dynamic_cast<T*>(this);
    if ( curObj )      
       foundObjects.push_back( curObj );
-
-   unlock();
 }
 
 template< class T > 
@@ -340,7 +338,7 @@ void SimSet::findObjectByCallback(  bool ( *fn )( T* ), Vector<T*> &foundObjects
    T *curObj;
    SimSet *curSet;
 
-   lock();
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    // Loop through our child objects.
 
@@ -364,8 +362,6 @@ void SimSet::findObjectByCallback(  bool ( *fn )( T* ), Vector<T*> &foundObjects
    curObj = dynamic_cast<T*>(this);
    if ( curObj && ( fn == NULL || fn( curObj ) ) )      
       foundObjects.push_back( curObj );
-
-   unlock();
 }
 
 /// An iterator that recursively and exhaustively traverses the contents

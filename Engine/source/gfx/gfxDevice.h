@@ -1115,6 +1115,8 @@ public:
 #endif
    protected:
       GFXDrawUtil *mDrawer;
+   public:
+	   Mutex mMutex;
 }; 
 
 //-----------------------------------------------------------------------------

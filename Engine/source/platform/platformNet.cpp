@@ -381,10 +381,10 @@ namespace PlatformNetState
 
 template<class T> NetSocket ReservedSocketList<T>::reserve(SOCKET reserveId, bool doLock)
 {
-   MutexHandle handle;
+   MutexHandle mutexHandle;
    if (doLock)
    {
-      handle.lock(mMutex, true);
+	   mutexHandle = TORQUE_LOCK(mMutex);
    }
 
    S32 idx = mSocketList.find_next(EntryType());
@@ -408,11 +408,11 @@ template<class T> NetSocket ReservedSocketList<T>::reserve(SOCKET reserveId, boo
 
 template<class T> void ReservedSocketList<T>::remove(NetSocket socketToRemove, bool doLock)
 {
-   MutexHandle handle;
-   if (doLock)
-   {
-      handle.lock(mMutex, true);
-   }
+	MutexHandle mutexHandle;
+	if (doLock)
+	{
+		mutexHandle = TORQUE_LOCK(mMutex);
+	}
 
    if ((U32)socketToRemove.getHandle() >= (U32)mSocketList.size())
       return;
@@ -422,8 +422,7 @@ template<class T> void ReservedSocketList<T>::remove(NetSocket socketToRemove, b
 
 template<class T> T ReservedSocketList<T>::activate(NetSocket socketToActivate, int family, bool useUDP, bool clearOnFail)
 {
-   MutexHandle h;
-   h.lock(mMutex, true);
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    int typeID = useUDP ? SOCK_DGRAM : SOCK_STREAM;
    int protocol = useUDP ? PlatformNetState::getDefaultGameProtocol() : 0;
@@ -461,8 +460,7 @@ template<class T> T ReservedSocketList<T>::activate(NetSocket socketToActivate, 
 
 template<class T> T ReservedSocketList<T>::resolve(NetSocket socketToResolve)
 {
-   MutexHandle h;
-   h.lock(mMutex, true);
+	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    if ((U32)socketToResolve.getHandle() >= (U32)mSocketList.size())
       return -1;

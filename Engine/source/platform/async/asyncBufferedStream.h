@@ -363,8 +363,7 @@ class AsyncSingleBufferedInputStream : public AsyncBufferedInputStream< T, Strea
          : Parent(   stream,
                      numSourceElementsToRead,
                      numReadAhead,
-                     isLooping,
-                     pool ) {}
+                     isLooping) {}
 };
 
 //-----------------------------------------------------------------------------
