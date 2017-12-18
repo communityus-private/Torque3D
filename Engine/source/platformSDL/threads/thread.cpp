@@ -146,7 +146,8 @@ void Thread::_setName( const char* )
 
 U32 ThreadManager::getCurrentThreadId()
 {
-   return (U32)std::this_thread::get_id();
+	//from https://stackoverflow.com/questions/7432100/how-to-get-integer-thread-id-in-c11
+   return (U32)(std::hash<std::thread::id>()(std::this_thread::get_id()));
 }
 
 bool ThreadManager::compare(U32 threadId_1, U32 threadId_2)
