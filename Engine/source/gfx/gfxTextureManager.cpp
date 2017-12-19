@@ -1517,14 +1517,15 @@ void GFXTextureManager::reloadTextures(std::unordered_map<GFXTextureObject*, Res
 
 	for (GFXTextureObject* tex = mListHead; tex != nullptr; tex = tex->mNext)
 	{
-		auto dds = ddsFiles.find(tex);
+		std::unordered_map<GFXTextureObject*, Resource<DDSFile>>::iterator dds = ddsFiles.find(tex);
 		if (dds != ddsFiles.end())
 		{
 			_createTexture(dds->second, dds->first->mProfile, false, dds->first);
 		}
 		else
 		{
-			auto bmp = bmpFiles.find(tex);
+			
+			std::unordered_map<GFXTextureObject*, Resource<GBitmap>>::iterator bmp = bmpFiles.find(tex);
 			if (bmp != bmpFiles.end())
 			{
 				_createTexture(bmp->second, bmp->first->mTextureLookupName, bmp->first->mProfile, false, bmp->first);
@@ -1672,4 +1673,44 @@ DefineEngineFunction( reloadTextures, void, (),,
       return;
 
    TEXMGR->reloadTextures();
+}
+
+void GFXTextureManager::dumpTextures()
+{
+	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
+	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
+
+	GFXTextureObject* tex = mListHead;
+
+	U32 totalSize = 0, namedSize = 0;
+	Con::printf("******************************* begin dumpTextures **********************************");
+	while (tex != NULL)
+	{
+		totalSize += tex->getEstimatedSizeInBytes();
+
+		Torque::Path path(tex->mPath);
+		if (!path.isEmpty())
+		{
+			namedSize += tex->getEstimatedSizeInBytes();
+			Con::printf("Texture: %s  with size %i", tex->mPath.c_str(), tex->getEstimatedSizeInBytes());
+		}
+
+		tex = tex->mNext;
+	}
+
+	Con::printf("Total texture size: %u  ", totalSize);
+	Con::printf("Internal texture size: %u  ", totalSize - namedSize);
+	Con::printf("******************************* end dumpTextures **********************************");
+}
+
+DefineEngineFunction(dumpTextures, void, (), ,
+	"Dump the textures from disk.\n"
+	"@ingroup GFX\n")
+{
+	if (!GFX || !TEXMGR)
+	{
+		return;
+	}
+
+	TEXMGR->dumpTextures();
 }
