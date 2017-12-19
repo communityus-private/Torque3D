@@ -450,10 +450,16 @@ namespace KeyCmp
 /// table is destroyed.
 struct StringInternTable : public HashTable< String::StringData*, String::StringData* >
 {
+   StringInternTable();
    Mutex mMutex;
    DataChunker mChunker;
 };
 
+StringInternTable::StringInternTable()
+	:mMutex("StringInternTable::mMutex")
+{
+
+}
 static StringInternTable* sInternTable;
 
 struct KillInternTable

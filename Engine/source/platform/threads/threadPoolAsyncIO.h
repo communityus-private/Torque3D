@@ -96,7 +96,7 @@ class AsyncIOItem : public ThreadPool::WorkItem
       /// If the stream uses implicit positioning, then the supplied "offsetInStream"
       /// is meaningless and ignored.
       AsyncIOItem( StreamType* stream, U32 numElements, OffsetType offsetInStream)
-         : Parent( context ),
+         : Parent(),
            mStream( stream ),
            mNumElements( numElements ),
            mOffsetInBuffer( 0 ),
@@ -106,7 +106,7 @@ class AsyncIOItem : public ThreadPool::WorkItem
       ///
       AsyncIOItem( StreamType* stream, BufferType& buffer, U32 offsetInBuffer,
                    U32 numElements, OffsetType offsetInStream, bool takeOwnershipOfBuffer = true)
-         : Parent( context ),
+         : Parent(),
            mBuffer( buffer ),
            mStream( stream ),
            mNumElements( numElements ),
@@ -190,7 +190,6 @@ class AsyncReadItem : public AsyncIOItem< T, Stream >
       /// @param numElement The number of elements to read from the stream.
       /// @param offsetInStream The offset at which to read from the stream;
       ///   ignored if the stream uses implicit positioning
-      /// @param context The tread pool context to place the item into.
       AsyncReadItem( StreamType* stream, U32 numElements, OffsetType offsetInStream)
          : Parent( stream, numElements, offsetInStream)
       {
@@ -236,6 +235,10 @@ class AsyncReadItem : public AsyncIOItem< T, Stream >
             _allocBuffer();
             mAsyncHandle = s->issueReadAt( this->getOffsetInStream(), this->getBufferPtr(), this->getNumElements() );
          }
+		 else
+		 {
+			 this->mFlags = ThreadPool::WorkItem::FlagDoesSynchronousIO;
+		 }
       }
 
       // Helper functions to differentiate between stream types.
@@ -262,7 +265,6 @@ void AsyncReadItem< T, Stream >::execute()
    // Read the data.  Do a dynamic cast for any of the
    // interfaces we prefer.
 
-   if( this->cancellationPoint() ) return;
    StreamType* stream = this->getStream();
    if( dynamic_cast< IAsyncInputStream< T >* >( stream ) )
       _read( ( IAsyncInputStream< T >* ) stream );

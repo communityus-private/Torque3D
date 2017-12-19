@@ -138,9 +138,6 @@ class AsyncPacketBufferedInputStream : public AsyncBufferedInputStream< Packet*,
                   this->mNumElementsRead, mPacket->mIndex, mPacket->size );
                #endif
 
-               // Handle extraneous space at end of packet.
-
-               if( this->cancellationPoint() ) return;
                U32 numExtraElements = mPacket->size - this->mNumElementsRead;
                if( numExtraElements )
                {                  
@@ -169,13 +166,10 @@ class AsyncPacketBufferedInputStream : public AsyncBufferedInputStream< Packet*,
                }
 
                // Buffer the packet.
-
-               if( this->cancellationPoint() ) return;
-               mAsyncStream->_onArrival( mPacket );
+			   mAsyncStream->_onArrival( mPacket );
             }
             virtual void onCancelled()
             {
-               Parent::onCancelled();
                destructSingle< PacketType* >( mPacket );
                mAsyncStream = NULL;
             }
