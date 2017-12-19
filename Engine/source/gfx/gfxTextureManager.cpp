@@ -1548,7 +1548,6 @@ public:
 	void execute() override
 	{
 		TEXMGR->reloadTextures(mDDSFiles, mBMPFiles);
-		Con::printf("Seasons: static textures reloaded");
 	}
 
 private:
