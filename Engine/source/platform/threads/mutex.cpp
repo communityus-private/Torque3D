@@ -33,6 +33,8 @@
 #	include <thread>
 #endif // !TORQUE_SHIPPING
 
+//#define DEBUG_SPEW
+
 Mutex::Mutex(const char* name) : mMutexImpl(name == nullptr ? "unknown" : name)
 {
 }
@@ -203,7 +205,9 @@ DefineConsoleFunction(testMutexRecursiveLock, void, (U32 nLockCount), , "testMut
 
 		void doLock()
 		{
-			Con::hackf("lock mutex #%u", mIndex);
+#ifdef DEBUG_SPEW
+			Con::printf("lock mutex #%u", mIndex);
+#endif
 			MutexHandle locker = TORQUE_LOCK(mMutex);
 			++mIndex;
 			if (mIndex >= mLockCount)
@@ -228,7 +232,9 @@ static void testMutexGenericLock(U32 iterationCount)
 		{
 			TORQUE_LOCK_SCOPE(mutex1, mutex2, mutex3)
 			{
-				Con::hackf("LOCKED 1ST TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#ifdef DEBUG_SPEW
+				Con::printf("LOCKED 1ST TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#endif
 			}
 		}
 	};
@@ -238,7 +244,9 @@ static void testMutexGenericLock(U32 iterationCount)
 		for (U32 i = 0; i < iterationCount; ++i)
 		{
 			auto locks = TORQUE_LOCK(mutex1, mutex2, mutex3); // note the same sequence of mutexes
-			Con::hackf("LOCKED 2ND TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#ifdef DEBUG_SPEW
+			Con::printf("LOCKED 2ND TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#endif
 
 			// we are going to unlock mutexes in reverse order - this should not affect deadlock safety
 			auto reverseLocks = std::make_tuple(std::move(std::get<2>(locks)), std::move(std::get<1>(locks)), std::move(std::get<0>(locks)));
@@ -271,11 +279,15 @@ static void testMutexGenericTryLock(U32 iterationCount)
 			auto locks = TORQUE_TRY_LOCK(mutex1, mutex2, mutex3);
 			if (std::get<0>(locks))
 			{
-				Con::hackf("LOCKED 1ST TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#ifdef DEBUG_SPEW
+				Con::printf("LOCKED 1ST TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#endif
 			}
 			else
 			{
-				Con::hackf("FAILED TO LOCK 1ST TYPE(%d, %d, %d). SEE THREAD ID HERE -->", std::get<1>(locks).isLocked(), std::get<2>(locks).isLocked(), std::get<3>(locks).isLocked());
+#ifdef DEBUG_SPEW
+				Con::printf("FAILED TO LOCK 1ST TYPE(%d, %d, %d). SEE THREAD ID HERE -->", std::get<1>(locks).isLocked(), std::get<2>(locks).isLocked(), std::get<3>(locks).isLocked());
+#endif
 			}
 		}
 	};
@@ -287,11 +299,15 @@ static void testMutexGenericTryLock(U32 iterationCount)
 			auto locks = TORQUE_TRY_LOCK(mutex1, mutex2, mutex3);
 			if (std::get<0>(locks))
 			{
-				Con::hackf("LOCKED 2ND TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#ifdef DEBUG_SPEW
+				Con::printf("LOCKED 2ND TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
+#endif
 			}
 			else
 			{
-				Con::hackf("FAILED TO LOCK 2ND TYPE(%d, %d, %d). SEE THREAD ID HERE -->", std::get<1>(locks).isLocked(), std::get<2>(locks).isLocked(), std::get<3>(locks).isLocked());
+#ifdef DEBUG_SPEW
+				Con::printf("FAILED TO LOCK 2ND TYPE(%d, %d, %d). SEE THREAD ID HERE -->", std::get<1>(locks).isLocked(), std::get<2>(locks).isLocked(), std::get<3>(locks).isLocked());
+#endif
 			}
 		}
 	};
