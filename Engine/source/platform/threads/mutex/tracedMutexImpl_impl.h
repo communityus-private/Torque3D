@@ -52,8 +52,9 @@ TracedMutexImpl::~TracedMutexImpl() = default;
 
 TracedMutexImpl::LockID TracedMutexImpl::lock(MUTEX_INTERNAL_TRACE_LOCK_PARAMS)
 {
-#ifdef _aw_s4_deadlockCheck
 	LockCallDescription description(MUTEX_INTERNAL_TRACE_FORWARD_LOCK_ARGS, mName.c_str());
+#ifdef _aw_s4_deadlockCheck
+	
 	auto lockID = LockStack::ThreadLocalInstance().push(LockState::MakeUnlocked(description));
 
 	static const auto PotentialDeadLockTimeout = boost::chrono::seconds(DeadLockThresholdInSec);
@@ -103,7 +104,7 @@ void TracedMutexImpl::unlock(LockID id)
 
 U32 TracedMutexImpl::getOwningThreadID() const
 {
-	return mData->mutex.locking_thread_id;
+	return NULL;// mData->mutex.locking_thread_id;
 }
 
 /*static*/ void TracedMutexImpl::_reportAboutPossibleDeadlock()

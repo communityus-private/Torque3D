@@ -221,7 +221,7 @@ DefineConsoleFunction(testMutexRecursiveLock, void, (U32 nLockCount), , "testMut
 	recursiveLock locker(nLockCount);
 	locker.doLock();
 }
-
+/*
 static void testMutexGenericLock(U32 iterationCount)
 {
 	Mutex mutex1("1"), mutex2("2"), mutex3("3");
@@ -243,7 +243,7 @@ static void testMutexGenericLock(U32 iterationCount)
 	{
 		for (U32 i = 0; i < iterationCount; ++i)
 		{
-			auto locks = TORQUE_LOCK(mutex1, mutex2, mutex3); // note the same sequence of mutexes
+			std::tuple<MutexHandle, MutexHandle, MutexHandle> locks = TORQUE_LOCK(mutex1, mutex2, mutex3); // note the same sequence of mutexes
 #ifdef DEBUG_SPEW
 			Con::printf("LOCKED 2ND TYPE. DATA = %u. SEE THREAD ID HERE -->", synchronizedData++);
 #endif
@@ -267,7 +267,6 @@ static void testMutexGenericLock(U32 iterationCount)
 		t.join();
 	}
 }
-
 static void testMutexGenericTryLock(U32 iterationCount)
 {
 	Mutex mutex1("1"), mutex2("2"), mutex3("3");
@@ -336,5 +335,5 @@ DefineConsoleFunction(testMutexGenericTryLock, void, (U32 iterationCount), , "te
 {
 	std::thread(testMutexGenericTryLock, iterationCount).detach();
 }
-
+*/
 #endif // !TORQUE_SHIPPING

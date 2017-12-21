@@ -86,7 +86,7 @@ void UntracedMutexImpl::unlock(LockID)
 
 U32 UntracedMutexImpl::getOwningThreadID() const
 {
-	return mData->mutex.locking_thread_id;
+	return NULL;// mData->mutex.locking_thread_id;
 }
 
 /*static*/ void UntracedMutexImpl::_reportAboutPossibleDeadlock()
