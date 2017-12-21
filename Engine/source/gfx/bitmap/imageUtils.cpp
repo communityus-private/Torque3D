@@ -76,7 +76,7 @@ namespace ImageUtil
       CompressQuality quality;
 
       CompressJob(const U8 *srcRGBA, U8 *dst, const S32 w, const S32 h, const GFXFormat compressFormat, const CompressQuality compressQuality)
-         : pSrc(srcRGBA),pDst(dst), width(w), height(h), format(compressFormat),quality(compressQuality) {}
+		  : pSrc(srcRGBA), pDst(dst), width(w), height(h), format(compressFormat), quality(compressQuality) { flags = NULL; }
 
    protected:
       virtual void execute()
@@ -205,7 +205,7 @@ namespace ImageUtil
 		 {
 			 while (itemList.size())
 			 {
-				 for (U32 i = itemList.size(); i > 0; i--)
+				 for (S32 i = itemList.size() - 1; i >= 0; i--)
 					 if (itemList[i]->isCompleted())
 						 itemList.erase(i);
 				 _sleep(TickMs);
