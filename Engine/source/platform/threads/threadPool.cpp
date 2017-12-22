@@ -219,7 +219,7 @@ size_t ThreadPool::getNumThreads() const
 	return mPhysicalThreads.size();
 }
 
-bool ThreadPool::isPoolThreadID(U32 threadID) const
+bool ThreadPool::isPoolThreadID(std::thread::id threadID) const
 {
 	auto threadHasTargetID = [threadID](const std::unique_ptr<Thread>& thread)
 	{

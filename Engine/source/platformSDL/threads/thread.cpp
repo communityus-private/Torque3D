@@ -34,7 +34,7 @@ public:
    void*                   mRunArg;
    Thread*                 mThread;
    Semaphore               mGateway; // default count is 1
-   SDL_threadID            mThreadID;
+   std::thread::id         mThreadID;
    SDL_Thread*             mSdlThread;
    bool                    mDead;
 };
@@ -52,7 +52,7 @@ static int ThreadRunHandler(void * arg)
    PlatformThreadData *mData = reinterpret_cast<PlatformThreadData*>(arg);
    Thread *thread = mData->mThread;
 
-   mData->mThreadID = SDL_ThreadID();
+   mData->mThreadID = std::this_thread::get_id();//SDL_ThreadID();
    
    ThreadManager::addThread(thread);
    thread->run(mData->mRunArg);
@@ -60,7 +60,7 @@ static int ThreadRunHandler(void * arg)
 
    bool autoDelete = thread->autoDelete;
    
-   mData->mThreadID = 0;
+   mData->mThreadID = std::thread::id();
    mData->mDead = true;
    mData->mGateway.release();
    
@@ -79,7 +79,7 @@ Thread::Thread(ThreadRunFunction func, void* arg, bool start_thread, bool autode
    mData->mRunFunc = func;
    mData->mRunArg = arg;
    mData->mThread = this;
-   mData->mThreadID = 0;
+   mData->mThreadID = std::thread::id();
    mData->mDead = false;
    mData->mSdlThread = NULL;
    autoDelete = autodelete;
@@ -133,9 +133,9 @@ bool Thread::isAlive()
    return ( !mData->mDead );
 }
 
-U32 Thread::getId()
+std::thread::id Thread::getId()
 {
-   return (U32)mData->mThreadID;
+   return mData->mThreadID;
 }
 
 void Thread::_setName( const char* )
@@ -144,13 +144,13 @@ void Thread::_setName( const char* )
    // that one thread you are looking for is just so much fun.
 }
 
-U32 ThreadManager::getCurrentThreadId()
+std::thread::id ThreadManager::getCurrentThreadId()
 {
 	//from https://stackoverflow.com/questions/7432100/how-to-get-integer-thread-id-in-c11
-   return (U32)(std::hash<std::thread::id>()(std::this_thread::get_id()));
+   return std::this_thread::get_id();
 }
 
-bool ThreadManager::compare(U32 threadId_1, U32 threadId_2)
+bool ThreadManager::compare(std::thread::id threadId_1, std::thread::id threadId_2)
 {
    return (threadId_1 == threadId_2);
 }

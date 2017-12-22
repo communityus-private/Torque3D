@@ -120,7 +120,7 @@ public:
    bool isAlive();
 
    /// Returns the platform specific thread id for this thread.
-   U32 getId();
+   std::thread::id getId();
 
 protected:
 	const char* mThreadName;
@@ -139,20 +139,19 @@ class ThreadManager
 
    struct MainThreadId
    {
-      U32 mId;
+      std::thread::id mId;
       MainThreadId()
       {
          mId = ThreadManager::getCurrentThreadId();
       }
-      U32 get()
+      std::thread::id get()
       {
          // Okay, this is a bit soso.  The main thread ID may get queried during
          // global ctor phase before MainThreadId's ctor ran.  Since global
          // ctors will/should all run on the main thread, we can sort of safely
          // assume here that we can just query the current thread's ID.
 
-         if( !mId )
-            mId = ThreadManager::getCurrentThreadId();
+         mId = ThreadManager::getCurrentThreadId();
          return mId;
       }
    };
@@ -170,25 +169,25 @@ public:
    static bool isMainThread();
 
    /// Returns true if threadId is the same as the calling thread's id.
-   static bool isCurrentThread(U32 threadId);
+   static bool isCurrentThread(std::thread::id threadId);
 
    /// Returns true if the 2 thread ids represent the same thread. Some thread
    /// APIs return an opaque object as a thread id, so the == operator cannot
    /// reliably compare thread ids.
    // this comparator is needed by pthreads and ThreadManager.
-   static bool compare(U32 threadId_1, U32 threadId_2);
+   static bool compare(std::thread::id threadId_1, std::thread::id threadId_2);
       
    /// Returns the platform specific thread id of the calling thread. Some 
    /// platforms do not guarantee that this ID stays the same over the life of 
    /// the thread, so use ThreadManager::compare() to compare thread ids.
-   static U32 getCurrentThreadId();
+   static std::thread::id getCurrentThreadId();
 
 	static void _suspendResumeThreads(bool doSuspend);
 	static void suspendAllThreads();
 	static void resumeAllThreads();
 
    /// Returns the platform specific thread id ot the main thread.
-   static U32 getMainThreadId() { return smMainThreadId.get(); }
+   static std::thread::id getMainThreadId() { return smMainThreadId.get(); }
    
    /// Each thread should add itself to the thread pool the first time it runs.
    static void addThread(Thread* thread)
@@ -205,7 +204,7 @@ public:
       ThreadManager &manager = *ManagedSingleton< ThreadManager >::instance();
       MutexHandle mutexHandle = TORQUE_LOCK(manager.poolLock);
       
-      U32 threadID = thread->getId();
+      std::thread::id threadID = thread->getId();
       for(U32 i = 0;i < manager.threadPool.size();++i)
       {
          if( compare( manager.threadPool[i]->getId(), threadID ) )
@@ -218,9 +217,9 @@ public:
    
    /// Searches the pool of known threads for a thread whose id is equivalent to
    /// the given threadid. Compares thread ids with ThreadManager::compare().
-   static Thread* getThreadById(U32 threadid)
+   static Thread* getThreadById(std::thread::id threadid)
    {
-      AssertFatal(threadid != 0, "ThreadManager::getThreadById() Searching for a bad thread id.");
+      //AssertFatal(threadid != 0, "ThreadManager::getThreadById() Searching for a bad thread id.");
       Thread* ret = NULL;
       
       ThreadManager &manager = *ManagedSingleton< ThreadManager >::instance();
@@ -254,9 +253,9 @@ inline bool ThreadManager::isMainThread()
    return compare( ThreadManager::getCurrentThreadId(), smMainThreadId.get() );
 }
 
-inline bool ThreadManager::isCurrentThread(U32 threadId)
+inline bool ThreadManager::isCurrentThread(std::thread::id threadId)
 {
-   U32 current = getCurrentThreadId();
+   std::thread::id current = getCurrentThreadId();
    return compare(current, threadId);
 }
 

@@ -128,7 +128,7 @@ public:
 
 	bool processMainThreadItem();
 	void processAllMainThreadItems();
-	bool isPoolThreadID(U32 threadID) const;
+	bool isPoolThreadID(std::thread::id threadID) const;
 
 
 	/// Force all work items to execute on main thread;
