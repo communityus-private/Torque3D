@@ -64,8 +64,8 @@ void Mutex::_unlock(MutexImpl::LockID lockID)
 void Mutex::checkOwnerThread() const
 {
 #ifdef _aw_s4_mutexCheck
-	U32 owningThreadID = mMutexImpl.getOwningThreadID();
-	AssertISV(owningThreadID == ThreadManager::getCurrentThreadId(), "Owner thread mismatch")
+	std::thread::id owningThreadID = mMutexImpl.getOwningThreadID();
+   AssertISV(owningThreadID == ThreadManager::getCurrentThreadId(), "Owner thread mismatch");
 #endif // _aw_s4_mutexCheck
 }
 

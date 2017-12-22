@@ -102,9 +102,9 @@ void TracedMutexImpl::unlock(LockID id)
 	mData->mutex.unlock();
 }
 
-U32 TracedMutexImpl::getOwningThreadID() const
+std::thread::id TracedMutexImpl::getOwningThreadID() const
 {
-	return NULL;// mData->mutex.locking_thread_id;
+   return std::thread::id(); //mData->mutex.locking_thread_id;
 }
 
 /*static*/ void TracedMutexImpl::_reportAboutPossibleDeadlock()
