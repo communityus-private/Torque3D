@@ -43,7 +43,7 @@ public:
 	std::pair<LockID, bool> tryLock(MUTEX_INTERNAL_TRACE_LOCK_PARAMS);
 	void unlock(LockID);
 
-   std::thread::id getOwningThreadID() const;
+	U32 getOwningThreadID() const;
 
 private:
 	struct MutexData;

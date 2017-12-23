@@ -110,7 +110,7 @@ public:
 	 */
 	std::string makeDescription() const;
 
-	const std::thread::id threadID;
+	const U32 threadID;
 
 private:
 	struct Entry

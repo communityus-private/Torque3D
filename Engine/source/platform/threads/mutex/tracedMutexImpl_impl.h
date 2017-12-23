@@ -40,6 +40,7 @@ namespace MutexDetails
 struct TracedMutexImpl::MutexData
 {
 	std::recursive_timed_mutex mutex;
+	U32 owner_handle;
 };
 
 TracedMutexImpl::TracedMutexImpl(const char* name)
@@ -102,9 +103,9 @@ void TracedMutexImpl::unlock(LockID id)
 	mData->mutex.unlock();
 }
 
-std::thread::id TracedMutexImpl::getOwningThreadID() const
+U32 TracedMutexImpl::getOwningThreadID() const
 {
-   return std::thread::id(); //mData->mutex.locking_thread_id;
+   return mData->owner_handle;
 }
 
 /*static*/ void TracedMutexImpl::_reportAboutPossibleDeadlock()
