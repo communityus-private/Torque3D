@@ -157,6 +157,7 @@ std::string LockStack::makeDescription() const
 struct GlobalLockStackPool::MutexData
 {
 	std::recursive_timed_mutex mutex;
+	std::thread::id owner_handle;
 };
 
 
