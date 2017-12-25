@@ -1,5 +1,6 @@
+#pragma once
 //-----------------------------------------------------------------------------
-// Copyright (c) 2012 GarageGames, LLC
+// Copyright (c) 2013 GarageGames, LLC
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to
@@ -19,33 +20,52 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
+#ifndef POSTEFFECT_ASSET_H
+#define POSTEFFECT_ASSET_H
 
-#pragma once
+#ifndef _ASSET_BASE_H_
+#include "assets/assetBase.h"
+#endif
 
-#include "gui/editor/guiMenuBar.h"
-#include "platformSDL/menus/PlatformSDLPopupMenuData.h"
-#include "platform/menus/popupMenu.h"
+#ifndef _ASSET_DEFINITION_H_
+#include "assets/assetDefinition.h"
+#endif
 
-class GuiPlatformGenericMenuBar : public GuiMenuBar
+#ifndef _STRINGUNIT_H_
+#include "string/stringUnit.h"
+#endif
+
+#ifndef _ASSET_FIELD_TYPES_H_
+#include "assets/assetFieldTypes.h"
+#endif
+
+#include "postFx/postEffect.h"
+
+//-----------------------------------------------------------------------------
+class PostEffectAsset : public AssetBase
 {
-   typedef GuiMenuBar Parent;
+   typedef AssetBase Parent;
+
+   StringTableEntry        mScriptFile;
+   
 public:
-   DECLARE_CONOBJECT(GuiPlatformGenericMenuBar);
+   PostEffectAsset();
+   virtual ~PostEffectAsset();
 
-   virtual void menuItemSelected(Menu *menu, MenuItem *item)
-   {
-      AssertFatal(menu && item, "");
+   /// Engine.
+   static void initPersistFields();
+   virtual void copyTo(SimObject* object);
 
-      PopupMenu *popupMenu = PlatformPopupMenuData::mMenuMap[menu];
-      AssertFatal(popupMenu, "");
+   virtual void initializeAsset();
 
-      popupMenu->handleSelect(item->id);
-
-      Parent::menuItemSelected(menu, item);
-   }
+   /// Declare Console Object.
+   DECLARE_CONOBJECT(PostEffectAsset);
 
 protected:
-   /// menu id / item id
-   Map<CompoundKey<U32, U32>, String> mCmds;
-
+   virtual void            onAssetRefresh(void) {}
 };
+
+DefineConsoleType(TypePostEffectAssetPtr, PostEffectAsset)
+
+#endif // _ASSET_BASE_H_
+

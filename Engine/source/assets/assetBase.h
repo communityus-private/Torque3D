@@ -62,6 +62,7 @@ class AssetBase : public SimObject
 
    typedef SimObject Parent;
 
+protected:
    AssetManager*           mpOwningAssetManager;
    bool                    mAssetInitialized;
    AssetDefinition*        mpAssetDefinition;
@@ -88,6 +89,8 @@ public:
    inline bool             getAssetInternal(void) const                      { return mpAssetDefinition->mAssetInternal; }
    inline bool             getAssetPrivate(void) const                       { return mpAssetDefinition->mAssetPrivate; }
    inline StringTableEntry getAssetType(void) const                          { return mpAssetDefinition->mAssetType; }
+   inline void             setAssetTags(const char* pAssetTags)              { if (mpOwningAssetManager == NULL) mpAssetDefinition->mAssetTags = StringTable->insert(pAssetTags); }
+   inline StringTableEntry getAssetTags(void) const                          { return mpAssetDefinition->mAssetTags; }
 
    inline S32              getAcquiredReferenceCount(void) const             { return mAcquireReferenceCount; }
    inline bool             getOwned(void) const                              { return mpOwningAssetManager != NULL; }
@@ -132,6 +135,10 @@ protected:
    static bool             writeAssetInternal(void* obj, StringTableEntry pFieldName) { return static_cast<AssetBase*>(obj)->getAssetInternal() == true; }
 
    static const char*      getAssetPrivate(void* obj, const char* data)        { return Con::getBoolArg(static_cast<AssetBase*>(obj)->getAssetPrivate()); }
+
+   static bool             setAssetTags(void *obj, const char *array, const char *data) { static_cast<AssetBase*>(obj)->setAssetTags(data); return false; }
+   static const char*      getAssetTags(void* obj, const char* data) { return static_cast<AssetBase*>(obj)->getAssetTags(); }
+   static bool             writeAssetTags(void* obj, StringTableEntry pFieldName) { return static_cast<AssetBase*>(obj)->getAssetTags() != StringTable->EmptyString(); }
 
 private:
    void                    acquireAssetReference(void);

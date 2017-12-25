@@ -50,6 +50,7 @@ StringTableEntry assetCategoryField = StringTable->insert("AssetCategory");
 StringTableEntry assetAutoUnloadField = StringTable->insert("AssetAutoUnload");
 StringTableEntry assetInternalField = StringTable->insert("AssetInternal");
 StringTableEntry assetPrivateField = StringTable->insert("AssetPrivate");
+StringTableEntry assetTagsField = StringTable->insert("AssetTags");
 
 //-----------------------------------------------------------------------------
 
@@ -69,7 +70,7 @@ AssetBase::~AssetBase()
    // If the asset manager does not own the asset then we own the
    // asset definition so delete it.
    if (!getOwned())
-      delete mpAssetDefinition;
+      SAFE_DELETE(mpAssetDefinition);
 }
 
 //-----------------------------------------------------------------------------
@@ -86,6 +87,8 @@ void AssetBase::initPersistFields()
    addProtectedField(assetAutoUnloadField, TypeBool, 0, &setAssetAutoUnload, &getAssetAutoUnload, &writeAssetAutoUnload, "Whether the asset is automatically unloaded when an asset is released and has no other acquisitions or not.");
    addProtectedField(assetInternalField, TypeBool, 0, &setAssetInternal, &getAssetInternal, &writeAssetInternal, "Whether the asset is used internally only or not.");
    addProtectedField(assetPrivateField, TypeBool, 0, &defaultProtectedNotSetFn, &getAssetPrivate, &defaultProtectedNotWriteFn, "Whether the asset is private or not.");
+
+   addProtectedField(assetTagsField, TypeString, 0, &setAssetTags, &getAssetTags, &writeAssetTags, "The tags for this asset.  These are utilized to help categorize and organize assets.");
 }
 
 //------------------------------------------------------------------------------

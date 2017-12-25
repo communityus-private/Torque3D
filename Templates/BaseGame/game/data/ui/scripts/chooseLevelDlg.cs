@@ -31,7 +31,11 @@ function ChooseLevelDlg::onWake( %this )
    %this->LevelDescriptionLabel.visible = false;
    %this->LevelDescription.visible = false;
    
-   %count = LevelFilesList.count();
+   %assetQuery = new AssetQuery();
+   if(!AssetDatabase.findAssetType(%assetQuery, "LevelAsset"))
+      return; //if we didn't find ANY, just exit
+      
+   %count = %assetQuery.getCount();
    
    if(%count == 0)
    {
@@ -39,7 +43,7 @@ function ChooseLevelDlg::onWake( %this )
       if(IsDirectory("tools"))
       {
          MessageBoxYesNo("Error", "No levels were found in any modules. Do you want to load the editor and start a new level?", 
-            "fastLoadWorldEdit(1);", 
+            "EditorOpenMission();", 
             "Canvas.popDialog(ChooseLevelDlg); if(isObject(ChooseLevelDlg.returnGui) && ChooseLevelDlg.returnGui.isMethod(\"onReturnTo\")) ChooseLevelDlg.returnGui.onReturnTo();");  
       }
       else
@@ -48,12 +52,18 @@ function ChooseLevelDlg::onWake( %this )
             "Canvas.popDialog(ChooseLevelDlg); if(isObject(ChooseLevelDlg.returnGui) && ChooseLevelDlg.returnGui.isMethod(\"onReturnTo\")) ChooseLevelDlg.returnGui.onReturnTo();");
       }
       
+      %assetQuery.delete();
       return;
    }
    
-   for ( %i=0; %i < %count; %i++ )
-   {
-      %file = LevelFilesList.getKey( %i );
+   for(%i=0; %i < %count; %i++)
+	{
+	   %assetId = %assetQuery.getAsset(%i);
+      
+      %levelAsset = AssetDatabase.acquireAsset(%assetId);
+      
+      %file = %levelAsset.LevelFile;
+      
       if ( !isFile(%file @ ".mis") && !isFile(%file) )
          continue;
          

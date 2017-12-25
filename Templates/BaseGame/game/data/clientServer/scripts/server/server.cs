@@ -201,7 +201,7 @@ function destroyServer()
    // End any running levels and shut down the physics sim
    onServerDestroyed();
 
-   physicsDestroy();
+   //physicsDestroy();
 
    // Delete all the server objects
    if (isObject(ServerGroup))

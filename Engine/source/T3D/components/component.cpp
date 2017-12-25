@@ -52,7 +52,6 @@ Component::Component()
 
    mNetworked = false;
 
-
    // [tom, 1/12/2007] We manage the memory for the description since it
    // could be loaded from a file and thus massive. This is accomplished with
    // protected fields, but since they still call Con::getData() the field
@@ -66,7 +65,7 @@ Component::Component()
 
    mOriginatingAssetId = StringTable->EmptyString();
 
-   mNetFlags.set(Ghostable);
+   mIsServerObject = true;
 }
 
 Component::~Component()
@@ -227,7 +226,15 @@ void Component::setOwner(Entity* owner)
    }
 
    if (isServerObject())
+   {
       setMaskBits(OwnerMask);
+
+      //if we have any outstanding maskbits, push them along to have the network update happen on the entity
+      if (mDirtyMaskBits != 0 && mOwner)
+      {
+         mOwner->setMaskBits(Entity::ComponentsUpdateMask);
+      }
+   }
 }
 
 void Component::componentAddedToOwner(Component *comp)
@@ -245,11 +252,19 @@ void Component::ownerTransformSet(MatrixF *mat)
    return;
 }
 
+void Component::setMaskBits(U32 orMask)
+{
+   AssertFatal(orMask != 0, "Invalid net mask bits set.");
+   
+   if (mOwner)
+      mOwner->setComponentNetMask(this, orMask);
+}
+
 U32 Component::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 {
-   U32 retMask = Parent::packUpdate(con, mask, stream);
+   U32 retMask = 0;
 
-   if (mask & OwnerMask)
+   /*if (mask & OwnerMask)
    {
       if (mOwner != NULL)
       {
@@ -274,7 +289,7 @@ U32 Component::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       }
    }
    else
-      stream->writeFlag(false);
+      stream->writeFlag(false);*/
 
    if (stream->writeFlag(mask & EnableMask))
    {
@@ -299,9 +314,7 @@ U32 Component::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
 void Component::unpackUpdate(NetConnection *con, BitStream *stream)
 {
-   Parent::unpackUpdate(con, stream);
-
-   if (stream->readFlag())
+   /*if (stream->readFlag())
    {
       if (stream->readFlag())
       {
@@ -317,7 +330,7 @@ void Component::unpackUpdate(NetConnection *con, BitStream *stream)
          //it's being nulled out
          setOwner(NULL);
       }
-   }
+   }*/
 
    if (stream->readFlag())
    {
@@ -488,6 +501,7 @@ void Component::addComponentField(const char *fieldName, const char *desc, const
       fieldTypeMask = TypeGameObjectAssetPtr;
    else
       fieldTypeMask = TypeString;
+   field.mFieldTypeName = fieldType;
 
    field.mFieldType = fieldTypeMask;
 

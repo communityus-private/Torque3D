@@ -22,7 +22,7 @@
 
 function initLightingSystems(%manager)
 {
-   echo( "\nInitializing Lighting Systems" );
+   echo( "\n--------- Initializing Lighting Systems ---------" );
 
    // First exec the scripts for the different light managers
    // in the lighting folder.
@@ -51,6 +51,8 @@ function initLightingSystems(%manager)
       // manager then the 3d scene cannot be rendered.
       quitWithErrorMessage( "Failed to set a light manager!" );
    }
+      
+   echo( "\n" );
 }
 
 //---------------------------------------------------------------------------------------------

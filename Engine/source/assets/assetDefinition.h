@@ -76,6 +76,7 @@ public:
         mAssetPrivate = false;
         mAssetType = StringTable->EmptyString();
         mAssetCategory = StringTable->EmptyString();
+        mAssetTags = StringTable->EmptyString();
     }
 
     ModuleDefinition*           mpModuleDefinition;
@@ -96,6 +97,7 @@ public:
     bool                        mAssetLoading;
     StringTableEntry            mAssetType;
     StringTableEntry            mAssetCategory;
+    StringTableEntry            mAssetTags;
 };
 
 #endif // _ASSET_DEFINITION_H_

@@ -202,7 +202,7 @@ void CameraComponent::setCameraFov(F32 fov)
 void CameraComponent::onCameraScopeQuery(NetConnection *cr, CameraScopeQuery * query)
 {
    // update the camera query
-   query->camera = this;
+   query->camera = mOwner;//this;
 
    if(GameConnection * con = dynamic_cast<GameConnection*>(cr))
    {

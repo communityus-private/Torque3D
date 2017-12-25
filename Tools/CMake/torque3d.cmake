@@ -332,6 +332,7 @@ addPath("${srcDir}/T3D/components/collision")
 addPath("${srcDir}/T3D/components/game")
 addPath("${srcDir}/T3D/components/physics")
 addPath("${srcDir}/T3D/components/render")
+addPath("${srcDir}/T3D/components/audio")
 
 addPath("${srcDir}/main/")
 addPath("${srcDir}/assets")

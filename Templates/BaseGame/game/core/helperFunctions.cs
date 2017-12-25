@@ -202,7 +202,7 @@ function updateTSShapeLoadProgress(%progress, %msg)
 {
    // Check if the loading GUI is visible and use that instead of the
    // separate import progress GUI if possible
-   if ( isObject(LoadingGui) && LoadingGui.isAwake() )
+  /* if ( isObject(LoadingGui) && LoadingGui.isAwake() )
    {
       // Save/Restore load progress at the start/end of the import process
       if ( %progress == 0 )
@@ -245,7 +245,7 @@ function updateTSShapeLoadProgress(%progress, %msg)
       %textCtrl.setText(%msg);
    }
 
-   Canvas.repaint(33);
+   Canvas.repaint(33);*/
 }
 
 /// A helper function which will return the ghosted client object
