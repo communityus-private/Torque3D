@@ -67,7 +67,7 @@ UntracedMutexImpl::LockID UntracedMutexImpl::lock(MUTEX_INTERNAL_TRACE_LOCK_PARA
 
 	_reportAboutPossibleDeadlock();
 #endif // _aw_s4_deadlockCheck
-
+	mData->owner_handle = std::this_thread::get_id();
 	mData->mutex.lock();
 
 	return LockID();
@@ -77,12 +77,15 @@ std::pair<UntracedMutexImpl::LockID, bool>
 UntracedMutexImpl::tryLock(MUTEX_INTERNAL_TRACE_LOCK_PARAMS)
 {
 	bool locked = mData->mutex.try_lock();
+	if (locked)
+		mData->owner_handle = std::this_thread::get_id();
 	return std::make_pair(LockID(), locked);
 }
 
 void UntracedMutexImpl::unlock(LockID)
 {
 	mData->mutex.unlock();
+	mData->owner_handle = gNullThreadID;
 }
 
 std::thread::id UntracedMutexImpl::getOwningThreadID() const

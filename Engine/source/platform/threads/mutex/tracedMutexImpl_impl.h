@@ -78,6 +78,7 @@ TracedMutexImpl::LockID TracedMutexImpl::lock(MUTEX_INTERNAL_TRACE_LOCK_PARAMS)
 	LockStack::ThreadLocalInstance().lock(lockID);
 	return lockID;
 #else
+	mData->owner_handle = std::this_thread::get_id();
 	mData->mutex.lock();
 
 	return LockStack::ThreadLocalInstance().push(LockState::MakeLocked(description));
@@ -90,6 +91,7 @@ TracedMutexImpl::tryLock(MUTEX_INTERNAL_TRACE_LOCK_PARAMS)
 	if (mData->mutex.try_lock())
 	{
 		LockCallDescription description(MUTEX_INTERNAL_TRACE_FORWARD_LOCK_ARGS, mName.c_str());
+		mData->owner_handle = std::this_thread::get_id();
 		auto lockID = LockStack::ThreadLocalInstance().push(LockState::MakeLocked(description));
 		return std::make_pair(lockID, true);
 	}
@@ -101,6 +103,7 @@ void TracedMutexImpl::unlock(LockID id)
 {
 	LockStack::ThreadLocalInstance().remove(id);
 	mData->mutex.unlock();
+	mData->owner_handle = gNullThreadID;
 }
 
 std::thread::id TracedMutexImpl::getOwningThreadID() const
