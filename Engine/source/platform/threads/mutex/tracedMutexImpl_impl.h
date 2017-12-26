@@ -40,7 +40,7 @@ namespace MutexDetails
 struct TracedMutexImpl::MutexData
 {
 	std::recursive_timed_mutex mutex;
-	std::thread::id owner_handle;
+	std::thread::id owner_handle = gNullThreadID;
 };
 
 TracedMutexImpl::TracedMutexImpl(const char* name)
