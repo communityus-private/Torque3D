@@ -24,9 +24,8 @@
 #include "platform/threads/semaphore.h"
 #include "platform/threads/mutex.h"
 #include <stdlib.h>
-#include <SDL.h>
-#include <SDL_thread.h>
 
+extern std::thread::id gNullThreadID;
 class PlatformThreadData
 {
 public:
@@ -35,7 +34,6 @@ public:
    Thread*                 mThread;
    Semaphore               mGateway; // default count is 1
    std::thread::id         mThreadID;
-   SDL_Thread*             mSdlThread;
    bool                    mDead;
 };
 
@@ -60,7 +58,7 @@ static int ThreadRunHandler(void * arg)
 
    bool autoDelete = thread->autoDelete;
    
-   mData->mThreadID = std::thread::id();
+   mData->mThreadID = gNullThreadID;
    mData->mDead = true;
    mData->mGateway.release();
    
@@ -81,7 +79,6 @@ Thread::Thread(ThreadRunFunction func, void* arg, bool start_thread, bool autode
    mData->mThread = this;
    mData->mThreadID = std::thread::id();
    mData->mDead = false;
-   mData->mSdlThread = NULL;
    autoDelete = autodelete;
 }
 
@@ -109,8 +106,7 @@ void Thread::start( void* arg )
    if( !mData->mRunArg )
       mData->mRunArg = arg;
 
-   mData->mSdlThread = SDL_CreateThread(ThreadRunHandler,NULL,mData);
-
+   std::thread(ThreadRunHandler,mData);
 }
 
 bool Thread::join()
