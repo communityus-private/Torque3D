@@ -113,13 +113,15 @@ void Thread::start( void* arg )
 
 bool Thread::join()
 {  
-	mData->mSDTThread->join();
+	bool joinable = mData->mSDTThread->joinable();
+	if (joinable)
+		mData->mSDTThread->join();
 	/*
    mData->mGateway.acquire();
    AssertFatal( !isAlive(), "Thread::join() - thread not dead after join()" );
    mData->mGateway.release();
    */
-   return true;
+   return joinable;
 }
 
 void Thread::run(void* arg)
