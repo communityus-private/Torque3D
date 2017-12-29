@@ -34,6 +34,7 @@ public:
    Thread*                 mThread;
    Semaphore               mGateway; // default count is 1
    std::thread::id         mThreadID;
+   std::thread*            mSDTThread;
    bool                    mDead;
 };
 
@@ -79,6 +80,7 @@ Thread::Thread(ThreadRunFunction func, void* arg, bool start_thread, bool autode
    mData->mThread = this;
    mData->mThreadID = std::thread::id();
    mData->mDead = false;
+   mData->mSDTThread = NULL;
    autoDelete = autodelete;
 }
 
@@ -88,7 +90,7 @@ Thread::~Thread()
    if( isAlive() )
       join();
 
-   
+   delete mData->mSDTThread;
    delete mData;
 }
 
@@ -106,15 +108,17 @@ void Thread::start( void* arg )
    if( !mData->mRunArg )
       mData->mRunArg = arg;
 
-   std::thread(ThreadRunHandler,mData);
+   mData->mSDTThread = new std::thread(ThreadRunHandler,mData);
 }
 
 bool Thread::join()
 {  
+	mData->mSDTThread->join();
+	/*
    mData->mGateway.acquire();
    AssertFatal( !isAlive(), "Thread::join() - thread not dead after join()" );
    mData->mGateway.release();
-   
+   */
    return true;
 }
 
