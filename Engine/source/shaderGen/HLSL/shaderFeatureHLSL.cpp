@@ -2984,19 +2984,9 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    // Now the wsPosition and wsView.
    Var *wsPosition = getInWsPosition(componentList);
    Var *wsView = getWsView(wsPosition, meta);
-
-   Var *smoothness = (Var*)LangElement::find("smoothness");
-   if (!fd.features[MFT_SpecularMap])
-   {
-      if (!smoothness)
-      {
-         smoothness = new Var("smoothness", "float");
-         smoothness->uniform = true;
-         smoothness->constSortPos = cspPotentialPrimitive;
-      }
-   }
-
+   
    Var *metalness = (Var*)LangElement::find("metalness");
+   Var *smoothness = (Var*)LangElement::find("smoothness");
    if (!fd.features[MFT_SpecularMap])
    {
       if (!metalness)
@@ -3005,6 +2995,12 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
          metalness->uniform = true;
          metalness->constSortPos = cspPotentialPrimitive;
       }
+	  if (!smoothness)
+	  {
+		  smoothness = new Var("smoothness", "float");
+		  smoothness->uniform = true;
+		  smoothness->constSortPos = cspPotentialPrimitive;
+	  }
    }
 
    Var *albedo = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
@@ -3084,8 +3080,11 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
 
    Var *fa = new Var("fa", "float3");
    meta->addStatement(new GenOp("   @ = min(min(@.x,@.y),@.z);\r\n", new DecOp(fa), rbMinMax, rbMinMax, rbMinMax));
-   meta->addStatement(new GenOp("   if (dot( @, @ ) < 0.0f)\r\n", probeVec, wsNormal));
-   meta->addStatement(new GenOp("      clip(@);\r\n", fa));
+   
+  
+   meta->addStatement(new GenOp("/*   if (dot( @, @ ) < 0.0f)\r\n", probeVec, wsNormal));
+   meta->addStatement(new GenOp("      clip(@);  */\r\n", fa));
+ 
 
    meta->addStatement(new GenOp("      \r\n"));
 
@@ -3096,8 +3095,10 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    meta->addStatement(new GenOp("      \r\n"));
 
    Var *probeColor = new Var("wipProbeColor", "float3");
-   //meta->addStatement(new GenOp("   @ = @[0].Sample(@[0], @).rgb;\r\n", new DecOp(probeColor), inProbeCubemapTex, inProbeCubemap, wsNormal));
-   meta->addStatement(new GenOp("   @ = @.Sample(@, @).rgb;\r\n", new DecOp(probeColor), inProbeCubemapTex, inProbeCubemap, reflectDir));
+
+   Var *probeMip = new Var("probeMip", "float");
+   meta->addStatement(new GenOp("   @ = min((1.0 - @)*11.0 + 1.0, 8.0);\r\n", new DecOp(probeMip), smoothness));
+   meta->addStatement(new GenOp("   @ = @.SampleLevel(@, @, @).rgb;\r\n", new DecOp(probeColor), inProbeCubemapTex, inProbeCubemap, reflectDir, probeMip));
    //meta->addStatement(new GenOp("   @ = @.rgb;\r\n", new DecOp(probeColor), inProbeTestColor));
 
    Var *FRESNEL_BIAS = new Var("FRESNEL_BIAS", "float");
