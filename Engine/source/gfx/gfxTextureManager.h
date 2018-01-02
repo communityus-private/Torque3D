@@ -42,10 +42,6 @@
 #include "core/util/tSignal.h"
 #endif
 
-#include <unordered_map>
-#include <vector>
-
-#include "platform/threads/mutex.h"
 
 namespace Torque
 {
@@ -64,7 +60,6 @@ public:
    };
 
    GFXTextureManager();
-   void preDestroy();
    virtual ~GFXTextureManager();
 
    /// Set up some global script interface stuff.
@@ -170,10 +165,6 @@ public:
 
    ///
    void reloadTextures();
-   void sheduleReloadTextures();
-   void reloadTextures(std::unordered_map<GFXTextureObject*, Resource<DDSFile>>& ddsFiles,
-	   std::unordered_map<GFXTextureObject*, Resource<GBitmap>>& bmpFiles);
-   void dumpTextures();
 
    /// This releases cached textures that have not
    /// been referenced for a period of time.
@@ -245,65 +236,7 @@ protected:
    } mTextureManagerState;
 
    /// The texture pool collection type.
-   struct TexturePoolDescriptor
-   {
-	   U32          width = 0;
-	   U32          height = 0;
-	   GFXFormat    format = GFXFormat_FIRST;
-	   U32          numMipLevels = 0;
-	   S32          antialiasLevel = 0;
-
-	   inline TexturePoolDescriptor() {}
-
-	   inline TexturePoolDescriptor(U32 newWidth, U32 newHeight, GFXFormat newFormat, U32 newNumMipLevels, S32 newAntialiasLevel)
-		   : width(newWidth)
-		   , height(newHeight)
-		   , format(newFormat)
-		   , numMipLevels(newNumMipLevels)
-		   , antialiasLevel(newAntialiasLevel)
-	   {}
-
-	   inline bool operator==(const TexturePoolDescriptor& other) const
-	   {
-		   return
-			   width == other.width &&
-			   height == other.height &&
-			   format == other.format &&
-			   numMipLevels == other.numMipLevels;
-		   // && antialiasLevel - intentionally skipped
-	   }
-   };
-
-   struct TexturePoolDescriptorHash final
-   {
-	   template <typename T>
-	   static inline void hashCombine(size_t& outSeed, const T& value)
-	   {
-		   std::hash<T> hasher;
-		   outSeed ^= hasher(value) + 0x9e3779b9 + (outSeed << 6) + (outSeed >> 2);
-	   }
-
-	   inline size_t operator()(const TexturePoolDescriptor& desc) const
-	   {
-		   size_t hash = 0;
-
-		   hashCombine(hash, desc.width);
-		   hashCombine(hash, desc.height);
-		   hashCombine(hash, static_cast<U32>(desc.format));
-		   hashCombine(hash, desc.numMipLevels);
-		   //hashCombine(hash, desc.antialiasLevel);
-
-		   return hash;
-	   }
-   };
-
-   typedef std::unordered_map <
-	   TexturePoolDescriptor,
-	   std::vector<StrongRefPtr<GFXTextureObject>>,
-	   TexturePoolDescriptorHash
-   > TexturePoolValue;
-
-   typedef std::unordered_map<GFXTextureProfile*, TexturePoolValue> TexturePoolMap;
+   typedef HashTable<GFXTextureProfile*,StrongRefPtr<GFXTextureObject> > TexturePoolMap;
 
    /// All the allocated texture pool textures.
    TexturePoolMap mTexturePool;
@@ -315,12 +248,12 @@ protected:
    /// Returns a free texture of the requested attributes from
    /// from the shared texture pool.  It returns NULL if no match
    /// is found.
-   GFXTextureObject* _findPooledTexure(U32 width,
-	   U32 height,
-	   GFXFormat format,
-	   GFXTextureProfile* profile,
-	   U32 numMipLevels,
-	   S32 antialiasLevel);
+   GFXTextureObject* _findPooledTexure(   U32 width, 
+                                          U32 height, 
+                                          GFXFormat format, 
+                                          GFXTextureProfile *profile,
+                                          U32 numMipLevels,
+                                          S32 antialiasLevel );
 
    GFXTextureObject *_createTexture(   GBitmap *bmp,
                                        const String &resourceName,
@@ -422,10 +355,6 @@ protected:
 
    /// The texture event signal.
    static EventSignal smEventSignal;
-
-protected:
-	// Mutex for hash table cache, linked list, cubemap table and waiting for delete texture list
-	Mutex                  mMutex;
 };
 
 

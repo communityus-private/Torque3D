@@ -146,8 +146,3 @@ void NamedTexTarget::getShaderMacros( Vector<GFXShaderMacro> *outMacros )
       outMacros->push_back( macro );
    }
 }
-
-void NamedTexTarget::sCleanUp()
-{
-	smTargets.clear();
-}

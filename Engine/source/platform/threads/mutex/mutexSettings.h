@@ -23,8 +23,7 @@
 #ifndef _PLATFORM_THREADS_MUTEX_MUTEX_SETTINGS_H_
 #define _PLATFORM_THREADS_MUTEX_MUTEX_SETTINGS_H_
 
-#include  <thread>
-std::thread::id gNullThreadID;
+//#include  <thread>
 
 namespace MutexDetails
 {

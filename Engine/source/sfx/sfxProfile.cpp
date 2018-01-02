@@ -136,7 +136,7 @@ bool SFXProfile::onAdd()
       // If preload is enabled we load the resource
       // and device buffer now to avoid a delay on
       // first playback.
-      if( mPreload && !_preloadBuffer() )
+      //if( mPreload && !_preloadBuffer() )
          Con::errorf( "SFXProfile(%s)::onAdd: The preload failed!", getName() );
    }
 

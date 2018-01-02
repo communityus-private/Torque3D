@@ -76,7 +76,7 @@ namespace ImageUtil
       CompressQuality quality;
 
       CompressJob(const U8 *srcRGBA, U8 *dst, const S32 w, const S32 h, const GFXFormat compressFormat, const CompressQuality compressQuality)
-		  : pSrc(srcRGBA), pDst(dst), width(w), height(h), format(compressFormat), quality(compressQuality) { flags = NULL; }
+		  : pSrc(srcRGBA), pDst(dst), width(w), height(h), format(compressFormat), quality(compressQuality) { flags = FlagMainThreadOnly; }
 
    protected:
       virtual void execute()
@@ -103,7 +103,7 @@ namespace ImageUtil
    }
 
    // compress DDSFile
-   bool ddsCompress(DDSFile *srcDDS, const GFXFormat compressFormat,const CompressQuality compressQuality)
+   bool ddsCompress(DDSFile *srcDDS, const GFXFormat compressFormat, const CompressQuality compressQuality)
    {
       if (srcDDS->mBytesPerPixel != 4)
       {
@@ -123,14 +123,14 @@ namespace ImageUtil
       // We got this far, so assume we can finish (gosh I hope so)
       srcDDS->mFormat = compressFormat;
       srcDDS->mFlags.set(DDSFile::CompressedData);
-	  
+
       if (cubemap)
       {
          static U32 nCubeFaces = 6;
          Vector<U8*> dstDataStore;
          dstDataStore.setSize(nCubeFaces * mipCount);
 
-		 Vector<ThreadSafeRef<CompressJob>> itemList;
+         Vector<ThreadSafeRef<CompressJob>> itemList;
 
          for (S32 cubeFace = 0; cubeFace < nCubeFaces; cubeFace++)
          {
@@ -145,18 +145,20 @@ namespace ImageUtil
 
                ThreadSafeRef<CompressJob> item(new CompressJob(srcBits, dstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality));
                ThreadPool::instance()->queueWorkItem(item);
-			   itemList.push_back(item);
+               itemList.push_back(item);
             }
          }
 
          //wait for work items to finish
-		 while (itemList.size())
-		 {
-			 for (U32 i = itemList.size(); i >0; i--)
-				 if (itemList[i]->isCompleted())
-					 itemList.erase(i);
-			 _sleep(TickMs);
-		 }
+         /*while (itemList.size())
+         {
+            for (U32 i = itemList.size(); i > 0; i--)
+               if (itemList[i]->isCompleted())
+                  itemList.erase(i);
+            _sleep(TickMs);
+         }*/
+
+         ThreadPool::instance()->waitForWorkItems();
 
          for (S32 cubeFace = 0; cubeFace < nCubeFaces; cubeFace++)
          {
@@ -180,7 +182,7 @@ namespace ImageUtil
          //no point using threading if only 1 mip
          const bool useThreading = bool(mipCount > 1);
 
-		 Vector<ThreadSafeRef<CompressJob>> itemList;
+         Vector<ThreadSafeRef<CompressJob>> itemList;
          for (U32 currentMip = 0; currentMip < mipCount; currentMip++)
          {
             const U8 *pSrcBits = pSrcSurface->mMips[currentMip];
@@ -193,24 +195,26 @@ namespace ImageUtil
             {
                // Create CompressJob item
                ThreadSafeRef<CompressJob> item(new CompressJob(pSrcBits, pDstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality));
-			   ThreadPool::instance()->queueWorkItem(item);
-			   itemList.push_back(item);
+               ThreadPool::instance()->queueWorkItem(item);
+               itemList.push_back(item);
             }
             else
                rawCompress(pSrcBits, pDstBits, srcDDS->getWidth(currentMip), srcDDS->getHeight(currentMip), compressFormat, compressQuality);
 
          }
          //block and wait for CompressJobs to finish
-		 if (useThreading)
-		 {
-			 while (itemList.size())
-			 {
-				 for (S32 i = itemList.size() - 1; i >= 0; i--)
-					 if (itemList[i]->isCompleted())
-						 itemList.erase(i);
-				 _sleep(TickMs);
-			 }
-		 }
+         /* if (useThreading)
+         {
+            while (itemList.size())
+            {
+               for (S32 i = itemList.size() - 1; i >= 0; i--)
+                  if (itemList[i]->isCompleted())
+                     itemList.erase(i);
+               _sleep(TickMs);
+            }
+         }*/
+
+         ThreadPool::instance()->waitForWorkItems();
 
          // Now delete the source surface and replace with new compressed surface
          srcDDS->mSurfaces.pop_back();

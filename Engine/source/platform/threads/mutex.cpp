@@ -30,7 +30,8 @@
 #include "platform/threads/mutex/untracedMutexImpl_impl.h"
 
 #ifndef TORQUE_SHIPPING
-#	include <thread>
+//#	include <thread>
+#include <SDL_thread.h>
 #endif // !TORQUE_SHIPPING
 
 //#define DEBUG_SPEW
@@ -64,7 +65,7 @@ void Mutex::_unlock(MutexImpl::LockID lockID)
 void Mutex::checkOwnerThread() const
 {
 #ifdef _aw_s4_mutexCheck
-	std::thread::id owningThreadID = mMutexImpl.getOwningThreadID();
+   SDL_threadID owningThreadID = mMutexImpl.getOwningThreadID();
    AssertISV(owningThreadID == ThreadManager::getCurrentThreadId(), "Owner thread mismatch");
 #endif // _aw_s4_mutexCheck
 }
@@ -163,17 +164,17 @@ MutexHandle LockableWrapper::extractHandle()
 
 DefineConsoleFunction(testMutexDeadLockDetection, void, (), , "testMutexDeadLockDetection")
 {
-	Mutex testMutex1("test mutex 1");
+	/*Mutex testMutex1("test mutex 1");
 	Mutex testMutex2("test mutex 2");
 
-	std::thread thr1([&]()
+	SDL_Thread thr1([&]()
 	{
 		MutexHandle locker1 = TORQUE_LOCK(testMutex1);
 		std::this_thread::sleep_for(std::chrono::seconds(3));
 		MutexHandle locker2 = TORQUE_LOCK(testMutex2);
 	});
 
-	std::thread thr2([&]()
+   SDL_Thread thr2([&]()
 	{
 		MutexHandle locker2 = TORQUE_LOCK(testMutex2);
 		std::this_thread::sleep_for(std::chrono::seconds(3));
@@ -181,7 +182,7 @@ DefineConsoleFunction(testMutexDeadLockDetection, void, (), , "testMutexDeadLock
 	});
 
 	thr1.join();
-	thr2.join();
+	thr2.join();*/
 }
 
 DefineConsoleFunction(testMutexRecursiveLock, void, (U32 nLockCount), , "testMutexRecursiveLock")

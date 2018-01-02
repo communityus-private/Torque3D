@@ -24,19 +24,7 @@
 #include "platform/threads/semaphore.h"
 #include "platform/threads/mutex.h"
 #include <stdlib.h>
-
-extern std::thread::id gNullThreadID;
-class PlatformThreadData
-{
-public:
-   ThreadRunFunction       mRunFunc;
-   void*                   mRunArg;
-   Thread*                 mThread;
-   Semaphore               mGateway; // default count is 1
-   std::thread::id         mThreadID;
-   std::thread*            mSDTThread;
-   bool                    mDead;
-};
+#include <SDL_thread.h>
 
 ThreadManager::MainThreadId ThreadManager::smMainThreadId;
 
@@ -48,10 +36,10 @@ ThreadManager::MainThreadId ThreadManager::smMainThreadId;
 //               track of the thread's lock here.
 static int ThreadRunHandler(void * arg)
 {
-   PlatformThreadData *mData = reinterpret_cast<PlatformThreadData*>(arg);
+   ThreadData *mData = reinterpret_cast<ThreadData*>(arg);
    Thread *thread = mData->mThread;
 
-   mData->mThreadID = std::this_thread::get_id();//SDL_ThreadID();
+   mData->mThreadID = SDL_ThreadID();
    
    ThreadManager::addThread(thread);
    thread->run(mData->mRunArg);
@@ -59,7 +47,7 @@ static int ThreadRunHandler(void * arg)
 
    bool autoDelete = thread->autoDelete;
    
-   mData->mThreadID = gNullThreadID;
+   mData->mThreadID = 0;
    mData->mDead = true;
    mData->mGateway.release();
    
@@ -74,13 +62,13 @@ Thread::Thread(ThreadRunFunction func, void* arg, bool start_thread, bool autode
 {
    AssertFatal( !start_thread, "Thread::Thread() - auto-starting threads from ctor has been disallowed since the run() method is virtual" );
 
-   mData = new PlatformThreadData;
+   mData = new ThreadData;
    mData->mRunFunc = func;
    mData->mRunArg = arg;
    mData->mThread = this;
-   mData->mThreadID = std::thread::id();
+   mData->mThreadID = SDL_ThreadID();
    mData->mDead = false;
-   mData->mSDTThread = NULL;
+   mData->mSDLThread = NULL;
    autoDelete = autodelete;
 }
 
@@ -90,7 +78,7 @@ Thread::~Thread()
    if( isAlive() )
       join();
 
-   delete mData->mSDTThread;
+   delete mData->mSDLThread;
    delete mData;
 }
 
@@ -108,20 +96,25 @@ void Thread::start( void* arg )
    if( !mData->mRunArg )
       mData->mRunArg = arg;
 
-   mData->mSDTThread = new std::thread(ThreadRunHandler,mData);
+   mData->mSDLThread = SDL_CreateThread(ThreadRunHandler, "", mData);
 }
 
 bool Thread::join()
 {  
-	bool joinable = mData->mSDTThread->joinable();
+   int status;
+
+   SDL_WaitThread(mData->mSDLThread, &status);
+
+	/*bool joinable = mData->mSDLThread->joinable();
 	if (joinable)
-		mData->mSDTThread->join();
+		mData->mSDLThread->join();
 	/*
    mData->mGateway.acquire();
    AssertFatal( !isAlive(), "Thread::join() - thread not dead after join()" );
    mData->mGateway.release();
    */
-   return joinable;
+   //return joinable;
+   return status;
 }
 
 void Thread::run(void* arg)
@@ -135,7 +128,7 @@ bool Thread::isAlive()
    return ( !mData->mDead );
 }
 
-std::thread::id Thread::getId()
+SDL_threadID Thread::getId()
 {
    return mData->mThreadID;
 }
@@ -146,12 +139,12 @@ void Thread::_setName( const char* )
    // that one thread you are looking for is just so much fun.
 }
 
-std::thread::id ThreadManager::getCurrentThreadId()
+SDL_threadID ThreadManager::getCurrentThreadId()
 {
-   return std::this_thread::get_id();
+   return SDL_ThreadID();
 }
 
-bool ThreadManager::compare(std::thread::id threadId_1, std::thread::id threadId_2)
+bool ThreadManager::compare(SDL_threadID threadId_1, SDL_threadID threadId_2)
 {
    return (threadId_1 == threadId_2);
 }

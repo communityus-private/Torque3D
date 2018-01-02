@@ -34,8 +34,6 @@
 #include "core/util/dxt5nmSwizzle.h"
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
-#include "materials/matTextureTarget.h"
-#include "platform/threads/threadPool.h"
 
 using namespace Torque;
 
@@ -75,7 +73,6 @@ void GFXTextureManager::init()
 }
 
 GFXTextureManager::GFXTextureManager()
-	: mMutex("GFXTextureManager::mMutex")
 {
    mListHead = mListTail = NULL;
    mTextureManagerState = GFXTextureManager::Living;
@@ -87,26 +84,13 @@ GFXTextureManager::GFXTextureManager()
       mHashTable[i] = NULL;
 }
 
-void GFXTextureManager::preDestroy()
-{
-	NamedTexTarget::sCleanUp();
-	kill();
-	cleanupPool();
-	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
-	if (mHashTable)
-	{
-		SAFE_DELETE_ARRAY(mHashTable);
-	}
-	mTexturePool.clear();
-}
-
 GFXTextureManager::~GFXTextureManager()
 {
-	const auto ts = mTexturePool.size();
-	const auto cs = mCubemapTable.size();
-	AssertFatal(ts == 0 && cs == 0, "Some textures are not cleaned up!");
-}
+   if( mHashTable )
+      SAFE_DELETE_ARRAY( mHashTable );
 
+   mCubemapTable.clear();
+}
 
 U32 GFXTextureManager::getTextureDownscalePower( GFXTextureProfile *profile )
 {
@@ -136,8 +120,6 @@ void GFXTextureManager::kill()
    // Release everything in the cache we can
    // so we don't leak any textures.
    cleanupCache();
-
-   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    GFXTextureObject *curr = mListHead;
    GFXTextureObject *temp;
@@ -182,9 +164,6 @@ void GFXTextureManager::zombify()
 
 void GFXTextureManager::resurrect()
 {
-	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
-	MutexHandle gfxHandle = TORQUE_LOCK(GFX->mMutex);
-
    // Reupload all the device copies of the textures.
    GFXTextureObject *temp = mListHead;
 
@@ -193,7 +172,6 @@ void GFXTextureManager::resurrect()
       refreshTexture( temp );
       temp = temp->mNext;
    }
-   mutexHandle.unlock();
 
    // Notify callback registries.
    smEventSignal.trigger( GFXResurrect );
@@ -204,7 +182,24 @@ void GFXTextureManager::resurrect()
 
 void GFXTextureManager::cleanupPool()
 {
-	mTexturePool.clear();
+   PROFILE_SCOPE( GFXTextureManager_CleanupPool );
+
+   TexturePoolMap::Iterator iter = mTexturePool.begin();
+   for ( ; iter != mTexturePool.end(); )
+   {
+      if ( iter->value->getRefCount() == 1 )
+      {
+         // This texture is unreferenced, so take the time
+         // now to completely remove it from the pool.
+         TexturePoolMap::Iterator unref = iter;
+         ++iter;
+         unref->value = NULL;
+         mTexturePool.erase( unref );
+         continue;
+      }
+
+      ++iter;
+   }
 }
 
 void GFXTextureManager::requestDeleteTexture( GFXTextureObject *texture )
@@ -223,6 +218,33 @@ void GFXTextureManager::requestDeleteTexture( GFXTextureObject *texture )
 
 void GFXTextureManager::cleanupCache( U32 secondsToLive )
 {
+   PROFILE_SCOPE( GFXTextureManager_CleanupCache );
+
+   U32 killTime = Platform::getTime() - secondsToLive;
+
+   for ( U32 i=0; i < mToDelete.size(); )
+   {
+      GFXTextureObject *tex = mToDelete[i];
+
+      // If the texture was picked back up by a user
+      // then just remove it from the list.
+      if ( tex->getRefCount() != 0 )
+      {
+         mToDelete.erase_fast( i );
+         continue;
+      }
+
+      // If its time has expired delete it for real.
+      if ( tex->mDeleteTime <= killTime )
+      {
+         //Con::errorf( "Killed texture: %s", tex->mTextureLookupName.c_str() );
+         delete tex;
+         mToDelete.erase_fast( i );
+         continue;
+      }
+
+      i++;
+   }
 }
 
 GFXTextureObject *GFXTextureManager::_lookupTexture( const char *hashName, const GFXTextureProfile *profile  )
@@ -233,7 +255,7 @@ GFXTextureObject *GFXTextureManager::_lookupTexture( const char *hashName, const
    if (ret && (ret->mProfile->compareFlags(*profile)))
       return ret;
    else if (ret)
-      Con::warnf("GFXTextureManager::_lookupTexture: Cached texture %s has different profile flags: (%s,%s) ", hashName, ret->mProfile->getName().c_str(), profile->getName().c_str());
+      Con::warnf("GFXTextureManager::_lookupTexture: Cached texture %s has a different profile flag", hashName);
 
    return NULL;
 }
@@ -746,9 +768,7 @@ GFXTextureObject *GFXTextureManager::createTexture( U32 width, U32 height, GFXFo
 
       // Make sure we add it to the pool.
       if ( outTex && profile->isPooled() )
-	  {
-		  mTexturePool[profile][TexturePoolDescriptor(localWidth, localHeight, format, numMips, antialiasLevel)].push_back(outTex);
-	  }
+         mTexturePool.insertEqual( profile, outTex );
    }
 
    if ( !outTex )
@@ -1102,8 +1122,7 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 
    }
 
    U8 rChan, gChan, bChan, aChan;
-   GBitmap *outBitmap = new GBitmap();
-   outBitmap->allocateBitmap(bmp[0]->getWidth(), bmp[0]->getHeight(),false, GFXFormatR8G8B8A8);
+   
    //pack additional bitmaps into the origional
    for (U32 x = 0; x < bmp[0]->getWidth(); x++)
    {
@@ -1126,7 +1145,7 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 
          else
             aChan = 255;
 
-		 outBitmap->setColor(x, y, ColorI(rChan, gChan, bChan, aChan));
+         bmp[0]->setColor(x, y, ColorI(rChan, gChan, bChan, aChan));
       }
    }
 
@@ -1134,72 +1153,57 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(GBitmap*bmp[4], U32 
    if (cacheHit != NULL)
    {
       // Con::errorf("Cached texture '%s'", (resourceName.isNotEmpty() ? resourceName.c_str() : "unknown"));
-	   if (deleteBmp)
-	   {
-		   delete outBitmap;
-		   delete[] bmp;
-	   }
+      if (deleteBmp)
+         delete bmp[0];
       return cacheHit;
    }
 
-   return _createTexture(outBitmap, resourceName, profile, deleteBmp, NULL);
+   return _createTexture(bmp[0], resourceName, profile, deleteBmp, NULL);
 }
 
-GFXTextureObject* GFXTextureManager::_findPooledTexure(U32 width,
-	U32 height,
-	GFXFormat format,
-	GFXTextureProfile* profile,
-	U32 numMipLevels,
-	S32 antialiasLevel)
+GFXTextureObject* GFXTextureManager::_findPooledTexure(  U32 width, 
+                                                         U32 height, 
+                                                         GFXFormat format, 
+                                                         GFXTextureProfile *profile,
+                                                         U32 numMipLevels,
+                                                         S32 antialiasLevel )
 {
+   PROFILE_SCOPE( GFXTextureManager_FindPooledTexure );
 
-	// find by profile
-	const auto& profilePoolItem = mTexturePool.find(profile);
-	if (profilePoolItem != mTexturePool.end())
-	{
-		// find by descriptor
-		const auto& descriptorPool = (*profilePoolItem).second;
+   GFXTextureObject *outTex;
 
-		TexturePoolDescriptor descriptor(width, height, format, numMipLevels, antialiasLevel);
+   // First see if we have a free one in the pool.
+   TexturePoolMap::Iterator iter = mTexturePool.find( profile );
+   for ( ; iter != mTexturePool.end() && iter->key == profile; iter++ )
+   {
+      outTex = iter->value;
 
-		const auto& descriptorPoolItem = descriptorPool.find(descriptor);
-		if (descriptorPoolItem != descriptorPool.end())
-		{
-			// loop through available textures to find unused one
-			const auto& poolItems = (*descriptorPoolItem).second;
+      // If the reference count is 1 then we're the only
+      // ones holding on to this texture and we can hand
+      // it out if the size matches... else its in use.
+      if ( outTex->getRefCount() != 1 )
+         continue;
 
-			for (const auto& textureItem : poolItems)
-			{
-				// If the reference count is 1 then we're the only
-				// ones holding on to this texture and we can hand
-				// it out if the size matches... else its in use.
-				if (textureItem->getRefCount() == 1)
-				{
-					return textureItem;
-				}
+      // Check for a match... if so return it.  The assignment
+      // to a GFXTexHandle will take care of incrementing the
+      // reference count and keeping it from being handed out
+      // to anyone else.
+      if (  outTex->getFormat() == format &&
+            outTex->getWidth() == width &&
+            outTex->getHeight() == height &&            
+            outTex->getMipLevels() == numMipLevels &&
+            outTex->mAntialiasLevel == antialiasLevel )
+         return outTex;
+   }
 
-				// EXCEPT for render targets - render target reuse is allowed
-				// EXCEPT for postFX targets - they need a huge rework to be shareable
-				static bool enableRenderTargetSharing = true;
-				if (enableRenderTargetSharing && profile->isRenderTarget() && (profile != &GFXRenderTargetProfile || profile != &GFXRenderTargetSRGBProfile || profile != &GFXDynamicTextureProfile || profile != &GFXDynamicTextureSRGBProfile))
-				{
-					return textureItem;
-				}
-			}
-		}
-	}
-
-	Con::warnf("GFXTextureManager::_findPooledTexure::failed to find pooled texture, creating a new one (%i %i %i %i)",
-		width, height, static_cast<U32>(format), numMipLevels);
-	return nullptr;
+   return NULL;
 }
 
 void GFXTextureManager::hashInsert( GFXTextureObject *object )
 {
    if ( object->mTextureLookupName.isEmpty() )
       return;
-
-   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
+      
    U32 key = object->mTextureLookupName.getHashCaseInsensitive() % mHashCount;
    object->mHashNext = mHashTable[key];
    mHashTable[key] = object;
@@ -1209,8 +1213,6 @@ void GFXTextureManager::hashRemove( GFXTextureObject *object )
 {
    if ( object->mTextureLookupName.isEmpty() )
       return;
-
-   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    U32 key = object->mTextureLookupName.getHashCaseInsensitive() % mHashCount;
    GFXTextureObject **walk = &mHashTable[key];
@@ -1229,8 +1231,6 @@ GFXTextureObject* GFXTextureManager::hashFind( const String &name )
 {
    if ( name.isEmpty() )
       return NULL;
-
-   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    U32 key = name.getHashCaseInsensitive() % mHashCount;
    GFXTextureObject *walk = mHashTable[key];
@@ -1256,8 +1256,6 @@ void GFXTextureManager::refreshTexture(GFXTextureObject *texture)
 
 void GFXTextureManager::_linkTexture( GFXTextureObject *obj )
 {
-	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
-
    // info for the profile
    GFXTextureProfile::updateStatsForCreation(obj);
 
@@ -1285,8 +1283,6 @@ void GFXTextureManager::deleteTexture( GFXTextureObject *texture )
       texture->mTextureLookupName.c_str()
    );
    #endif
-
-   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    if( mListHead == texture )
       mListHead = texture->mNext;
@@ -1393,12 +1389,10 @@ void GFXTextureManager::_validateTexParams( const U32 width, const U32 height,
 GFXCubemap* GFXTextureManager::createCubemap( const Torque::Path &path )
 {
    // Very first thing... check the cache.
-	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    CubemapTable::Iterator iter = mCubemapTable.find( path.getFullPath() );
    if ( iter != mCubemapTable.end() )
       return iter->value;
 
-   mutexHandle.unlock();
    // Not in the cache... we have to load it ourselves.
 
    // First check for a DDS file.
@@ -1424,7 +1418,6 @@ GFXCubemap* GFXTextureManager::createCubemap( const Torque::Path &path )
    cubemap->_setPath( path.getFullPath() );
 
    // Store the cubemap into the cache.
-   MutexHandle mutexHandle2 = TORQUE_LOCK(mMutex);
    mCubemapTable.insertUnique( path.getFullPath(), cubemap );
 
    return cubemap;
@@ -1436,7 +1429,6 @@ void GFXTextureManager::releaseCubemap( GFXCubemap *cubemap )
       return;
 
    const String &path = cubemap->getPath();
-   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    CubemapTable::Iterator iter = mCubemapTable.find( path );
    if ( iter != mCubemapTable.end() && iter->value == cubemap )
@@ -1451,7 +1443,6 @@ void GFXTextureManager::releaseCubemap( GFXCubemap *cubemap )
 
 void GFXTextureManager::_onFileChanged( const Torque::Path &path )
 {
-	MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
    String pathNoExt = Torque::Path::Join( path.getRoot(), ':', path.getPath() );
    pathNoExt = Torque::Path::Join( pathNoExt, '/', path.getFileName() );
 
@@ -1480,9 +1471,6 @@ void GFXTextureManager::_onFileChanged( const Torque::Path &path )
 
 void GFXTextureManager::reloadTextures()
 {
-	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
-	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
-
    GFXTextureObject *tex = mListHead;
 
    while ( tex != NULL ) 
@@ -1508,139 +1496,6 @@ void GFXTextureManager::reloadTextures()
 
       tex = tex->mNext;
    }
-}
-
-void GFXTextureManager::reloadTextures(std::unordered_map<GFXTextureObject*, Resource<DDSFile>>& ddsFiles, std::unordered_map<GFXTextureObject*, Resource<GBitmap>>& bmpFiles)
-{
-	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
-	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
-
-	for (GFXTextureObject* tex = mListHead; tex != nullptr; tex = tex->mNext)
-	{
-		std::unordered_map<GFXTextureObject*, Resource<DDSFile>>::iterator dds = ddsFiles.find(tex);
-		if (dds != ddsFiles.end())
-		{
-			_createTexture(dds->second, dds->first->mProfile, false, dds->first);
-		}
-		else
-		{
-			
-			std::unordered_map<GFXTextureObject*, Resource<GBitmap>>::iterator bmp = bmpFiles.find(tex);
-			if (bmp != bmpFiles.end())
-			{
-				_createTexture(bmp->second, bmp->first->mTextureLookupName, bmp->first->mProfile, false, bmp->first);
-			}
-		}
-	}
-}
-
-class LoadTexturesWorker : public ThreadPool::WorkItem
-{
-public:
-
-	LoadTexturesWorker(std::unordered_map<GFXTextureObject*, Resource<DDSFile>>&& ddsFiles,
-		std::unordered_map<GFXTextureObject*, Resource<GBitmap>>&& bmpFiles)
-		: mDDSFiles(std::move(ddsFiles)), mBMPFiles(std::move(bmpFiles))
-	{
-		mFlags |= FlagMainThreadOnly;
-	}
-
-	void execute() override
-	{
-		TEXMGR->reloadTextures(mDDSFiles, mBMPFiles);
-	}
-
-private:
-	std::unordered_map<GFXTextureObject*, Resource<DDSFile>> mDDSFiles;
-	std::unordered_map<GFXTextureObject*, Resource<GBitmap>> mBMPFiles;
-};
-
-class LoadTexturesSyncWorker : public ThreadPool::WorkItem
-{
-public:
-
-	LoadTexturesSyncWorker()
-	{
-		mFlags |= FlagDoesSynchronousIO;
-	}
-
-	void execute() override
-	{
-		std::unordered_map<GFXTextureObject*, Resource<DDSFile>> ddsFiles;
-		std::unordered_map<GFXTextureObject*, Resource<GBitmap>> bmpFiles;
-
-		for (const auto& data : mData)
-		{
-			if (data.path.getExtension().equal(sDDSExt, String::NoCase))
-			{
-				Resource<DDSFile> dds = DDSFile::load(data.path, data.scalePower);
-
-				if (dds)
-				{
-					ddsFiles[data.tex] = dds;
-				}
-			}
-			else
-			{
-				Resource<GBitmap> bmp = GBitmap::load(data.path);
-
-				if (bmp)
-				{
-					bmpFiles[data.tex] = bmp;
-				}
-			}
-		}
-
-		ThreadPool::instance()->queueWorkItem(new LoadTexturesWorker(std::move(ddsFiles), std::move(bmpFiles)));
-	}
-
-	void addTexture(GFXTextureObject* tex, const Torque::Path path, U32 scalePower)
-	{
-		Data data;
-		data.tex = tex;
-		data.path = path;
-		data.scalePower = scalePower;
-		mData.push_back(data);
-	}
-
-private:
-	struct Data
-	{
-		GFXTextureObject* tex;
-		Torque::Path path;
-		U32 scalePower;
-	};
-
-	std::vector<Data> mData;
-};
-
-void GFXTextureManager::sheduleReloadTextures()
-{
-	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
-	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
-
-	auto worker = std::make_unique<LoadTexturesSyncWorker>();
-
-	for (auto tex = mListHead; tex != nullptr; tex = tex->mNext)
-	{
-		Torque::Path path(tex->mPath);
-		if (!path.isEmpty())
-		{
-			//hack: rename texture
-			String fileName = path.getFileName();
-			path.setFileName(fileName);
-
-
-			if (tex->mPath != path)
-			{
-				tex->mPath = path;
-				const U32 scalePower = TEXMGR->getTextureDownscalePower(tex->mProfile);
-				worker->addTexture(tex, path, scalePower);
-			}
-		}
-	}
-
-	ThreadPool::instance()->queueWorkItem(worker.release());
 }
 
 DefineEngineFunction( flushTextureCache, void, (),,
@@ -1672,44 +1527,4 @@ DefineEngineFunction( reloadTextures, void, (),,
       return;
 
    TEXMGR->reloadTextures();
-}
-
-void GFXTextureManager::dumpTextures()
-{
-	MutexHandle mutexHandleGFX = TORQUE_LOCK(GFX->mMutex);
-	MutexHandle mutexHandleThis = TORQUE_LOCK(mMutex);
-
-	GFXTextureObject* tex = mListHead;
-
-	U32 totalSize = 0, namedSize = 0;
-	Con::printf("******************************* begin dumpTextures **********************************");
-	while (tex != NULL)
-	{
-		totalSize += tex->getEstimatedSizeInBytes();
-
-		Torque::Path path(tex->mPath);
-		if (!path.isEmpty())
-		{
-			namedSize += tex->getEstimatedSizeInBytes();
-			Con::printf("Texture: %s  with size %i", tex->mPath.c_str(), tex->getEstimatedSizeInBytes());
-		}
-
-		tex = tex->mNext;
-	}
-
-	Con::printf("Total texture size: %u  ", totalSize);
-	Con::printf("Internal texture size: %u  ", totalSize - namedSize);
-	Con::printf("******************************* end dumpTextures **********************************");
-}
-
-DefineEngineFunction(dumpTextures, void, (), ,
-	"Dump the textures from disk.\n"
-	"@ingroup GFX\n")
-{
-	if (!GFX || !TEXMGR)
-	{
-		return;
-	}
-
-	TEXMGR->dumpTextures();
 }
