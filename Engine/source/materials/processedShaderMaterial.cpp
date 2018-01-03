@@ -356,7 +356,8 @@ void ProcessedShaderMaterial::_determineFeatures(  U32 stageNum,
    else
    {
       fd.features.addFeature(MFT_RTLighting);
-      fd.features.addFeature(MFT_ReflectionProbes);
+	  if (mMaterial->isTranslucent())
+		  fd.features.addFeature(MFT_ReflectionProbes);
    }
 
    if ( mMaterial->mAnimFlags[stageNum] )
