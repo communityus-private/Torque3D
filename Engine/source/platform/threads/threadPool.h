@@ -96,6 +96,7 @@ private:
 
 	SDL_mutex*                  mMutex;
    SDL_mutex*                  mMainThreadMutex;
+   SDL_cond*                   mWorkerThreadCondition;  //Condition that we're free to continue the main thread, having waited on the background threads
 	SDL_cond*                   mCondition;  //Condition that we're free to run a background thread process
 	std::queue<WorkItem*>       mWorkItems;
 	std::queue<WorkItem*>       mMainThreadWorkItems;

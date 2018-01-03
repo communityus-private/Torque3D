@@ -68,6 +68,7 @@ void ThreadPool::_processBackgroundThreadWorkers()
 			workItem->process();
 			workItem->release();
          mNumberOfActiveWorkThreads--;
+         SDL_CondSignal(mWorkerThreadCondition);
 		}
 	}
 }
@@ -84,6 +85,7 @@ ThreadPool::ThreadPool()
    mPhysicalThreadsMutex = SDL_CreateMutex();
    mMutex = SDL_CreateMutex();
    mCondition = SDL_CreateCond();
+   mWorkerThreadCondition = SDL_CreateCond();
 
 	int32_t numPhysicalThreads = std::thread::hardware_concurrency();
 	int32_t numBackgroundThreads = std::max(numPhysicalThreads - 1, 1);
@@ -268,11 +270,14 @@ bool ThreadPool::isPoolThreadID(SDL_threadID threadID) const
 
 bool ThreadPool::waitForWorkItems() const
 {
-   while (mNumberOfActiveWorkThreads > 0)
+   while (!mWorkItems.empty() || mNumberOfActiveWorkThreads > 0)
    {
-      _sleep(32);
+      SDL_LockMutex(mMainThreadMutex);
+      SDL_CondWait(mWorkerThreadCondition, mMainThreadMutex);
    }
 
+   //Just to be sure so we can proceed
+   SDL_UnlockMutex(mMainThreadMutex);
    return true;
 }
 
