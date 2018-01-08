@@ -181,6 +181,9 @@ public:
     StringTableEntry copyModule( ModuleDefinition* pSourceModuleDefinition, const char* pTargetModuleId, const char* pTargetPath, const bool useVersionPathing );
     bool synchronizeDependencies( ModuleDefinition* pRootModuleDefinition, const char* pTargetDependencyPath );
 
+    /// Editing modules
+    bool renameModule(ModuleDefinition* pSourceModuleDefinition, const char* pNewModuleName);
+
     /// Module updates.
     inline bool isModuleMergeAvailable( void ) const { return Platform::isFile( getModuleMergeFilePath() ); }
     bool canMergeModules( const char* pMergeSourcePath );

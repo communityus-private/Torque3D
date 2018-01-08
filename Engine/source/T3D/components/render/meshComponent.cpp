@@ -79,6 +79,8 @@ bool MeshComponent::onAdd()
    // Register for the resource change signal.
    ResourceManager::get().getChangedSignal().notify( this, &MeshComponent::_onResourceChanged );
 
+   mInterfaceData->mIsClient = isClientObject();
+
    return true;
 }
 
@@ -559,4 +561,10 @@ void MeshComponent::onInspect()
 
 void MeshComponent::onEndInspect()
 {
+}
+
+void MeshComponent::ownerTransformSet(MatrixF *mat)
+{
+   MatrixF newTransform = *mat;
+   mInterfaceData->mTransform = newTransform;
 }

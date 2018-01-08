@@ -81,6 +81,8 @@ class GuiDragAndDropControl : public GuiControl
       DECLARE_DESCRIPTION( "A special control that implements drag&drop behavior.\n"
                            "The control will notify other controls as it moves across the canvas.\n"
                            "Content can be attached through dynamic fields or child objects." );
+
+      DECLARE_CALLBACK(void, onControlDragCancelled, ());
 };
 
 #endif

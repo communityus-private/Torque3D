@@ -496,6 +496,8 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
       for (U32 i = 0; i < mNetworkedComponents.size(); i++)
       {
+         NetworkedComponent::UpdateState state = mNetworkedComponents[i].updateState;
+
          if (mNetworkedComponents[i].updateState == NetworkedComponent::Adding)
          {
             const char* className = mComponents[mNetworkedComponents[i].componentIndex]->getClassName();
@@ -752,7 +754,8 @@ void Entity::setComponentNetMask(Component* comp, U32 mask)
       U32 netCompId = mComponents[mNetworkedComponents[i].componentIndex]->getId();
       U32 compId = comp->getId();
 
-      if (netCompId == compId)
+      if (netCompId == compId && 
+         (mNetworkedComponents[i].updateState == NetworkedComponent::None || mNetworkedComponents[i].updateState == NetworkedComponent::Updating))
       {
          mNetworkedComponents[i].updateState = NetworkedComponent::Updating;
          mNetworkedComponents[i].updateMaskBits |= mask;
@@ -1281,7 +1284,7 @@ bool Entity::addComponent(Component *comp)
 
    //if we've already been added and this is being added after the fact(at runtime), 
    //then just go ahead and call it's onComponentAdd so it can get to work
-   if (mInitialized)
+   //if (mInitialized)
    {
       comp->onComponentAdd();
 
@@ -1408,7 +1411,7 @@ Component *Entity::getComponent(String componentType)
          Namespace *NS = comp->getNamespace();
 
          //we shouldn't ever go past Component into net object, as we're no longer dealing with component classes
-         while (dStrcmp(NS->getName(), "NetObject"))
+         while (dStrcmp(NS->getName(), "SimObject"))
          {
             String namespaceName = NS->getName();
 

@@ -1068,10 +1068,14 @@ singleton GuiControlProfile( GuiMenuBarProfile )
 {
    fillcolor = "255 255 255";
    fillcolorHL = "213 231 248";
-   borderColor = "98 163 229";
-   borderColorHL = "122 177 232";
-   border = 0;
+   
+   fontColorNA = "180 180 180";
+   
+   border = 1;
    borderThickness = 1;
+   borderColor = "128 128 128";
+   borderColorHL = "122 177 232";
+   
    opaque = true;
    mouseOverSelected = true;
    category = "Editor";

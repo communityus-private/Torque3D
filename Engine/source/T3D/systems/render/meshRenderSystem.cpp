@@ -9,6 +9,10 @@ void MeshRenderSystem::render(SceneManager *sceneManager, SceneRenderState* stat
 
    for (U32 i = 0; i < smInterfaceList.size(); i++)
    {
+      //Server side items exist for data, but we don't actually render them
+      if (!smInterfaceList[i].mIsClient)
+         continue;
+
       //First, do frustum culling
       if (viewFrustum.isCulled(smInterfaceList[i].mBounds))
          continue;

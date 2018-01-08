@@ -152,6 +152,9 @@ ConsoleDocClass( GuiDragAndDropControl,
    "@ingroup GuiUtil"
 );
 
+IMPLEMENT_CALLBACK(GuiDragAndDropControl, onControlDragCancelled, void, (), (),
+   "Called when the we cancel out of the drag and drop action.\n"
+   "@see GuiDragAndDropControl::onControlDragCancelled");
 
 //-----------------------------------------------------------------------------
 
@@ -226,8 +229,10 @@ void GuiDragAndDropControl::onMouseUp(const GuiEvent& event)
    mouseUnlock();
 
    GuiControl* target = findDragTarget( event.mousePoint, "onControlDropped" );
-   if( target )
-      target->onControlDropped_callback( dynamic_cast< GuiControl* >( at( 0 ) ), getDropPoint() );
+   if (target)
+      target->onControlDropped_callback(dynamic_cast<GuiControl*>(at(0)), getDropPoint());
+   else
+      onControlDragCancelled_callback();
 
    if( mDeleteOnMouseUp )
       deleteObject();
@@ -239,6 +244,10 @@ GuiControl* GuiDragAndDropControl::findDragTarget( Point2I mousePoint, const cha
 {
    // If there are any children and we have a parent.
    GuiControl* parent = getParent();
+
+   if (!parent)
+      parent = getRoot();
+
    if (size() && parent)
    {
       mVisible = false;

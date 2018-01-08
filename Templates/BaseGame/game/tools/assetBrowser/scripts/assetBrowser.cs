@@ -350,7 +350,7 @@ function AssetBrowser::buildPreviewArray( %this, %asset, %moduleName )
    
    %previewNameCtrl = new GuiTextEditCtrl(){
          position = 0 SPC %previewSize.y + %previewBounds - 16;
-         profile = "ToolsGuiTextEditCenterProfile";
+         profile = ToolsGuiDefaultProfile; //"ToolsGuiTextEditCenterProfile";
          extent = %previewSize.x + %previewBounds SPC 16;
          text = %assetName;
          originalAssetName = %assetName; //special internal field used in renaming assets
@@ -812,6 +812,13 @@ function AssetPreviewButton::onRightClick(%this)
 {
    AssetBrowser.selectedAssetPreview = %this.getParent();
    EditAssetPopup.assetId = %this.getParent().moduleName @ ":" @ %this.getParent().assetName;
+   
+   //Do some enabling/disabling of options depending on asset type
+   if(true)
+   {
+      EditAssetPopup.enableItem(0, false);
+      EditAssetPopup.enableItem(7, false);
+   }
    EditAssetPopup.showPopup(Canvas);  
 }
 
@@ -1080,6 +1087,17 @@ function AssetPreviewButton::onMouseDragged(%this)
    %xPos = getWord( %cursorpos, 0 ) - %xOffset;
    %yPos = getWord( %cursorpos, 1 ) - %yOffset;
    
+   if(!isObject(EditorDragAndDropLayer))
+   {
+      %canvasExtent = Canvas.getExtent();
+      new GuiControl(EditorDragAndDropLayer)
+      {
+         profile = GuiModelessDialogProfile;
+         position = "0 0";
+         extent = %canvasExtent;
+      };
+   }
+   
    // Create the drag control.
    %ctrl = new GuiDragAndDropControl()
    {
@@ -1107,12 +1125,27 @@ function AssetPreviewButton::onMouseDragged(%this)
    %ctrl.add( %payload );
    
    // Start drag by adding the drag control to the canvas and then calling startDragging().
-   Canvas.getContent().add( %ctrl );
+   //Canvas.getContent().add( %ctrl );
+   //Canvas.pushDialog(EditorDragAndDropLayer);
+   //Canvas.addGuiControl(%ctrl);
+   //EditorDragAndDropLayer.add( %ctrl );
    %ctrl.startDragging( %xOffset, %yOffset );
+}
+
+function AssetPreviewButton::onControlDragEnter(%this, %payload, %position)
+{
+   echo("Dragging a asset preview over ctrl: " @ %payload.getClassName());
+}
+
+function AssetPreviewControlType_AssetDrop::onControlDragCancelled( %this )
+{
+   //Canvas.popDialog(EditorDragAndDropLayer);
 }
 
 function AssetPreviewButton::onControlDropped( %this, %payload, %position )
 {
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
    // Make sure this is a color swatch drag operation.
    if( !%payload.parentGroup.isInNamespaceHierarchy( "AssetPreviewControlType_AssetDrop" ) )
       return;

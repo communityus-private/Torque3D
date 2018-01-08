@@ -314,6 +314,8 @@ bool FileDialog::Execute()
       }
    }
 
+   S32 length = resultPath.length();
+
    // Return success.
    return true;
 }

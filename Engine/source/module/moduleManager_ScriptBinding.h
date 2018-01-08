@@ -256,6 +256,30 @@ DefineEngineMethod(ModuleManager, copyModule, String, (const char* sourceModuleD
 
 //-----------------------------------------------------------------------------
 
+DefineEngineMethod(ModuleManager, renameModule, bool, (const char* sourceModuleDefinition, const char* pNewModuleName),
+("", ""),
+"Copy the module to a new location with a new module Id.\n"
+"@param sourceModuleDefinition The module definition to copy.\n"
+"@param pNewModuleName The new name the module should have.\n"
+"@return Weither the rename was successful or not.\n")
+{
+   // Find the source module definition.
+   ModuleDefinition* pSourceModuleDefinition = dynamic_cast<ModuleDefinition*>(Sim::findObject(sourceModuleDefinition));
+
+   // Was the module definition found?
+   if (pSourceModuleDefinition == NULL)
+   {
+      // No, so warn.
+      Con::warnf("ModuleManager::renameModule() - Could not find source module definition '%s'.", sourceModuleDefinition);
+      return "";
+   }
+
+   // Copy module.
+   return object->renameModule(pSourceModuleDefinition, pNewModuleName);
+}
+
+//-----------------------------------------------------------------------------
+
 DefineEngineMethod(ModuleManager, synchronizeDependencies, bool, (const char* rootModuleDefinition, const char* pTargetDependencyFolder), ("", ""),
    "Synchronize the module dependencies of a module definition to a target dependency folder.\n"
    "@param rootModuleDefinition The module definition used to determine dependencies.\n"

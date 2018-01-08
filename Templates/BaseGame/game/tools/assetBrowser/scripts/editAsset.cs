@@ -244,3 +244,12 @@ function AssetBrowser::renameAsset(%this)
    AssetBrowser.selectedAssetPreview-->AssetNameLabel.setActive(true);
    AssetBrowser.selectedAssetPreview-->AssetNameLabel.setFirstResponder();
 }
+
+function AssetBrowser::duplicateAsset(%this)
+{
+   %assetDef = AssetDatabase.acquireAsset(EditAssetPopup.assetId);
+   
+   
+   
+   %this.setupCreateNewAsset(%assetDef.getClassName(), AssetBrowser.selectedModule);
+}

@@ -25,9 +25,11 @@ function AssetBrowser::buildPopupMenus(%this)
          item[ 2 ] = "Refresh Asset" TAB "" TAB "AssetBrowser.refreshAsset();";
          item[ 3 ] = "Asset Properties" TAB "" TAB "AssetBrowser.editAssetInfo();";
          item[ 4 ] = "-";
-         item[ 4 ] = "Re-Import Asset" TAB "" TAB "AssetBrowser.reImportAsset();";
+         Item[ 5 ] = "Duplicate Asset" TAB "" TAB "AssetBrowser.duplicateAsset();";
          item[ 6 ] = "-";
-         item[ 5 ] = "Delete Asset" TAB "" TAB "AssetBrowser.deleteAsset();";
+         item[ 7 ] = "Re-Import Asset" TAB "" TAB "AssetBrowser.reImportAsset();";
+         item[ 8 ] = "-";
+         item[ 9 ] = "Delete Asset" TAB "" TAB "AssetBrowser.deleteAsset();";
 
          jumpFileName = "";
          jumpLineNumber = "";
@@ -114,9 +116,13 @@ function AssetBrowser::buildPopupMenus(%this)
          //isPopup = true;
          
          item[ 0 ] = "Create New Asset" TAB AddNewAssetPopup;
-         item[ 1 ] = "Edit Module" TAB "" TAB "";
-         Item[ 2 ] = "";
-         Item[ 3 ] = "Delete Module" TAB "" TAB "";
+         item[ 1 ] = "Reload Module" TAB "" TAB "AssetBrowser.reloadModule();";
+         Item[ 2 ] = "-";
+         Item[ 3 ] = "Rename Module" TAB "" TAB "AssetBrowser.renameModule();";
+         Item[ 4 ] = "-";
+         Item[ 5 ] = "Duplicate Module" TAB "" TAB "AssetBrowser.copyModule();";
+         Item[ 6 ] = "-";
+         Item[ 7 ] = "Delete Module" TAB "" TAB "AssetBrowser.deleteModule();";
       };
    }
 }

@@ -42,9 +42,12 @@ function initializeAssetBrowser()
    exec("./scripts/popupMenus.cs");
    exec("./scripts/addPackageWindow.cs");
    exec("./scripts/assetImport.cs");
+   exec("./scripts/assetImportConfig.cs");
    exec("./scripts/gameObjectCreator.cs");
    exec("./scripts/newAsset.cs");
    exec("./scripts/editAsset.cs");
+   exec("./scripts/editModule.cs");   
+   
    exec("./scripts/fieldTypes.cs");
    
    new ScriptObject( AssetBrowserPlugin )

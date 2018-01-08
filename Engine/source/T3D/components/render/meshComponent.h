@@ -135,6 +135,8 @@ public:
    virtual void onComponentRemove();
    virtual void onComponentAdd();
 
+   virtual void ownerTransformSet(MatrixF *mat);
+
    static bool _setMesh(void *object, const char *index, const char *data);
    static bool _setShape(void *object, const char *index, const char *data);
    const char* _getShape(void *object, const char *data);

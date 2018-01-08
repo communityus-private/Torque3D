@@ -20,6 +20,8 @@ public:
    Box3F						   mBounds;
    SphereF                 mSphere;
 
+   bool                    mIsClient;
+
    struct matMap
    {
       //MaterialAsset* matAsset;
