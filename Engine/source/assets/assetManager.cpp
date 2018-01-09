@@ -61,6 +61,15 @@
 #ifndef COMPONENTASSET_H
 #include "T3D/assets/ComponentAsset.h"
 #endif
+#ifndef GUI_ASSET_H
+#include "T3D/assets/GUIAsset.h"
+#endif
+#ifndef SCRIPT_ASSET_H
+#include "T3D/assets/ScriptAsset.h"
+#endif
+#ifndef MATERIALASSET_H
+#include "T3D/assets/MaterialAsset.h"
+#endif
 
 // Script bindings.
 #include "assetManager_ScriptBinding.h"
@@ -250,6 +259,18 @@ bool AssetManager::loadModuleAutoLoadAssets(ModuleDefinition* pModuleDefinition)
             if (assetDef->mAssetType == StringTable->insert("ComponentAsset"))
             {
                assetBase = mTaml.read<ComponentAsset>(assetDef->mAssetBaseFilePath);
+            }
+            else if (assetDef->mAssetType == StringTable->insert("GUIAsset"))
+            {
+               assetBase = mTaml.read<GUIAsset>(assetDef->mAssetBaseFilePath);
+            }
+            else if (assetDef->mAssetType == StringTable->insert("ScriptAsset"))
+            {
+               assetBase = mTaml.read<ScriptAsset>(assetDef->mAssetBaseFilePath);
+            }
+            else if (assetDef->mAssetType == StringTable->insert("MaterialAsset"))
+            {
+               assetBase = mTaml.read<MaterialAsset>(assetDef->mAssetBaseFilePath);
             }
 
             //load the asset now if valid

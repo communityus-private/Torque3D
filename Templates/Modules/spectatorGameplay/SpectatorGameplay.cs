@@ -58,8 +58,8 @@ function SpectatorGameplay::create( %this )
       exec("data/spectatorGameplay/scripts/client/inputCommands.cs");
       
       //guis
-      exec("./scripts/gui/playGui.gui");
-      exec("./scripts/gui/playGui.cs");
+      //exec("./scripts/gui/playGui.gui");
+      //exec("./scripts/gui/playGui.cs");
    }
 }
 

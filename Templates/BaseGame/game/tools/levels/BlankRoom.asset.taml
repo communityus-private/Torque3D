@@ -1,0 +1,7 @@
+<LevelAsset
+    canSave="true"
+    canSaveDynamicFields="true"
+    AssetName="BlankRoomTemplate"
+    LevelFile="tools/levels/BlankRoom.mis"
+    LevelDescription="A basic blank room template"
+    VersionId="1" />

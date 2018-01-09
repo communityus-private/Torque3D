@@ -1,0 +1,7 @@
+<GUIAsset
+    canSave="true"
+    canSaveDynamicFields="true"
+    AssetName="PlayGui"
+    scriptFilePath="data/spectatorGameplay/GUIs/playGui.cs"
+    GUIFilePath="data/spectatorGameplay/GUIs/playGui.gui"
+    VersionId="1" />

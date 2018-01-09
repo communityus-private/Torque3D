@@ -7,4 +7,14 @@
 	DestroyFunction="destroy"
 	Group="Game"
 	Dependencies="clientServer=1,UI=1">
+	<DeclaredAssets
+        canSave="true"
+        canSaveDynamicFields="true"
+        Extension="asset.taml"
+        Recurse="true" />
+	<AutoloadAssets
+        canSave="true"
+        canSaveDynamicFields="true"
+        AssetType="GUIAsset"
+        Recurse="true" />
 </ModuleDefinition>

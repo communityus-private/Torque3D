@@ -157,12 +157,20 @@ IMPLEMENT_CALLBACK(GuiDragAndDropControl, onControlDragCancelled, void, (), (),
    "@see GuiDragAndDropControl::onControlDragCancelled");
 
 //-----------------------------------------------------------------------------
+GuiDragAndDropControl::GuiDragAndDropControl() : mDeleteOnMouseUp(true), mUseWholeCanvas(false)
+{
+
+}
 
 void GuiDragAndDropControl::initPersistFields()
 {
    addField( "deleteOnMouseUp", TypeBool, Offset( mDeleteOnMouseUp, GuiDragAndDropControl ),
       "If true, the control deletes itself when the left mouse button is released.\n\n"
       "If at this point, the drag&drop control still contains its payload, it will be deleted along with the control." );
+
+   addField("useWholeCanvas", TypeBool, Offset(mUseWholeCanvas, GuiDragAndDropControl),
+      "If true, the control deletes itself when the left mouse button is released.\n\n"
+      "If at this point, the drag&drop control still contains its payload, it will be deleted along with the control.");
    
    Parent::initPersistFields();
 }
@@ -174,8 +182,8 @@ void GuiDragAndDropControl::startDragging( Point2I offset )
    GuiCanvas* canvas = getRoot();
    if( !canvas )
    {
-      Con::errorf( "GuiDragAndDropControl::startDragging - GuiDragAndDropControl wasn't added to the gui before the drag started." );
-      if( mDeleteOnMouseUp )
+      Con::errorf("GuiDragAndDropControl::startDragging - GuiDragAndDropControl wasn't added to the gui before the drag started.");
+      if (mDeleteOnMouseUp)
          deleteObject();
       return;
    }
@@ -245,8 +253,11 @@ GuiControl* GuiDragAndDropControl::findDragTarget( Point2I mousePoint, const cha
    // If there are any children and we have a parent.
    GuiControl* parent = getParent();
 
-   if (!parent)
+   if (mUseWholeCanvas)
+   {
+      parent->setVisible(false);
       parent = getRoot();
+   }
 
    if (size() && parent)
    {
@@ -261,6 +272,10 @@ GuiControl* GuiDragAndDropControl::findDragTarget( Point2I mousePoint, const cha
             dropControl = dropControl->getParent();
       }
    }
+
+   if(mUseWholeCanvas)
+      parent->setVisible(true);
+
    return NULL;
 }
 

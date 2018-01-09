@@ -68,39 +68,6 @@ function GuiEditContent( %content )
    $InGuiEditor = true;
 }
 
-function toggleGuiEditor( %make )
-{
-   if( %make )
-   {
-      if( EditorIsActive() && !GuiEditor.toggleIntoEditorGui )
-         toggleEditor( true );
-         
-      if( !isObject( GuiEditCanvas ) )
-         new GuiControl( GuiEditCanvas, EditorGuiGroup );
-      
-      if( GuiEditorIsActive() )
-      {
-         GuiEditor.close();
-      }
-      else
-      {
-         GuiEditor.open();
-      
-         // Cancel the scheduled event to prevent
-         // the level from cycling after it's duration
-         // has elapsed.
-         cancel($Game::Schedule);
-      }
-      
-      // Cancel the scheduled event to prevent
-      // the level from cycling after it's duration
-      // has elapsed.
-      cancel($Game::Schedule);
-   }
-}
-
-GlobalActionMap.bind( keyboard, "f10", toggleGuiEditor );
-
 //=============================================================================================
 //    Methods.
 //=============================================================================================

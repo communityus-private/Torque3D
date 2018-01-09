@@ -1089,12 +1089,10 @@ function AssetPreviewButton::onMouseDragged(%this)
    
    if(!isObject(EditorDragAndDropLayer))
    {
-      %canvasExtent = Canvas.getExtent();
       new GuiControl(EditorDragAndDropLayer)
       {
-         profile = GuiModelessDialogProfile;
          position = "0 0";
-         extent = %canvasExtent;
+         extent = Canvas.extent;
       };
    }
    
@@ -1115,6 +1113,8 @@ function AssetPreviewButton::onMouseDragged(%this)
       // Let the GuiDragAndDropControl delete itself on mouse-up.  When the drag is aborted,
       // this not only deletes the drag control but also our payload.
       deleteOnMouseUp         = true;
+      
+      useWholeCanvas = true;
 
       // To differentiate drags, use the namespace hierarchy to classify them.
       // This will allow a color swatch drag to tell itself apart from a file drag, for example.
@@ -1126,20 +1126,15 @@ function AssetPreviewButton::onMouseDragged(%this)
    
    // Start drag by adding the drag control to the canvas and then calling startDragging().
    //Canvas.getContent().add( %ctrl );
-   //Canvas.pushDialog(EditorDragAndDropLayer);
-   //Canvas.addGuiControl(%ctrl);
-   //EditorDragAndDropLayer.add( %ctrl );
+   EditorDragAndDropLayer.add(%ctrl);
+   Canvas.pushDialog(EditorDragAndDropLayer);
+   
    %ctrl.startDragging( %xOffset, %yOffset );
 }
 
-function AssetPreviewButton::onControlDragEnter(%this, %payload, %position)
+function AssetPreviewButton::onControlDragCancelled(%this)
 {
-   echo("Dragging a asset preview over ctrl: " @ %payload.getClassName());
-}
-
-function AssetPreviewControlType_AssetDrop::onControlDragCancelled( %this )
-{
-   //Canvas.popDialog(EditorDragAndDropLayer);
+   Canvas.popDialog(EditorDragAndDropLayer);
 }
 
 function AssetPreviewButton::onControlDropped( %this, %payload, %position )
@@ -1176,6 +1171,8 @@ function AssetPreviewButton::onControlDropped( %this, %payload, %position )
 
 function EWorldEditor::onControlDropped( %this, %payload, %position )
 {
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
    // Make sure this is a color swatch drag operation.
    if( !%payload.parentGroup.isInNamespaceHierarchy( "AssetPreviewControlType_AssetDrop" ) )
       return;
@@ -1240,6 +1237,8 @@ function EWorldEditor::onControlDropped( %this, %payload, %position )
 
 function GuiInspectorTypeShapeAssetPtr::onControlDropped( %this, %payload, %position )
 {
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
    // Make sure this is a color swatch drag operation.
    if( !%payload.parentGroup.isInNamespaceHierarchy( "AssetPreviewControlType_AssetDrop" ) )
       return;
@@ -1264,6 +1263,8 @@ function GuiInspectorTypeShapeAssetPtr::onControlDropped( %this, %payload, %posi
 
 function GuiInspectorTypeImageAssetPtr::onControlDropped( %this, %payload, %position )
 {
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
    // Make sure this is a color swatch drag operation.
    if( !%payload.parentGroup.isInNamespaceHierarchy( "AssetPreviewControlType_AssetDrop" ) )
       return;
@@ -1280,6 +1281,8 @@ function GuiInspectorTypeImageAssetPtr::onControlDropped( %this, %payload, %posi
 
 function GuiInspectorTypeMaterialAssetPtr::onControlDropped( %this, %payload, %position )
 {
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
    // Make sure this is a color swatch drag operation.
    if( !%payload.parentGroup.isInNamespaceHierarchy( "AssetPreviewControlType_AssetDrop" ) )
       return;
@@ -1296,6 +1299,8 @@ function GuiInspectorTypeMaterialAssetPtr::onControlDropped( %this, %payload, %p
 
 function AssetBrowserFilterTree::onControlDropped( %this, %payload, %position )
 {
+   Canvas.popDialog(EditorDragAndDropLayer);
+   
    if( !%payload.parentGroup.isInNamespaceHierarchy( "AssetPreviewControlType_AssetDrop" ) )
       return;
       
