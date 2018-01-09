@@ -50,16 +50,20 @@ SoundComponent::SoundComponent() : Component()
 
    mFriendlyName = "Sound(Component)";
    mComponentType = "Sound";
-   mDescription = getDescriptionText("Stores up to 4 sounds for playback.");
+   mDescription = getDescriptionText("Stores up to 16 sounds for playback.");
 
    for (U32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++) {
       mSoundThread[slotNum].play = false;
       mSoundThread[slotNum].profile = 0;
       mSoundThread[slotNum].sound = 0;
+	  mSoundThread[slotNum].pitch = 1;
+	  mSoundThread[slotNum].volume = 1;
 
       mSoundFile[slotNum] = NULL;
       mPreviewSound[slotNum] = false;
       mPlay[slotNum] = false;
+	  mPitch[slotNum] = 1;
+	  mVolume[slotNum] = 1;
    }
 }
 
@@ -133,6 +137,8 @@ void SoundComponent::initPersistFields()
    addProtectedField("play", TypeBool, Offset(mPlay, SoundComponent),
       &_autoplay, &defaultProtectedGetFn, MaxSoundThreads, "Whether playback of the emitter's sound should start as soon as the emitter object is added to the level.\n"
       "If this is true, the emitter will immediately start to play when the level is loaded.");
+   addField("pitch", TypeF32, Offset(mPitch, SoundComponent), MaxSoundThreads, "Sound Pitch multiplier.\n");
+   addField("volume", TypeF32, Offset(mVolume, SoundComponent), MaxSoundThreads, "Sound Volume multiplier.\n");
    //endArray("Sounds");
    Parent::initPersistFields();
 }
@@ -191,8 +197,17 @@ U32 SoundComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
                //stream->writeRangedU32(st.profile->getId(), DataBlockObjectIdFirst,
                //   DataBlockObjectIdLast);
                stream->writeString(st.profile->getName());
-
          }
+		 if (stream->writeFlag(st.pitch != mPitch[slotNum]))
+		 {
+			 stream->writeFloat(mPitch[slotNum] / 10, 6);
+			 st.pitch = mPitch[slotNum];
+		 }
+		 if (stream->writeFlag(st.volume != mVolume[slotNum]))
+		 {
+			 stream->writeFloat(mVolume[slotNum] / 10, 6);
+			 st.volume = mVolume[slotNum];
+		 }
       }
    }
 
@@ -224,10 +239,14 @@ void SoundComponent::unpackUpdate(NetConnection *con, BitStream *stream)
                if (!Sim::findObject(profileName, st.profile))
                   Con::errorf("Could not find SFXTrack");
             }
-
+			
             //if (isProperlyAdded())
                updateAudioState(st);
          }
+		 if (stream->readFlag())
+			 mPitch[slotNum] = stream->readFloat(6) * 10;
+		 if (stream->readFlag())
+			 mVolume[slotNum] = stream->readFloat(6) * 10;
       }
    }
 }
@@ -246,18 +265,19 @@ void SoundComponent::onEndInspect()
 void SoundComponent::processTick()
 {
    Parent::processTick();
+   updateServerAudio();
 }
 
 //Client-side advance function
 void SoundComponent::advanceTime(F32 dt)
 {
-
+	updateAudio();
 }
 
 //Client-side interpolation function
 void SoundComponent::interpolateTick(F32 delta)
 {
-
+	updateAudio();
 }
 
 void SoundComponent::prepRenderImage(SceneRenderState *state)
@@ -345,7 +365,17 @@ void SoundComponent::updateServerAudio()
       {
          //clearMaskBits(SoundMaskN << slotNum);
          st.play = false;
+		 //insert sound completed callback here
       }
+	  if (st.pitch != mPitch[slotNum])
+	  {
+		  setMaskBits(SoundMask);
+		  
+	  }
+	  if (st.volume != mVolume[slotNum])
+	  {
+		  setMaskBits(SoundMask);
+	  }
    }
 }
 
@@ -357,14 +387,13 @@ void SoundComponent::updateAudioState(Sound& st)
    {
       if (isClientObject())
       {
-         //if (Sim::findObject(SimObjectId((uintptr_t)st.profile), st.profile))
-        // {
-            st.sound = SFX->createSource(st.profile, &mOwner->getTransform());
-            if (st.sound)
-               st.sound->play();
-         //}
-         else
-            st.play = false;
+		  st.sound = SFX->createSource(st.profile, &mOwner->getTransform());
+		  if (st.sound)
+		  {
+			  st.sound->play();
+		  }
+		  else
+			  st.play = false;
       }
       else
       {
@@ -378,13 +407,19 @@ void SoundComponent::updateAudioState(Sound& st)
       st.play = false;
 }
 
-void SoundComponent::updateAudioPos()
+void SoundComponent::updateAudio()
 {
    for (S32 slotNum = 0; slotNum < MaxSoundThreads; slotNum++)
    {
       SFXSource* source = mSoundThread[slotNum].sound;
-      if (source)
-         source->setTransform(mOwner->getTransform());
+	  mSoundThread[slotNum].pitch = mPitch[slotNum];
+	  mSoundThread[slotNum].volume = mVolume[slotNum];
+	  if (source)
+	  {
+		  source->setTransform(mOwner->getTransform());
+		  source->setModulativePitch(mSoundThread[slotNum].pitch);
+		  source->setModulativeVolume(mSoundThread[slotNum].volume);
+	  }
    }
 }
 

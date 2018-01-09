@@ -44,7 +44,7 @@ class SoundComponent : public Component, public RenderComponentInterface, public
 public:
    enum PublicConstants
    {
-      MaxSoundThreads = 4,            ///< Should be a power of 2
+      MaxSoundThreads = 16,            ///< Should be a power of 2
    };
 
    /// @name Network state masks
@@ -67,18 +67,25 @@ public:
       SimTime timeout;              ///< Time until we stop playing this sound.
       SFXTrack* profile;            ///< Profile on server
       SFXSource* sound;             ///< Sound on client
+	  F32 pitch;                    ///< stored pitch multiplier
+	  F32 volume;                   ///< stored volume multiplier
       Sound::Sound()
       {
          play = false;
          timeout = 0;
          profile = NULL;
          sound = NULL;
+		 pitch = 1.0;
+		 volume = 1.0;
       }
    };
    Sound mSoundThread[MaxSoundThreads];
    SFXTrack* mSoundFile[MaxSoundThreads];
    bool mPreviewSound[MaxSoundThreads];
    bool mPlay[MaxSoundThreads];
+   F32 mPitch[MaxSoundThreads];            ///< pitch multiplier
+   F32 mVolume[MaxSoundThreads];           ///< volume multiplier
+
    /// @}
 
    SoundComponent();
@@ -114,7 +121,7 @@ public:
    virtual void stopAudio(U32 slot);
    virtual void updateServerAudio();
    virtual void updateAudioState(Sound& st);
-   virtual void updateAudioPos();
+   virtual void updateAudio();
 
    //why god why
    virtual TSShape* getShape() { return NULL; };
