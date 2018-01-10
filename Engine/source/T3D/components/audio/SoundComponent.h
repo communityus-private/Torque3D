@@ -120,7 +120,7 @@ public:
    virtual void playAudio(U32 slotNum, SFXTrack* profile = NULL);
    virtual void stopAudio(U32 slot);
    virtual void updateServerAudio();
-   virtual void updateAudioState(Sound& st);
+   virtual void updateAudioPlayback(Sound& st);
    virtual void updateAudio();
 
    //why god why

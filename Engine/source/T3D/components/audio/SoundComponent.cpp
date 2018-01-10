@@ -197,17 +197,18 @@ U32 SoundComponent::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
                //stream->writeRangedU32(st.profile->getId(), DataBlockObjectIdFirst,
                //   DataBlockObjectIdLast);
                stream->writeString(st.profile->getName());
+
+			if (stream->writeFlag(st.pitch != mPitch[slotNum]))
+			{
+				stream->writeFloat(mPitch[slotNum] / 10, 6);
+				st.pitch = mPitch[slotNum];
+			}
+			if (stream->writeFlag(st.volume != mVolume[slotNum]))
+			{
+				stream->writeFloat(mVolume[slotNum] / 10, 6);
+				st.volume = mVolume[slotNum];
+			}
          }
-		 if (stream->writeFlag(st.pitch != mPitch[slotNum]))
-		 {
-			 stream->writeFloat(mPitch[slotNum] / 10, 6);
-			 st.pitch = mPitch[slotNum];
-		 }
-		 if (stream->writeFlag(st.volume != mVolume[slotNum]))
-		 {
-			 stream->writeFloat(mVolume[slotNum] / 10, 6);
-			 st.volume = mVolume[slotNum];
-		 }
       }
    }
 
@@ -228,6 +229,7 @@ void SoundComponent::unpackUpdate(NetConnection *con, BitStream *stream)
          if (stream->readFlag())
          {
             Sound& st = mSoundThread[slotNum];
+			bool oldPlayState = st.play;
             st.play = stream->readFlag();
             if (st.play)
             {
@@ -241,12 +243,13 @@ void SoundComponent::unpackUpdate(NetConnection *con, BitStream *stream)
             }
 			
             //if (isProperlyAdded())
-               updateAudioState(st);
+			if (oldPlayState!= st.play)
+				updateAudioPlayback(st);
+			if (stream->readFlag())
+				mPitch[slotNum] = stream->readFloat(6) * 10;
+			if (stream->readFlag())
+				mVolume[slotNum] = stream->readFloat(6) * 10;
          }
-		 if (stream->readFlag())
-			 mPitch[slotNum] = stream->readFloat(6) * 10;
-		 if (stream->readFlag())
-			 mVolume[slotNum] = stream->readFloat(6) * 10;
       }
    }
 }
@@ -338,7 +341,7 @@ void SoundComponent::playAudio(U32 slotNum, SFXTrack* _profile)
       setMaskBits(SoundMaskN << slotNum);
       st.play = true;
       st.profile = profile;
-      updateAudioState(st);
+	  updateAudioPlayback(st);
    }
 }
 
@@ -351,7 +354,7 @@ void SoundComponent::stopAudio(U32 slotNum)
    {
       st.play = false;
       setMaskBits(SoundMaskN << slotNum);
-      updateAudioState(st);
+	  updateAudioPlayback(st);
    }
 }
 
@@ -369,17 +372,17 @@ void SoundComponent::updateServerAudio()
       }
 	  if (st.pitch != mPitch[slotNum])
 	  {
-		  setMaskBits(SoundMask);
+		  setMaskBits(SoundMaskN << slotNum);
 		  
 	  }
 	  if (st.volume != mVolume[slotNum])
 	  {
-		  setMaskBits(SoundMask);
+		  setMaskBits(SoundMaskN << slotNum);
 	  }
    }
 }
 
-void SoundComponent::updateAudioState(Sound& st)
+void SoundComponent::updateAudioPlayback(Sound& st)
 {
    SFX_DELETE(st.sound);
 
@@ -417,6 +420,7 @@ void SoundComponent::updateAudio()
 	  if (source)
 	  {
 		  source->setTransform(mOwner->getTransform());
+		  source->setVelocity(mOwner->getVelocity());
 		  source->setModulativePitch(mSoundThread[slotNum].pitch);
 		  source->setModulativeVolume(mSoundThread[slotNum].volume);
 	  }
