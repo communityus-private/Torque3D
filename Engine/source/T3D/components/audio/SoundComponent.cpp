@@ -243,8 +243,11 @@ void SoundComponent::unpackUpdate(NetConnection *con, BitStream *stream)
             }
 			
             //if (isProperlyAdded())
-			if (oldPlayState!= st.play)
-				updateAudioPlayback(st);
+			if (oldPlayState != st.play)
+			{
+				if (st.play && updateAudioPlayback(st)) doCallback("SoundStarted", slotNum);
+				if (!st.play && !updateAudioPlayback(st)) doCallback("SoundEnded", slotNum);
+			}
 			if (stream->readFlag())
 				mPitch[slotNum] = stream->readFloat(6) * 10;
 			if (stream->readFlag())
@@ -341,7 +344,8 @@ void SoundComponent::playAudio(U32 slotNum, SFXTrack* _profile)
       setMaskBits(SoundMaskN << slotNum);
       st.play = true;
       st.profile = profile;
-	  updateAudioPlayback(st);
+	  if (updateAudioPlayback(st))
+		  doCallback("SoundStarted", slotNum);
    }
 }
 
@@ -354,7 +358,8 @@ void SoundComponent::stopAudio(U32 slotNum)
    {
       st.play = false;
       setMaskBits(SoundMaskN << slotNum);
-	  updateAudioPlayback(st);
+	  if (!updateAudioPlayback(st))
+		  doCallback("SoundEnded", slotNum);
    }
 }
 
@@ -368,7 +373,7 @@ void SoundComponent::updateServerAudio()
       {
          //clearMaskBits(SoundMaskN << slotNum);
          st.play = false;
-		 //insert sound completed callback here
+		 doCallback("SoundEnded", slotNum);
       }
 	  if (st.pitch != mPitch[slotNum])
 	  {
@@ -382,7 +387,45 @@ void SoundComponent::updateServerAudio()
    }
 }
 
-void SoundComponent::updateAudioPlayback(Sound& st)
+void SoundComponent::doCallback(String method, S32 slotNum)
+{
+	Component *comp = dynamic_cast<Component*>(this);
+
+	if (isServerObject())
+	{
+		String serverBase = String("on") + method;
+		if (comp->isMethod(serverBase))
+		{
+			Con::executef(comp, serverBase, slotNum);
+		}
+
+		String ownerServerMethod = String(serverBase);
+		ownerServerMethod += String("Event");
+
+		if (comp->getOwner() && comp->getOwner()->isMethod(ownerServerMethod))
+		{
+			Con::executef(comp->getOwner(), ownerServerMethod, slotNum);
+		}
+	}
+	else
+	{
+		String clientBase = String("onClient") + method;
+		if (comp->isMethod(clientBase))
+		{
+			Con::executef(comp, clientBase, slotNum);
+		}
+
+		String ownerClientMethod = String(clientBase);
+		ownerClientMethod += String("Event");
+
+		if (comp->getOwner() && comp->getOwner()->isMethod(ownerClientMethod))
+		{
+			Con::executef(comp->getOwner(), ownerClientMethod, slotNum);
+		}
+	}
+}
+
+bool SoundComponent::updateAudioPlayback(Sound& st)
 {
    SFX_DELETE(st.sound);
 
@@ -408,6 +451,8 @@ void SoundComponent::updateAudioPlayback(Sound& st)
    }
    else
       st.play = false;
+
+   return st.play;
 }
 
 void SoundComponent::updateAudio()

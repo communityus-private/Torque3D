@@ -120,7 +120,7 @@ public:
    virtual void playAudio(U32 slotNum, SFXTrack* profile = NULL);
    virtual void stopAudio(U32 slot);
    virtual void updateServerAudio();
-   virtual void updateAudioPlayback(Sound& st);
+   virtual bool updateAudioPlayback(Sound& st);
    virtual void updateAudio();
 
    //why god why
@@ -131,6 +131,8 @@ public:
    virtual MatrixF getNodeTransform(S32 nodeIdx) { return MatrixF::Identity; };
    virtual Vector<MatrixF> getNodeTransforms() { return NULL; };
    virtual void setNodeTransforms(Vector<MatrixF> transforms) {};
+
+   virtual void doCallback(String method, S32 slotNum);
 };
 
 #endif
