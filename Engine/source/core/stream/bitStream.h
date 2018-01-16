@@ -92,8 +92,8 @@ public:
    void clear();
 
    void setStringBuffer(char buffer[256]);
-   void writeInt(S32 value, S32 bitCount);
-   S32  readInt(S32 bitCount);
+   void writeInt(S32 value, U32 bitCount);
+   S32  readInt(U32 bitCount);
 
    /// Use this method to write out values in a concise but ass backwards way...
    /// Good for values you expect to be frequently zero, often small. Worst case
@@ -137,8 +137,8 @@ public:
          return readRangedU32(0, 0xFFFFFFFF);
    }
 
-   void writeSignedInt(S32 value, S32 bitCount);
-   S32  readSignedInt(S32 bitCount);
+   void writeSignedInt(S32 value, U32 bitCount);
+   S32  readSignedInt(U32 bitCount);
 
    void writeRangedU32(U32 value, U32 rangeStart, U32 rangeEnd);
    void writeWrappedU32(U32 value, U32 rangeStart, U32 rangeEnd);   
@@ -153,28 +153,29 @@ public:
 
    // read and write floats... floats are 0 to 1 inclusive, signed floats are -1 to 1 inclusive
 
-   F32  readFloat(S32 bitCount);
-   F32  readSignedFloat(S32 bitCount);
+   F32  readFloat(U32 bitCount);
+   F32  readSignedFloat(U32 bitCount);
 
-   void writeFloat(F32 f, S32 bitCount);
-   void writeSignedFloat(F32 f, S32 bitCount);
+   void writeFloat(F32 f, U32 bitCount);
+   void writeSignedFloat(F32 f, U32 bitCount);
 
    /// Writes a clamped floating point value to the 
    /// stream with the desired bits of precision.
-   void writeRangedF32( F32 value, F32 min, F32 max, U32 numBits );
+   void writeRangedF32( F32 value, F32 min, F32 max, U32 bitCount );
    void writeRangedF32( F32 value, F32 min, F32 max);
-   void writeWrappedF32(F32 value, F32 min, F32 max, U32 numBits);
+   void writeWrappedF32(F32 value, F32 min, F32 max, U32 bitCount);
    void writeWrappedF32(F32 value, F32 min, F32 max);
 
    /// Reads a ranged floating point value written with writeRangedF32.
-   F32 readRangedF32( F32 min, F32 max, U32 numBits );
+   F32 readRangedF32( F32 min, F32 max, U32 bitCount );
+   F32 readRangedF32(F32 min, F32 max);
 
    void writeClassId(U32 classId, U32 classType, U32 classGroup);
    S32 readClassId(U32 classType, U32 classGroup); // returns -1 if the class type is out of range
 
    // writes a normalized vector
-   void writeNormalVector(const Point3F& vec, S32 bitCount);
-   void readNormalVector(Point3F *vec, S32 bitCount);
+   void writeNormalVector(const Point3F& vec, U32 bitCount);
+   void readNormalVector(Point3F *vec, U32 bitCount);
 
    void clearCompressionPoint();
    void setCompressionPoint(const Point3F& p);
@@ -187,7 +188,7 @@ public:
    // Uses the above method to reduce the precision of a normal vector so the server can
    //  determine exactly what is on the client.  (Pre-dumbing the vector before sending
    //  to the client can result in precision errors...)
-   static Point3F dumbDownNormal(const Point3F& vec, S32 bitCount);
+   static Point3F dumbDownNormal(const Point3F& vec, U32 bitCount);
 
    /// Writes a compressed vector as separate magnitude and
    /// normal components.  The final space used depends on the 
@@ -247,8 +248,8 @@ public:
    void writeBits(const BitVector &bitvec);
    void readBits(BitVector *bitvec);
 
-   void setBit(S32 bitCount, bool set);
-   bool testBit(S32 bitCount);
+   void setBit(U32 bitCount, bool set);
+   bool testBit(U32 bitCount);
 
    bool isFull() { return bitNum > (bufSize << 3); }
    bool isValid() { return !error; }
@@ -299,7 +300,7 @@ public:
    /// Write us out to a stream... Results in last byte getting padded!
    void writeToStream(Stream &s);
 
-   virtual void writeBits(S32 bitCount, const void *bitPtr)
+   virtual void writeBits(U32 bitCount, const void *bitPtr)
    {
       validate((bitCount >> 3) + 1); // Add a little safety.
       BitStream::writeBits(bitCount, bitPtr);
@@ -396,37 +397,45 @@ inline S32 BitStream::readRangedS32( S32 min, S32 max )
    return readRangedU32( 0, ( max - min ) ) + min;
 }
 
-inline void BitStream::writeRangedF32( F32 value, F32 min, F32 max, U32 numBits )
+inline void BitStream::writeRangedF32( F32 value, F32 min, F32 max, U32 bitCount )
 {
    value = ( mClampF( value, min, max ) - min ) / ( max - min );
-   writeInt( (S32)mFloor(value * F32( (1 << numBits) - 1 )), numBits );
+   writeInt( (S32)mFloor(value * F32( (1 << bitCount) - 1 )), bitCount );
 }
 
 inline void BitStream::writeRangedF32(F32 value, F32 min, F32 max)
 {
-	U32 numBits = getBinLog2(max-min);
+	U32 bitCount = getBinLog2(max-min);
 	value = (mClampF(value, min, max) - min) / (max - min);
-	writeInt((S32)mFloor(value * F32((1 << numBits) - 1)), numBits);
+	writeInt((S32)mFloor(value * F32((1 << bitCount) - 1)), bitCount);
 }
 
-inline void BitStream::writeWrappedF32(F32 value, F32 min, F32 max, U32 numBits)
+inline void BitStream::writeWrappedF32(F32 value, F32 min, F32 max, U32 bitCount)
 {
 	value = (mWrapF(value, min, max) - min) / (max - min);
-	writeInt((S32)mFloor(value * F32((1 << numBits) - 1)), numBits);
+	writeInt((S32)mFloor(value * F32((1 << bitCount) - 1)), bitCount);
 }
 
 inline void BitStream::writeWrappedF32(F32 value, F32 min, F32 max)
 {
-	U32 numBits = getBinLog2(max - min);
+	U32 bitCount = getBinLog2(max - min);
 	value = (mWrapF(value, min, max) - min) / (max - min);
-	writeInt((S32)mFloor(value * F32((1 << numBits) - 1)), numBits);
+	writeInt((S32)mFloor(value * F32((1 << bitCount) - 1)), bitCount);
 }
 
-inline F32 BitStream::readRangedF32( F32 min, F32 max, U32 numBits )
+inline F32 BitStream::readRangedF32( F32 min, F32 max, U32 bitCount )
 {
-   F32 value = (F32)readInt( numBits );
-   value /= F32( ( 1 << numBits ) - 1 );
+   F32 value = (F32)readInt( bitCount );
+   value /= F32( ( 1 << bitCount ) - 1 );
    return min + value * ( max - min );
+}
+
+inline F32 BitStream::readRangedF32(F32 min, F32 max)
+{
+	U32 bitCount = getBinLog2(max - min);
+	F32 value = (F32)readInt(bitCount);
+	value /= F32((1 << bitCount) - 1);
+	return min + value * (max - min);
 }
 
 #endif //_BITSTREAM_H_

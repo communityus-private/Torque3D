@@ -249,7 +249,7 @@ void BitStream::writeBits(S32 bitCount, const void *bitPtr)
    }
 }
 
-void BitStream::setBit(S32 bitCount, bool set)
+void BitStream::setBit(U32 bitCount, bool set)
 {
    if(set)
       *(dataPtr + (bitCount >> 3)) |= (1 << (bitCount & 0x7));
@@ -257,7 +257,7 @@ void BitStream::setBit(S32 bitCount, bool set)
       *(dataPtr + (bitCount >> 3)) &= ~(1 << (bitCount & 0x7));
 }
 
-bool BitStream::testBit(S32 bitCount)
+bool BitStream::testBit(U32 bitCount)
 {
    return (*(dataPtr + (bitCount >> 3)) & (1 << (bitCount & 0x7))) != 0;
 }
@@ -322,7 +322,7 @@ bool BitStream::_write(U32 size, const void *dataPtr)
    return true;
 }
 
-S32 BitStream::readInt(S32 bitCount)
+S32 BitStream::readInt(U32 bitCount)
 {
    S32 ret = 0;
    readBits(bitCount, &ret);
@@ -334,7 +334,7 @@ S32 BitStream::readInt(S32 bitCount)
    return ret;
 }
 
-void BitStream::writeInt(S32 val, S32 bitCount)
+void BitStream::writeInt(S32 val, U32 bitCount)
 {
    AssertFatal((bitCount == 32) || ((val >> bitCount) == 0), avar("BitStream::writeInt: value out of range: %i/%i (%i bits)", val, 1 << bitCount, bitCount));
 
@@ -342,27 +342,27 @@ void BitStream::writeInt(S32 val, S32 bitCount)
    writeBits(bitCount, &val);
 }
 
-void BitStream::writeFloat(F32 f, S32 bitCount)
+void BitStream::writeFloat(F32 f, U32 bitCount)
 {
    writeInt((S32)(f * ((1 << bitCount) - 1)), bitCount);
 }
 
-F32 BitStream::readFloat(S32 bitCount)
+F32 BitStream::readFloat(U32 bitCount)
 {
    return readInt(bitCount) / F32((1 << bitCount) - 1);
 }
 
-void BitStream::writeSignedFloat(F32 f, S32 bitCount)
+void BitStream::writeSignedFloat(F32 f, U32 bitCount)
 {
    writeInt((S32)(((f + 1) * .5) * ((1 << bitCount) - 1)), bitCount);
 }
 
-F32 BitStream::readSignedFloat(S32 bitCount)
+F32 BitStream::readSignedFloat(U32 bitCount)
 {
    return readInt(bitCount) * 2 / F32((1 << bitCount) - 1) - 1.0f;
 }
 
-void BitStream::writeSignedInt(S32 value, S32 bitCount)
+void BitStream::writeSignedInt(S32 value, U32 bitCount)
 {
    if(writeFlag(value < 0))
       writeInt(-value, bitCount - 1);
@@ -370,7 +370,7 @@ void BitStream::writeSignedInt(S32 value, S32 bitCount)
       writeInt(value, bitCount - 1);
 }
 
-S32 BitStream::readSignedInt(S32 bitCount)
+S32 BitStream::readSignedInt(U32 bitCount)
 {
    if(readFlag())
       return -readInt(bitCount - 1);
@@ -378,7 +378,7 @@ S32 BitStream::readSignedInt(S32 bitCount)
       return readInt(bitCount - 1);
 }
 
-void BitStream::writeNormalVector(const Point3F& vec, S32 bitCount)
+void BitStream::writeNormalVector(const Point3F& vec, U32 bitCount)
 {
    F32 phi   = mAtan2(vec.x, vec.y) / M_PI;
    F32 theta = mAtan2(vec.z, mSqrt(vec.x*vec.x + vec.y*vec.y)) / (M_PI/2.0);
@@ -387,7 +387,7 @@ void BitStream::writeNormalVector(const Point3F& vec, S32 bitCount)
    writeSignedFloat(theta, bitCount);
 }
 
-void BitStream::readNormalVector(Point3F *vec, S32 bitCount)
+void BitStream::readNormalVector(Point3F *vec, U32 bitCount)
 {
    F32 phi   = readSignedFloat(bitCount+1) * M_PI;
    F32 theta = readSignedFloat(bitCount) * (M_PI/2.0);
@@ -397,7 +397,7 @@ void BitStream::readNormalVector(Point3F *vec, S32 bitCount)
    vec->z = mSin(theta);
 }
 
-Point3F BitStream::dumbDownNormal(const Point3F& vec, S32 bitCount)
+Point3F BitStream::dumbDownNormal(const Point3F& vec, U32 bitCount)
 {
    U8 buffer[128];
    BitStream temp(buffer, 128);
