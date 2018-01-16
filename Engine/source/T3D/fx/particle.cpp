@@ -247,7 +247,7 @@ void ParticleData::packData(BitStream* stream)
    if( stream->writeFlag(windCoefficient != sgDefaultWindCoefficient ) )
       stream->write(windCoefficient);
    if (stream->writeFlag(gravityCoefficient != 0.0f))
-     stream->writeSignedFloat(gravityCoefficient / 10, 12); 
+	   stream->writeRangedF32(gravityCoefficient/10, gravCoefFValidator.getMin(), gravCoefFValidator.getMax(), 12);
    stream->writeFloat(inheritedVelFactor, 9);
    if( stream->writeFlag( constantAcceleration != sgDefaultConstantAcceleration ) )
       stream->write(constantAcceleration);
@@ -324,8 +324,8 @@ void ParticleData::unpackData(BitStream* stream)
       stream->read(&windCoefficient);
    else
       windCoefficient = sgDefaultWindCoefficient;
-   if (stream->readFlag()) 
-     gravityCoefficient = stream->readSignedFloat(12)*10; 
+   if (stream->readFlag())
+	   gravityCoefficient = stream->readRangedF32(gravCoefFValidator.getMin(), gravCoefFValidator.getMax(), 12)*10;
    else 
      gravityCoefficient = 0.0f; 
    inheritedVelFactor = stream->readFloat(9);
