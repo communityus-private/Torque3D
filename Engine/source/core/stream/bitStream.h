@@ -141,13 +141,14 @@ public:
    S32  readSignedInt(S32 bitCount);
 
    void writeRangedU32(U32 value, U32 rangeStart, U32 rangeEnd);
+   void writeWrappedU32(U32 value, U32 rangeStart, U32 rangeEnd);   
    U32  readRangedU32(U32 rangeStart, U32 rangeEnd);
    
    /// Writes a clamped signed integer to the stream using 
    /// an optimal amount of bits for the range.
    void writeRangedS32( S32 value, S32 min, S32 max );
-
-   /// Reads a ranged signed integer written with writeRangedS32.
+   void writeWrappedS32( S32 value, S32 min, S32 max );
+   /// Reads a ranged signed integer written with writeRangedS32 or writeWrappedS32.
    S32 readRangedS32( S32 min, S32 max );
 
    // read and write floats... floats are 0 to 1 inclusive, signed floats are -1 to 1 inclusive
@@ -161,6 +162,9 @@ public:
    /// Writes a clamped floating point value to the 
    /// stream with the desired bits of precision.
    void writeRangedF32( F32 value, F32 min, F32 max, U32 numBits );
+   void writeRangedF32( F32 value, F32 min, F32 max);
+   void writeWrappedF32(F32 value, F32 min, F32 max, U32 numBits);
+   void writeWrappedF32(F32 value, F32 min, F32 max);
 
    /// Reads a ranged floating point value written with writeRangedF32.
    F32 readRangedF32( F32 min, F32 max, U32 numBits );
@@ -353,6 +357,17 @@ inline void BitStream::writeRangedU32(U32 value, U32 rangeStart, U32 rangeEnd)
    writeInt(S32(value - rangeStart), S32(rangeBits));
 }
 
+inline void BitStream::writeWrappedU32(U32 value, U32 rangeStart, U32 rangeEnd)
+{
+	AssertFatal(value >= rangeStart && value <= rangeEnd, "Out of bounds value!");
+	AssertFatal(rangeEnd >= rangeStart, "error, end of range less than start");
+
+	U32 rangeSize = rangeEnd - rangeStart + 1;
+	U32 rangeBits = getBinLog2(getNextPow2(rangeSize));
+
+	writeInt(mWrap(value, rangeStart, rangeEnd), S32(rangeBits));
+}
+
 inline U32 BitStream::readRangedU32(U32 rangeStart, U32 rangeEnd)
 {
    AssertFatal(rangeEnd >= rangeStart, "error, end of range less than start");
@@ -370,6 +385,12 @@ inline void BitStream::writeRangedS32( S32 value, S32 min, S32 max )
    writeRangedU32( ( value - min ), 0, ( max - min ) );
 }
 
+inline void BitStream::writeWrappedS32(S32 value, S32 min, S32 max)
+{
+	value = mWrap(value, min, max);
+	writeRangedU32((value - min), 0, (max - min));
+}
+
 inline S32 BitStream::readRangedS32( S32 min, S32 max )
 {
    return readRangedU32( 0, ( max - min ) ) + min;
@@ -379,6 +400,26 @@ inline void BitStream::writeRangedF32( F32 value, F32 min, F32 max, U32 numBits 
 {
    value = ( mClampF( value, min, max ) - min ) / ( max - min );
    writeInt( (S32)mFloor(value * F32( (1 << numBits) - 1 )), numBits );
+}
+
+inline void BitStream::writeRangedF32(F32 value, F32 min, F32 max)
+{
+	U32 numBits = getBinLog2(max-min);
+	value = (mClampF(value, min, max) - min) / (max - min);
+	writeInt((S32)mFloor(value * F32((1 << numBits) - 1)), numBits);
+}
+
+inline void BitStream::writeWrappedF32(F32 value, F32 min, F32 max, U32 numBits)
+{
+	value = (mWrapF(value, min, max) - min) / (max - min);
+	writeInt((S32)mFloor(value * F32((1 << numBits) - 1)), numBits);
+}
+
+inline void BitStream::writeWrappedF32(F32 value, F32 min, F32 max)
+{
+	U32 numBits = getBinLog2(max - min);
+	value = (mWrapF(value, min, max) - min) / (max - min);
+	writeInt((S32)mFloor(value * F32((1 << numBits) - 1)), numBits);
 }
 
 inline F32 BitStream::readRangedF32( F32 min, F32 max, U32 numBits )
