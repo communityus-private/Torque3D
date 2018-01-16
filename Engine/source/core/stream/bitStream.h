@@ -162,13 +162,10 @@ public:
    /// Writes a clamped floating point value to the 
    /// stream with the desired bits of precision.
    void writeRangedF32( F32 value, F32 min, F32 max, U32 bitCount );
-   void writeRangedF32( F32 value, F32 min, F32 max);
    void writeWrappedF32(F32 value, F32 min, F32 max, U32 bitCount);
-   void writeWrappedF32(F32 value, F32 min, F32 max);
 
    /// Reads a ranged floating point value written with writeRangedF32.
    F32 readRangedF32( F32 min, F32 max, U32 bitCount );
-   F32 readRangedF32(F32 min, F32 max);
 
    void writeClassId(U32 classId, U32 classType, U32 classGroup);
    S32 readClassId(U32 classType, U32 classGroup); // returns -1 if the class type is out of range
@@ -403,22 +400,9 @@ inline void BitStream::writeRangedF32( F32 value, F32 min, F32 max, U32 bitCount
    writeInt( (S32)mFloor(value * F32( (1 << bitCount) - 1 )), bitCount );
 }
 
-inline void BitStream::writeRangedF32(F32 value, F32 min, F32 max)
-{
-	U32 bitCount = getBinLog2(max-min);
-	value = (mClampF(value, min, max) - min) / (max - min);
-	writeInt((S32)mFloor(value * F32((1 << bitCount) - 1)), bitCount);
-}
 
 inline void BitStream::writeWrappedF32(F32 value, F32 min, F32 max, U32 bitCount)
 {
-	value = (mWrapF(value, min, max) - min) / (max - min);
-	writeInt((S32)mFloor(value * F32((1 << bitCount) - 1)), bitCount);
-}
-
-inline void BitStream::writeWrappedF32(F32 value, F32 min, F32 max)
-{
-	U32 bitCount = getBinLog2(max - min);
 	value = (mWrapF(value, min, max) - min) / (max - min);
 	writeInt((S32)mFloor(value * F32((1 << bitCount) - 1)), bitCount);
 }
@@ -428,14 +412,6 @@ inline F32 BitStream::readRangedF32( F32 min, F32 max, U32 bitCount )
    F32 value = (F32)readInt( bitCount );
    value /= F32( ( 1 << bitCount ) - 1 );
    return min + value * ( max - min );
-}
-
-inline F32 BitStream::readRangedF32(F32 min, F32 max)
-{
-	U32 bitCount = getBinLog2(max - min);
-	F32 value = (F32)readInt(bitCount);
-	value /= F32((1 << bitCount) - 1);
-	return min + value * (max - min);
 }
 
 #endif //_BITSTREAM_H_
