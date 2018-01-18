@@ -256,7 +256,7 @@ bool ThreadPool::waitForWorkItems() const
    while (!mWorkItems.empty() || mNumberOfActiveWorkThreads > 0)
    {
 	  handle = TORQUE_TRY_LOCK(mPhysicalThreadsMutex);
-      SDL_CondWait(mWorkerThreadCondition, mMainThreadMutex);
+      SDL_CondWait(mWorkerThreadCondition, mMainThreadMutex.getImplementation()->getRootMutex());
    }
 
    //Just to be sure so we can proceed

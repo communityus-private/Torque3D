@@ -64,6 +64,9 @@ private:
 	void _unlock(MutexImpl::LockID);
 
 	MutexImpl mMutexImpl;
+
+public:
+	MutexImpl * getImplementation() { return &mMutexImpl; };
 };
 
 /**

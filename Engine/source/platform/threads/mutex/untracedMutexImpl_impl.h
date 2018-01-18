@@ -39,7 +39,7 @@ namespace MutexDetails
 
 struct UntracedMutexImpl::MutexData
 {
-	std::recursive_timed_mutex mutex;
+   SDL_mutex* mutex;
    SDL_threadID owner_handle = 0;
 };
 

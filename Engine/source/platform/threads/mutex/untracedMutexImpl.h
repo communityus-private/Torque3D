@@ -54,6 +54,8 @@ private:
 	static void _reportAboutPossibleDeadlock();
 
 	const std::unique_ptr<MutexData> mData;
+public:
+	SDL_mutex* getRootMutex() { return mData->mutex; };
 };
 
 } // namespace MutexDetails
