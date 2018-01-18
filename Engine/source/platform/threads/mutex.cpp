@@ -30,7 +30,7 @@
 #include "platform/threads/mutex/untracedMutexImpl_impl.h"
 
 #ifndef TORQUE_SHIPPING
-#	include <thread>
+#include <SDL_thread.h>
 #endif // !TORQUE_SHIPPING
 
 //#define DEBUG_SPEW
@@ -64,7 +64,7 @@ void Mutex::_unlock(MutexImpl::LockID lockID)
 void Mutex::checkOwnerThread() const
 {
 #ifdef _aw_s4_mutexCheck
-	std::thread::id owningThreadID = mMutexImpl.getOwningThreadID();
+   SDL_threadID owningThreadID = mMutexImpl.getOwningThreadID();
    AssertISV(owningThreadID == ThreadManager::getCurrentThreadId(), "Owner thread mismatch");
 #endif // _aw_s4_mutexCheck
 }

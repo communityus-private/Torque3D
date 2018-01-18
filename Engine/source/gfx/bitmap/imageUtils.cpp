@@ -76,7 +76,7 @@ namespace ImageUtil
       CompressQuality quality;
 
       CompressJob(const U8 *srcRGBA, U8 *dst, const S32 w, const S32 h, const GFXFormat compressFormat, const CompressQuality compressQuality)
-		  : pSrc(srcRGBA), pDst(dst), width(w), height(h), format(compressFormat), quality(compressQuality) { flags = NULL; }
+		  : pSrc(srcRGBA), pDst(dst), width(w), height(h), format(compressFormat), quality(compressQuality) { flags = FlagMainThreadOnly; }
 
    protected:
       virtual void execute()
@@ -150,13 +150,7 @@ namespace ImageUtil
          }
 
          //wait for work items to finish
-		 while (itemList.size())
-		 {
-			 for (U32 i = itemList.size(); i >0; i--)
-				 if (itemList[i]->isCompleted())
-					 itemList.erase(i);
-			 _sleep(TickMs);
-		 }
+         ThreadPool::instance()->waitForWorkItems();
 
          for (S32 cubeFace = 0; cubeFace < nCubeFaces; cubeFace++)
          {
@@ -201,16 +195,7 @@ namespace ImageUtil
 
          }
          //block and wait for CompressJobs to finish
-		 if (useThreading)
-		 {
-			 while (itemList.size())
-			 {
-				 for (S32 i = itemList.size() - 1; i >= 0; i--)
-					 if (itemList[i]->isCompleted())
-						 itemList.erase(i);
-				 _sleep(TickMs);
-			 }
-		 }
+         ThreadPool::instance()->waitForWorkItems();
 
          // Now delete the source surface and replace with new compressed surface
          srcDDS->mSurfaces.pop_back();

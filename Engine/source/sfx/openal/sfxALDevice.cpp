@@ -62,7 +62,7 @@ SFXALDevice::SFXALDevice(  SFXProvider *provider,
 
    // Start the update thread.
    // TODO AsyncPeriodicUpdateThread support for Linux/Mac
-#ifdef TORQUE_OS_WIN
+/*#ifdef TORQUE_OS_WIN
    if( !Con::getBoolVariable( "$_forceAllMainThread" ) )
    {
       SFXInternal::gUpdateThread = new AsyncPeriodicUpdateThread
@@ -70,7 +70,7 @@ SFXALDevice::SFXALDevice(  SFXProvider *provider,
            Con::getIntVariable( "$pref::SFX::updateInterval", SFXInternal::DEFAULT_UPDATE_INTERVAL ) );
       SFXInternal::gUpdateThread->start();
    }
-#endif
+#endif*/
 }
 
 //-----------------------------------------------------------------------------

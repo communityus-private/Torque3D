@@ -288,7 +288,7 @@ private:
 	 * about availability of TaskExecutor-s in different threads that execute
 	 * tasks
 	 */
-	static const decltype(_makeExecutors()) Executors;
+	static const std::tuple<> Executors;
 	/**
 	 * Array of pointers to @see Executors elements
 	 */
@@ -396,14 +396,14 @@ private:
 	{
 		return std::get<TaskNumber - 1>(cmd->mInputForNextTask);
 	}
-
+/*
 	template <>
 	auto& _getTaskInput<0>(Cmd* cmd) const
 	{
 		static const std::tuple<> Empty;
 		return Empty;
 	}
-
+*/
 	template <size_t TaskNumber>
 	auto& _getRollbackInput(Cmd* cmd) const
 	{

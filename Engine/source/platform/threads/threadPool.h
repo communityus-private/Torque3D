@@ -30,10 +30,13 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
-#include <thread>
 #include <vector>
 #include <atomic>
 #include <future>
+
+#include <SDL.h>
+#include <SDL_thread.h>
+#include <SDL_mutex.h>
 
 class ThreadPool final
 {
@@ -90,16 +93,19 @@ public:
 private:
 	void _processBackgroundThreadWorkers();
 
-	std::mutex                  mMutex;
+	SDL_mutex*                  mMutex;
 	Mutex                       mMainThreadMutex;
-	std::condition_variable     mCondition;
+    SDL_cond*                   mWorkerThreadCondition;  //Condition that we're free to continue the main thread, having waited on the background threads
+	SDL_cond*                   mCondition;  //Condition that we're free to run a background thread process
 	std::queue<WorkItem*>       mWorkItems;
 	std::queue<WorkItem*>       mMainThreadWorkItems;
 	bool                        mIsStopped = false;
 
+   std::atomic<size_t>          mNumberOfActiveWorkThreads;
+
 	// TODO [snikitin@outlook.com] Explore possability of migration to std::thread
 	//std::vector<std::thread>    mPhysicalThreads;
-	mutable Mutex                        mPhysicalThreadsMutex;
+    mutable Mutex                mPhysicalThreadsMutex;
 	std::vector<std::unique_ptr<Thread>> mPhysicalThreads;
 
 	// statistics
@@ -128,7 +134,9 @@ public:
 
 	bool processMainThreadItem();
 	void processAllMainThreadItems();
-	bool isPoolThreadID(std::thread::id threadID) const;
+	bool isPoolThreadID(SDL_threadID threadID) const;
+
+   bool waitForWorkItems() const;
 
 
 	/// Force all work items to execute on main thread;

@@ -45,14 +45,29 @@
 #ifndef _TSINGLETON_H_
    #include "core/util/tSingleton.h"
 #endif
+#include <SDL.h>
+#include <SDL_Thread.h>
 
-
-// Forward ref used by platform code
-class PlatformThreadData;
-
+#ifndef _PLATFORM_THREAD_SEMAPHORE_H_
+#include "platform/threads/semaphore.h"
+#endif
 
 // Typedefs
 typedef void (*ThreadRunFunction)(void *data);
+
+class Thread;
+
+class ThreadData
+{
+public:
+   ThreadRunFunction       mRunFunc;
+   void*                   mRunArg;
+   Thread*                 mThread;
+   Semaphore               mGateway; // default count is 1
+   SDL_threadID            mThreadID;
+   SDL_Thread*             mSDLThread;
+   bool                    mDead;
+};
 
 class Thread
 {
@@ -60,7 +75,7 @@ public:
    typedef void Parent;
 
 protected:
-   PlatformThreadData*  mData;
+   ThreadData*  mData;
 
    /// Used to signal threads need to stop. 
    /// Threads set this flag to false in start()
@@ -120,7 +135,7 @@ public:
    bool isAlive();
 
    /// Returns the platform specific thread id for this thread.
-   std::thread::id getId();
+   SDL_threadID getId();
 
 protected:
 	const char* mThreadName;
@@ -139,12 +154,12 @@ class ThreadManager
 
    struct MainThreadId
    {
-      std::thread::id mId;
+      SDL_threadID mId;
       MainThreadId()
       {
          mId = ThreadManager::getCurrentThreadId();
       }
-      std::thread::id get()
+      SDL_threadID get()
       {
          // Okay, this is a bit soso.  The main thread ID may get queried during
          // global ctor phase before MainThreadId's ctor ran.  Since global
@@ -169,25 +184,25 @@ public:
    static bool isMainThread();
 
    /// Returns true if threadId is the same as the calling thread's id.
-   static bool isCurrentThread(std::thread::id threadId);
+   static bool isCurrentThread(SDL_threadID threadId);
 
    /// Returns true if the 2 thread ids represent the same thread. Some thread
    /// APIs return an opaque object as a thread id, so the == operator cannot
    /// reliably compare thread ids.
    // this comparator is needed by pthreads and ThreadManager.
-   static bool compare(std::thread::id threadId_1, std::thread::id threadId_2);
+   static bool compare(SDL_threadID threadId_1, SDL_threadID threadId_2);
       
    /// Returns the platform specific thread id of the calling thread. Some 
    /// platforms do not guarantee that this ID stays the same over the life of 
    /// the thread, so use ThreadManager::compare() to compare thread ids.
-   static std::thread::id getCurrentThreadId();
+   static SDL_threadID getCurrentThreadId();
 
 	static void _suspendResumeThreads(bool doSuspend);
 	static void suspendAllThreads();
 	static void resumeAllThreads();
 
    /// Returns the platform specific thread id ot the main thread.
-   static std::thread::id getMainThreadId() { return smMainThreadId.get(); }
+   static SDL_threadID getMainThreadId() { return smMainThreadId.get(); }
    
    /// Each thread should add itself to the thread pool the first time it runs.
    static void addThread(Thread* thread)
@@ -204,7 +219,7 @@ public:
       ThreadManager &manager = *ManagedSingleton< ThreadManager >::instance();
       MutexHandle mutexHandle = TORQUE_LOCK(manager.poolLock);
       
-      std::thread::id threadID = thread->getId();
+      SDL_threadID threadID = thread->getId();
       for(U32 i = 0;i < manager.threadPool.size();++i)
       {
          if( compare( manager.threadPool[i]->getId(), threadID ) )
@@ -217,7 +232,7 @@ public:
    
    /// Searches the pool of known threads for a thread whose id is equivalent to
    /// the given threadid. Compares thread ids with ThreadManager::compare().
-   static Thread* getThreadById(std::thread::id threadid)
+   static Thread* getThreadById(SDL_threadID threadid)
    {
       //AssertFatal(threadid != 0, "ThreadManager::getThreadById() Searching for a bad thread id.");
       Thread* ret = NULL;
@@ -253,9 +268,9 @@ inline bool ThreadManager::isMainThread()
    return compare( ThreadManager::getCurrentThreadId(), smMainThreadId.get() );
 }
 
-inline bool ThreadManager::isCurrentThread(std::thread::id threadId)
+inline bool ThreadManager::isCurrentThread(SDL_threadID threadId)
 {
-   std::thread::id current = getCurrentThreadId();
+   SDL_threadID current = getCurrentThreadId();
    return compare(current, threadId);
 }
 

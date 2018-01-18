@@ -78,7 +78,7 @@ LockStack::Entry::Entry(LockState lockState) : lockState(lockState)
 }
 
 
-LockStack::LockStack() : threadID(std::this_thread::get_id())
+LockStack::LockStack() : threadID(SDL_ThreadID())
 {
 	mStack.reserve(InitialLockStackSize);
 	GlobalLockStackPool::Instance().registerStack(*this);
@@ -157,7 +157,7 @@ std::string LockStack::makeDescription() const
 struct GlobalLockStackPool::MutexData
 {
 	std::recursive_timed_mutex mutex;
-	std::thread::id owner_handle;
+   SDL_threadID owner_handle;
 };
 
 

@@ -26,7 +26,7 @@
 #include "platform/threads/mutex/mutexInternalApiMacros.h"
 
 #include <memory>
-#include <thread>
+#include <SDL_thread.h>
 
 namespace MutexDetails
 {
@@ -46,7 +46,7 @@ public:
 	std::pair<LockID, bool> tryLock(MUTEX_INTERNAL_TRACE_LOCK_PARAMS);
 	void unlock(LockID);
 
-   std::thread::id getOwningThreadID() const;
+   SDL_threadID getOwningThreadID() const;
 
 private:
 	struct MutexData;

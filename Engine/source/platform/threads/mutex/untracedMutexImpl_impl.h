@@ -40,7 +40,7 @@ namespace MutexDetails
 struct UntracedMutexImpl::MutexData
 {
 	std::recursive_timed_mutex mutex;
-	std::thread::id owner_handle = gNullThreadID;
+   SDL_threadID owner_handle = 0;
 };
 
 UntracedMutexImpl::UntracedMutexImpl(const char*)
@@ -67,7 +67,7 @@ UntracedMutexImpl::LockID UntracedMutexImpl::lock(MUTEX_INTERNAL_TRACE_LOCK_PARA
 
 	_reportAboutPossibleDeadlock();
 #endif // _aw_s4_deadlockCheck
-	mData->owner_handle = std::this_thread::get_id();
+	mData->owner_handle = SDL_ThreadID();
 	mData->mutex.lock();
 
 	return LockID();
@@ -78,17 +78,17 @@ UntracedMutexImpl::tryLock(MUTEX_INTERNAL_TRACE_LOCK_PARAMS)
 {
 	bool locked = mData->mutex.try_lock();
 	if (locked)
-		mData->owner_handle = std::this_thread::get_id();
+		mData->owner_handle = SDL_ThreadID();
 	return std::make_pair(LockID(), locked);
 }
 
 void UntracedMutexImpl::unlock(LockID)
 {
 	mData->mutex.unlock();
-	mData->owner_handle = gNullThreadID;
+	mData->owner_handle = 0;
 }
 
-std::thread::id UntracedMutexImpl::getOwningThreadID() const
+SDL_threadID UntracedMutexImpl::getOwningThreadID() const
 {
    return mData->owner_handle;
 }

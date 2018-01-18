@@ -423,7 +423,7 @@ inline bool isSFXThread()
 {
    ThreadSafeRef< SFXUpdateThread > sfxThread = UPDATE_THREAD();
 
-   std::thread::id threadId;
+   SDL_threadID threadId;
    if( sfxThread != NULL )
       threadId = sfxThread->getId();
    else

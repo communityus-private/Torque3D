@@ -19,9 +19,6 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-/*
-#include "stdafx.h"
-*/
 #include "threadPool.h"
 
 #include "console/console.h"
@@ -42,28 +39,34 @@ void ThreadPool::_processBackgroundThreadWorkers()
 		WorkItem* workItem = nullptr;
 
 		{
-			std::unique_lock<std::mutex> lock(mMutex);
+         int result = SDL_TryLockMutex(mMutex);
 
-			mCondition.wait(lock, [this]()
+         if (mIsStopped || mWorkItems.empty())
 			{
-				return mIsStopped || !mWorkItems.empty();
-			});
+            SDL_CondWait(mCondition, mMutex);
+         }
 
 			if (mIsStopped && mWorkItems.empty())
 			{
 				Con::printf("Thread worker terminated");
+            SDL_UnlockMutex(mMutex);
 				return;
 			}
 
 			workItem = mWorkItems.front();
 			mWorkItems.pop();
 			mBackgroundWorkItemCount.store(mWorkItems.size(), std::memory_order_relaxed);
+
+         SDL_UnlockMutex(mMutex);
 		}
 
 		if (workItem != nullptr)
 		{
+         mNumberOfActiveWorkThreads++;
 			workItem->process();
 			workItem->release();
+         mNumberOfActiveWorkThreads--;
+         SDL_CondSignal(mWorkerThreadCondition);
 		}
 	}
 }
@@ -78,8 +81,13 @@ ThreadPool::ThreadPool()
 	: mMainThreadMutex("ThreadPool_mMainThreadMutex")
 	, mPhysicalThreadsMutex("ThreadPool_mPhysicalThreadsMutex")
 {
+   mMutex = SDL_CreateMutex();
+   mCondition = SDL_CreateCond();
+   mWorkerThreadCondition = SDL_CreateCond();
 	int32_t numPhysicalThreads = std::thread::hardware_concurrency();
 	int32_t numBackgroundThreads = std::max(numPhysicalThreads - 1, 1);
+
+   mNumberOfActiveWorkThreads = 0;
 
 	mPhysicalThreads.reserve(numBackgroundThreads);
 
@@ -98,7 +106,7 @@ ThreadPool::ThreadPool()
 void ThreadPool::shutdown()
 {
 	{
-		std::unique_lock<std::mutex> lock(mMutex);
+		SDL_LockMutex(mMutex);
 		MutexHandle mutexHandle = TORQUE_LOCK(mMainThreadMutex);
 
 		mIsStopped  = true;
@@ -126,10 +134,12 @@ void ThreadPool::shutdown()
 			}
 			mMainThreadWorkItems.pop();
 		}
+		mutexHandle.unlock();
 	}
-	mCondition.notify_all();
 
-	auto handle = TORQUE_LOCK(mPhysicalThreadsMutex);
+   SDL_CondSignal(mCondition);
+
+	MutexHandle pHandle = TORQUE_LOCK(mPhysicalThreadsMutex);
 	for (auto& physicalThread : mPhysicalThreads)
 	{
 		physicalThread->stop();
@@ -138,7 +148,10 @@ void ThreadPool::shutdown()
 	}
 
 	mPhysicalThreads.clear();
-	handle.unlock();
+	pHandle.unlock();
+
+   SDL_DestroyMutex(mMutex);
+   SDL_DestroyCond(mCondition);
 
 	Con::printf("Thread pool shut down");
 }
@@ -153,10 +166,11 @@ void ThreadPool::queueWorkItem(WorkItem* item)
 
 		if (!item->isMainThreadOnly() && !executeRightAway)
 		{
-			std::unique_lock<std::mutex> lock(mMutex);
+         SDL_LockMutex(mMutex);
 			mWorkItems.push(item);
-			mCondition.notify_one();
+         SDL_CondSignal(mCondition);
 			mBackgroundWorkItemCount.store(mWorkItems.size(), std::memory_order_relaxed);
+         SDL_UnlockMutex(mMutex);
 		}
 		else
 		{
@@ -215,20 +229,39 @@ void ThreadPool::processAllMainThreadItems()
 
 size_t ThreadPool::getNumThreads() const
 {
-	auto handle = TORQUE_LOCK(mPhysicalThreadsMutex);
+	MutexHandle handle = TORQUE_LOCK(mPhysicalThreadsMutex);
 	return mPhysicalThreads.size();
 }
 
-bool ThreadPool::isPoolThreadID(std::thread::id threadID) const
+bool ThreadPool::isPoolThreadID(SDL_threadID threadID) const
 {
 	auto threadHasTargetID = [threadID](const std::unique_ptr<Thread>& thread)
 	{
 		return thread != nullptr && thread->getId() == threadID;
 	};
 
-	auto handle = TORQUE_LOCK(mPhysicalThreadsMutex);
+	MutexHandle handle = TORQUE_LOCK(mPhysicalThreadsMutex);
 	auto iter = std::find_if(mPhysicalThreads.begin(), mPhysicalThreads.end(), threadHasTargetID);
-	return iter != mPhysicalThreads.end();
+
+   bool isPoolThreadId = iter != mPhysicalThreads.end();
+   handle.unlock();
+
+   return isPoolThreadId;
+}
+
+bool ThreadPool::waitForWorkItems() const
+{
+	MutexHandle handle;
+
+   while (!mWorkItems.empty() || mNumberOfActiveWorkThreads > 0)
+   {
+	  handle = TORQUE_TRY_LOCK(mPhysicalThreadsMutex);
+      SDL_CondWait(mWorkerThreadCondition, mMainThreadMutex);
+   }
+
+   //Just to be sure so we can proceed
+   handle.unlock();
+   return true;
 }
 
 namespace Command

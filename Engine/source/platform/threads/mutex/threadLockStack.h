@@ -31,6 +31,8 @@
 #include <string>
 #include <vector>
 
+#include <SDL_thread.h>
+
 namespace MutexDetails
 {
 
@@ -110,7 +112,7 @@ public:
 	 */
 	std::string makeDescription() const;
 
-	const std::thread::id threadID;
+	const SDL_threadID threadID;
 
 private:
 	struct Entry

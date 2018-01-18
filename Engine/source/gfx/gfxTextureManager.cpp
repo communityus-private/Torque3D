@@ -204,6 +204,7 @@ void GFXTextureManager::resurrect()
 
 void GFXTextureManager::cleanupPool()
 {
+   PROFILE_SCOPE( GFXTextureManager_CleanupPool );
 	mTexturePool.clear();
 }
 
@@ -1152,6 +1153,7 @@ GFXTextureObject* GFXTextureManager::_findPooledTexure(U32 width,
 	U32 numMipLevels,
 	S32 antialiasLevel)
 {
+   PROFILE_SCOPE( GFXTextureManager_FindPooledTexure );
 
 	// find by profile
 	const auto& profilePoolItem = mTexturePool.find(profile);
