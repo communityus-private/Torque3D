@@ -66,7 +66,7 @@ private:
 	MutexImpl mMutexImpl;
 
 public:
-	MutexImpl * getImplementation() { return &mMutexImpl; };
+	MutexImpl * getImplementation() const { return const_cast<MutexImpl *>(&mMutexImpl); };
 };
 
 /**

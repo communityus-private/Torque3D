@@ -112,6 +112,11 @@ SDL_threadID TracedMutexImpl::getOwningThreadID() const
    return mData->owner_handle;
 }
 
+SDL_mutex* TracedMutexImpl::getRootMutex() const
+{
+	return mData->mutex;
+}
+
 /*static*/ void TracedMutexImpl::_reportAboutPossibleDeadlock()
 {
 	// NOTE: Report is dumped to a file before a message box is shown

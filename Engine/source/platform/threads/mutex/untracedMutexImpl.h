@@ -27,6 +27,7 @@
 
 #include <memory>
 #include <SDL_thread.h>
+#include <SDL_mutex.h>
 
 namespace MutexDetails
 {
@@ -47,6 +48,7 @@ public:
 	void unlock(LockID);
 
    SDL_threadID getOwningThreadID() const;
+   SDL_mutex* getRootMutex() const;
 
 private:
 	struct MutexData;
@@ -54,8 +56,6 @@ private:
 	static void _reportAboutPossibleDeadlock();
 
 	const std::unique_ptr<MutexData> mData;
-public:
-	SDL_mutex* getRootMutex() { return mData->mutex; };
 };
 
 } // namespace MutexDetails

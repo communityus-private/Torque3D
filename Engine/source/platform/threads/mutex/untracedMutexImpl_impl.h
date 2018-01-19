@@ -39,6 +39,7 @@ namespace MutexDetails
 
 struct UntracedMutexImpl::MutexData
 {
+public:
    SDL_mutex* mutex;
    SDL_threadID owner_handle = 0;
 };
@@ -93,6 +94,12 @@ SDL_threadID UntracedMutexImpl::getOwningThreadID() const
 {
    return mData->owner_handle;
 }
+
+SDL_mutex* UntracedMutexImpl::getRootMutex() const
+{
+	return mData->mutex;
+}
+
 
 /*static*/ void UntracedMutexImpl::_reportAboutPossibleDeadlock()
 {

@@ -27,6 +27,8 @@
 #include "platform/threads/mutex/threadLockStack.h"
 
 #include <memory>
+#include <SDL_thread.h>
+#include <SDL_mutex.h>
 
 namespace MutexDetails
 {
@@ -44,6 +46,7 @@ public:
 	void unlock(LockID);
 
    SDL_threadID getOwningThreadID() const;
+   SDL_mutex * getRootMutex() const;
 
 private:
 	struct MutexData;
