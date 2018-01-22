@@ -33,6 +33,8 @@
 #include <time.h>
 #include <sstream>
 
+#include <SDL_mutex.h>
+
 namespace MutexDetails
 {
 
@@ -97,7 +99,8 @@ LockStack::~LockStack()
 
 LockStack::EntryID LockStack::push(LockState state)
 {
-	auto lock = StdX::Lock(mSpinLock);
+   mSpinLock.lock();
+   //auto lock = StdX::Lock(mSpinLock);
 	AssertFatal(!mStack.empty(), "Can't push an empty Stack!");
 	AssertFatal(!mStack.back().lockState.locked, "Attemptempting to acquire a Thread Lock more than once!");
 
@@ -107,7 +110,8 @@ LockStack::EntryID LockStack::push(LockState state)
 
 void LockStack::lock(LockStack::EntryID id)
 {
-	auto lock = StdX::Lock(mSpinLock);
+   mSpinLock.lock();
+	//auto lock = StdX::Lock(mSpinLock);
 	// NOTE: Although the presense of `id` parameter in this method makes it
 	// possible to mark any entry in mStack as locked, if `id` does not correspond
 	// to the last entry, it would indicate that there is an error in higher
@@ -123,7 +127,8 @@ void LockStack::lock(LockStack::EntryID id)
 
 void LockStack::remove(LockStack::EntryID id)
 {
-	auto lock = StdX::Lock(mSpinLock);
+   mSpinLock.lock();
+	//auto lock = StdX::Lock(mSpinLock);
 	mStack[id].isRemoved = true;
 
 	while (!mStack.empty() && mStack.back().isRemoved)
@@ -134,7 +139,8 @@ void LockStack::remove(LockStack::EntryID id)
 
 std::string LockStack::makeDescription() const
 {
-	auto lock = StdX::Lock(mSpinLock);
+   mSpinLock.lock();
+	//auto lock = StdX::Lock(mSpinLock);
 	if (mStack.empty())
 	{
 		return "";
@@ -173,13 +179,15 @@ GlobalLockStackPool::GlobalLockStackPool()
 
 void GlobalLockStackPool::registerStack(const LockStack& stack)
 {
-	auto lock = StdX::Lock(mMutexData->mutex);
+   SDL_LockMutex(mMutexData->mutex);
+	//auto lock = StdX::Lock(mMutexData->mutex);
 	mStacks.push_back(&stack);
 }
 
 void GlobalLockStackPool::unregisterStack(const LockStack& stack)
 {
-	auto lock = StdX::Lock(mMutexData->mutex);
+   SDL_LockMutex(mMutexData->mutex);
+	//auto lock = StdX::Lock(mMutexData->mutex);
 	auto iter = std::find(mStacks.begin(), mStacks.end(), &stack);
 	if (iter != mStacks.end())
 	{
@@ -197,7 +205,8 @@ void GlobalLockStackPool::dumpToFile(const char* filename) const
 	file << "Per-thread mutex lock report" << '\n'
 	     << "Time: " << _getCurrentDateTime() << '\n';
 
-	auto lock = StdX::Lock(mMutexData->mutex);
+   SDL_LockMutex(mMutexData->mutex);
+	//auto lock = StdX::Lock(mMutexData->mutex);
 	for (const LockStack* stack : mStacks)
 	{
 		auto description = stack->makeDescription();
@@ -206,7 +215,8 @@ void GlobalLockStackPool::dumpToFile(const char* filename) const
 			file << description << "\n\n";
 		}
 	}
-	lock.release();
+	//lock.release();
+   SDL_UnlockMutex(mMutexData->mutex);
 
 	file << std::endl;
 }

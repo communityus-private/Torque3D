@@ -468,11 +468,11 @@ constexpr void InvokeForEach(const Callable& callable, Args&& ... args)
  *
  * @param mutex Must satisfy BasicLockable concept of C++ standard library
  */
-template <typename Mutex>
+/*template <typename Mutex>
 std::unique_lock<Mutex> Lock(Mutex& mutex)
 {
 	return std::unique_lock<Mutex>(mutex);
-}
+}*/
 
 /**
  * @brief A convenience function that allows to construct std::unique_lock
@@ -480,11 +480,11 @@ std::unique_lock<Mutex> Lock(Mutex& mutex)
  *
  * @param mutex Must satisfy Lockable concept of C++ standard library
  */
-template <typename Mutex>
+/*template <typename Mutex>
 std::unique_lock<Mutex> TryLock(Mutex& mutex)
 {
 	return std::unique_lock<Mutexes>(mutex, std::try_to_lock);
-}
+}*/
 
 /**
  * @brief A convenience function that allows to construct multiple
@@ -495,13 +495,13 @@ std::unique_lock<Mutex> TryLock(Mutex& mutex)
  * @param mutex Must satisfy BasicLockable concept of C++ standard library
  * @return A tuple of std::unique_lock-s for all input mutexes
  */
-template <typename... Mutexes>
+/*template <typename... Mutexes>
 std::enable_if_t < (sizeof...(Mutexes) > 1), std::tuple<std::unique_lock<Mutexes>... >>
         Lock(Mutexes& ... mutexes)
 {
 	std::lock(mutexes...);
 	return {std::unique_lock<Mutexes>(mutexes, std::adopt_lock)...};
-}
+}*/
 
 } // namespace StdX
 
