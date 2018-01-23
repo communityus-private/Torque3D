@@ -91,6 +91,7 @@ ShadowMapPass::ShadowMapPass(LightManager* lightManager, ShadowMapManager* shado
    mActiveLights = 0;
    mPrevCamPos = Point3F::Zero;
    mPrevCamRot = Point3F::Zero;
+   mPrevCamFov = 0.0f;
    mTimer = PlatformTimer::create();
 
    Con::addVariable( "$ShadowStats::activeMaps", TypeS32, &smActiveShadowMaps,
@@ -227,7 +228,7 @@ void ShadowMapPass::render(   SceneManager *sceneManager,
    bool forceUpdate = false;
 
    //force an update if we're jumping around (respawning, ect)
-   MatrixF curCamMatrix = control->getTransform();
+   MatrixF curCamMatrix = control->getRenderTransform();
    if (((curCamMatrix.getPosition() - mPrevCamPos).lenSquared() > mPow(smShadowsTeleportDist, 2)) || //update if we're teleporting
        ((curCamMatrix.getForwardVector() - mPrevCamRot).lenSquared() > mPow(smShadowsTurnRate*M_PI_F / 180, 2)) || //update if we're turning too fast
        (control->getCameraFov()) != mPrevCamFov) //update if we're zooming or unzooming
