@@ -161,6 +161,7 @@ void GFXTextureManager::zombify()
 
    // Notify everyone that cares about the zombification!
    smEventSignal.trigger( GFXZombify );
+   MutexHandle mutexHandle = TORQUE_LOCK(mMutex);
 
    // Release unused pool textures.
    cleanupPool();
@@ -317,9 +318,12 @@ GFXTextureObject *GFXTextureManager::_createTexture(  GBitmap *bmp,
 
    // Call the internal create... (use the real* variables now, as they
    // reflect the reality of the texture we are creating.)
+   MutexHandle mutexHandle = TORQUE_LOCK(GFX->mMutex);
+
    U32 numMips = 0;
    GFXFormat realFmt = realBmp->getFormat();
    _validateTexParams( realWidth, realHeight, profile, numMips, realFmt );
+
 
    GFXTextureObject *ret;
    if ( inObj )
@@ -420,6 +424,7 @@ GFXTextureObject *GFXTextureManager::_createTexture(  GBitmap *bmp,
       return NULL;
    }
 
+   mutexHandle.unlock();
    // Do statistics and book-keeping...
    
    //    - info for the texture...
@@ -523,6 +528,7 @@ GFXTextureObject *GFXTextureManager::_createTexture(  DDSFile *dds,
 
    // Call the internal create... (use the real* variables now, as they
    // reflect the reality of the texture we are creating.)
+   MutexHandle mutexHandle = TORQUE_LOCK(GFX->mMutex);
 
    GFXTextureObject *ret;
    if ( inObj )
@@ -557,6 +563,7 @@ GFXTextureObject *GFXTextureManager::_createTexture(  DDSFile *dds,
       return NULL;
    }
 
+   mutexHandle.unlock();
    // Do statistics and book-keeping...
 
    //    - info for the texture...
@@ -1297,13 +1304,14 @@ void GFXTextureManager::deleteTexture( GFXTextureObject *texture )
 
    hashRemove( texture );
 
+   GFXTextureProfile::updateStatsForDeletion(texture);
+   mutexHandle.unlock();
+
    // If we have a path for the texture then
    // remove change notifications for it.
    Path texPath = texture->getPath();
    if ( !texPath.isEmpty() )
       FS::RemoveChangeNotification( texPath, this, &GFXTextureManager::_onFileChanged );
-
-   GFXTextureProfile::updateStatsForDeletion(texture);
 
    freeTexture( texture );
 }
