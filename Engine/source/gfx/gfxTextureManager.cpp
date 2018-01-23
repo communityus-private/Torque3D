@@ -217,10 +217,11 @@ void GFXTextureManager::requestDeleteTexture( GFXTextureObject *texture )
       delete texture;
       return;
    }
-
+   /*
    // Set the time and store it.
    texture->mDeleteTime = Platform::getTime();
    mToDelete.push_back_unique( texture );
+   */
 }
 
 void GFXTextureManager::cleanupCache( U32 secondsToLive )
@@ -1018,6 +1019,8 @@ GFXTextureObject *GFXTextureManager::createCompositeTexture(const Torque::Path &
       bitmap[3] = NULL;
    
 
+   MutexHandle mutexHandle = TORQUE_LOCK(GFX->mMutex);
+
    Path realPath;
    GFXTextureObject *retTexObj = NULL;
    realPath = validatePath(pathR); //associate path with r channel texture in.
@@ -1190,7 +1193,7 @@ GFXTextureObject* GFXTextureManager::_findPooledTexure(U32 width,
 				// EXCEPT for render targets - render target reuse is allowed
 				// EXCEPT for postFX targets - they need a huge rework to be shareable
 				static bool enableRenderTargetSharing = true;
-				if (enableRenderTargetSharing && profile->isRenderTarget() && (profile != &GFXRenderTargetProfile || profile != &GFXRenderTargetSRGBProfile || profile != &GFXDynamicTextureProfile || profile != &GFXDynamicTextureSRGBProfile))
+				if (enableRenderTargetSharing && profile->isRenderTarget() && (profile != &GFXRenderTargetProfile || profile != &GFXRenderTargetSRGBProfile))
 				{
 					return textureItem;
 				}
@@ -1309,9 +1312,11 @@ void GFXTextureManager::deleteTexture( GFXTextureObject *texture )
 
    // If we have a path for the texture then
    // remove change notifications for it.
+   /*
    Path texPath = texture->getPath();
    if ( !texPath.isEmpty() )
       FS::RemoveChangeNotification( texPath, this, &GFXTextureManager::_onFileChanged );
+	  */
 
    freeTexture( texture );
 }

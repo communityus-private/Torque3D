@@ -188,7 +188,7 @@ public:
    /// Unregisteres a texture event callback.
    /// @see addEventDelegate
    template <class T,class U>
-   static void removeEventDelegate( T obj, U func ) { smEventSignal.remove( obj, func ); }
+   static void removeEventDelegate(T obj, U func);
 
    /// @}
 
@@ -432,12 +432,25 @@ protected:
 template <class T,class U>
 inline void GFXTextureManager::addEventDelegate( T obj, U func ) 
 {
+	return;
+	/*
    EventSignal::DelegateSig d( obj, func );
    
    AssertFatal( !smEventSignal.contains( d ), 
       "GFXTextureManager::addEventDelegate() - This is already registered!" );
 
    smEventSignal.notify( d ); 
+   */
+}
+
+
+template <class T, class U>
+void GFXTextureManager::removeEventDelegate(T obj, U func)
+{
+	return;
+	/*
+	smEventSignal.remove(obj, func);
+	*/
 }
 
 inline void GFXTextureManager::reloadTexture( GFXTextureObject *texture )
