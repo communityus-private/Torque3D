@@ -1166,11 +1166,11 @@ GFXTextureObject* GFXTextureManager::_findPooledTexure(U32 width,
    PROFILE_SCOPE( GFXTextureManager_FindPooledTexure );
 
 	// find by profile
-	const auto& profilePoolItem = mTexturePool.find(profile);
+	const TexturePoolMap::iterator& profilePoolItem = mTexturePool.find(profile);
 	if (profilePoolItem != mTexturePool.end())
 	{
 		// find by descriptor
-		const auto& descriptorPool = (*profilePoolItem).second;
+		const TexturePoolValue& descriptorPool = (*profilePoolItem).second;
 
 		TexturePoolDescriptor descriptor(width, height, format, numMipLevels, antialiasLevel);
 
