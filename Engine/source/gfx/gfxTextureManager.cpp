@@ -1174,7 +1174,7 @@ GFXTextureObject* GFXTextureManager::_findPooledTexure(U32 width,
 
 		TexturePoolDescriptor descriptor(width, height, format, numMipLevels, antialiasLevel);
 
-		const auto& descriptorPoolItem = descriptorPool.find(descriptor);
+		TexturePoolValue::const_iterator descriptorPoolItem = descriptorPool.find(descriptor);
 		if (descriptorPoolItem != descriptorPool.end())
 		{
 			// loop through available textures to find unused one
