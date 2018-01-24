@@ -1178,7 +1178,7 @@ GFXTextureObject* GFXTextureManager::_findPooledTexure(U32 width,
 		if (descriptorPoolItem != descriptorPool.end())
 		{
 			// loop through available textures to find unused one
-			const auto& poolItems = (*descriptorPoolItem).second;
+			const std::vector<GFXTexHandle::StrongRefPtr>& poolItems = (*descriptorPoolItem).second;
 
 			for (const auto& textureItem : poolItems)
 			{
