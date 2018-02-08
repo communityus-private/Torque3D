@@ -182,7 +182,7 @@ GizmoProfile::GizmoProfile()
    gridColor.set(255,255,255,20);
    planeDim = 500.0f;   
 
-   gridSize.set(10,10,10);
+   gridSize.set(1,1,1);
    snapToGrid = false;
    allowSnapRotations = true;
    rotationSnap = 15.0f;
@@ -292,10 +292,10 @@ F32 Gizmo::smProjectDistance = 20000.0f;
 
 Gizmo::Gizmo()
 : mProfile( NULL ),
-  mSelectionIdx( -1 ),
-  mCameraMat( true ),
-  mTransform( true ),
   mObjectMat( true ),
+  mTransform( true ),
+  mCameraMat( true ),
+  mSelectionIdx( -1 ),
   mObjectMatInv( true ),
   mCurrentTransform( true ),
   mSavedTransform( true ),
@@ -303,23 +303,23 @@ Gizmo::Gizmo()
   mDeltaScale( 0,0,0 ),
   mDeltaRot( 0,0,0 ),
   mDeltaPos( 0,0,0 ),
-  mDeltaTotalPos( 0,0,0 ),
-  mDeltaTotalRot( 0,0,0 ),
-  mDeltaTotalScale( 0,0,0 ),
   mCurrentAlignment( World ),
+  mDeltaTotalScale( 0,0,0 ),
+  mDeltaTotalRot( 0,0,0 ),
+  mDeltaTotalPos( 0,0,0 ),
   mCurrentMode( MoveMode ),
-  mDirty( false ),
   mMouseDownPos( -1,-1 ),
+  mDirty( false ),
   mMouseDown( false ),
   mLastWorldMat( true ),
   mLastProjMat( true ),
   mLastViewport( 0, 0, 10, 10 ),
   mLastCameraFOV( 1.f ),
-  mElipseCursorCollideVecSS( 1.0f, 0.0f, 0.0f ),
-  mElipseCursorCollidePntSS( 0.0f, 0.0f, 0.0f ),
   mHighlightCentroidHandle( false ),
-  mHighlightAll( false ),
+  mElipseCursorCollidePntSS( 0.0f, 0.0f, 0.0f ),
+  mElipseCursorCollideVecSS( 1.0f, 0.0f, 0.0f ),
   mGridPlaneEnabled( true ),
+  mHighlightAll( false ),
   mMoveGridEnabled( true ),
   mMoveGridSize( 20.f ),
   mMoveGridSpacing( 1.f )

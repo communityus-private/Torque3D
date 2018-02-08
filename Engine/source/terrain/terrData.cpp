@@ -20,6 +20,11 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+// Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
+// Copyright (C) 2015 Faust Logic, Inc.
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+
 #include "platform/platform.h"
 #include "terrain/terrData.h"
 
@@ -176,7 +181,6 @@ ImplementEnumType(baseTexFormat,
 { TerrainBlock::NONE, "NONE", "No cached terrain.\n" },
 { TerrainBlock::DDS, "DDS", "Cache the terrain in a DDS format.\n" },
 { TerrainBlock::PNG, "PNG", "Cache the terrain in a PNG format.\n" },
-{ TerrainBlock::JPG, "JPG", "Cache the terrain in a JPG format.\n" },
 EndImplementEnumType;
 
 TerrainBlock::TerrainBlock()
@@ -189,7 +193,7 @@ TerrainBlock::TerrainBlock()
    mDetailsDirty( false ),
    mLayerTexDirty( false ),
    mBaseTexSize( 1024 ),
-   mBaseTexFormat( TerrainBlock::JPG ),
+   mBaseTexFormat( TerrainBlock::DDS ),
    mCell( NULL ),
    mBaseMaterial( NULL ),
    mDefaultMatInst( NULL ),
@@ -201,6 +205,8 @@ TerrainBlock::TerrainBlock()
 {
    mTypeMask = TerrainObjectType | StaticObjectType | StaticShapeObjectType;
    mNetFlags.set(Ghostable | ScopeAlways);
+   mIgnoreZodiacs = false;
+   zode_primBuffer = 0;
 }
 
 
@@ -219,6 +225,7 @@ TerrainBlock::~TerrainBlock()
    if (editor)
       editor->detachTerrain(this);
 #endif
+   deleteZodiacPrimitiveBuffer();
 }
 
 void TerrainBlock::_onTextureEvent( GFXTexCallbackCode code )
@@ -873,7 +880,7 @@ GFXTextureObject* TerrainBlock::getLightMapTex()
    if ( mLightMapTex.isNull() && mLightMap )
    {
       mLightMapTex.set( mLightMap, 
-                        &GFXDefaultStaticDiffuseProfile, 
+                        &GFXStaticTextureProfile, 
                         false, 
                         "TerrainBlock::getLightMapTex()" );
    }
@@ -966,7 +973,7 @@ bool TerrainBlock::onAdd()
          _updateBaseTexture( true );
 
       // The base texture should have been cached by now... so load it.
-      mBaseTex.set( baseCachePath, &GFXDefaultStaticDiffuseProfile, "TerrainBlock::mBaseTex" );
+      mBaseTex.set( baseCachePath, &GFXStaticTextureSRGBProfile, "TerrainBlock::mBaseTex" );
 
       GFXTextureManager::addEventDelegate( this, &TerrainBlock::_onTextureEvent );
       MATMGR->getFlushSignal().notify( this, &TerrainBlock::_onFlushMaterials );
@@ -1007,6 +1014,7 @@ void TerrainBlock::_rebuildQuadtree()
 
    // Build the shared PrimitiveBuffer.
    mCell->createPrimBuffer( &mPrimBuffer );
+   deleteZodiacPrimitiveBuffer();
 }
 
 void TerrainBlock::_updatePhysics()
@@ -1149,6 +1157,9 @@ void TerrainBlock::initPersistFields()
 
    endGroup( "Misc" );
 
+   addGroup("AFX");
+   addField("ignoreZodiacs",     TypeBool,      Offset(mIgnoreZodiacs,    TerrainBlock));
+   endGroup("AFX");
    Parent::initPersistFields();
 
    removeField( "scale" );
@@ -1199,6 +1210,7 @@ U32 TerrainBlock::packUpdate(NetConnection* con, U32 mask, BitStream *stream)
       stream->write( mScreenError );
 
    stream->writeInt(mBaseTexFormat, 32);
+   stream->writeFlag(mIgnoreZodiacs);
 
    return retMask;
 }
@@ -1268,6 +1280,7 @@ void TerrainBlock::unpackUpdate(NetConnection* con, BitStream *stream)
       stream->read( &mScreenError );
 
    mBaseTexFormat = (BaseTexFormat)stream->readInt(32);
+   mIgnoreZodiacs = stream->readFlag();
 }
 
 void TerrainBlock::getMinMaxHeight( F32 *minHeight, F32 *maxHeight ) const 
@@ -1406,3 +1419,19 @@ DefineConsoleFunction( getTerrainHeightBelowPosition, F32, (const char* ptOrX, c
 	
 	return height;
 }
+const U16* TerrainBlock::getZodiacPrimitiveBuffer()
+{ 
+   if (!zode_primBuffer && !mIgnoreZodiacs)
+      TerrCell::createZodiacPrimBuffer(&zode_primBuffer);
+   return zode_primBuffer;
+}
+
+void TerrainBlock::deleteZodiacPrimitiveBuffer()
+{
+   if (zode_primBuffer != 0)
+   {
+      delete [] zode_primBuffer;
+      zode_primBuffer = 0;
+   }
+}
+

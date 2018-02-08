@@ -406,7 +406,7 @@ void CubeReflector::updateFace( const ReflectParams &params, U32 faceidx )
    matView.inverse();
 
    GFX->setWorldMatrix(matView);
-
+   GFX->clearTextureStateImmediate(0);
    renderTarget->attachTexture( GFXTextureTarget::Color0, cubemap, faceidx );
    GFX->setActiveRenderTarget( renderTarget );
    GFX->clear( GFXClearStencil | GFXClearTarget | GFXClearZBuffer, gCanvasClearColor, 1.0f, 0 );
@@ -614,7 +614,7 @@ void PlaneReflector::updateReflection( const ReflectParams &params )
    // In the future we may want to fix this instead by having the scatterSky
    // render a skirt or something in its lower half.
    //
-   ColorF clearColor = gClientSceneGraph->getAmbientLightColor();
+   LinearColorF clearColor = gClientSceneGraph->getAmbientLightColor();
    GFX->clear( GFXClearZBuffer | GFXClearStencil | GFXClearTarget, clearColor, 1.0f, 0 );
 
    if(GFX->getCurrentRenderStyle() == GFXDevice::RS_StereoSideBySide)

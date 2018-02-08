@@ -230,6 +230,13 @@ PlatformWindow *PlatformWindowManagerSDL::createWindow(GFXDevice *device, const 
       Con::warnf("PlatformWindowManagerSDL::createWindow - created a window with no device!");
    }
 
+   //Set it up for drag-n-drop events 
+#ifdef TORQUE_TOOLS
+   SDL_EventState(SDL_DROPBEGIN, SDL_ENABLE);
+   SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+   SDL_EventState(SDL_DROPCOMPLETE, SDL_ENABLE);
+#endif
+
    linkWindow(window);
 
    return window;
@@ -309,6 +316,39 @@ void PlatformWindowManagerSDL::_process()
             if(window)
                window->_processSDLEvent(evt);
             break;
+         }
+
+         case(SDL_DROPBEGIN):
+         {
+            if (!Con::isFunction("onDropBegin"))
+               break;
+
+            Con::executef("onDropBegin");
+         }
+
+         case (SDL_DROPFILE):
+         {
+            // In case if dropped file
+            if (!Con::isFunction("onDropFile"))
+               break;
+
+            char* fileName = evt.drop.file;
+
+            if (!Platform::isFile(fileName))
+               break;
+
+            Con::executef("onDropFile", StringTable->insert(fileName));
+
+            SDL_free(fileName);    // Free dropped_filedir memory
+            break;
+         }
+
+         case(SDL_DROPCOMPLETE):
+         {
+            if (!Con::isFunction("onDropEnd"))
+               break;
+
+            Con::executef("onDropEnd");
          }
 
          default:
@@ -443,9 +483,9 @@ void InitWindowingSystem()
 }
 
 AFTER_MODULE_INIT(gfx)
-{   
-   int res = SDL_Init( SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS | SDL_INIT_NOPARACHUTE );
-   AssertFatal(res != -1, "SDL init error");
+{
+   int res = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS | SDL_INIT_NOPARACHUTE);
+   AssertFatal(res != -1, avar("SDL error:%s", SDL_GetError()));
 
    // By default, SDL enables text input. We disable it on initialization, and
    // we will enable it whenever the time is right.

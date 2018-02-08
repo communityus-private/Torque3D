@@ -20,6 +20,11 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+// Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
+// Copyright (C) 2015 Faust Logic, Inc.
+//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
+
 #include "platform/platform.h"
 #include "gui/core/guiCanvas.h"
 
@@ -100,33 +105,33 @@ GuiCanvas::GuiCanvas(): GuiControl(),
                         mCursorEnabled(true),
                         mForceMouseToGUI(false),
                         mAlwaysHandleMouseButtons(false),
-                        mCursorChanged(0),
-                        mClampTorqueCursor(true),
                         mShowCursor(true),
+                        mClampTorqueCursor(true),
+                        mCursorChanged(0),
                         mLastCursorEnabled(false),
-                        mMouseControl(NULL),
                         mMouseCapturedControl(NULL),
+                        mMouseControl(NULL),
                         mMouseControlClicked(false),
                         mMouseButtonDown(false),
                         mMouseRightButtonDown(false),
-                        mMouseMiddleButtonDown(false),
                         mDefaultCursor(NULL),
-                        mLastCursor(NULL),
-                        mLastCursorPt(0,0),
+                        mMouseMiddleButtonDown(false),
                         mCursorPt(0,0),
+                        mLastCursorPt(0,0),
+                        mLastCursor(NULL),
                         mLastMouseClickCount(0),
-                        mLastMouseDownTime(0),
-                        mPrevMouseTime(0),
                         mRenderFront(false),
+                        mPrevMouseTime(0),
+                        mLastMouseDownTime(0),
                         mHoverControl(NULL),
                         mHoverPositionSet(false),
-                        mHoverLeftControlTime(0),
                         mLeftMouseLast(false),
+                        mHoverLeftControlTime(0),
                         mMiddleMouseLast(false),
                         mRightMouseLast(false),
                         mMouseDownPoint(0.0f,0.0f),
-                        mPlatformWindow(NULL),
                         mLastRenderMs(0),
+                        mPlatformWindow(NULL),
                         mDisplayWindow(true),
                         mMenuBarCtrl(NULL)
 {
@@ -271,8 +276,6 @@ bool GuiCanvas::onAdd()
    // Define the menu bar for this canvas (if any)
    Con::executef(this, "onCreateMenu");
 
-   Sim::findObject("PlatformGenericMenubar", mMenuBarCtrl);
-
    return parentRet;
 }
 
@@ -297,21 +300,39 @@ void GuiCanvas::setMenuBar(SimObject *obj)
         Parent::removeObject( oldMenuBar );
 
     // set new menubar    
-    if( mMenuBarCtrl )
-        Parent::addObject(mMenuBarCtrl);
+    if (mMenuBarCtrl)
+    {
+       //Add a wrapper control so that the menubar sizes correctly
+       GuiControlProfile* profile;
+       Sim::findObject("GuiModelessDialogProfile", profile);
+
+       if (!profile)
+       {
+          Con::errorf("GuiCanvas::setMenuBar: Unable to find the GuiModelessDialogProfile profile!");
+          return;
+       }
+
+       GuiControl* menuBackground = new GuiControl();
+       menuBackground->registerObject();
+
+       menuBackground->setControlProfile(profile);
+
+       menuBackground->addObject(mMenuBarCtrl);
+
+       Parent::addObject(menuBackground);
+    }
 
     // update window accelerator keys
     if( oldMenuBar != mMenuBarCtrl )
     {
-        StringTableEntry ste = StringTable->insert("menubar");
-        GuiMenuBar* menu = NULL;
-        menu = !oldMenuBar ? NULL : dynamic_cast<GuiMenuBar*>(oldMenuBar->findObjectByInternalName( ste, true));
-        if( menu )
-            menu->removeWindowAcceleratorMap( *getPlatformWindow()->getInputGenerator() );
+        GuiMenuBar* oldMenu = dynamic_cast<GuiMenuBar*>(oldMenuBar);
+        GuiMenuBar* newMenu = dynamic_cast<GuiMenuBar*>(mMenuBarCtrl);
 
-        menu = !mMenuBarCtrl ? NULL : dynamic_cast<GuiMenuBar*>(mMenuBarCtrl->findObjectByInternalName( ste, true));
-        if( menu )
-                menu->buildWindowAcceleratorMap( *getPlatformWindow()->getInputGenerator() );
+        if(oldMenu)
+           oldMenu->removeWindowAcceleratorMap(*getPlatformWindow()->getInputGenerator());
+
+        if(newMenu)
+           newMenu->buildWindowAcceleratorMap(*getPlatformWindow()->getInputGenerator());
     }
 }
 
@@ -605,10 +626,11 @@ bool GuiCanvas::tabPrev(void)
 
 bool GuiCanvas::processInputEvent(InputEventInfo &inputEvent)
 {
+   mConsumeLastInputEvent = true;
    // First call the general input handler (on the extremely off-chance that it will be handled):
    if (mFirstResponder &&  mFirstResponder->onInputEvent(inputEvent))
    {
-      return(true);
+		return mConsumeLastInputEvent;  
    }
 
    switch (inputEvent.deviceType)
@@ -664,7 +686,7 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
       if (mFirstResponder)
       {
          if(mFirstResponder->onKeyDown(mLastEvent))
-            return true;
+            return mConsumeLastInputEvent;
       }
 
       //see if we should tab next/prev
@@ -675,12 +697,12 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
             if (inputEvent.modifier & SI_SHIFT)
             {
                if(tabPrev())
-                  return true;
+                  return mConsumeLastInputEvent;
             }
             else if (inputEvent.modifier == 0)
             {
                if(tabNext())
-                  return true;
+                  return mConsumeLastInputEvent;
             }
          }
       }
@@ -691,14 +713,14 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyPress(mAcceleratorMap[i].index);
-            return true;
+            return mConsumeLastInputEvent;
          }
       }
    }
    else if(inputEvent.action == SI_BREAK)
    {
       if(mFirstResponder && mFirstResponder->onKeyUp(mLastEvent))
-         return true;
+         return mConsumeLastInputEvent;
 
       //see if there's an accelerator
       for (U32 i = 0; i < mAcceleratorMap.size(); i++)
@@ -706,7 +728,7 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyRelease(mAcceleratorMap[i].index);
-            return true;
+            return mConsumeLastInputEvent;
          }
       }
    }
@@ -718,13 +740,14 @@ bool GuiCanvas::processKeyboardEvent(InputEventInfo &inputEvent)
          if ((U32)mAcceleratorMap[i].keyCode == (U32)inputEvent.objInst && (U32)mAcceleratorMap[i].modifier == eventModifier)
          {
             mAcceleratorMap[i].ctrl->acceleratorKeyPress(mAcceleratorMap[i].index);
-            return true;
+            return mConsumeLastInputEvent;
          }
       }
 
       if(mFirstResponder)
       {
-         return mFirstResponder->onKeyRepeat(mLastEvent);
+         bool ret = mFirstResponder->onKeyRepeat(mLastEvent);
+         return ret && mConsumeLastInputEvent;
       }
    }
    return false;
@@ -801,7 +824,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          rootMiddleMouseDragged(mLastEvent);
       else
          rootMouseMove(mLastEvent);
-      return true;
+      return mConsumeLastInputEvent;
    }
    else if ( inputEvent.objInst == SI_ZAXIS
              || inputEvent.objInst == SI_RZAXIS )
@@ -860,7 +883,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
             rootMouseUp(mLastEvent);
          }
 
-         return true;
+         return mConsumeLastInputEvent;
       }
       else if(inputEvent.objInst == KEY_BUTTON1) // right button
       {
@@ -891,7 +914,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          else // it was a mouse up
             rootRightMouseUp(mLastEvent);
 
-         return true;
+         return mConsumeLastInputEvent;
       }
       else if(inputEvent.objInst == KEY_BUTTON2) // middle button
       {
@@ -922,7 +945,7 @@ bool GuiCanvas::processMouseEvent(InputEventInfo &inputEvent)
          else // it was a mouse up
             rootMiddleMouseUp(mLastEvent);
 
-         return true;
+         return mConsumeLastInputEvent;  
       }
    }
    return false;
@@ -1626,27 +1649,26 @@ void GuiCanvas::maintainSizing()
       Point2I newPos = screenRect.point;
 
       // if menubar is active displace content gui control
-      if( mMenuBarCtrl && (ctrl == getContentControl()) )
-      {          
-          const SimObject *menu = mMenuBarCtrl->findObjectByInternalName( StringTable->insert("menubar"), true);
+      if (mMenuBarCtrl && (ctrl == getContentControl()))
+      {
+         /*const SimObject *menu = mMenuBarCtrl->findObjectByInternalName( StringTable->insert("menubar"), true);
 
-          if( !menu )
-              continue;
+         if( !menu )
+             continue;
 
-          AssertFatal( dynamic_cast<const GuiControl*>(menu), "");
+         AssertFatal( dynamic_cast<const GuiControl*>(menu), "");*/
 
-          const U32 yOffset = static_cast<const GuiControl*>(menu)->getExtent().y;
-          newPos.y += yOffset;
-          newExt.y -= yOffset;
+         const U32 yOffset = static_cast<const GuiMenuBar*>(mMenuBarCtrl)->mMenubarHeight;
+         newPos.y += yOffset;
+         newExt.y -= yOffset;
       }
 
-      if(pos != newPos || ext != newExt)
+      if (pos != newPos || ext != newExt)
       {
          ctrl->resize(newPos, newExt);
          resetUpdateRegions();
       }
    }
-
 }
 
 void GuiCanvas::setupFences()
@@ -1801,7 +1823,7 @@ void GuiCanvas::renderFrame(bool preRenderOnly, bool bufferSwap /* = true */)
    if (GuiOffscreenCanvas::sList.size() != 0)
    {
       // Reset the entire state since oculus shit will have barfed it.
-      GFX->disableShaders(true);
+      //GFX->disableShaders(true);
       GFX->updateStates(true);
 
       for (Vector<GuiOffscreenCanvas*>::iterator itr = GuiOffscreenCanvas::sList.begin(); itr != GuiOffscreenCanvas::sList.end(); itr++)
@@ -2367,8 +2389,8 @@ DefineEngineFunction(excludeOtherInstance, bool, (const char* appIdentifer),,
                 "@ingroup Platform\n"
                 "@ingroup GuiCore")
 {
-      // mac/360 can only run one instance in general.
-#if !defined(TORQUE_OS_MAC) && !defined(TORQUE_OS_XENON) && !defined(TORQUE_DEBUG) && !defined(TORQUE_OS_LINUX)
+      // mac can only run one instance in general.
+#if !defined(TORQUE_OS_MAC) && !defined(TORQUE_DEBUG) && !defined(TORQUE_OS_LINUX)
    return Platform::excludeOtherInstances(appIdentifer);
 #else
    // We can just return true if we get here.
@@ -2815,3 +2837,23 @@ ConsoleMethod( GuiCanvas, cursorNudge, void, 4, 4, "x, y" )
 {
    object->cursorNudge(dAtof(argv[2]), dAtof(argv[3]));
 }
+// This function allows resetting of the video-mode from script. It was motivated by
+// the need to temporarily disable vsync during datablock cache load to avoid a 
+// significant slowdown.
+bool AFX_forceVideoReset = false;
+
+ConsoleMethod( GuiCanvas, resetVideoMode, void, 2,2, "()")
+{
+   PlatformWindow* window = object->getPlatformWindow();
+   if( window )
+   {
+      GFXWindowTarget* gfx_target =  window->getGFXTarget();
+      if ( gfx_target )
+      {
+         AFX_forceVideoReset = true;
+         gfx_target->resetMode();
+         AFX_forceVideoReset = false;
+      }
+   }
+}
+

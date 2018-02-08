@@ -100,7 +100,7 @@ VolumetricFog::VolumetricFog()
 
    mTypeMask |= EnvironmentObjectType | StaticObjectType;
 
-   mPrepassTarget = NULL;
+   mDeferredTarget = NULL;
    mDepthBufferTarget = NULL;
    mFrontBufferTarget = NULL;
 
@@ -142,7 +142,7 @@ VolumetricFog::VolumetricFog()
 
 VolumetricFog::~VolumetricFog()
 {
-   if (isClientObject())
+   if (!isClientObject())
       return;
 
    for (S32 i = 0; i < det_size.size(); i++)
@@ -152,12 +152,11 @@ VolumetricFog::~VolumetricFog()
       if (det_size[i].piArray != NULL)
          delete(det_size[i].piArray);
       if (det_size[i].verts != NULL)
-         delete(det_size[i].verts);
+         delete [] (det_size[i].verts);
    }
    det_size.clear();
 
-   if (z_buf.isValid())
-      SAFE_DELETE(z_buf);
+   z_buf = NULL;
 
    if (!mTexture.isNull())
       mTexture.free();
@@ -365,7 +364,7 @@ bool VolumetricFog::LoadShape()
       if (det_size[i].piArray != NULL)
          delete(det_size[i].piArray);
       if (det_size[i].verts != NULL)
-         delete(det_size[i].verts);
+         delete [] (det_size[i].verts);
    }
    det_size.clear();
 
@@ -771,17 +770,17 @@ void VolumetricFog::_leaveFog(ShapeBase *control)
 
 bool VolumetricFog::setupRenderer()
 {
-   // Search for the prepass rendertarget and shadermacros.
-   mPrepassTarget = NamedTexTarget::find("prepass");
-   if (!mPrepassTarget.isValid())
+   // Search for the deferred rendertarget and shadermacros.
+   mDeferredTarget = NamedTexTarget::find("deferred");
+   if (!mDeferredTarget.isValid())
    {
-      Con::errorf("VolumetricFog::setupRenderer - could not find PrepassTarget");
+      Con::errorf("VolumetricFog::setupRenderer - could not find DeferredTarget");
       return false;
    }
 
    Vector<GFXShaderMacro> macros;
-   if (mPrepassTarget)
-      mPrepassTarget->getShaderMacros(&macros);
+   if (mDeferredTarget)
+      mDeferredTarget->getShaderMacros(&macros);
 
    // Search the depth and frontbuffers which are created by the VolumetricFogRTManager
 
@@ -799,27 +798,27 @@ bool VolumetricFog::setupRenderer()
       return false;
    }
 
-   // Find and setup the prepass Shader
+   // Find and setup the deferred Shader
 
    ShaderData *shaderData;
-   mPrePassShader = Sim::findObject("VolumetricFogPrePassShader", shaderData) ?
+   mDeferredShader = Sim::findObject("VolumetricFogDeferredShader", shaderData) ?
    shaderData->getShader() : NULL;
-   if (!mPrePassShader)
+   if (!mDeferredShader)
    {
-      Con::errorf("VolumetricFog::setupRenderer - could not find VolumetricFogPrePassShader");
+      Con::errorf("VolumetricFog::setupRenderer - could not find VolumetricFogDeferredShader");
       return false;
    }
 
    // Create ShaderConstBuffer and Handles
 
-   mPPShaderConsts = mPrePassShader->allocConstBuffer();
+   mPPShaderConsts = mDeferredShader->allocConstBuffer();
    if (mPPShaderConsts.isNull())
    {
       Con::errorf("VolumetricFog::setupRenderer - could not allocate ShaderConstants 1.");
       return false;
    }
 
-   mPPModelViewProjSC = mPrePassShader->getShaderConstHandle("$modelView");
+   mPPModelViewProjSC = mDeferredShader->getShaderConstHandle("$modelView");
 
    // Find and setup the VolumetricFog Shader
 
@@ -878,7 +877,7 @@ bool VolumetricFog::setupRenderer()
    mReflFogDensitySC = mReflectionShader->getShaderConstHandle("$fogDensity");
    mReflFogStrengthSC = mReflectionShader->getShaderConstHandle("$reflStrength");
 
-   // Create the prepass StateBlock
+   // Create the deferred StateBlock
 
    desc_preD.setCullMode(GFXCullCW);
    desc_preD.setBlend(true);
@@ -895,7 +894,7 @@ bool VolumetricFog::setupRenderer()
    descD.setBlend(true);
    descD.setZReadWrite(false, false);// desc.setZReadWrite(true, false);
 
-   // prepassBuffer sampler
+   // deferredBuffer sampler
    descD.samplersDefined = true;
    descD.samplers[0].addressModeU = GFXAddressClamp;
    descD.samplers[0].addressModeV = GFXAddressClamp;
@@ -1063,7 +1062,7 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
    mat.scale(mObjScale);
    GFX->multWorld(mat);
 
-   GFX->setShader(mPrePassShader);
+   GFX->setShader(mDeferredShader);
    GFX->setShaderConstBuffer(mPPShaderConsts);
    GFX->setStateBlock(mStateblock_preD);
 
@@ -1075,7 +1074,7 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
 
    mPPShaderConsts->setSafe(mPPModelViewProjSC, xform);
 
-   const ColorF &sunlight = state->getAmbientLightColor();
+   const LinearColorF &sunlight = state->getAmbientLightColor();
 
    Point3F ambientColor(sunlight.red, sunlight.green, sunlight.blue);
    mShaderConsts->setSafe(mAmbientColorSC, ambientColor);
@@ -1127,9 +1126,9 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
    mShaderConsts->setSafe(mTexScaleSC, mTexScale * mFOV);
    mShaderConsts->setSafe(mTexTilesSC, mTexTiles);
 
-   GFXTextureObject *prepasstex = mPrepassTarget ? mPrepassTarget->getTexture(0) : NULL;
+   GFXTextureObject *deferredtex = mDeferredTarget ? mDeferredTarget->getTexture(0) : NULL;
 
-   GFX->setTexture(0, prepasstex);
+   GFX->setTexture(0, deferredtex);
    GFX->setTexture(1, mDepthBuffer);
    GFX->setTexture(2, mFrontBuffer);
 
@@ -1160,10 +1159,9 @@ void VolumetricFog::render(ObjectRenderInst *ri, SceneRenderState *state, BaseMa
 
    GFX->drawPrimitive(0);
 
-   // Ensure these two textures are bound to the pixel shader input on the second run as they are used as pixel shader outputs (render targets).
-   GFX->setTexture(1, NULL); //mDepthBuffer
-   GFX->setTexture(2, NULL); //mFrontBuffer
-   GFX->updateStates(); //update the dirty texture state we set above
+   // Ensure these two textures are NOT bound to the pixel shader input on the second run as they are used as pixel shader outputs (render targets).
+   GFX->clearTextureStateImmediate(1); //mDepthBuffer
+   GFX->clearTextureStateImmediate(2); //mFrontBuffer
 }
 
 void VolumetricFog::reflect_render(ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat)
@@ -1205,7 +1203,7 @@ void VolumetricFog::InitTexture()
    mIsTextured = false;
 
    if (mTextureName.isNotEmpty())
-      mTexture.set(mTextureName, &GFXDefaultStaticDiffuseProfile, "VolumetricFogMod");
+      mTexture.set(mTextureName, &GFXStaticTextureSRGBProfile, "VolumetricFogMod");
 
    if (!mTexture.isNull())
    {
@@ -1219,7 +1217,7 @@ void VolumetricFog::InitTexture()
    }
 }
 
-void VolumetricFog::setFogColor(ColorF color)
+void VolumetricFog::setFogColor(LinearColorF color)
 {
    mFogColor.set(255 * color.red,255 * color.green,255 * color.blue);
    setMaskBits(FogColorMask);
@@ -1267,7 +1265,7 @@ bool VolumetricFog::isInsideFog()
    return mCamInFog;
 }
 
-DefineEngineMethod(VolumetricFog, SetFogColorF, void, (ColorF new_color), ,
+DefineEngineMethod(VolumetricFog, SetFogColorF, void, (LinearColorF new_color), ,
 "@brief Changes the color of the fog\n\n."
 "@params new_color the new fog color (rgb 0.0 - 1.0, a is ignored.")
 {

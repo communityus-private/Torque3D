@@ -242,7 +242,7 @@ void PhysicsShapeData::onRemove()
 
 void PhysicsShapeData::_onResourceChanged( const Torque::Path &path )
 {
-	if ( path != Path( shapeName ) )
+   if ( path != Path( shapeName ) )
       return;
 
    // Reload the changed shape.
@@ -257,9 +257,9 @@ void PhysicsShapeData::_onResourceChanged( const Torque::Path &path )
    }
 
    // Reload the collision shape.
-   reloadcolShape = shape->buildColShape( false, Point3F::One );
+   reloadcolShape = reloadShape->buildColShape( false, Point3F::One );
 
-   if ( bool(reloadShape) &&  bool(colShape))
+   if ( bool(reloadShape) &&  bool(reloadcolShape))
    {
       shape = reloadShape;
       colShape = reloadcolShape;
@@ -360,8 +360,8 @@ bool PhysicsShapeData::preload( bool server, String &errorBuffer )
       Vector<FConvexResult*> mHulls;
    };
 
- 	DecompDesc d;
-   d.mVcount       =	polyList.mVertexList.size();
+   DecompDesc d;
+   d.mVcount       = polyList.mVertexList.size();
    d.mVertices     = doubleVerts.address();
    d.mTcount       = polyList.mIndexList.size() / 3;
    d.mIndices      = polyList.mIndexList.address();
@@ -659,7 +659,7 @@ void PhysicsShape::onRemove()
       PhysicsPlugin::getPhysicsResetSignal().remove( this, &PhysicsShape::_onPhysicsReset );
 
       if ( mDestroyedShape )
-		  mDestroyedShape->deleteObject();
+        mDestroyedShape->deleteObject();
    }
 
    // Remove the resource change signal.

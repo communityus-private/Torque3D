@@ -29,6 +29,7 @@
 #include "math/util/frustum.h"
 #include "platform/profiler.h"
 #include "core/tAlgorithm.h"
+#include "gfx/gfxDevice.h"
 
 namespace MathUtils
 {
@@ -369,6 +370,18 @@ F32 getAngleBetweenVectors(VectorF vecA, VectorF vecB)
    F32 angle = mAcos(dot / mSqrt(lenSq1 * lenSq2));
 
    return angle;
+}
+
+F32 getSignedAngleBetweenVectors(VectorF vecA, VectorF vecB, VectorF norm)
+{
+   // angle in 0-180
+   F32 angle = getAngleBetweenVectors(vecA, vecB);
+   F32 sign = mSign(mDot(norm, mCross(vecA, vecB)));
+
+   // angle in -179-180
+   F32 signed_angle = angle * sign;
+
+   return signed_angle;
 }
 
 //-----------------------------------------------------------------------------
@@ -1450,44 +1463,45 @@ void makeFovPortFrustum(
 ///
 static const MatrixF sGFXProjRotMatrix( EulerF( (M_PI_F / 2.0f), 0.0f, 0.0f ) );
 
-void makeProjection( MatrixF *outMatrix, 
-                     F32 left, 
-                     F32 right, 
-                     F32 top, 
-                     F32 bottom, 
-                     F32 nearPlane, 
+void makeProjection( MatrixF *outMatrix,
+                     F32 left,
+                     F32 right,
+                     F32 top,
+                     F32 bottom,
+                     F32 nearPlane,
                      F32 farPlane,
-                     bool gfxRotate )
+                     bool gfxRotate)
 {
+   const bool isGL = GFX->getAdapterType() == OpenGL;
    Point4F row;
-   row.x = 2.0*nearPlane / (right-left);
-   row.y = 0.0;
-   row.z = 0.0;
-   row.w = 0.0;
-   outMatrix->setRow( 0, row );
+   row.x = 2.0f * nearPlane / (right - left);
+   row.y = 0.0f;
+   row.z = 0.0f;
+   row.w = 0.0f;
+   outMatrix->setRow(0, row);
 
-   row.x = 0.0;
-   row.y = 2.0 * nearPlane / (top-bottom);
-   row.z = 0.0;
-   row.w = 0.0;
-   outMatrix->setRow( 1, row );
+   row.x = 0.0f;
+   row.y = 2.0f * nearPlane / (top - bottom);
+   row.z = 0.0f;
+   row.w = 0.0f;
+   outMatrix->setRow(1, row);
 
-   row.x = (left+right) / (right-left);
-   row.y = (top+bottom) / (top-bottom);
-   row.z = farPlane / (nearPlane - farPlane);
-   row.w = -1.0;
-   outMatrix->setRow( 2, row );
+   row.x = (left + right) / (right - left);
+   row.y = (top + bottom) / (top - bottom);
+   row.z = isGL ? (nearPlane + farPlane) / (nearPlane - farPlane) : farPlane / (nearPlane - farPlane);
+   row.w = -1.0f;
+   outMatrix->setRow(2, row);
 
-   row.x = 0.0;
-   row.y = 0.0;
-   row.z = nearPlane * farPlane / (nearPlane - farPlane);
-   row.w = 0.0;
-   outMatrix->setRow( 3, row );
+   row.x = 0.0f;
+   row.y = 0.0f;
+   row.z = isGL ? 2.0f * nearPlane * farPlane / (nearPlane - farPlane) : farPlane * nearPlane / (nearPlane - farPlane);
+   row.w = 0.0f;
+   outMatrix->setRow(3, row);
 
    outMatrix->transpose();
 
-   if ( gfxRotate )
-      outMatrix->mul( sGFXProjRotMatrix );
+   if (gfxRotate)
+      outMatrix->mul(sGFXProjRotMatrix);
 }
 
 //-----------------------------------------------------------------------------
@@ -1516,11 +1530,8 @@ void makeOrthoProjection(  MatrixF *outMatrix,
 
    row.x = 0.0f;
    row.y = 0.0f;
-   row.w = 0.0f;
-
-   //Unlike D3D, which has a 0-1 range, OpenGL uses a -1-1 range. 
-   //However, epoxy internally handles the swap, so the math here is the same for both APIs
    row.z = 1.0f / (nearPlane - farPlane);
+   row.w = 0.0f;
 
    outMatrix->setRow( 2, row );
 
