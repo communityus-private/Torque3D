@@ -385,15 +385,15 @@ void PopupMenu::showPopup(GuiCanvas *owner, S32 x /* = -1 */, S32 y /* = -1 */)
 
          //  If this menu item is a submenu, then set the isSubmenu to 2 to indicate
          // an arrow should be drawn.  Otherwise set the isSubmenu normally.
-         char isSubmenu = 1;
+         char menuLevel = 1;
          if (mMenuItems[i].isSubmenu)
-            isSubmenu = 2;
+			 menuLevel = 2;
 
-         char bitmapIndex = 1;
+         char bitmapLevel = 1;
          if (mMenuItems[i].bitmapIndex >= 0 && (mMenuItems[i].bitmapIndex * 3 <= profile->mBitmapArrayRects.size()))
-            bitmapIndex = mMenuItems[i].bitmapIndex + 2;
+			 bitmapLevel = mMenuItems[i].bitmapIndex + 2;
 
-         dSprintf(buf, sizeof(buf), "%c%c\t%s\t%s", bitmapIndex, isSubmenu, mMenuItems[i].text.c_str(), mMenuItems[i].accelerator ? mMenuItems[i].accelerator : "");
+         dSprintf(buf, sizeof(buf), "%c%c\t%s\t%s", bitmapLevel, menuLevel, mMenuItems[i].text.c_str(), mMenuItems[i].accelerator ? mMenuItems[i].accelerator : "");
          mTextList->addEntry(entryCount, buf);
 
          if (!mMenuItems[i].enabled)
