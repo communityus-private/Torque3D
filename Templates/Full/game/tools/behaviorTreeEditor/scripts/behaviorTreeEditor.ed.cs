@@ -274,7 +274,7 @@ function BTEditor::saveTree(%this, %tree, %prompt)
    
       if(%dlg.execute())
       {
-         %file = %dlg.fileNamfe;         
+         %file = %dlg.fileName;         
          %dlg.delete();
       }
       else
