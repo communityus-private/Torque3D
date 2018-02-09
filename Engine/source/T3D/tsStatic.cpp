@@ -1085,7 +1085,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
 
       colMesh->mesh.addBox(mObjBox);
 
-      colMesh->colMeshName = String::ToString("Collision-%d", exportData->colMeshes.size());
+      colMesh->colMeshName = String::ToString("ColBox%d-1", exportData->colMeshes.size());
    }
    else if (mCollisionType == VisibleMesh)
    {
@@ -1098,7 +1098,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
 
       mShapeInstance->buildPolyList(&colMesh->mesh, 0);
 
-      colMesh->colMeshName = String::ToString("Collision-%d", exportData->colMeshes.size());
+      colMesh->colMeshName = String::ToString("ColMesh%d-1", exportData->colMeshes.size());
    }
    else if(mCollisionType == CollisionMesh)
    {
@@ -1116,7 +1116,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
 
          mShapeInstance->buildPolyListOpcode(mCollisionDetails[i], &colMesh->mesh, box);
          
-         colMesh->colMeshName = String::ToString("Collision-%d", exportData->colMeshes.size());
+         colMesh->colMeshName = String::ToString("ColMesh%d-1", exportData->colMeshes.size());
       }
    }
 
@@ -1131,7 +1131,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
          TSShape::Detail detail = clientShape->mShapeInstance->getShape()->details[i];
          String detailName = String::ToLower(clientShape->mShapeInstance->getShape()->getName(detail.nameIndex));
 
-         if(detailName.startsWith("collision") || detailName.startsWith("los"))
+         if(detailName.startsWith("col") || detailName.startsWith("los"))
             continue;
 
          ColladaUtils::ExportData::detailLevel* curDetail;
