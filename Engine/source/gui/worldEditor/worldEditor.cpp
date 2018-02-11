@@ -3927,15 +3927,19 @@ void WorldEditor::makeSelectionAMesh(const char *filename)
    OptimizedPolyList polyList;
    polyList.setBaseTransform(orientation);
 
+   ColladaUtils::ExportData exportData;
+
    for (S32 i = 0; i < objectList.size(); i++)
    {
       SceneObject *pObj = objectList[i];
-      if (!pObj->buildPolyList(PLC_Export, &polyList, pObj->getWorldBox(), pObj->getWorldSphere()))
+      //if (!pObj->buildPolyList(PLC_Export, &polyList, pObj->getWorldBox(), pObj->getWorldSphere()))
+      if (!pObj->buildExportPolyList(PLC_Export, &exportData, pObj->getWorldBox(), pObj->getWorldSphere()))
          Con::warnf("colladaExportObjectList() - object %i returned no geometry.", pObj->getId());
    }
 
    // Use a ColladaUtils function to do the actual export to a Collada file
-   ColladaUtils::exportToCollada(filename, polyList);
+   ColladaUtils::exportToCollada(filename, exportData);
+   //ColladaUtils::exportToCollada(filename, polyList);
    //
 
    // Allocate TSStatic object and add to level.

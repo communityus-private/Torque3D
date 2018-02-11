@@ -492,3 +492,9 @@ void NetObject::removeScopeRef()
       onScopeIdChange();
    }
 }
+
+DefineEngineMethod(NetObject, clearScopeAlways, void, (), ,
+   "@brief Clears the scope always flag on this object.\n\n")
+{
+   object->clearScopeAlways();
+}
