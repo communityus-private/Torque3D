@@ -104,7 +104,7 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
     float3 normal = deferredSample.rgb;
     float depth = deferredSample.a;
     if (depth>0.9999)
-        return float4(0,0,0,0);
+        return float4(0,0,0,0); 
 
     // Need world-space normal.
     float3 wsNormal = mul(float4(normal, 1), invViewMat).rgb;
@@ -153,8 +153,9 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
         float3 rbminmax = (nrdir > 0.0) ? rbmax : rbmin;
         float fa = min(min(rbminmax.x,rbminmax.y),rbminmax.z);
-		if (dot( lightVec, normal )<0.0f)
-			clip(fa);
+		  if (dot( lightVec, normal )<0.0f)
+           clip(fa);
+
         float3 posOnBox = worldPos.xyz + nrdir * fa;
         reflectionVec = posOnBox - probeWSPos;
 
@@ -166,23 +167,41 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
     }
     else
     {
-        float3 wPos = worldPos.rgb;
 
-        //box proj?
-        float3 rdir = reflect(IN.wsEyeDir.rgb, normalize(wsNormal));
 
-        //
-        /*float3 nrdir = normalize(rdir);
-        float3 rbmax = ((volumePosition + volumeSize) - wPos) / nrdir;
-        float3 rbmin = (volumeStart - wPos) / nrdir;
+       // Build light vec, get length, clip pixel if needed
+       float3 lightVec = probeLSPos - viewSpacePos;
+       float lenLightV = length(lightVec);
+       //clip(lightRange - lenLightV);
 
-        float3 rbminmax = (nrdir>0.0) ? rbmax : rbmin;
-        float fa = min(min(rbminmax.x,rbminmax.y),rbminmax.z);
+       // Normalize lightVec
+       lightVec /= lenLightV;
 
-        float3 posOnBox = wPos + nrdir*fa;
-        rdir = posOnBox - volumePosition;*/
+       // If we can do dynamic branching then avoid wasting
+       // fillrate on pixels that are backfacing to the light.
+       float nDotL = abs(dot(lightVec, normal));
 
-        ref = float4(rdir, smoothness);
+       float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal, nDotL)).xyz;
+
+       float3 nrdir = normalize(reflectionVec);
+       float3 rbmax = (bbMax - worldPos.xyz) / nrdir;
+       float3 rbmin = (bbMin - worldPos.xyz) / nrdir;
+
+       float3 rbminmax = (nrdir > 0.0) ? rbmax : rbmin;
+       float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+       if (dot(lightVec, normal)<0.0f)
+          clip(fa);
+
+       //Try to clip anything that falls outside our box as well
+       //TODO: Make it support rotated boxes as well
+       if(worldPos.x > bbMax.x || worldPos.y > bbMax.y || worldPos.z > bbMax.z ||
+          worldPos.x < bbMin.x || worldPos.y < bbMin.y || worldPos.z < bbMin.z)
+          clip(-1);
+
+       float3 posOnBox = worldPos.xyz + nrdir * fa;
+       reflectionVec = posOnBox - probeWSPos;
+
+       ref = float4(reflectionVec, smoothness);
 
         alpha = 1;
     }
@@ -196,41 +215,4 @@ float4 main( ConvexConnectP IN ) : TORQUE_TARGET0
 
     return float4(color.rgb, alpha);
 
-    /*float3 wPos = worldPos.rgb;
-
-    //box proj?
-    float3 rdir = reflect(IN.wsEyeDir.rgb, normalize(wsNormal));
-
-    //
-    float3 nrdir = normalize(rdir);
-    float3 rbmax = ((volumePosition + volumeSize) - wPos) / nrdir;
-    float3 rbmin = (volumeStart - wPos) / nrdir;
-
-    float3 rbminmax = (nrdir>0.0) ? rbmax : rbmin;
-    float fa = min(min(rbminmax.x,rbminmax.y),rbminmax.z);
-
-    float3 posOnBox = wPos + nrdir*fa;
-    rdir = posOnBox - volumePosition;
-
-    color = TORQUE_TEXCUBELOD(cubeMap, float4(rdir,1));*/
-
-    //sphere projection?
-    /*float3 EnvMapOffset = float3(1 / volumeSize.x, 1 / volumeSize.x, 1 / volumeSize.x);
-    float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),nDotL)).rgb;
-
-    float3 ReflDirectionWS = EnvMapOffset * (worldPos.rgb - volumePosition) + reflectionVec;
-
-    //float3 reflectionVec = reflect(rDir, float4(normalize(wsNormal),nDotL)).rgb;
-    float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 6.0);//bump up to 6 for finalization
-    float4 ref = float4(ReflDirectionWS, smoothness);
-
-    color = TORQUE_TEXCUBELOD(cubeMap, ref);*/
-
-    //classic maths
-    /*float3 reflectionVec = reflect(IN.wsEyeDir, float4(normalize(wsNormal),nDotL)).rgb;
-    float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 12.0);//bump up to 8 for finalization
-    float4 ref = float4(reflectionVec, smoothness);
-    color = TORQUE_TEXCUBELOD(cubeMap, ref);
-    color.a = 1;
-    color *= Intensity * 3;*/
 }

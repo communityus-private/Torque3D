@@ -280,8 +280,8 @@ new ShaderData( ReflectionProbeShader )
    DXVertexShaderFile = "shaders/common/lighting/advanced/convexGeometryV.hlsl";
    DXPixelShaderFile  = "shaders/common/lighting/advanced/reflectionProbeP.hlsl";
 
-   //OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
-   //OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/pointLightP.glsl";
+   OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/convexGeometryV.glsl";
+   OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/reflectionProbeP.glsl";
 
    samplerNames[0] = "$deferredBuffer";
    samplerNames[1] = "$matInfoBuffer";

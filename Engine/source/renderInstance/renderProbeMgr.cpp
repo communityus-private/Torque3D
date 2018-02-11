@@ -82,7 +82,7 @@ void RenderProbeMgr::addElement(RenderInst *inst)
 
    ProbeRenderInst* probeInst = static_cast<ProbeRenderInst*>(inst);
 
-   if (probeInst->mProbeShapeType == ProbeRenderInst::Sphere)
+   if (probeInst->mProbeShapeType == ProbeInfo::Sphere)
       addSphereReflectionProbe(probeInst);
    else
       addConvexReflectionProbe(probeInst);
@@ -340,7 +340,7 @@ void RenderProbeMgr::render( SceneRenderState *state )
 
       //Setup
       MatrixF probeTrans = curEntry->getTransform();
-      if(curEntry->mProbeShapeType == ProbeRenderInst::Sphere)
+      if(curEntry->mProbeShapeType == ProbeInfo::Sphere)
          probeTrans.scale(curEntry->mRadius * 1.01f);
 
       sgData.objTrans = &probeTrans;
@@ -364,6 +364,8 @@ void RenderProbeMgr::render( SceneRenderState *state )
 
    indirectLightTarget->resolve();
    GFX->popActiveRenderTarget();
+
+   PROBEMGR->unregisterAllProbes();
    PROFILE_END();
 
    GFX->setVertexBuffer(NULL);
@@ -535,7 +537,7 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
    matParams->setSafe(bbMin, probeInfo->mBounds.minExtents);
    matParams->setSafe(bbMax, probeInfo->mBounds.maxExtents);
 
-   matParams->setSafe(useSphereMode, probeInfo->mProbeShapeType == ProbeRenderInst::Sphere ? 1.0f : 0.0f);
+   matParams->setSafe(useSphereMode, probeInfo->mProbeShapeType == ProbeInfo::Sphere ? 1.0f : 0.0f);
 
    //SH Terms
    //static AlignedArray<Point3F> shTermsArray(9, sizeof(Point3F));
@@ -732,6 +734,30 @@ ProbeRenderInst::~ProbeRenderInst()
 }
 
 void ProbeRenderInst::set(const ProbeRenderInst *probeInfo)
+{
+   mTransform = probeInfo->mTransform;
+   mAmbient = probeInfo->mAmbient;
+   mCubemap = probeInfo->mCubemap;
+   mRadius = probeInfo->mRadius;
+   mIntensity = probeInfo->mIntensity;
+   mProbeShapeType = probeInfo->mProbeShapeType;
+   numPrims = probeInfo->numPrims;
+   numVerts = probeInfo->numVerts;
+   numIndicesForPoly = probeInfo->numIndicesForPoly;
+   mBounds = probeInfo->mBounds;
+
+   for (U32 i = 0; i < 9; i++)
+   {
+      mSHTerms[i] = probeInfo->mSHTerms[i];
+   }
+
+   for (U32 i = 0; i < 5; i++)
+   {
+      mSHConstants[i] = probeInfo->mSHConstants[i];
+   }
+}
+
+void ProbeRenderInst::set(const ProbeInfo *probeInfo)
 {
    mTransform = probeInfo->mTransform;
    mAmbient = probeInfo->mAmbient;

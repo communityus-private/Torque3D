@@ -20,50 +20,40 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-singleton Material(FP_Ryder_Base)
-{
-   mapTo = "FP_Ryder_Base";
-   diffuseMap[0] = "./FP_Ryder_D.dds";
-   normalMap[0] = "./FP_Ryder_N.dds";
-   specularMap[0] = "./FP_Ryder_S.dds";
-   specular[0] = "0.9 0.9 0.9 1";
-   specularPower[0] = "10";
-   translucentBlendOp = "None";
-   pixelSpecular[0] = "1";
-   useAnisotropic[0] = "1";
-   castDynamicShadows = true;    
-};
+#include "../../../gl/hlslCompat.glsl"
+#include "shadergen:/autogenConditioners.h"
+#include "../../../postFx/gl/postFX.glsl"
+#include "../../../gl/torque.glsl"
 
-singleton Material(TP_Ryder_Base)
-{
-   mapTo = "TP_Ryder_Base";
-   diffuseMap[0] = "./TP_Ryder_D.dds";
-   normalMap[0] = "./TP_Ryder_N.dds";
-   specular[0] = "1.0 1.0 1.0 1";
-   specularPower[0] = "10";
-   translucentBlendOp = "None";
-   pixelSpecular[0] = "1";
-   castDynamicShadows = true;    
-};
+uniform sampler2D colorBufferTex;
+uniform sampler2D directLightingBuffer;
+uniform sampler2D matInfoTex;
+uniform sampler2D indirectLightingBuffer;
+uniform sampler2D deferredTex;
 
-singleton Material(Ryder_MuzzleFlash_Base)
-{
-   mapTo = "Ryder_MuzzleFlash_Base";
-   diffuseMap[0] = "./Ryder_MuzzleFlash.dds";
-   diffuseColor[0] = "0.05 0.05 0.05 1";
-   specular[0] = "0 0 0 1";
-   specularPower[0] = "10";
-   translucent = "1";
-   glow[0] = "1";
-   emissive[0] = "1";
-   doubleSided = "1";
-   translucentBlendOp = "Add";
-   animFlags[0] = "0x00000005";
-   scrollDir[0] = "-0.15 -0.15";
-   rotSpeed[0] = "0.25";
-   rotPivotOffset[0] = "-0.5 -0.5";
-   waveFreq[0] = "5.313";
-   waveAmp[0] = "0.016";
-   castShadows = "0";
-};
+out vec4 OUT_col;
 
+void main()
+{
+   float depth = deferredUncondition( deferredTex, uv0 ).w;
+   if (depth>0.9999)
+   {
+      OUT_col = vec4(0.0);
+      return;
+   }
+   
+   vec3 colorBuffer = texture( colorBufferTex, uv0 ).rgb; //albedo
+   vec4 matInfo = texture( matInfoTex, uv0 ); //flags|smoothness|ao|metallic
+   bool emissive = getFlag(matInfo.r, 0);
+   if (emissive)
+   {
+      OUT_col = float4(colorBuffer, 1.0);
+	  return;
+   }
+   
+   vec4 directLighting = texture( directLightingBuffer, uv0 ); //shadowmap*specular
+   
+   colorBuffer *= max(directLighting.rgb,vec3(0,0,0)); 
+   
+   OUT_col =  hdrEncode(vec4(colorBuffer,1.0));
+}

@@ -41,6 +41,10 @@
 #include "renderInstance/renderPassManager.h"
 #endif
 
+#ifndef PROBEMANAGER_H
+#include "lighting/probeManager.h"
+#endif
+
 class BaseMatInstance;
 
 
@@ -87,7 +91,13 @@ private:
    {
       TransformMask = Parent::NextFreeMask << 0,
       UpdateMask = Parent::NextFreeMask << 1,
-      NextFreeMask = Parent::NextFreeMask << 2
+      EnabledMask = Parent::NextFreeMask << 2,
+      CubemapMask = Parent::NextFreeMask << 3,
+      ModeMask = Parent::NextFreeMask << 4,
+      RadiusMask = Parent::NextFreeMask << 5,
+      ShapeTypeMask = Parent::NextFreeMask << 6,
+      BakeInfoMask = Parent::NextFreeMask << 7,
+      NextFreeMask = Parent::NextFreeMask << 8
    };
 
    bool mBake;
@@ -100,9 +110,9 @@ private:
    //--------------------------------------------------------------------------
    // Rendering variables
    //--------------------------------------------------------------------------
-   ProbeRenderInst::ProbeShapeType mProbeShapeType;
+   ProbeInfo::ProbeShapeType mProbeShapeType;
 
-   ProbeRenderInst* mProbeInfo;
+   ProbeInfo* mProbeInfo;
 
    //Indirect Lighting Contribution stuff
    IndrectLightingModeType mIndrectLightingModeType;
@@ -199,6 +209,8 @@ public:
    // Get the Material instance
    void updateMaterial();
 
+   void updateProbeParams();
+
    // This is the function that allows this object to submit itself for rendering
    void prepRenderImage(SceneRenderState *state);
 
@@ -233,7 +245,7 @@ public:
    void bake(String outputPath, S32 resolution);
 };
 
-typedef ProbeRenderInst::ProbeShapeType ReflectProbeType;
+typedef ProbeInfo::ProbeShapeType ReflectProbeType;
 DefineEnumType(ReflectProbeType);
 
 typedef ReflectionProbe::IndrectLightingModeType IndrectLightingModeEnum;
