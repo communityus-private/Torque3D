@@ -2869,11 +2869,14 @@ void ColladaUtils::exportToCollada(const Torque::Path& colladaFile, const Optimi
 
    exportColladaMaterials(rootNode, mesh, mapNames, colladaFile);
 
+   S32 suffix;
+   String baseMeshName = String::GetTrailingNumber(outMeshName, suffix);
+
    // Save out our geometry
-   exportColladaMesh(rootNode, mesh, outMeshName, mapNames);
+   exportColladaMesh(rootNode, mesh, baseMeshName, mapNames);
 
    // Save out our scene nodes
-   exportColladaScene(rootNode, outMeshName, mapNames);
+   exportColladaScene(rootNode, baseMeshName, mapNames);
 
    // Write out the actual Collada file
    char fullPath[MAX_PATH_LENGTH];
@@ -2913,11 +2916,14 @@ void ColladaUtils::exportToCollada(const Torque::Path& colladaFile, const Export
 
    exportColladaMaterials(rootNode, exportData, colladaFile);
 
+   S32 suffix;
+   String baseMeshName = String::GetTrailingNumber(outMeshName, suffix);
+
    // Save out our geometry
-   exportColladaMesh(rootNode, exportData, outMeshName);
+   exportColladaMesh(rootNode, exportData, baseMeshName);
 
    // Save out our scene nodes
-   exportColladaScene(rootNode, exportData, outMeshName);
+   exportColladaScene(rootNode, exportData, baseMeshName);
 
    // Write out the actual Collada file
    char fullPath[MAX_PATH_LENGTH];
