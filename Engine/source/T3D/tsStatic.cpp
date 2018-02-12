@@ -330,7 +330,7 @@ bool TSStatic::onAdd()
    _updateShouldTick();
 
    // Accumulation and environment mapping
-   if (isClientObject() && mShapeInstance)
+   if ( isClientObject() && mShapeInstance )
    {
       AccumulationVolume::addObject(this);
    }
@@ -476,11 +476,11 @@ void TSStatic::_updatePhysics()
 void TSStatic::onRemove()
 {
    SAFE_DELETE( mPhysicsRep );
-
+   
    // Accumulation
-   if ( isClientObject() && mShapeInstance )
+   if (isClientObject() && mShapeInstance)
    {
-      if ( mShapeInstance->hasAccumulation() ) 
+      if (mShapeInstance->hasAccumulation())
          AccumulationVolume::removeObject(this);
    }
 
@@ -773,11 +773,11 @@ void TSStatic::setTransform(const MatrixF & mat)
 
    if ( mPhysicsRep )
       mPhysicsRep->setTransform( mat );
-
+   
    // Accumulation
-   if ( isClientObject() && mShapeInstance )
+   if (isClientObject() && mShapeInstance)
    {
-      if ( mShapeInstance->hasAccumulation() ) 
+      if (mShapeInstance->hasAccumulation())
          AccumulationVolume::updateObject(this);
    }
 
@@ -1019,8 +1019,10 @@ bool TSStatic::buildPolyList(PolyListContext context, AbstractPolyList* polyList
    if (!mShapeInstance)
       return false;
 
+   MatrixF objToExport = mObjToWorld;
+   objToExport.setPosition(mObjToWorld.getPosition() - getPosition());
    // This is safe to set even if we're not outputing 
-   polyList->setTransform(&mObjToWorld, mObjScale);
+   polyList->setTransform(&objToExport, mObjScale);
    polyList->setObject(this);
 
    if (context == PLC_Export)
@@ -1074,13 +1076,17 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
    if (!mShapeInstance)
       return false;
 
+   MatrixF objToExport = mObjToWorld;
+   objToExport.setPosition(mObjToWorld.getPosition()-getPosition());
+
    if (mCollisionType == Bounds)
    {
       ColladaUtils::ExportData::colMesh* colMesh;
       exportData->colMeshes.increment();
       colMesh = &exportData->colMeshes.last();
 
-      colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
+      colMesh->mesh.setTransform(&objToExport, mObjScale);
+
       colMesh->mesh.setObject(this);
 
       colMesh->mesh.addBox(mObjBox);
@@ -1093,7 +1099,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
       exportData->colMeshes.increment();
       colMesh = &exportData->colMeshes.last();
 
-      colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
+      colMesh->mesh.setTransform(&objToExport, mObjScale);
       colMesh->mesh.setObject(this);
 
       mShapeInstance->buildPolyList(&colMesh->mesh, 0);
@@ -1111,7 +1117,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
          exportData->colMeshes.increment();
          colMesh = &exportData->colMeshes.last();
 
-         colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
+         colMesh->mesh.setTransform(&objToExport, mObjScale);
          colMesh->mesh.setObject(this);
 
          mShapeInstance->buildPolyListOpcode(mCollisionDetails[i], &colMesh->mesh, box);
@@ -1148,7 +1154,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
             curDetail = &exportData->detailLevels[detailLevelIndex];
          }
 
-         curDetail->mesh.setTransform(&mObjToWorld, mObjScale);
+         curDetail->mesh.setTransform(&objToExport, mObjScale);
          curDetail->mesh.setObject(this);
 
          clientShape->mShapeInstance->buildPolyList(&curDetail->mesh, i);
