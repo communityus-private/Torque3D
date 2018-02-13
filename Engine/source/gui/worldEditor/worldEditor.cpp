@@ -2419,7 +2419,7 @@ void WorldEditor::renderScene( const RectI &updateRect )
    GFXDEBUGEVENT_SCOPE( Editor_renderScene, ColorI::RED );
 
    smRenderSceneSignal.trigger(this);
-
+	
    if (mActiveEditorTool != nullptr)
       mActiveEditorTool->render();
 	
@@ -3721,8 +3721,8 @@ void WorldEditor::makeSelectionPrefab( const char *filename )
    SimObject *obj = NULL;
    SceneObject *sObj = NULL;
 
-   for ( S32 i = 0; i < found.size(); i++ )
-   {      
+   for (S32 i = 0; i < found.size(); i++)
+   {
       obj = found[i];
       sObj = dynamic_cast< SceneObject* >( obj );
 
@@ -3935,6 +3935,25 @@ void WorldEditor::makeSelectionAMesh(const char *filename)
       //if (!pObj->buildPolyList(PLC_Export, &polyList, pObj->getWorldBox(), pObj->getWorldSphere()))
       if (!pObj->buildExportPolyList(PLC_Export, &exportData, pObj->getWorldBox(), pObj->getWorldSphere()))
          Con::warnf("colladaExportObjectList() - object %i returned no geometry.", pObj->getId());
+   }
+
+   //recenter generated visual mesh results
+   for (U32 dl = 0; dl < exportData.colMeshes.size(); dl++)
+   {
+
+	   for (U32 pnt = 0; pnt < exportData.colMeshes[dl].mesh.mPoints.size(); pnt++)
+	   {
+		   exportData.colMeshes[dl].mesh.mPoints[pnt] -= centroid;
+	   }
+   }
+
+   //recenter generated collision mesh results
+   for (U32 dl = 0; dl < exportData.detailLevels.size(); dl++)
+   {
+	   for (U32 pnt = 0; pnt < exportData.detailLevels[dl].mesh.mPoints.size(); pnt++)
+	   {
+		   exportData.detailLevels[dl].mesh.mPoints[pnt] -= centroid;
+	   }
    }
 
    // Use a ColladaUtils function to do the actual export to a Collada file

@@ -1019,10 +1019,8 @@ bool TSStatic::buildPolyList(PolyListContext context, AbstractPolyList* polyList
    if (!mShapeInstance)
       return false;
 
-   MatrixF objToExport = mObjToWorld;
-   objToExport.setPosition(mObjToWorld.getPosition() - getPosition());
    // This is safe to set even if we're not outputing 
-   polyList->setTransform(&objToExport, mObjScale);
+   polyList->setTransform(&mObjToWorld, mObjScale);
    polyList->setObject(this);
 
    if (context == PLC_Export)
@@ -1076,17 +1074,13 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
    if (!mShapeInstance)
       return false;
 
-   MatrixF objToExport = mObjToWorld;
-   objToExport.setPosition(mObjToWorld.getPosition()-getPosition());
-
    if (mCollisionType == Bounds)
    {
       ColladaUtils::ExportData::colMesh* colMesh;
       exportData->colMeshes.increment();
       colMesh = &exportData->colMeshes.last();
 
-      colMesh->mesh.setTransform(&objToExport, mObjScale);
-
+      colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
       colMesh->mesh.setObject(this);
 
       colMesh->mesh.addBox(mObjBox);
@@ -1099,7 +1093,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
       exportData->colMeshes.increment();
       colMesh = &exportData->colMeshes.last();
 
-      colMesh->mesh.setTransform(&objToExport, mObjScale);
+      colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
       colMesh->mesh.setObject(this);
 
       mShapeInstance->buildPolyList(&colMesh->mesh, 0);
@@ -1117,7 +1111,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
          exportData->colMeshes.increment();
          colMesh = &exportData->colMeshes.last();
 
-         colMesh->mesh.setTransform(&objToExport, mObjScale);
+         colMesh->mesh.setTransform(&mObjToWorld, mObjScale);
          colMesh->mesh.setObject(this);
 
          mShapeInstance->buildPolyListOpcode(mCollisionDetails[i], &colMesh->mesh, box);
@@ -1154,7 +1148,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
             curDetail = &exportData->detailLevels[detailLevelIndex];
          }
 
-         curDetail->mesh.setTransform(&objToExport, mObjScale);
+         curDetail->mesh.setTransform(&mObjToWorld, mObjScale);
          curDetail->mesh.setObject(this);
 
          clientShape->mShapeInstance->buildPolyList(&curDetail->mesh, i);
