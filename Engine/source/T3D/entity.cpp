@@ -496,13 +496,13 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       mathWrite(*stream, mObjBox);
    }
 
-   if (stream->writeFlag(mask & AddComponentsMask))
+   if (stream->writeFlag((mask & AddComponentsMask) || (mask & InitialUpdateMask)))
    {
       U32 toAddComponentCount = 0;
 
       for (U32 i = 0; i < mNetworkedComponents.size(); i++)
       {
-         if (mNetworkedComponents[i].updateState == NetworkedComponent::Adding)
+         if (mNetworkedComponents[i].updateState == NetworkedComponent::Adding || (mask & InitialUpdateMask))
          {
             toAddComponentCount++;
          }
@@ -515,7 +515,7 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       {
          NetworkedComponent::UpdateState state = mNetworkedComponents[i].updateState;
 
-         if (mNetworkedComponents[i].updateState == NetworkedComponent::Adding)
+         if (mNetworkedComponents[i].updateState == NetworkedComponent::Adding || (mask & InitialUpdateMask))
          {
             const char* className = mComponents[mNetworkedComponents[i].componentIndex]->getClassName();
             stream->writeString(className, strlen(className));
@@ -561,13 +561,13 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
    }
 
    //Update our components
-   if (stream->writeFlag(mask & ComponentsUpdateMask))
+   if (stream->writeFlag((mask & ComponentsUpdateMask) || (mask & InitialUpdateMask)))
    {
       U32 toUpdateComponentCount = 0;
 
       for (U32 i = 0; i < mNetworkedComponents.size(); i++)
       {
-         if (mNetworkedComponents[i].updateState == NetworkedComponent::Updating)
+         if (mNetworkedComponents[i].updateState == NetworkedComponent::Updating || (mask & InitialUpdateMask))
          {
             toUpdateComponentCount++;
          }
@@ -580,7 +580,7 @@ U32 Entity::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 
       for (U32 i = 0; i < mNetworkedComponents.size(); i++)
       {
-         if (mNetworkedComponents[i].updateState == NetworkedComponent::Updating)
+         if (mNetworkedComponents[i].updateState == NetworkedComponent::Updating || (mask & InitialUpdateMask))
          {
             stream->writeInt(i, 8);
 
