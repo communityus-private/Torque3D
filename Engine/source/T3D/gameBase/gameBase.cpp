@@ -41,7 +41,9 @@
 #include "T3D/aiConnection.h"
 #endif
 
+#ifdef TORQUE_AFX_ENABLED
 #include "afx/arcaneFX.h"
+#endif
 //----------------------------------------------------------------------------
 // Ghost update relative priority values
 
@@ -265,8 +267,10 @@ GameBase::GameBase()
 
 GameBase::~GameBase()
 {
+#ifdef TORQUE_AFX_ENABLED
    if (scope_registered)
       arcaneFX::unregisterScopedObject(this);
+#endif
 }
 
 
@@ -279,6 +283,7 @@ bool GameBase::onAdd()
 
    // Datablock must be initialized on the server.
    // Client datablock are initialized by the initial update.
+#ifdef TORQUE_AFX_ENABLED
    if (isClientObject())
    {
       if (scope_id > 0 && !scope_registered)
@@ -289,6 +294,10 @@ bool GameBase::onAdd()
       if ( mDataBlock && !onNewDataBlock( mDataBlock, false ) )
          return false;
    }
+#else
+   if ( isServerObject() && mDataBlock && !onNewDataBlock( mDataBlock, false ) )
+      return false;
+#endif
 
    setProcessTick( true );
 
@@ -297,8 +306,10 @@ bool GameBase::onAdd()
 
 void GameBase::onRemove()
 {
+#ifdef TORQUE_AFX_ENABLED
    if (scope_registered)
       arcaneFX::unregisterScopedObject(this);
+#endif
    // EDITOR FEATURE: Remove us from the reload signal of our datablock.
    if ( mDataBlock )
       mDataBlock->mReloadSignal.remove( this, &GameBase::_onDatablockModified );
@@ -323,9 +334,11 @@ bool GameBase::onNewDataBlock( GameBaseData *dptr, bool reload )
 
    if ( !mDataBlock )
       return false;
+#ifdef TORQUE_AFX_ENABLED
    // Don't set mask when new datablock is a temp-clone.
    if (mDataBlock->isTempClone())
       return true;
+#endif
 
    // AFX CODE BLOCK (datablock-temp-clone) <<
    // Don't set mask when new datablock is a temp-clone.
@@ -585,11 +598,13 @@ U32 GameBase::packUpdate( NetConnection *connection, U32 mask, BitStream *stream
    stream->writeFlag(mIsAiControlled);
 #endif
 
+#ifdef TORQUE_AFX_ENABLED
    if (stream->writeFlag(mask & ScopeIdMask))
    {
       if (stream->writeFlag(scope_refs > 0))
          stream->writeInt(scope_id, SCOPE_ID_BITS);
    }
+#endif
    return retMask;
 }
 
@@ -628,11 +643,13 @@ void GameBase::unpackUpdate(NetConnection *con, BitStream *stream)
    mTicksSinceLastMove = 0;
    mIsAiControlled = stream->readFlag();
 #endif
+#ifdef TORQUE_AFX_ENABLED
    if (stream->readFlag())
    {
       scope_id = (stream->readFlag()) ? (U16) stream->readInt(SCOPE_ID_BITS) : 0;
       scope_refs = 0;
    }
+#endif
 }
 
 void GameBase::onMount( SceneObject *obj, S32 node )

@@ -242,6 +242,8 @@ public:
   
    TSShapeInstance* getShapeInstance() const { return mShapeInstance; }
 
+   U32 getNumDetails();
+
    const Vector<S32>& getCollisionDetails() const { return mCollisionDetails; }
 
    const Vector<S32>& getLOSDetails() const { return mLOSDetails; }

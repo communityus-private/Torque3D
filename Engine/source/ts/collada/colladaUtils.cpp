@@ -2113,7 +2113,7 @@ void ColladaUtils::exportColladaMesh(TiXmlElement* rootNode, const ExportData& e
    for (U32 d = 0; d < exportData.detailLevels.size(); d++)
    {
       char lodMeshName[256];
-      dSprintf(lodMeshName, 256, "%s%d", meshName.c_str(), exportData.detailLevels[d].detailLevelId);
+      dSprintf(lodMeshName, 256, "%s%d", meshName.c_str(), exportData.detailLevels[d].size);
 
       char lodMeshID[256];
       dSprintf(lodMeshID, 256, "%s-mesh", lodMeshName);
@@ -2611,7 +2611,7 @@ void ColladaUtils::exportColladaScene(TiXmlElement* rootNode, const ExportData& 
    for (U32 d = 0; d < exportData.detailLevels.size(); d++)
    {
       char lodMeshName[256];
-      dSprintf(lodMeshName, 256, "%s%d", meshName.c_str(), exportData.detailLevels[d].detailLevelId);
+      dSprintf(lodMeshName, 256, "%s%d", meshName.c_str(), exportData.detailLevels[d].size);
 
       TiXmlElement* nodeNode = new TiXmlElement("node");
       visSceneNode->LinkEndChild(nodeNode);
@@ -2621,7 +2621,7 @@ void ColladaUtils::exportColladaScene(TiXmlElement* rootNode, const ExportData& 
 
       TiXmlElement* instanceGeomNode = new TiXmlElement("instance_geometry");
       nodeNode->LinkEndChild(instanceGeomNode);
-      instanceGeomNode->SetAttribute("url", avar("#%s%d-mesh", meshName.c_str(), exportData.detailLevels[d].detailLevelId));
+      instanceGeomNode->SetAttribute("url", avar("#%s%d-mesh", meshName.c_str(), exportData.detailLevels[d].size));
       instanceGeomNode->SetAttribute("name", lodMeshName);
 
       TiXmlElement* bindMatNode = new TiXmlElement("bind_material");
@@ -2869,11 +2869,14 @@ void ColladaUtils::exportToCollada(const Torque::Path& colladaFile, const Optimi
 
    exportColladaMaterials(rootNode, mesh, mapNames, colladaFile);
 
+   S32 suffix;
+   String baseMeshName = String::GetTrailingNumber(outMeshName, suffix);
+
    // Save out our geometry
-   exportColladaMesh(rootNode, mesh, outMeshName, mapNames);
+   exportColladaMesh(rootNode, mesh, baseMeshName, mapNames);
 
    // Save out our scene nodes
-   exportColladaScene(rootNode, outMeshName, mapNames);
+   exportColladaScene(rootNode, baseMeshName, mapNames);
 
    // Write out the actual Collada file
    char fullPath[MAX_PATH_LENGTH];
@@ -2913,11 +2916,14 @@ void ColladaUtils::exportToCollada(const Torque::Path& colladaFile, const Export
 
    exportColladaMaterials(rootNode, exportData, colladaFile);
 
+   S32 suffix;
+   String baseMeshName = String::GetTrailingNumber(outMeshName, suffix);
+
    // Save out our geometry
-   exportColladaMesh(rootNode, exportData, outMeshName);
+   exportColladaMesh(rootNode, exportData, baseMeshName);
 
    // Save out our scene nodes
-   exportColladaScene(rootNode, exportData, outMeshName);
+   exportColladaScene(rootNode, exportData, baseMeshName);
 
    // Write out the actual Collada file
    char fullPath[MAX_PATH_LENGTH];
@@ -2925,4 +2931,92 @@ void ColladaUtils::exportToCollada(const Torque::Path& colladaFile, const Export
 
    if (!doc.SaveFile(fullPath))
       Con::errorf("ColladaUtils::exportToCollada(): Unable to export to %s", fullPath);
+}
+
+void ColladaUtils::ExportData::processData()
+{
+   //This pref dictates if we 'backfill' lower LODs with higher ones if any given mesh being exported lacks that level.
+   //For example, if there are 2 meshes, and one has 500, 200, 100 and the other has 500 and 200 - if this setting is on, the second mesh
+   //will backfill the 200 to the 100 so it has all levels filled. If it's off, the second mesh will not render at the 100 level
+   bool fillLowDetailLevels = dAtob(Con::getVariable("$exportMesh::fillLowDetailLevels", "1"));
+
+   S32 numDetailLevels = numberOfDetailLevels();
+
+   detailLevels.clear();
+   detailLevels.setSize(numDetailLevels);
+
+   for (U32 m = 0; m < meshData.size(); ++m)
+   {
+      for (U32 i = 0; i < numDetailLevels; ++i)
+      {
+         //Get our target size
+         S32 targetDetailLevelSize = getDetailLevelSize(i);
+
+         //alright, step through each meshdata and propagate the polyList info 'up' to fill 
+         detailLevel* curDetail = &detailLevels[i];
+
+         curDetail->size = targetDetailLevelSize;
+      
+         //Do we have a detail level for this?
+         S32 detailLevelIdx = -1;
+
+         for (S32 mdl = i; mdl >= 0; mdl--)
+         {
+            //walk backwards as needed to find our first valid detail level for this mesh. if we find none, just move on
+            S32 testDetailLevelSize = getDetailLevelSize(mdl);
+            detailLevelIdx = meshData[m].hasDetailLevel(testDetailLevelSize);
+
+            if (detailLevelIdx != -1)
+               break;
+         }
+
+         if (detailLevelIdx == -1)
+         {
+            //found nothing backwards, so lets check if we're configured to back-fill the first detail levels
+            if (fillLowDetailLevels)
+            {
+               //if so, search forward, find the first valid detail and fill it in
+               for (S32 mdl = 0; mdl < numDetailLevels; mdl++)
+               {
+                  //walk backwards as needed to find our first valid detail level for this mesh. if we find none, just move on
+                  S32 testDetailLevelSize = getDetailLevelSize(mdl);
+                  detailLevelIdx = meshData[m].hasDetailLevel(testDetailLevelSize);
+
+                  if (detailLevelIdx != -1)
+                     break;
+               }
+            }
+         }
+
+         //If we found the detail level index, go ahead and build out the data for it
+         if (detailLevelIdx != -1)
+         {
+            curDetail->mesh.setTransform(&meshData[m].meshTransform, meshData[m].scale);
+            curDetail->mesh.setObject(meshData[m].originatingObject);
+
+            if (!meshData[m].shapeInst->buildPolyList(&curDetail->mesh, detailLevelIdx))
+            {
+               Con::errorf("TSStatic::buildExportPolyList - failed to build polylist for LOD %i", i);
+               continue;
+            }
+
+            //lastly, get material
+            for (U32 m = 0; m < curDetail->mesh.mMaterialList.size(); m++)
+            {
+               S32 matIdx = hasMaterialInstance(curDetail->mesh.mMaterialList[m]);
+
+               if (matIdx == -1)
+               {
+                  //cool, haven't already got this material, so lets store it out
+                  materials.push_back(curDetail->mesh.mMaterialList[m]);
+                  curDetail->materialRefList.insert(m, materials.size() - 1);
+               }
+               else
+               {
+                  curDetail->materialRefList.insert(m, matIdx);
+               }
+            }
+         }
+      }
+   }
 }

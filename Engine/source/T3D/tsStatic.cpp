@@ -55,11 +55,13 @@
 #include "console/engineAPI.h"
 #include "T3D/accumulationVolume.h"
 #include "T3D/envVolume.h"
+
 using namespace Torque;
 
 extern bool gEditingMission;
-
+#ifdef TORQUE_AFX_ENABLED
 #include "afx/ce/afxZodiacMgr.h"
+#endif
 
 IMPLEMENT_CO_NETOBJECT_V1(TSStatic);
 
@@ -136,7 +138,9 @@ TSStatic::TSStatic()
    mHasGradients = false;
    mInvertGradientRange = false;
    mGradientRangeUser.set(0.0f, 180.0f);
+#ifdef TORQUE_AFX_ENABLED
    afxZodiacData::convertGradientRangeFromDegrees(mGradientRange, mGradientRangeUser);
+#endif
 }
 
 TSStatic::~TSStatic()
@@ -330,7 +334,7 @@ bool TSStatic::onAdd()
    _updateShouldTick();
 
    // Accumulation and environment mapping
-   if ( isClientObject() && mShapeInstance )
+   if (isClientObject() && mShapeInstance)
    {
       EnvVolume::addObject(this);
       AccumulationVolume::addObject(this);
@@ -381,8 +385,6 @@ bool TSStatic::_createShape()
       mShapeInstance->cloneMaterialList();
    }
 
-   if (isClientObject())
-      mShapeInstance->cloneMaterialList();
    if( isGhost() )
    {
       // Reapply the current skin
@@ -430,7 +432,6 @@ void TSStatic::prepCollision()
    mLOSDetails.clear();
    mConvexList->nukeList();
 
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
    if ( mCollisionType == CollisionMesh || mCollisionType == VisibleMesh )
    {
       mShape->findColDetails( mCollisionType == VisibleMesh, &mCollisionDetails, &mLOSDetails );
@@ -483,11 +484,11 @@ void TSStatic::_updatePhysics()
 void TSStatic::onRemove()
 {
    SAFE_DELETE( mPhysicsRep );
-   
+
    // Accumulation and environment mapping
-   if (isClientObject() && mShapeInstance)
+   if ( isClientObject() && mShapeInstance )
    {
-      if (mShapeInstance->hasAccumulation())
+      if ( mShapeInstance->hasAccumulation() ) 
          AccumulationVolume::removeObject(this);
       EnvVolume::removeObject(this);
    }
@@ -733,9 +734,10 @@ void TSStatic::prepRenderImage( SceneRenderState* state )
       }
    }
    mShapeInstance->render( rdata );
-
+#ifdef TORQUE_AFX_ENABLED
    if (!mIgnoreZodiacs && mDecalDetailsPtr != 0)
       afxZodiacMgr::renderPolysoupZodiacs(state, this);
+#endif
    if ( mRenderNormalScalar > 0 )
    {
       ObjectRenderInst *ri = state->getRenderPass()->allocInst<ObjectRenderInst>();
@@ -785,11 +787,11 @@ void TSStatic::setTransform(const MatrixF & mat)
 
    if ( mPhysicsRep )
       mPhysicsRep->setTransform( mat );
-   
+
    // Accumulation and environment mapping
-   if (isClientObject() && mShapeInstance)
+   if ( isClientObject() && mShapeInstance )
    {
-      if (mShapeInstance->hasAccumulation())
+      if ( mShapeInstance->hasAccumulation() ) 
          AccumulationVolume::updateObject(this);
       EnvVolume::updateObject(this);
    }
@@ -841,15 +843,6 @@ U32 TSStatic::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       stream->write(mAlphaFadeEnd);  
       stream->write(mInvertAlphaFade);  
    } 
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
-   stream->writeFlag(mIgnoreZodiacs);
-   if (stream->writeFlag(mHasGradients))
-   {
-      stream->writeFlag(mInvertGradientRange);
-      stream->write(mGradientRange.x);
-      stream->write(mGradientRange.y);
-   }
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
 
    stream->writeFlag(mIgnoreZodiacs);
    if (stream->writeFlag(mHasGradients))
@@ -941,16 +934,6 @@ void TSStatic::unpackUpdate(NetConnection *con, BitStream *stream)
       stream->read(&mAlphaFadeEnd);  
       stream->read(&mInvertAlphaFade);  
    }
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
-   mIgnoreZodiacs = stream->readFlag();
-   mHasGradients = stream->readFlag();
-   if (mHasGradients)
-   {
-      mInvertGradientRange = stream->readFlag();
-      stream->read(&mGradientRange.x);
-      stream->read(&mGradientRange.y);
-   }
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
 
    mIgnoreZodiacs = stream->readFlag();
    mHasGradients = stream->readFlag();
@@ -1048,36 +1031,36 @@ bool TSStatic::castRayRendered(const Point3F &start, const Point3F &end, RayInfo
 
 bool TSStatic::buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F &box, const SphereF &)
 {
-   if (!mShapeInstance)
+   if ( !mShapeInstance )
       return false;
 
    // This is safe to set even if we're not outputing 
-   polyList->setTransform(&mObjToWorld, mObjScale);
-   polyList->setObject(this);
+   polyList->setTransform( &mObjToWorld, mObjScale );
+   polyList->setObject( this );
 
-   if (context == PLC_Export)
+   if ( context == PLC_Export )
    {
       // Use highest detail level
       S32 dl = 0;
 
       // Try to call on the client so we can export materials
-      if (isServerObject() && getClientObject())
-         dynamic_cast<TSStatic*>(getClientObject())->mShapeInstance->buildPolyList(polyList, dl);
+      if ( isServerObject() && getClientObject() )
+         dynamic_cast<TSStatic*>(getClientObject())->mShapeInstance->buildPolyList( polyList, dl );
       else
-         mShapeInstance->buildPolyList(polyList, dl);
+          mShapeInstance->buildPolyList( polyList, dl );
    }
-   else if (context == PLC_Selection)
+   else if ( context == PLC_Selection )
    {
       // Use the last rendered detail level
       S32 dl = mShapeInstance->getCurrentDetail();
-      mShapeInstance->buildPolyListOpcode(dl, polyList, box);
+      mShapeInstance->buildPolyListOpcode( dl, polyList, box );
    }
    else
    {
       // Figure out the mesh type we're looking for.
-      MeshType meshType = (context == PLC_Decal) ? mDecalType : mCollisionType;
+      MeshType meshType = ( context == PLC_Decal ) ? mDecalType : mCollisionType;
 
-      if (meshType == None)
+      if ( meshType == None )
          return false;
       else if ( meshType == Bounds )
          polyList->addBox( mObjBox );
@@ -1093,8 +1076,8 @@ bool TSStatic::buildPolyList(PolyListContext context, AbstractPolyList* polyList
          // Everything else is done from the collision meshes
          // which may be built from either the visual mesh or
          // special collision geometry.
-         for (U32 i = 0; i < mCollisionDetails.size(); i++)
-            mShapeInstance->buildPolyListOpcode(mCollisionDetails[i], polyList, box);
+         for ( U32 i = 0; i < mCollisionDetails.size(); i++ )
+            mShapeInstance->buildPolyListOpcode( mCollisionDetails[i], polyList, box );
       }
    }
 
@@ -1132,7 +1115,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
 
       colMesh->colMeshName = String::ToString("ColMesh%d-1", exportData->colMeshes.size());
    }
-   else if(mCollisionType == CollisionMesh)
+   else if (mCollisionType == CollisionMesh)
    {
       // Everything else is done from the collision meshes
       // which may be built from either the visual mesh or
@@ -1147,7 +1130,7 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
          colMesh->mesh.setObject(this);
 
          mShapeInstance->buildPolyListOpcode(mCollisionDetails[i], &colMesh->mesh, box);
-         
+
          colMesh->colMeshName = String::ToString("ColMesh%d-1", exportData->colMeshes.size());
       }
    }
@@ -1156,69 +1139,38 @@ bool TSStatic::buildExportPolyList(PolyListContext context, ColladaUtils::Export
    if (isServerObject() && getClientObject())
    {
       TSStatic* clientShape = dynamic_cast<TSStatic*>(getClientObject());
-      U32 numDetails = clientShape->mShapeInstance->getNumDetails();
+      U32 numDetails = clientShape->mShapeInstance->getNumDetails() - 1;
 
-      for (U32 i = 0; i < numDetails; i++)
+      exportData->meshData.increment();
+
+      //Prep a meshData for this shape in particular
+      ColladaUtils::ExportData::meshLODData* meshData = &exportData->meshData.last();
+
+      //Fill out the info we'll need later to actually append our mesh data for the detail levels during the processing phase
+      meshData->shapeInst = clientShape->mShapeInstance;
+      meshData->originatingObject = this;
+      meshData->meshTransform = mObjToWorld;
+      meshData->scale = mObjScale;
+
+      //Iterate over all our detail levels
+      for (U32 i = 0; i < clientShape->mShapeInstance->getNumDetails(); i++)
       {
          TSShape::Detail detail = clientShape->mShapeInstance->getShape()->details[i];
+
          String detailName = String::ToLower(clientShape->mShapeInstance->getShape()->getName(detail.nameIndex));
 
-         if(detailName.startsWith("col") || detailName.startsWith("los"))
+         //Skip it if it's a collision or line of sight element
+         if (detailName.startsWith("col") || detailName.startsWith("los"))
             continue;
 
-         ColladaUtils::ExportData::detailLevel* curDetail;
+         meshData->meshDetailLevels.increment();
 
-         S32 detailLevelIndex = exportData->hasDetailLevel(detail.size);
-         if (detailLevelIndex == -1)
-         {
-            exportData->detailLevels.increment();
-            curDetail = &exportData->detailLevels.last();
-            curDetail->detailLevelId = detail.size;
-         }
-         else
-         {
-            curDetail = &exportData->detailLevels[detailLevelIndex];
-         }
+         ColladaUtils::ExportData::detailLevel* curDetail = &meshData->meshDetailLevels.last();
 
-         curDetail->mesh.setTransform(&mObjToWorld, mObjScale);
-         curDetail->mesh.setObject(this);
-
-         clientShape->mShapeInstance->buildPolyList(&curDetail->mesh, i);
-
-         //lastly, get material
-         for (U32 m = 0; m < curDetail->mesh.mMaterialList.size(); m++)
-         {
-            S32 matIdx = exportData->hasMaterialInstance(curDetail->mesh.mMaterialList[m]);
-
-            if (matIdx == -1)
-            {
-               //cool, haven't already got this material, so lets store it out
-               exportData->materials.push_back(curDetail->mesh.mMaterialList[m]);
-               curDetail->materialRefList.insert(m, exportData->materials.size() - 1);
-            }
-            else
-            {
-               curDetail->materialRefList.insert(m, matIdx);
-            }
-         }
+         //Make sure we denote the size this detail level has
+         curDetail->size = detail.size;
       }
    }
-   else
-   {
-      /*U32 numDetails = mShapeInstance->getNumDetails();
-
-      for (U32 i = 0; i < numDetails; i++)
-      {
-         mShapeInstance->buildPolyList(polyList, i);
-      }*/
-   }
-
-   // Try to call on the client so we can export materials
-   /*if ( isServerObject() && getClientObject() )
-   dynamic_cast<TSStatic*>(getClientObject())->mShapeInstance->buildPolyList( polyList, dl );
-   else
-   mShapeInstance->buildPolyList( polyList, dl );*/
-   
 
    return true;
 }
@@ -1429,6 +1381,16 @@ void TSStatic::onUnmount( SceneObject *obj, S32 node )
    _updateShouldTick();
 }
 
+U32 TSStatic::getNumDetails()
+{
+	if (isServerObject() && getClientObject())
+	{
+		TSStatic* clientShape = dynamic_cast<TSStatic*>(getClientObject());
+		return clientShape->mShapeInstance->getNumDetails();
+	}
+	return 0;
+};
+
 //------------------------------------------------------------------------
 //These functions are duplicated in tsStatic and shapeBase.
 //They each function a little differently; but achieve the same purpose of gathering
@@ -1550,16 +1512,20 @@ void TSStatic::set_special_typing()
    else
       mTypeMask &= ~InteriorLikeObjectType;
 }
+
 void TSStatic::onStaticModified(const char* slotName, const char*newValue)
 {
+#ifdef TORQUE_AFX_ENABLED
    if (slotName == afxZodiacData::GradientRangeSlot)
    {
       afxZodiacData::convertGradientRangeFromDegrees(mGradientRange, mGradientRangeUser);
       return;
    }
+#endif
 
    set_special_typing();
 }
+
 void TSStatic::setSelectionFlags(U8 flags)
 {
    Parent::setSelectionFlags(flags);
