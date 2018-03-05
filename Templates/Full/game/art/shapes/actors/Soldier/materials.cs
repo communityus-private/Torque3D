@@ -24,12 +24,18 @@ singleton Material(Mat_Soldier_Main)
 {
    mapTo = "base_Soldier_Main";
 
-   diffuseMap[0] = "Soldier_Dif.dds";
-   normalMap[0] = "Soldier_N.dds";
-   specularMap[0] = "Soldier_c";
+   diffuseMap[0] = "art/shapes/actors/Soldier/Soldier_Dif.dds";
+   normalMap[0] = "art/shapes/actors/Soldier/Soldier_N.dds";
+   specularMap[0] = "art/shapes/actors/Soldier/Soldier_c";
    FlipRB[0] = "1";
    castDynamicShadows = true;
    materialTag0 = "Player";
+   isSRGb[0] = "1";
+   roughness0 = "1";
+   FlipRB0 = "1";
+   specularPower0 = "10";
+   pixelSpecular0 = "0";
+   specular0 = "0.9 0.9 0.9 1";
 };
 
 singleton Material(Mat_Soldier_Dazzle)

@@ -2,7 +2,7 @@
 new SimGroup(MissionGroup) {
    canSave = "1";
    canSaveDynamicFields = "1";
-      Enabled = "1";
+      enabled = "1";
 
    new LevelInfo(theLevelInfo) {
       nearClip = "0.1";
@@ -41,7 +41,7 @@ new SimGroup(MissionGroup) {
    new SimGroup(PlayerDropPoints) {
       canSave = "1";
       canSaveDynamicFields = "1";
-         Enabled = "1";
+         enabled = "1";
 
       new SpawnSphere() {
          autoSpawn = "0";
@@ -57,7 +57,7 @@ new SimGroup(MissionGroup) {
          scale = "1 1 1";
          canSave = "1";
          canSaveDynamicFields = "1";
-            Enabled = "1";
+            enabled = "1";
             homingCount = "0";
             lockCount = "0";
       };
@@ -295,6 +295,40 @@ new SimGroup(MissionGroup) {
          canSave = "1";
          canSaveDynamicFields = "1";
       };
+   };
+   new ReflectionProbe() {
+      enabled = "1";
+      ProbeShape = "Sphere";
+      radius = "10";
+      Intensity = "1";
+      IndirectLightMode = "Ambient Color";
+      IndirectLight = "1 1 1 1";
+      ReflectionMode = "Baked Cubemap";
+      reflectionPath = "levels/empty terrain/";
+      Bake = "0";
+      position = "15.1652 14.4709 242.142";
+      rotation = "1 0 0 0";
+      scale = "5 5 5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      persistentId = "fc28816f-65a6-11e7-b9a1-b6f5317ad553";
+   };
+   new ReflectionProbe() {
+      enabled = "1";
+      ProbeShape = "Sphere";
+      radius = "10";
+      Intensity = "1";
+      IndirectLightMode = "Ambient Color";
+      IndirectLight = "1 1 1 1";
+      ReflectionMode = "Baked Cubemap";
+      reflectionPath = "levels/empty terrain/";
+      Bake = "0";
+      position = "9.87758 12.8131 242.142";
+      rotation = "1 0 0 0";
+      scale = "5 5 5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      persistentId = "10bb5f41-65a7-11e7-b9a1-b6f5317ad553";
    };
 };
 //--- OBJECT WRITE END ---
