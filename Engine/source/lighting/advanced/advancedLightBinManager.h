@@ -183,6 +183,8 @@ protected:
       void setLightParameters( const LightInfo *light, const SceneRenderState* renderState, const MatrixF &worldViewOnly );
    };
 
+   
+
 protected:
 
    struct LightBinEntry
@@ -232,6 +234,7 @@ protected:
    GFXVertexBufferHandle<FarFrustumQuadVert> mFarFrustumQuadVerts;
 
 
+protected:
    //void _createMaterials();
 
    void _setupPerFrameParameters( const SceneRenderState *state );
