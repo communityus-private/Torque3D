@@ -341,6 +341,5 @@ class EngineFunctionInfo : public EngineExport
          EngineFunctionCallout | EngineFunctionFlags( flags )                                            \
       );                                                                                                 \
    }
-   
 
 #endif // !_ENGINEFUNCTIONS_H_
