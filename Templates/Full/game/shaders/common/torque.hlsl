@@ -287,4 +287,21 @@ float3 toGamma(float3 tex)
    return pow(abs(tex.rgb), 1.0/2.2);
 }
 
+//
+float3 PBRFresnel(float3 albedo, float3 indirect, float metalness, float fresnel)
+{
+   float3 diffuseColor = albedo - (albedo * metalness);
+   float3 reflectColor = lerp(indirect*albedo, indirect, fresnel);
+
+   return diffuseColor + reflectColor;
+}
+
+float3 simpleFresnel(float3 diffuseColor, float3 reflectColor, float metalness, float angle, float bias, float power)
+{
+   float fresnelTerm = bias + (1.0 - bias) * pow(abs(1.0 - max(angle, 0)), power);
+
+   fresnelTerm *= metalness;
+
+   return lerp(diffuseColor, reflectColor, fresnelTerm);
+}
 #endif // _TORQUE_HLSL_
