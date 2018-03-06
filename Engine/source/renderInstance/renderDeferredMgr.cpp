@@ -244,10 +244,6 @@ void RenderDeferredMgr::addElement( RenderInst *inst )
 
    if (matInst)
    {
-      // Skip decals if they don't have normal maps.
-      if (isDecalMeshInst && !matInst->hasNormalMap())
-         return;
-
       // If its a custom material and it refracts... skip it.
       if (matInst->isCustomMaterial() &&
          static_cast<CustomMaterial*>(matInst->getMaterial())->mRefract)
