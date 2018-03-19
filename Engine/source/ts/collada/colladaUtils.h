@@ -124,119 +124,122 @@ namespace ColladaUtils
 
    struct ExportData
    {
-	   struct detailLevel
-	   {
-		   OptimizedPolyList mesh;
-		   S32 size;
-		   Map<int, int> materialRefList;
-	   };
+      struct detailLevel
+      {
+         OptimizedPolyList mesh;
+         S32 size;
+         Map<int, int> materialRefList;
+      };
 
-	   struct meshLODData
-	   {
-		   Vector<detailLevel> meshDetailLevels;
-		   TSShapeInstance* shapeInst;
-		   MatrixF meshTransform;
-		   SceneObject* originatingObject;
+      struct meshLODData
+      {
+         Vector<detailLevel> meshDetailLevels;
+         TSShapeInstance* shapeInst;
+         MatrixF meshTransform;
+         SceneObject* originatingObject;
 
-		   Point3F scale;
+         Point3F scale;
 
-		   S32 hasDetailLevel(S32 size)
-		   {
-			   for (U32 i = 0; i < meshDetailLevels.size(); ++i)
-			   {
-				   U32 mdlSize = meshDetailLevels[i].size;
+         S32 hasDetailLevel(S32 size)
+         {
+            for (U32 i = 0; i < meshDetailLevels.size(); ++i)
+            {
+               U32 mdlSize = meshDetailLevels[i].size;
 
-				   if (mdlSize == size)
-					   return i;
-			   }
+               if (mdlSize == size)
+                  return i;
+            }
 
-			   return -1;
-		   }
-	   };
+            return -1;
+         }
 
-	   struct colMesh
-	   {
-		   OptimizedPolyList mesh;
-		   String colMeshName;
-	   };
+         meshLODData() : shapeInst(nullptr), meshTransform(true), originatingObject(nullptr), scale(0)
+         {}
+      };
 
-	   Vector<detailLevel> detailLevels;
-	   Vector<meshLODData> meshData;
-	   Vector<colMesh> colMeshes;
-	   Vector<BaseMatInstance*> materials;
+      struct colMesh
+      {
+         OptimizedPolyList mesh;
+         String colMeshName;
+      };
 
-	   void processData();
+      Vector<detailLevel> detailLevels;
+      Vector<meshLODData> meshData;
+      Vector<colMesh> colMeshes;
+      Vector<BaseMatInstance*> materials;
 
-	   S32 hasDetailLevel(U32 dl)
-	   {
-		   for (U32 i = 0; i < detailLevels.size(); i++)
-		   {
-			   if (detailLevels[i].size == dl)
-				   return i;
-		   }
+      void processData();
 
-		   return -1;
-	   }
+      S32 hasDetailLevel(U32 dl)
+      {
+         for (U32 i = 0; i < detailLevels.size(); i++)
+         {
+            if (detailLevels[i].size == dl)
+               return i;
+         }
 
-	   S32 hasMaterialInstance(BaseMatInstance* matInst)
-	   {
-		   for (U32 i = 0; i < materials.size(); i++)
-		   {
-			   if (materials[i] == matInst)
-				   return i;
-		   }
+         return -1;
+      }
 
-		   return -1;
-	   }
+      S32 hasMaterialInstance(BaseMatInstance* matInst)
+      {
+         for (U32 i = 0; i < materials.size(); i++)
+         {
+            if (materials[i] == matInst)
+               return i;
+         }
 
-	   S32 numberOfDetailLevels()
-	   {
-		   Vector<S32> detailLevelIdxs;
+         return -1;
+      }
 
-		   for (U32 i = 0; i < meshData.size(); ++i)
-		   {
-			   for (U32 d = 0; d < meshData[i].meshDetailLevels.size(); ++d)
-			   {
-				   detailLevelIdxs.push_back_unique(meshData[i].meshDetailLevels[d].size);
-			   }
-		   }
+      S32 numberOfDetailLevels()
+      {
+         Vector<S32> detailLevelIdxs;
 
-		   return detailLevelIdxs.size();
-	   }
+         for (U32 i = 0; i < meshData.size(); ++i)
+         {
+            for (U32 d = 0; d < meshData[i].meshDetailLevels.size(); ++d)
+            {
+               detailLevelIdxs.push_back_unique(meshData[i].meshDetailLevels[d].size);
+            }
+         }
 
-	   static S32 _Sort(const S32 *p1, const S32 *p2)
-	   {
-		   S32 e1 = (*p1);
-		   S32 e2 = (*p2);
+         return detailLevelIdxs.size();
+      }
 
-		   if (e1 > e2)
-			   return 1;
-		   else if (e1 < e2)
-			   return -1;
+      static S32 _Sort(const S32 *p1, const S32 *p2)
+      {
+         S32 e1 = (*p1);
+         S32 e2 = (*p2);
 
-		   return 0;
-	   }
+         if (e1 > e2)
+            return 1;
+         else if (e1 < e2)
+            return -1;
 
-	   S32 getDetailLevelSize(U32 detailIdx)
-	   {
-		   Vector<S32> detailLevelIdxs;
+         return 0;
+      }
 
-		   for (U32 i = 0; i < meshData.size(); ++i)
-		   {
-			   for (U32 d = 0; d < meshData[i].meshDetailLevels.size(); ++d)
-			   {
-				   S32 mdlSize = meshData[i].meshDetailLevels[d].size;
-				   detailLevelIdxs.push_back_unique(mdlSize);
-			   }
-		   }
+      S32 getDetailLevelSize(U32 detailIdx)
+      {
+         Vector<S32> detailLevelIdxs;
 
-		   if (detailIdx >= detailLevelIdxs.size())
-			   return -1;
+         for (U32 i = 0; i < meshData.size(); ++i)
+         {
+            for (U32 d = 0; d < meshData[i].meshDetailLevels.size(); ++d)
+            {
+               S32 mdlSize = meshData[i].meshDetailLevels[d].size;
+               detailLevelIdxs.push_back_unique(mdlSize);
+            }
+         }
 
-		   detailLevelIdxs.sort(&_Sort);
+         if (detailIdx >= detailLevelIdxs.size())
+            return -1;
 
-		   return detailLevelIdxs[detailIdx];
-	   }
+         detailLevelIdxs.sort(&_Sort);
+
+         return detailLevelIdxs[detailIdx];
+      }
    };
 
    void convertTransform(MatrixF& m);

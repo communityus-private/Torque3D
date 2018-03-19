@@ -44,7 +44,7 @@ bool GFXGLOcclusionQuery::begin()
 
    if (!mTesting)
    {
-      glBeginQuery(GL_SAMPLES_PASSED, mQuery);
+   glBeginQuery(GL_SAMPLES_PASSED, mQuery);
       mTesting = true;
    }
    return true;
