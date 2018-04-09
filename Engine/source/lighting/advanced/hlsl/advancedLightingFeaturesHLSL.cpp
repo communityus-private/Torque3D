@@ -413,7 +413,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
 
          if ( fd.features.hasFeature( MFT_DetailNormalMap ) )
          {
-            Var *bumpMap = (Var*)LangElement::find( "detailBumpMap" );
+            bumpMap = (Var*)LangElement::find( "detailBumpMap" );
             if ( !bumpMap )
             {
                bumpMap = new Var;
@@ -424,7 +424,7 @@ void DeferredBumpFeatHLSL::processPix( Vector<ShaderComponent*> &componentList,
                bumpMap->constNum = Var::getTexUnitNum();
             }
 
-            Var* bumpMapTex = (Var*)LangElement::find("detailBumpMap");
+            bumpMapTex = (Var*)LangElement::find("detailBumpMap");
             if (!bumpMapTex)
             {
                bumpMap->setType("SamplerState");
