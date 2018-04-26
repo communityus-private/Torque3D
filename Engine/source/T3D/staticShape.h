@@ -84,6 +84,7 @@ public:
    bool onNewDataBlock(GameBaseData *dptr, bool reload);
 
    void processTick(const Move *move);
+   void StaticShape::interpolateTick(F32 dt);
    void setTransform(const MatrixF &mat);
 
    U32  packUpdate  (NetConnection *conn, U32 mask, BitStream *stream);

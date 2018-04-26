@@ -162,6 +162,12 @@ enum SceneObjectTypes
 #if defined(AFX_CAP_AFXMODEL_TYPE) 
    afxModelObjectType = BIT(26)
 #endif 
+
+   // PATHSHAPE 
+   PathShapeObjectType = BIT( 27 ),
+   // PATHSHAPE END
+
+   /// @}
 };
 
 enum SceneObjectTypeMasks : U32

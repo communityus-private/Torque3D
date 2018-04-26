@@ -73,6 +73,7 @@ function EWCreatorWindow::init( %this )
       %this.registerMissionObject( "MissionArea",  "Mission Area" );
       %this.registerMissionObject( "Path" );
       %this.registerMissionObject( "Marker",       "Path Node" );
+      %this.registerMissionObject("PathShape", "PathShape");
       %this.registerMissionObject( "Trigger" );
       %this.registerMissionObject( "PhysicalZone", "Physical Zone" );
       %this.registerMissionObject( "Camera" );

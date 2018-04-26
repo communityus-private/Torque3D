@@ -404,6 +404,12 @@ void GameBase::processTick(const Move * move)
 #endif
 }
 
+void GameBase::interpolateTick(F32 dt)
+{
+   // PATHSHAPE
+   updateRenderChangesByParent();
+   // PATHSHAPE END
+}
 //----------------------------------------------------------------------------
 
 F32 GameBase::getUpdatePriority(CameraScopeQuery *camInfo, U32 updateMask, S32 updateSkips)
@@ -757,3 +763,41 @@ DefineEngineMethod( GameBase, applyRadialImpulse, void, ( Point3F origin, F32 ra
 {
    object->applyRadialImpulse( origin, radius, magnitude );
 }
+
+// PATHSHAPE
+// Console Methods for attach children. can't put them in sceneobject because  //
+// we want the processafter functions////////////////////////////////////////////
+
+ConsoleMethod(GameBase, attachChild, bool, 3, 3, "(SceneObject subObject)"
+              "attach an object to this one, preserving its present transform.")
+{   
+    GameBase * t;   
+    MatrixF m;   
+    if(Sim::findObject(argv[2], t))   {              
+		if (t->getParent() != object){
+			Con::errorf("Object is (%d)", t->getId());   
+			t->clearProcessAfter();
+			t->processAfter(object);
+			return object->attachChild(t);
+		}
+		else
+			return false;
+    } else {      
+        Con::errorf("Couldn't addObject()!");   
+        return false;
+    }
+}
+
+
+
+ConsoleMethod(GameBase, detachChild, bool, 3, 3, "(SceneObject subObject)"
+              "attach an object to this one, preserving its present transform.")
+{   
+    GameBase * t;       
+    if(Sim::findObject(argv[2], t))   {     
+			t->clearProcessAfter();
+		return t->attachToParent(NULL);
+    } else 
+        return false;    
+}//end
+// PATHSHAPE END
