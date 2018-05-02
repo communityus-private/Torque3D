@@ -476,15 +476,16 @@ F32 GameBase::getUpdatePriority(CameraScopeQuery *camInfo, U32 updateMask, S32 u
 
    // Weight by updateSkips
    F32 wSkips = updateSkips * 0.5;
-
-   // Calculate final priority, should total to about 1.0f
+   
+   // Calculate final priority, should total to about 1.0f (plus children)
    //
    return
       wFov       * sUpFov +
       wDistance  * sUpDistance +
       wVelocity  * sUpVelocity +
       wSkips     * sUpSkips +
-      wInterest  * sUpInterest;
+      wInterest  * sUpInterest +
+	  getNumChildren();
 }
 
 //----------------------------------------------------------------------------
