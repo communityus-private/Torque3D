@@ -28,7 +28,7 @@ new SimGroup(MissionGroup) {
          levelName = "A Probe Test";
    };
    new SkyBox(theSky) {
-      Material = "DesertSkyMat";
+      Material = "HdrSky";
       drawBottom = "0";
       fogBandHeight = "0";
       position = "0 0 0";
@@ -80,6 +80,17 @@ new SimGroup(MissionGroup) {
          splitFadeDistances = "1 1 1 1";
          width = "3072";
    };
+   new Skylight() {
+      enabled = "1";
+      StaticCubemap = "HdrSkyCubemap";
+      position = "0 0 0";
+      rotation = "1 0 0 0";
+      scale = "1 1 1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      persistentId = "e4c73467-4089-11e8-b478-cd227cd60b8b";
+         reflectionPath = "levels/AProbeTest/probes/";
+   };
    new SimGroup(PlayerDropPoints) {
       canSave = "1";
       canSaveDynamicFields = "1";
@@ -118,12 +129,9 @@ new SimGroup(MissionGroup) {
          scale = "1 1 1";
    };
    new ReflectionProbe() {
-      enabled = "1";
+      enabled = "0";
       ProbeShape = "Sphere";
       radius = "10";
-      Intensity = "1";
-      IndirectLightMode = "Ambient Color";
-      IndirectLight = "1 1 1 1";
       ReflectionMode = "Baked Cubemap";
       reflectionPath = "levels/probeTest/probes/";
       Bake = "0";
@@ -134,6 +142,9 @@ new SimGroup(MissionGroup) {
       canSaveDynamicFields = "1";
       persistentId = "8072e1be-2846-11e7-9f56-abd46b190c60";
          GroundColor = "0.8 0.7 0.5 1";
+         IndirectLight = "1 1 1 1";
+         IndirectLightMode = "Spherical Harmonics";
+         Intensity = "1";
          SkyColor = "0.5 0.5 1 1";
    };
    new ConvexShape() {
@@ -141,6 +152,7 @@ new SimGroup(MissionGroup) {
       position = "0.487092 0.454657 9.4951";
       rotation = "1 0 0 0";
       scale = "10 10 1";
+      hidden = "1";
       canSave = "1";
       canSaveDynamicFields = "1";
 
@@ -156,6 +168,7 @@ new SimGroup(MissionGroup) {
       position = "0.470302 5.50317 5";
       rotation = "1 0 0 0";
       scale = "10 1 10";
+      hidden = "1";
       canSave = "1";
       canSaveDynamicFields = "1";
 
@@ -171,6 +184,7 @@ new SimGroup(MissionGroup) {
       position = "5.02238 0.0512025 5";
       rotation = "1 0 0 0";
       scale = "1 10 10";
+      hidden = "1";
       canSave = "1";
       canSaveDynamicFields = "1";
 
@@ -186,6 +200,7 @@ new SimGroup(MissionGroup) {
       position = "0.631523 -1.77695 1.00151";
       rotation = "1 0 0 0";
       scale = "2 2 2";
+      hidden = "1";
       canSave = "1";
       canSaveDynamicFields = "1";
 
@@ -201,6 +216,7 @@ new SimGroup(MissionGroup) {
       position = "0.470302 -5.04199 5";
       rotation = "1 0 0 0";
       scale = "10 1 10";
+      hidden = "1";
       canSave = "1";
       canSaveDynamicFields = "1";
 
@@ -243,7 +259,7 @@ new SimGroup(MissionGroup) {
    };
    new PointLight() {
       radius = "10";
-      isEnabled = "1";
+      isEnabled = "0";
       color = "0.887923 1 0.008023 1";
       brightness = "1";
       castShadows = "0";
@@ -271,6 +287,49 @@ new SimGroup(MissionGroup) {
       rotation = "1 0 0 0";
       canSave = "1";
       canSaveDynamicFields = "1";
+   };
+   new TSStatic() {
+      shapeName = "art/shapes/cerb/cerberus.dae";
+      playAmbient = "1";
+      meshCulling = "0";
+      originSort = "0";
+      CollisionType = "Collision Mesh";
+      DecalType = "Collision Mesh";
+      allowPlayerStep = "0";
+      alphaFadeEnable = "0";
+      alphaFadeStart = "100";
+      alphaFadeEnd = "150";
+      alphaFadeInverse = "0";
+      renderNormals = "0";
+      forceDetail = "-1";
+      ignoreZodiacs = "0";
+      useGradientRange = "0";
+      gradientRange = "0 180";
+      invertGradientRange = "0";
+      position = "1.58251 0.0485362 5.25407";
+      rotation = "-0.0659546 -0.0786016 -0.994722 80.2987";
+      scale = "0.1 0.1 0.1";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+   };
+   new ReflectionProbe() {
+      enabled = "1";
+      ProbeShape = "Box";
+      radius = "10";
+      ReflectionMode = "Baked Cubemap";
+      reflectionPath = "levels/probeTest/probes/";
+      Bake = "0";
+      position = "15.4549 0.559989 4.53387";
+      rotation = "1 0 0 0";
+      scale = "5 5 5";
+      canSave = "1";
+      canSaveDynamicFields = "1";
+      persistentId = "4ec88e62-4e8f-11e8-ae68-993c6bb8eb5b";
+         GroundColor = "0.8 0.7 0.5 1";
+         IndirectLight = "1 1 1 1";
+         IndirectLightMode = "Spherical Harmonics";
+         Intensity = "1";
+         SkyColor = "0.5 0.5 1 1";
    };
 };
 //--- OBJECT WRITE END ---

@@ -52,7 +52,7 @@ Fragout main( Conn IN )
    OUT.col2 = float4(0.0, 0.0, 0.0, 0.0);
    
    // Clear Light Info Buffer.
-   OUT.col3 = float4(0.0, 0.0, 0.0, 0.0);
+   OUT.col3 = float4(0.0, 1.0, 0.0, 0.0);
 
    return OUT;
 }

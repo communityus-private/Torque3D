@@ -32,6 +32,9 @@
 #ifndef _TDICTIONARY_H_
 #include "core/util/tDictionary.h"
 #endif
+#ifndef _CUBEMAPDATA_H_
+#include "gfx/sim/cubemapData.h"
+#endif
 
 struct SceneData;
 class LightManager;

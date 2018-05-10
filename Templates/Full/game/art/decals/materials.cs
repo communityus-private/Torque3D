@@ -23,10 +23,10 @@
 singleton Material(DECAL_scorch)
 {
 
-   translucent = "0";
-   translucentBlendOp = "None";
-   translucentZWrite = true;
-   alphaTest = true;
+   translucent = "1";
+   translucentBlendOp = "Mul";
+   translucentZWrite = "0";
+   alphaTest = "0";
    alphaRef = "84";
    mapTo = "scorch_decal.png";
    diffuseMap[0] = "art/decals/scorch_decal.png";

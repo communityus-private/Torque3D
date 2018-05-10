@@ -51,6 +51,7 @@ function initRenderManager()
    // meshes... but that causes issues in reflections.
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(SkyBin)        { bintype = "Sky"; renderOrder = 0.1; processAddOrder = 0.1; } );
    
+   DiffuseRenderPassManager.addManager( new RenderProbeMgr(ProbeBin)       { bintype = "Probes"; renderOrder = 0.15; processAddOrder = 0.15; } );
    //DiffuseRenderPassManager.addManager( new RenderVistaMgr()             { bintype = "Vista"; renderOrder = 0.15; processAddOrder = 0.15; } );
    
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(BeginBin)      { bintype = "Begin"; renderOrder = 0.2; processAddOrder = 0.2; } );
