@@ -68,6 +68,10 @@ struct ProbeInfo
 
    GFXCubemapHandle *mCubemap;
 
+   GFXCubemapHandle *mIrradianceCubemap;
+
+   GFXTexHandle *mBRDFTexture;
+
    /// The priority of this light used for
    /// light and shadow scoring.
    F32 mPriority;

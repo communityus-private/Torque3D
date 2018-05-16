@@ -49,6 +49,11 @@
 
 #include "materials/materialFeatureTypes.h"
 
+#include "materials/shaderData.h"
+#include "gfx/gfxTextureManager.h"
+
+#include "gfx/bitmap/imageUtils.h"
+
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool Skylight::smRenderSkylights = true;
@@ -97,6 +102,13 @@ Skylight::Skylight()
 
    mEditorShapeInst = NULL;
    mEditorShape = NULL;
+
+   mIrridianceMap = NULL;
+   mPrefilterMap = NULL;
+   mBrdfTexture = NULL;
+   mResourcesCreated = false;
+   mPrefilterMipLevels = 6;
+   mPrefilterSize = 512;
 
    mProbeInfo = new ProbeInfo();
 }
@@ -385,6 +397,68 @@ void Skylight::updateProbeParams()
    mProbeInfo->mScore = 9001.0;
 }
 
+bool Skylight::createClientResources()
+{
+   //irridiance resources
+   ShaderData *irrShaderData;
+   mIrrShader = Sim::findObject("IrradianceShader", irrShaderData) ? irrShaderData->getShader() : NULL;
+   if (!mIrrShader)
+   {
+      Con::errorf("SkyLight::onAdd() - could not find IBL_IrradianceShader");
+      return false;
+   }
+
+   mIrrConsts = mIrrShader->allocConstBuffer();
+   mIrrEnvMapSC = mIrrShader->getShaderConstHandle("$environmentMap");
+   mIrrFaceSC = mIrrShader->getShaderConstHandle("$face");
+
+   // Create StateBlocks
+   GFXStateBlockDesc desc;
+   desc.zEnable = false;
+   desc.samplersDefined = true;
+   desc.samplers[0].addressModeU = GFXAddressClamp;
+   desc.samplers[0].addressModeV = GFXAddressClamp;
+   desc.samplers[0].addressModeW = GFXAddressClamp;
+   desc.samplers[0].magFilter = GFXTextureFilterLinear;
+   desc.samplers[0].minFilter = GFXTextureFilterLinear;
+   desc.samplers[0].mipFilter = GFXTextureFilterLinear;
+
+   mIrrStateBlock = GFX->createStateBlock(desc);
+   mIrridianceMap = GFX->createCubemap();
+   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F);
+
+   //prefilter resources - we share the irridiance stateblock
+   ShaderData *prefilterShaderData;
+   mPrefilterShader = Sim::findObject("PrefiterCubemapShader", prefilterShaderData) ? prefilterShaderData->getShader() : NULL;
+   if (!mPrefilterShader)
+   {
+      Con::errorf("SkyLight::onAdd() - could not find IBL_PrefilterShader");
+      return false;
+   }
+
+   mPrefilterConsts = mPrefilterShader->allocConstBuffer();
+   mPrefilterEnvMapSC = mPrefilterShader->getShaderConstHandle("$environmentMap");
+   mPrefilterFaceSC = mPrefilterShader->getShaderConstHandle("$face");
+   mPrefilterRoughnessSC = mPrefilterShader->getShaderConstHandle("$roughness");
+   mPrefilterMap = GFX->createCubemap();
+   mPrefilterMap->initDynamic(mPrefilterSize, GFXFormatR16G16B16A16F/*, mPrefilterMipLevels*/);
+
+   //brdf lookup resources
+   ShaderData *brdfShaderData;
+   mBrdfShader = Sim::findObject("BRDFLookupShader", brdfShaderData) ? brdfShaderData->getShader() : NULL;
+   if (!mPrefilterShader)
+   {
+      Con::errorf("SkyLight::onAdd() - could not find IBL_BrdfLookupShader");
+      return false;
+   }
+   //make the brdf lookup texture the same size as the prefilter texture
+   mBrdfTexture = TEXMGR->createTexture(mPrefilterSize, mPrefilterSize, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, 1, 0);
+
+   mResourcesCreated = true;
+
+   return true;
+}
+
 void Skylight::updateMaterial()
 {
    if ((mReflectionModeType == BakedCubemap) && !mProbeUniqueID.isEmpty())
@@ -473,6 +547,125 @@ void Skylight::updateMaterial()
    }
 
    //calculateSHTerms();
+
+   generateTextures();
+
+   //Now that the work is done, assign the relevent maps
+   if (mPrefilterMap.isValid())
+   {
+      //mProbeInfo->mCubemap = &mIrridianceMap;
+      mProbeInfo->mIrradianceCubemap = &mIrridianceMap;
+      mProbeInfo->mBRDFTexture = &mBrdfTexture;
+   }
+}
+
+void Skylight::generateTextures()
+{
+   if (!mCubemap)
+      return;
+
+   if (!mResourcesCreated)
+   {
+      if (!createClientResources())
+      {
+         Con::errorf("SkyLight::createIrridianceMap: Failed to create resources");
+         return;
+      }
+   }
+
+   GFXTransformSaver saver;
+
+   GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget();
+
+   //create irridiance cubemap
+   GFX->pushActiveRenderTarget();
+   GFX->setShader(mIrrShader);
+   GFX->setShaderConstBuffer(mIrrConsts);
+   GFX->setStateBlock(mIrrStateBlock);
+   GFX->setVertexBuffer(NULL);
+   GFX->setCubeTexture(0, mCubemap->mCubemap);
+
+   for (U32 i = 0; i < 6; i++)
+   {
+      renderTarget->attachTexture(GFXTextureTarget::Color0, mIrridianceMap, i);
+      mIrrConsts->setSafe(mIrrFaceSC, (S32)i);
+      GFX->setActiveRenderTarget(renderTarget);
+      GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
+      GFX->drawPrimitive(GFXTriangleList, 0, 3);
+      renderTarget->resolve();
+   }
+
+   //Write it out
+   char fileName[256];
+   dSprintf(fileName, 256, "levels/test/irradiance.DDS");
+
+   CubemapSaver::save(mIrridianceMap, fileName);
+
+   if (!Platform::isFile(fileName))
+   {
+      Con::errorf("Failed to properly save out the skylight baked irradiance!");
+   }
+
+   //create prefilter cubemap (radiance)
+   GFX->setShader(mPrefilterShader);
+   GFX->setShaderConstBuffer(mPrefilterConsts);
+   GFX->setCubeTexture(0, mCubemap->mCubemap);
+   for (U32 face = 0; face < 6; face++)
+   {
+      mPrefilterConsts->setSafe(mPrefilterFaceSC, (S32)face);
+      for (U32 mip = 0; mip < mPrefilterMipLevels; mip++)
+      {
+         F32 roughness = (float)mip / (float)(mPrefilterMipLevels - 1);
+         mPrefilterConsts->setSafe(mPrefilterRoughnessSC, roughness);
+         U32 size = mPrefilterSize * mPow(0.5f, mip);
+         renderTarget->attachTexture(GFXTextureTarget::Color0, mPrefilterMap, face, mip);
+         GFX->setActiveRenderTarget(renderTarget, false);//we set the viewport ourselves
+         GFX->setViewport(RectI(0, 0, size, size));
+         GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
+         GFX->drawPrimitive(GFXTriangleList, 0, 3);
+         renderTarget->resolve();
+      }
+   }
+
+   dSprintf(fileName, 256, "levels/test/prefilter.DDS");
+
+   CubemapSaver::save(mPrefilterMap, fileName);
+
+   if (!Platform::isFile(fileName))
+   {
+      Con::errorf("Failed to properly save out the skylight baked irradiance!");
+   }
+
+   //create brdf lookup
+   GFX->setShader(mBrdfShader);
+   renderTarget->attachTexture(GFXTextureTarget::Color0, mBrdfTexture);
+   GFX->setActiveRenderTarget(renderTarget);//potential bug here with the viewport not updating with the new size
+   GFX->setViewport(RectI(0, 0, mPrefilterSize, mPrefilterSize));//see above comment
+   GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
+   GFX->drawPrimitive(GFXTriangleList, 0, 3);
+   renderTarget->resolve();
+
+   FileStream fs;
+   if (fs.open("levels/test/brdf.DDS", Torque::FS::File::Write))
+   {
+      // Read back the render target, dxt compress it, and write it to disk.
+      GBitmap brdfBmp(mBrdfTexture.getHeight(), mBrdfTexture.getWidth(), false, GFXFormatR8G8B8A8);
+      mBrdfTexture.copyToBmp(&brdfBmp);
+
+      brdfBmp.extrudeMipLevels();
+
+      DDSFile *brdfDDS = DDSFile::createDDSFileFromGBitmap(&brdfBmp);
+      ImageUtil::ddsCompress(brdfDDS, GFXFormatBC1);
+
+      // Write result to file stream
+      brdfDDS->write(fs);
+
+      delete brdfDDS;
+   }
+   fs.close();
+
+   GFX->popActiveRenderTarget();
+
 }
 
 void Skylight::prepRenderImage(SceneRenderState *state)

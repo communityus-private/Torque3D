@@ -588,6 +588,25 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
       GFX->setCubeTexture(2, NULL);
    }
 
+   /*if (probeInfo->mIrradianceCubemap && !probeInfo->mIrradianceCubemap->isNull())
+   {
+      GFX->setCubeTexture(3, probeInfo->mIrradianceCubemap->getPointer());
+   }
+   else
+   {
+      GFX->setCubeTexture(3, NULL);
+   }
+
+   if (probeInfo->mBRDFTexture && !probeInfo->mBRDFTexture->isNull())
+   {
+      GFX->setTexture(4, probeInfo->mBRDFTexture->getPointer());
+   }
+   else
+   {
+      GFX->setTexture(4, NULL);
+   }*/
+
+
    matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
    matParams->setSafe(bbMin, probeInfo->mBounds.minExtents);
    matParams->setSafe(bbMax, probeInfo->mBounds.maxExtents);
@@ -792,6 +811,24 @@ void RenderProbeMgr::SkylightMaterialInfo::setSkylightParameters(const ProbeRend
       GFX->setCubeTexture(2, NULL);
    }
 
+   if (probeInfo->mIrradianceCubemap && !probeInfo->mIrradianceCubemap->isNull())
+   {
+      GFX->setCubeTexture(3, probeInfo->mIrradianceCubemap->getPointer());
+   }
+   else
+   {
+      GFX->setCubeTexture(3, NULL);
+   }
+
+   if (probeInfo->mBRDFTexture && !probeInfo->mBRDFTexture->isNull())
+   {
+      GFX->setTexture(4, probeInfo->mBRDFTexture->getPointer());
+   }
+   else
+   {
+      GFX->setTexture(4, NULL);
+   }
+
    matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
 
    for (U32 i = 0; i < 9; i++)
@@ -885,6 +922,8 @@ void ProbeRenderInst::set(const ProbeRenderInst *probeInfo)
    mTransform = probeInfo->mTransform;
    mAmbient = probeInfo->mAmbient;
    mCubemap = probeInfo->mCubemap;
+   mIrradianceCubemap = probeInfo->mIrradianceCubemap;
+   mBRDFTexture = probeInfo->mBRDFTexture;
    mRadius = probeInfo->mRadius;
    mIntensity = probeInfo->mIntensity;
    mProbeShapeType = probeInfo->mProbeShapeType;
@@ -911,6 +950,8 @@ void ProbeRenderInst::set(const ProbeInfo *probeInfo)
    mTransform = probeInfo->mTransform;
    mAmbient = probeInfo->mAmbient;
    mCubemap = probeInfo->mCubemap;
+   mIrradianceCubemap = probeInfo->mIrradianceCubemap;
+   mBRDFTexture = probeInfo->mBRDFTexture;
    mRadius = probeInfo->mRadius;
    mIntensity = probeInfo->mIntensity;
    mProbeShapeType = probeInfo->mProbeShapeType;

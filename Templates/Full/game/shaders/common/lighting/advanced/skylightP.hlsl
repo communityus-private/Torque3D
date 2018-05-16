@@ -16,6 +16,9 @@ struct ConvexConnectP
 TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 1);
 TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 2);
+TORQUE_UNIFORM_SAMPLERCUBE(irradianceCubemap, 3);
+TORQUE_UNIFORM_SAMPLER2D(BRDFTexture, 4);
+
 
 uniform float4 rtParams0;
 
@@ -77,6 +80,15 @@ float4 decodeSH(float3 normal)
     return float4(result,1);
 }*/
 
+float3 iblSpecular(float3 v, float3 n, float roughness)
+{
+	float3 R = reflect(-v, n); 
+	const float MAX_REFLECTION_LOD = 4.0;
+	float3 prefilteredColor = TORQUE_TEXCUBELOD(cubeMap, float4(R,  roughness * MAX_REFLECTION_LOD)).rgb;
+	float2 envBRDF  = TORQUE_TEX2D(BRDFTexture, float2(max(dot(n, v), 0.0), roughness)).rg;
+	return prefilteredColor * (envBRDF.x + envBRDF.y);
+ }
+
 struct PS_OUTPUT
 {
     float4 diffuse: TORQUE_TARGET0;
@@ -108,7 +120,7 @@ PS_OUTPUT main( ConvexConnectP IN )
 
     float4 color = float4(1, 1, 1, 1);
     float4 ref = float4(0,0,0,0);
-    float alpha = 0.3; //TODO: fix blending and bring this back to a real value
+    float alpha = 1; //TODO: fix blending and bring this back to a real value
 
     float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
     float3 viewSpacePos = eyeRay * depth;
@@ -123,10 +135,14 @@ PS_OUTPUT main( ConvexConnectP IN )
 
     ref = float4(reflectionVec, smoothness);
 
-    color = TORQUE_TEXCUBELOD(cubeMap, ref);
+    //color = TORQUE_TEXCUBELOD(cubeMap, ref);
 
-    Output.diffuse = float4(color.rgb, alpha);
-    Output.spec = float4(color.rgb, alpha);
+    float4 irradiance = TORQUE_TEXCUBE(irradianceCubemap, wsNormal);
+
+    float3 specular = iblSpecular(wsEyeRay, wsNormal, smoothness);
+
+    Output.diffuse = float4(irradiance.rgb, 1);
+    Output.spec = float4(specular.rgb, 1);
 
     //float4 specularColor = (color);
     //float4 indirectColor = (decodeSH(wsNormal));

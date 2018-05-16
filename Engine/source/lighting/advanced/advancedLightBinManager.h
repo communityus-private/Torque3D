@@ -90,8 +90,8 @@ public:
    // registered buffer name
    static const String smBufferName;
 
-   NamedTexTargetRef mSpecularLightingTarget;
-   GFXTexHandle      mSpecularLightingTex;
+   NamedTexTargetRef mDiffuseLightingTarget;
+   GFXTexHandle      mDiffuseLightingTex;
 
    /// The shadow filter mode to use on shadowed light materials.
    static ShadowFilterMode smShadowFilterMode;

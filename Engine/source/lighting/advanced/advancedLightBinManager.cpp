@@ -42,8 +42,8 @@
 #include "console/consoleTypes.h"
 #include "gfx/gfxTextureManager.h"
 
-const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "diffuseLighting" );
-const String AdvancedLightBinManager::smBufferName( "diffuseLighting" );
+const RenderInstType AdvancedLightBinManager::RIT_LightInfo( "specularLighting" );
+const String AdvancedLightBinManager::smBufferName( "specularLighting" );
 
 ShadowFilterMode AdvancedLightBinManager::smShadowFilterMode = ShadowFilterMode_SoftShadowHighQuality;
 bool AdvancedLightBinManager::smPSSMDebugRender = false;
@@ -187,13 +187,13 @@ bool AdvancedLightBinManager::_updateTargets()
 
    bool ret = Parent::_updateTargets();
 
-   mSpecularLightingTarget = NamedTexTarget::find("specularLighting");
-   if (mSpecularLightingTarget.isValid())
+   mDiffuseLightingTarget = NamedTexTarget::find("diffuseLighting");
+   if (mDiffuseLightingTarget.isValid())
    {
-      mSpecularLightingTex = mSpecularLightingTarget->getTexture();
+      mDiffuseLightingTex = mDiffuseLightingTarget->getTexture();
 
       for (U32 i = 0; i < mTargetChainLength; i++)
-         mTargetChain[i]->attachTexture(GFXTextureTarget::Color1, mSpecularLightingTex);
+         mTargetChain[i]->attachTexture(GFXTextureTarget::Color1, mDiffuseLightingTex);
    }
 
    GFX->finalizeReset();

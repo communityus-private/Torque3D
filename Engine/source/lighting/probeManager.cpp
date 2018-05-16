@@ -52,6 +52,8 @@ ProbeInfo::ProbeInfo()
    mScore(0.0f),
    mDebugRender(false),
    mCubemap(NULL),
+   mIrradianceCubemap(NULL),
+   mBRDFTexture(NULL),
    mRadius(1.0f),
    mIntensity(1.0f)
 {
@@ -71,6 +73,8 @@ void ProbeInfo::set(const ProbeInfo *probeInfo)
    mTransform = probeInfo->mTransform;
    mAmbient = probeInfo->mAmbient;
    mCubemap = probeInfo->mCubemap;
+   mIrradianceCubemap = probeInfo->mIrradianceCubemap;
+   mBRDFTexture = probeInfo->mBRDFTexture;
    mRadius = probeInfo->mRadius;
    mIntensity = probeInfo->mIntensity;
    mProbeShapeType = probeInfo->mProbeShapeType;

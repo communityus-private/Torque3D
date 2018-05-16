@@ -333,6 +333,39 @@ new CustomMaterial( ReflectionProbeMaterial )
 };
 
 //Skylight
+new ShaderData( IrradianceShader )
+{
+   DXVertexShaderFile = "shaders/common/lighting/advanced/cubemapV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/irradianceP.hlsl";
+
+   OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/cubemapV.glsl";
+   OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/irradianceP.glsl";
+   
+   pixVersion = 3.0;
+};
+
+new ShaderData( PrefiterCubemapShader )
+{
+   DXVertexShaderFile = "shaders/common/lighting/advanced/cubemapV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/prefilterP.hlsl";
+
+   OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/cubemapV.glsl";
+   OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/prefilterP.glsl";
+   
+   pixVersion = 3.0;
+};
+
+new ShaderData( BRDFLookupShader )
+{
+   DXVertexShaderFile = "shaders/common/lighting/advanced/cubemapV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/brdfLookupP.hlsl";
+
+   OGLVertexShaderFile = "shaders/common/lighting/advanced/gl/cubemapV.glsl";
+   OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/brdfLookupP.glsl";
+   
+   pixVersion = 3.0;
+};
+
 new ShaderData( SklyightShader )
 {
    DXVertexShaderFile = "shaders/common/lighting/advanced/convexGeometryV.hlsl";

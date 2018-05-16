@@ -56,7 +56,7 @@ const String RenderDeferredMgr::BufferName("deferred");
 const RenderInstType RenderDeferredMgr::RIT_Deferred("Deferred");
 const String RenderDeferredMgr::ColorBufferName("color");
 const String RenderDeferredMgr::MatInfoBufferName("matinfo");
-const String RenderDeferredMgr::LightMapBufferName("specularLighting");
+const String RenderDeferredMgr::LightMapBufferName("diffuseLighting");
 
 IMPLEMENT_CONOBJECT(RenderDeferredMgr);
 
@@ -197,6 +197,7 @@ bool RenderDeferredMgr::_updateTargets()
       for (U32 i = 0; i < mTargetChainLength; i++)
          mTargetChain[i]->attachTexture(GFXTextureTarget::Color3, mLightMapTarget.getTexture());
    }
+
    GFX->finalizeReset();
    _initShaders();
 

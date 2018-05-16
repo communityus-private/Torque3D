@@ -122,6 +122,30 @@ private:
    static bool smRenderSkylights;
    static bool smRenderPreviewProbes;
 
+   //irridiance resources
+   GFXCubemapHandle mIrridianceMap;
+   GFXShaderRef mIrrShader;
+   GFXShaderConstBufferRef mIrrConsts;
+   GFXShaderConstHandle *mIrrEnvMapSC;
+   GFXShaderConstHandle *mIrrFaceSC;
+   GFXStateBlockRef mIrrStateBlock;
+
+   //prefilter resources
+   GFXCubemapHandle mPrefilterMap;
+   GFXShaderRef mPrefilterShader;
+   GFXShaderConstBufferRef mPrefilterConsts;
+   GFXShaderConstHandle *mPrefilterEnvMapSC;
+   GFXShaderConstHandle *mPrefilterFaceSC;
+   GFXShaderConstHandle *mPrefilterRoughnessSC;
+   U32 mPrefilterMipLevels;
+   U32 mPrefilterSize;
+
+   //brdflookup resources - shares the texture target with the prefilter
+   GFXShaderRef mBrdfShader;
+   GFXTexHandle mBrdfTexture;
+
+   bool mResourcesCreated;
+
 public:
    Skylight();
    virtual ~Skylight();
@@ -172,8 +196,12 @@ public:
    // Create the geometry for rendering
    void createGeometry();
 
+   bool createClientResources();
+
    // Get the Material instance
    void updateMaterial();
+
+   void generateTextures();
 
    void updateProbeParams();
 
