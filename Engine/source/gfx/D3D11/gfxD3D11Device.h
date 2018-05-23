@@ -71,7 +71,7 @@ private:
    virtual void enumerateVideoModes();
 
    virtual GFXWindowTarget *allocWindowTarget(PlatformWindow *window);
-   virtual GFXTextureTarget *allocRenderToTextureTarget();
+   virtual GFXTextureTarget *allocRenderToTextureTarget(bool genMips = true);
 
    virtual void enterDebugEvent(ColorI color, const char *name);
    virtual void leaveDebugEvent();
@@ -249,6 +249,8 @@ public:
    // Misc rendering control
    // {
    virtual void clear( U32 flags, const LinearColorF& color, F32 z, U32 stencil );
+   virtual void clearColorAttachment(const U32 attachment, const LinearColorF& color);
+
    virtual bool beginSceneInternal();
    virtual void endSceneInternal();
 

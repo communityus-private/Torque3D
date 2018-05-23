@@ -778,7 +778,7 @@ public:
 
    /// Allocate a target for doing render to texture operations, with no
    /// depth/stencil buffer.
-   virtual GFXTextureTarget *allocRenderToTextureTarget()=0;
+   virtual GFXTextureTarget *allocRenderToTextureTarget(bool genMips = true) = 0;
 
    /// Allocate a target for a given window.
    virtual GFXWindowTarget *allocWindowTarget(PlatformWindow *window)=0;
@@ -827,6 +827,7 @@ public:
 
    ///
    virtual void clear( U32 flags, const LinearColorF& color, F32 z, U32 stencil ) = 0;
+   virtual void clearColorAttachment(const U32 attachment, const LinearColorF& color) = 0;
    virtual bool beginScene();
    virtual void endScene();
    virtual void beginField();

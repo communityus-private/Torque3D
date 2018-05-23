@@ -34,7 +34,8 @@ GFXD3D11Cubemap::GFXD3D11Cubemap() : mTexture(NULL), mSRView(NULL), mDSView(NULL
 
    for (U32 i = 0; i < CubeFaces; i++)
 	{
-      mRTView[i] = NULL;
+      for(U32 j=0; j < MaxMipMaps; j++)
+         mRTView[i][j] = NULL;
 	}
 }
 
@@ -50,7 +51,8 @@ void GFXD3D11Cubemap::releaseSurfaces()
 
    for (U32 i = 0; i < CubeFaces; i++)
 	{
-      SAFE_RELEASE(mRTView[i]);
+      for (U32 j = 0; j < MaxMipMaps; j++)
+         SAFE_RELEASE(mRTView[i][j]);
 	}
 
    SAFE_RELEASE(mDSView);
@@ -210,16 +212,20 @@ void GFXD3D11Cubemap::initStatic(DDSFile *dds)
 
 }
 
-void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
+void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat, U32 mipLevels)
 {
 	if(!mDynamic)
 		GFXTextureManager::addEventDelegate(this, &GFXD3D11Cubemap::_onTextureEvent);
 
 	mDynamic = true;
-   mAutoGenMips = true;
 	mTexSize = texSize;
 	mFaceFormat = faceFormat;
-   mMipMapLevels = 0;
+   if (!mipLevels)
+       mAutoGenMips = true;
+
+   mMipMapLevels = mipLevels;
+
+
    bool compressed = ImageUtil::isCompressedFormat(mFaceFormat);
 
    UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
@@ -234,7 +240,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 
 	desc.Width = mTexSize;
 	desc.Height = mTexSize;
-	desc.MipLevels = 0;
+	desc.MipLevels = mMipMapLevels;
 	desc.ArraySize = 6;
 	desc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	desc.SampleDesc.Count = 1;
@@ -250,7 +256,7 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 	D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
 	SMViewDesc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	SMViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-   SMViewDesc.TextureCube.MipLevels = -1;
+   SMViewDesc.TextureCube.MipLevels = mAutoGenMips ? -1 : mMipMapLevels;
 	SMViewDesc.TextureCube.MostDetailedMip = 0;
 
 	hr = D3D11DEVICE->CreateShaderResourceView(mTexture, &SMViewDesc, &mSRView);
@@ -275,17 +281,20 @@ void GFXD3D11Cubemap::initDynamic(U32 texSize, GFXFormat faceFormat)
 	viewDesc.Format = desc.Format;
 	viewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
 	viewDesc.Texture2DArray.ArraySize = 1;
-	viewDesc.Texture2DArray.MipSlice = 0;
 
    for (U32 i = 0; i < CubeFaces; i++)
 	{
 		viewDesc.Texture2DArray.FirstArraySlice = i;
-      hr = D3D11DEVICE->CreateRenderTargetView(mTexture, &viewDesc, &mRTView[i]);
+      for (U32 j = 0; j < mMipMapLevels; j++)
+      {
+         viewDesc.Texture2DArray.MipSlice = j;
+         hr = D3D11DEVICE->CreateRenderTargetView(mTexture, &viewDesc, &mRTView[i][j]);
 
-		if(FAILED(hr)) 
-		{
-			AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateRenderTargetView call failure");
-		}
+         if (FAILED(hr))
+         {
+            AssertFatal(false, "GFXD3D11Cubemap::initDynamic - CreateRenderTargetView call failure");
+         }
+      }
 	}
 
    D3D11_TEXTURE2D_DESC depthTexDesc;
@@ -353,16 +362,11 @@ ID3D11ShaderResourceView* GFXD3D11Cubemap::getSRView()
    return mSRView;
 }
 
-ID3D11RenderTargetView* GFXD3D11Cubemap::getRTView(U32 faceIdx)
+ID3D11RenderTargetView* GFXD3D11Cubemap::getRTView(U32 faceIdx, U32 mipIndex)
 {
    AssertFatal(faceIdx < CubeFaces, "GFXD3D11Cubemap::getRTView - face index out of bounds");
 
-   return mRTView[faceIdx];
-}
-
-ID3D11RenderTargetView** GFXD3D11Cubemap::getRTViewArray()
-{
-   return mRTView;
+   return mRTView[faceIdx][mipIndex];
 }
 
 ID3D11DepthStencilView* GFXD3D11Cubemap::getDSView()

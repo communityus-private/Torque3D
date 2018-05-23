@@ -83,10 +83,11 @@ float4 decodeSH(float3 normal)
 float3 iblSpecular(float3 v, float3 n, float roughness)
 {
 	float3 R = reflect(-v, n); 
-	const float MAX_REFLECTION_LOD = 4.0;
-	float3 prefilteredColor = TORQUE_TEXCUBELOD(cubeMap, float4(R,  roughness * MAX_REFLECTION_LOD)).rgb;
-	float2 envBRDF  = TORQUE_TEX2D(BRDFTexture, float2(max(dot(n, v), 0.0), roughness)).rg;
-	return prefilteredColor * (envBRDF.x + envBRDF.y);
+	const float MAX_REFLECTION_LOD = 6.0;
+	float3 prefilteredColor = TORQUE_TEXCUBELOD(cubeMap, float4(R, roughness * MAX_REFLECTION_LOD)).rgb;
+	//float2 envBRDF  = TORQUE_TEX2D(BRDFTexture, float2(max(dot(n, v), 0.0), roughness)).rg;
+	//return prefilteredColor * (envBRDF.x + envBRDF.y);
+   return prefilteredColor;
  }
 
 struct PS_OUTPUT
@@ -118,28 +119,34 @@ PS_OUTPUT main( ConvexConnectP IN )
     // Need world-space normal.
     float3 wsNormal = mul(float4(normal, 1), invViewMat).rgb;
 
-    float4 color = float4(1, 1, 1, 1);
-    float4 ref = float4(0,0,0,0);
-    float alpha = 1; //TODO: fix blending and bring this back to a real value
+    //float4 color = float4(1, 1, 1, 1);
+    //float4 ref = float4(0,0,0,0);
+    //float alpha = 1; //TODO: fix blending and bring this back to a real value
 
     float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
-    float3 viewSpacePos = eyeRay * depth;
+    //float3 viewSpacePos = eyeRay * depth;
 
     float3 wsEyeRay = mul(float4(eyeRay, 1), invViewMat).rgb;
 
     // Use eye ray to get ws pos
     float3 worldPos = float3(eyePosWorld + wsEyeRay * depth);
-    float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
+    //float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
 
     float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,1)).xyz;
 
-    ref = float4(reflectionVec, smoothness);
+    //ref = float4(reflectionVec, smoothness);
 
     //color = TORQUE_TEXCUBELOD(cubeMap, ref);
 
-    float4 irradiance = TORQUE_TEXCUBE(irradianceCubemap, wsNormal);
+    float roughness = 1 - matInfo.b;
 
-    float3 specular = iblSpecular(wsEyeRay, wsNormal, smoothness);
+    float3 v = normalize(eyePosWorld - worldPos);
+
+    float3 irradiance = TORQUE_TEXCUBE(irradianceCubemap, wsNormal).rgb;
+
+    float3 specular = iblSpecular(v, wsNormal, roughness);
+
+    //float3 specular = TORQUE_TEXCUBELOD(cubeMap, float4(reflectionVec, 6)).rgb;
 
     Output.diffuse = float4(irradiance.rgb, 1);
     Output.spec = float4(specular.rgb, 1);

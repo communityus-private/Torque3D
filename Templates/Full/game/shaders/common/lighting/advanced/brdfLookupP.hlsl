@@ -131,7 +131,8 @@ float2 IntegrateBRDF(float NdotV, float roughness)
     return float2(A, B);
 }
 
-float2 main(ConnectData IN) : TORQUE_TARGET0
+float4 main(ConnectData IN) : TORQUE_TARGET0
 {
-    return IntegrateBRDF(IN.uv.x, IN.uv.y);
+    return float4(IntegrateBRDF(IN.uv.x, IN.uv.y).rg,0,1);
+    //return float2(1,1);
 }

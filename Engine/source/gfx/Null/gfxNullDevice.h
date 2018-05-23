@@ -134,7 +134,7 @@ public:
 
    ///@}
 
-   virtual GFXTextureTarget *allocRenderToTextureTarget(){return NULL;};
+   virtual GFXTextureTarget *allocRenderToTextureTarget(bool genMips=true){return NULL;};
    virtual GFXWindowTarget *allocWindowTarget(PlatformWindow *window)
    {
       return new GFXNullWindowTarget();
@@ -151,6 +151,7 @@ public:
 
 
    virtual void clear( U32 flags, const LinearColorF& color, F32 z, U32 stencil ) { };
+   virtual void clearColorAttachment(const U32 attachment, const LinearColorF& color) { };
    virtual bool beginSceneInternal() { return true; };
    virtual void endSceneInternal() { };
 

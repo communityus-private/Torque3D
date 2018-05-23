@@ -124,19 +124,9 @@ private:
 
    //irridiance resources
    GFXCubemapHandle mIrridianceMap;
-   GFXShaderRef mIrrShader;
-   GFXShaderConstBufferRef mIrrConsts;
-   GFXShaderConstHandle *mIrrEnvMapSC;
-   GFXShaderConstHandle *mIrrFaceSC;
-   GFXStateBlockRef mIrrStateBlock;
 
    //prefilter resources
    GFXCubemapHandle mPrefilterMap;
-   GFXShaderRef mPrefilterShader;
-   GFXShaderConstBufferRef mPrefilterConsts;
-   GFXShaderConstHandle *mPrefilterEnvMapSC;
-   GFXShaderConstHandle *mPrefilterFaceSC;
-   GFXShaderConstHandle *mPrefilterRoughnessSC;
    U32 mPrefilterMipLevels;
    U32 mPrefilterSize;
 

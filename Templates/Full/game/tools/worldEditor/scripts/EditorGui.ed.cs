@@ -755,7 +755,7 @@ function EditorGui::syncCameraGui( %this )
       }
 
       LocalClientConnection.camera.controlMode = "Fly";
-      LocalClientConnection.camera.setRotation( %camRot );
+      LocalClientConnection.camera.setRotation( "0 0 0" );
       EditorGuiStatusBar.setCamera( %name );
       return;
    }

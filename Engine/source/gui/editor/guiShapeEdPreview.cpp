@@ -84,7 +84,7 @@ GuiShapeEdPreview::GuiShapeEdPreview()
    mActiveThread( -1 ),
    mFakeSun( NULL ),
    mLastRenderTime( 0 ),
-   mCameraRot( 0, 0, 3.9f ),
+   mCameraRot(0.785398f, 0, -0.785398f),
    mSunRot( 45.0f, 0, 135.0f ),
    mRenderCameraAxes( false ),
    mOrbitPos( 0, 0, 0 ),

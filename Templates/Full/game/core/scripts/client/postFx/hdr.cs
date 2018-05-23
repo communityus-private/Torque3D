@@ -342,7 +342,7 @@ singleton PostEffect( HDRPostFX )
    // at the end of this post effect chain.
    //
 
-      /shader = HDR_BrightPassShader;
+      shader = HDR_BrightPassShader;
       stateBlock = HDR_DownSampleStateBlock;
       texture[0] = "$backBuffer";
       texture[1] = "#adaptedLum";
