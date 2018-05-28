@@ -194,8 +194,8 @@ float4 AL_VectorLightShadowCast( TORQUE_SAMPLER2D(sourceShadowMap),
 
 struct PS_OUTPUT
 {
-    float4 diffuse: TORQUE_TARGET0;
-    float4 spec: TORQUE_TARGET1;
+    float4 spec: TORQUE_TARGET0;
+    float4 diffuse: TORQUE_TARGET1;
 };
 
 PS_OUTPUT main(FarFrustumQuadConnectP IN)
@@ -363,7 +363,7 @@ PS_OUTPUT main(FarFrustumQuadConnectP IN)
    //specular
    float3 specular = directSpecular(normal, v, l, roughness, 1.0) * lightColor.rgb;
 
-   //float finalShadowed = 1 - (roughness-shadowed);
+   float finalShadowed = shadowed;
    //diffuse *= finalShadowed;
    //specular *= finalShadowed;
 

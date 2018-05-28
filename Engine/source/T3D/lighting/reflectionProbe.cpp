@@ -49,6 +49,9 @@
 
 #include "materials/materialFeatureTypes.h"
 
+#include "gfx/gfxTextureManager.h"
+#include "T3D/lighting/IBLUtilities.h"
+
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool ReflectionProbe::smRenderReflectionProbes = true;
@@ -128,6 +131,8 @@ ReflectionProbe::ReflectionProbe()
    mDynamicLastBakeMS = 0;
 
    mMaxDrawDistance = 75;
+
+   mResourcesCreated = false;
 
    mProbeInfo = new ProbeInfo();
 }
@@ -579,7 +584,58 @@ void ReflectionProbe::updateMaterial()
       mProbeInfo->mCubemap = &mDynamicCubemap;
    }
 
+   if (mPrefilterMap.isValid())
+   {
+      mProbeInfo->mCubemap = &mPrefilterMap;
+      mProbeInfo->mIrradianceCubemap = &mIrridianceMap;
+      mProbeInfo->mBRDFTexture = &mBrdfTexture;
+   }
    //calculateSHTerms();
+}
+
+bool ReflectionProbe::createClientResources()
+{
+   //irridiance resources
+   mIrridianceMap = GFX->createCubemap();
+   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F);
+
+   //prefilter resources - we share the irridiance stateblock
+   mPrefilterMap = GFX->createCubemap();
+   mPrefilterMap->initDynamic(mPrefilterSize, GFXFormatR16G16B16A16F, mPrefilterMipLevels);
+
+   //brdf lookup resources
+   //make the brdf lookup texture the same size as the prefilter texture
+   mBrdfTexture = TEXMGR->createTexture(mPrefilterSize, mPrefilterSize, GFXFormatR16G16B16A16F, &GFXRenderTargetProfile, 1, 0);
+
+   mResourcesCreated = true;
+
+   return true;
+}
+
+void ReflectionProbe::generateTextures()
+{
+   if (!mCubemap)
+      return;
+
+   if (!mResourcesCreated)
+   {
+      if (!createClientResources())
+      {
+         Con::errorf("SkyLight::createIrridianceMap: Failed to create resources");
+         return;
+      }
+   }
+
+   GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
+
+   //create irridiance cubemap
+   IBLUtilities::GenerateIrradianceMap(renderTarget, mCubemap->mCubemap, mIrridianceMap);
+
+   //create prefilter cubemap (radiance)
+   IBLUtilities::GeneratePrefilterMap(renderTarget, mCubemap->mCubemap, mPrefilterMipLevels, mPrefilterMap);
+
+   //create brdf lookup
+   IBLUtilities::GenerateBRDFTexture(mBrdfTexture);
 }
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)

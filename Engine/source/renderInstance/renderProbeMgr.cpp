@@ -588,7 +588,7 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
       GFX->setCubeTexture(2, NULL);
    }
 
-   /*if (probeInfo->mIrradianceCubemap && !probeInfo->mIrradianceCubemap->isNull())
+   if (probeInfo->mIrradianceCubemap && !probeInfo->mIrradianceCubemap->isNull())
    {
       GFX->setCubeTexture(3, probeInfo->mIrradianceCubemap->getPointer());
    }
@@ -604,7 +604,7 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
    else
    {
       GFX->setTexture(4, NULL);
-   }*/
+   }
 
 
    matParams->setSafe(eyePosWorld, renderState->getCameraPosition());

@@ -16,6 +16,8 @@ struct ConvexConnectP
 TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 1);
 TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 2);
+TORQUE_UNIFORM_SAMPLERCUBE(irradianceCubemap, 3);
+TORQUE_UNIFORM_SAMPLER2D(BRDFTexture, 4);
 
 uniform float4 rtParams0;
 
@@ -85,6 +87,16 @@ float4 decodeSH(float3 normal)
 
     return float4(result,1);
 }*/
+
+float3 iblSpecular(float3 v, float3 n, float roughness)
+{
+   float3 R = reflect(v, n);
+   const float MAX_REFLECTION_LOD = 6.0;
+   float3 prefilteredColor = TORQUE_TEXCUBELOD(cubeMap, float4(R, roughness * MAX_REFLECTION_LOD)).rgb;
+   float2 envBRDF = TORQUE_TEX2D(BRDFTexture, float2(max(dot(n, v), 0.0), roughness)).rg;
+   return prefilteredColor * (envBRDF.x + envBRDF.y);
+   //return prefilteredColor;
+}
 
 struct PS_OUTPUT
 {
@@ -207,15 +219,28 @@ PS_OUTPUT main( ConvexConnectP IN )
         alpha = 1;
     }
 
-    color = TORQUE_TEXCUBELOD(cubeMap, ref);
+    //color = TORQUE_TEXCUBELOD(cubeMap, ref);
+
+    float roughness = 1 - matInfo.b;
+
+    float3 v = normalize(eyePosWorld - worldPos);
+
+    float3 irradiance = float3(1, 1, 1);// TORQUE_TEXCUBE(irradianceCubemap, wsNormal).rgb;
+
+    float3 specular = float3(1, 0, 0);// iblSpecular(wsEyeRay, ref.xyz, roughness);
+
+    //float3 specular = TORQUE_TEXCUBELOD(cubeMap, float4(reflectionVec, 6)).rgb;
+
+    Output.diffuse = float4(irradiance.rgb, alpha);
+    Output.spec = float4(specular.rgb, alpha);
 
     //float4 specularColor = (color);
     //float4 indirectColor = (decodeSH(wsNormal));
 
     //color.rgb = lerp(indirectColor.rgb * 1.5, specularColor.rgb * 1.5, matInfo.b);
 
-    Output.diffuse = float4(color.rgb, alpha);
-    Output.spec = float4(color.rgb, alpha);
+    //Output.diffuse = float4(color.rgb, alpha);
+    //Output.spec = float4(color.rgb, alpha);
 
     return Output;
 

@@ -131,7 +131,6 @@ private:
    U32 mPrefilterSize;
 
    //brdflookup resources - shares the texture target with the prefilter
-   GFXShaderRef mBrdfShader;
    GFXTexHandle mBrdfTexture;
 
    bool mResourcesCreated;

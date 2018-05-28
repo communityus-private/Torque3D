@@ -534,7 +534,7 @@ void Skylight::generateTextures()
 
    //GFXTransformSaver saver;
 
-   GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget();
+   GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
 
    //create irridiance cubemap
    /*GFX->pushActiveRenderTarget();

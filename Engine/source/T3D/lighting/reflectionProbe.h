@@ -128,6 +128,17 @@ private:
    GFXCubemapHandle  mDynamicCubemap;
    bool mUseCubemap;
 
+   //irridiance resources
+   GFXCubemapHandle mIrridianceMap;
+
+   //prefilter resources
+   GFXCubemapHandle mPrefilterMap;
+   U32 mPrefilterMipLevels;
+   U32 mPrefilterSize;
+
+   //brdflookup resources - shares the texture target with the prefilter
+   GFXTexHandle mBrdfTexture;
+
    String mReflectionPath;
    String mProbeUniqueID;
 
@@ -153,6 +164,8 @@ private:
    U32 mCubemapResolution;
 
    F32 mMaxDrawDistance;
+
+   bool mResourcesCreated;
 
 public:
    ReflectionProbe();
@@ -214,6 +227,9 @@ public:
    void updateMaterial();
 
    void updateProbeParams();
+
+   bool createClientResources();
+   void generateTextures();
 
    // This is the function that allows this object to submit itself for rendering
    void prepRenderImage(SceneRenderState *state);
