@@ -597,7 +597,7 @@ bool ReflectionProbe::createClientResources()
 {
    //irridiance resources
    mIrridianceMap = GFX->createCubemap();
-   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F);
+   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F,1);
 
    //prefilter resources - we share the irridiance stateblock
    mPrefilterMap = GFX->createCubemap();

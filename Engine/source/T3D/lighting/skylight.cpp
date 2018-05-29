@@ -403,7 +403,7 @@ bool Skylight::createClientResources()
 {
    //irridiance resources
    mIrridianceMap = GFX->createCubemap();
-   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F);
+   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F, 1);
 
    //prefilter resources - we share the irridiance stateblock
    mPrefilterMap = GFX->createCubemap();
@@ -535,24 +535,6 @@ void Skylight::generateTextures()
    //GFXTransformSaver saver;
 
    GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
-
-   //create irridiance cubemap
-   /*GFX->pushActiveRenderTarget();
-   GFX->setShader(mIrrShader);
-   GFX->setShaderConstBuffer(mIrrConsts);
-   GFX->setStateBlock(mIrrStateBlock);
-   GFX->setVertexBuffer(NULL);
-   GFX->setCubeTexture(0, mCubemap->mCubemap);
-
-   for (U32 i = 0; i < 6; i++)
-   {
-      renderTarget->attachTexture(GFXTextureTarget::Color0, mIrridianceMap, i);
-      mIrrConsts->setSafe(mIrrFaceSC, (S32)i);
-      GFX->setActiveRenderTarget(renderTarget);
-      GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
-      GFX->drawPrimitive(GFXTriangleList, 0, 3);
-      renderTarget->resolve(); 
-   }*/
 
    IBLUtilities::GenerateIrradianceMap(renderTarget, mCubemap->mCubemap, mIrridianceMap);
 
