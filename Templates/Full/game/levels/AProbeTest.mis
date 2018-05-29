@@ -28,7 +28,7 @@ new SimGroup(MissionGroup) {
          levelName = "A Probe Test";
    };
    new SkyBox(theSky) {
-      Material = "HdrSky";
+      Material = "sky_day_hdr";
       drawBottom = "0";
       fogBandHeight = "0";
       position = "0 0 0";
@@ -39,7 +39,7 @@ new SimGroup(MissionGroup) {
    };
    new Skylight() {
       enabled = "1";
-      StaticCubemap = "HdrSkyCubemap";
+      StaticCubemap = "sky_day_hdr_cubemap";
       position = "0 0 0";
       rotation = "1 0 0 0";
       scale = "1 1 1";
@@ -86,7 +86,7 @@ new SimGroup(MissionGroup) {
          scale = "1 1 1";
    };
    new ReflectionProbe() {
-      enabled = "1";
+      enabled = "0";
       ProbeShape = "Sphere";
       radius = "10";
       ReflectionMode = "Baked Cubemap";
@@ -114,7 +114,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707106 0 0.5 0";
+      surface = "0.707107 0 0 0.707107 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -129,7 +129,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707106 0 0.5 0";
+      surface = "0.707107 0 0 0.707107 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -144,7 +144,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707107 0 0.5 0";
+      surface = "0.707107 0 0 0.707106 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -159,7 +159,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707107 0 0.5 0";
+      surface = "0.707107 0 0 0.707106 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -174,7 +174,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707107 0 0.5 0";
+      surface = "0.707107 0 0 0.707106 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -189,7 +189,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707106 0 0.5 0";
+      surface = "0.707107 0 0 0.707107 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -204,7 +204,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707107 0 0.5 0";
+      surface = "0.707107 0 0 0.707106 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -293,7 +293,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707107 0 0.5 0";
+      surface = "0.707107 0 0 0.707106 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -308,7 +308,7 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707106 0 0.5 0";
+      surface = "0.707107 0 0 0.707107 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
@@ -323,46 +323,22 @@ new SimGroup(MissionGroup) {
 
       surface = "0 0 0 1 0 0 0.5";
       surface = "0 1 0 0 0 0 -0.5";
-      surface = "0.707107 0 0 0.707107 0 0.5 0";
+      surface = "0.707107 0 0 0.707106 0 0.5 0";
       surface = "0 0.707107 -0.707107 0 0 -0.5 -2.84217e-14";
       surface = "0.5 0.5 -0.5 0.5 -0.5 0 -9.93411e-08";
       surface = "0.5 -0.5 0.5 0.5 0.5 0 -9.93411e-08";
    };
-   new Sun() {
-      azimuth = "200";
-      elevation = "20";
-      color = "0.8 0.8 0.8 1";
-      ambient = "0.2 0.2 0.2 1";
-      brightness = "1";
-      castShadows = "1";
-      staticRefreshFreq = "250";
-      dynamicRefreshFreq = "8";
-      coronaEnabled = "1";
-      coronaMaterial = "Corona_Mat";
-      coronaScale = "0.5";
-      coronaTint = "1 1 1 1";
-      coronaUseLightColor = "1";
-      flareType = "SunFlareExample";
-      flareScale = "1";
-      attenuationRatio = "0 1 1";
-      shadowType = "PSSM";
-      texSize = "512";
-      overDarkFactor = "2000 1000 500 100";
-      shadowDistance = "400";
-      shadowSoftness = "0.15";
-      numSplits = "4";
-      logWeight = "0.91";
-      fadeStartDistance = "0";
-      lastSplitTerrainOnly = "0";
-      representedInLightmap = "0";
-      shadowDarkenColor = "0 0 0 -1";
-      includeLightmappedGeometryInShadow = "0";
-      position = "35.7492 65.5507 -15.5377";
-      rotation = "1 0 0 0";
+   new Item() {
+      static = "0";
+      rotate = "0";
+      isAIControlled = "0";
+      dataBlock = "RyderAmmo";
+      position = "3.04843 -0.331176 0.246741";
+      rotation = "0 0 1 115.309";
       scale = "1 1 1";
       canSave = "1";
       canSaveDynamicFields = "1";
-         direction = "1 1 -1";
+         count = "1";
    };
 };
 //--- OBJECT WRITE END ---

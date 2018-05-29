@@ -359,7 +359,7 @@ PS_OUTPUT main(FarFrustumQuadConnectP IN)
    //diffuse
    //float dotNL = clamp(dot(normal,l), 0.0, 1.0);
    float disDiff = Fr_DisneyDiffuse(dotNVa, dotNLa, dotLHa, roughness);
-   float3 diffuse = float3(disDiff, disDiff, disDiff) / M_PI_F;// alternative: (lightColor * dotNL) / Pi;
+   float3 diffuse = float3(1,1,1);//float3(disDiff, disDiff, disDiff) / M_PI_F;// alternative: (lightColor * dotNL) / Pi;
    //specular
    float3 specular = directSpecular(normal, v, l, roughness, 1.0) * lightColor.rgb;
 
@@ -368,8 +368,8 @@ PS_OUTPUT main(FarFrustumQuadConnectP IN)
    //specular *= finalShadowed;
 
 //output
-   Output.diffuse = float4(diffuse * lightBrightness, 0.5);
-   Output.spec = float4(specular * lightBrightness, 0.5);
+   Output.diffuse = float4(diffuse * finalShadowed * lightBrightness, 0.5);
+   Output.spec = float4(specular * finalShadowed * lightBrightness, 0.5);
 
    return Output;
 }

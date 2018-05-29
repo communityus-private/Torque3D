@@ -57,6 +57,7 @@ singleton Material( Grid512_Green_Mat )
    metalness[0] = "1";
    translucent = "0";
    translucentBlendOp = "Add";
+   normalMap[0] = "art/shapes/Cheetah/Cheetah_N.dds";
 };
 
 singleton Material( Grid512_Grey_Mat )
