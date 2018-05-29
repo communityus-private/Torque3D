@@ -32,98 +32,100 @@ TORQUE_UNIFORM_SAMPLERCUBE(environmentMap, 0);
 
 uniform float roughness;
 uniform int face;
+uniform int mipSize;
 
-// Based on http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
-float random(float2 co)
-{
-	float a = 12.9898;
-	float b = 78.233;
-	float c = 43758.5453;
-	float dt= dot(co.xy ,float2(a,b));
-	float sn= mod(dt,3.14);
-	return frac(sin(sn) * c); //port note, glsl is fract
-}
+static int sampleCount = 256;
 
-float2 hammersley2d(uint i, uint N) 
+float RadicalInverse_VdC(uint bits)
 {
-	// Radical inverse based on http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
-	uint bits = (i << 16u) | (i >> 16u);
+	bits = (bits << 16u) | (bits >> 16u);
 	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
 	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
 	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
 	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-	float rdi = float(bits) * 2.3283064365386963e-10;
-	return float2(float(i) /float(N), rdi);
+	return float(bits) * 2.3283064365386963e-10; // / 0x100000000
 }
 
-// Based on http://blog.selfshadow.com/publications/s2013-shading-course/karis/s2013_pbs_epic_slides.pdf
-float3 importanceSample_GGX(float2 Xi, float roughness, float3 normal) 
+float2 Hammersley(uint i, uint N)
 {
-	// Maps a 2D point to a hemisphere with spread based on roughness
-	float alpha = roughness * roughness;
-	float phi = 2.0 * M_PI_F * Xi.x + random(normal.xz) * 0.1;
-	float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha*alpha - 1.0) * Xi.y));
+	return float2(float(i) / float(N), RadicalInverse_VdC(i));
+}
+
+float DistributionGGX(float3 N, float3 H, float roughness)
+{
+	float a = roughness * roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(N, H), 0.0);
+	float NdotH2 = NdotH * NdotH;
+
+	float nom = a2;
+	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+	denom = M_PI_F * denom * denom;
+
+	return nom / denom;
+}
+
+float3 ImportanceSampleGGX(float2 Xi, float3 N)
+{
+	float a = roughness * roughness;
+
+	float phi = 2.0 * M_PI_F * Xi.x;
+	float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
 	float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
-	float3 H = float3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 
-	// Tangent space
-	float3 up = abs(normal.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
-	float3 tangentX = normalize(cross(up, normal));
-	float3 tangentY = normalize(cross(normal, tangentX));
+	// from spherical coordinates to cartesian coordinates
+	float3 H;
+	H.x = cos(phi) * sinTheta;
+	H.y = sin(phi) * sinTheta;
+	H.z = cosTheta;
 
-	// Convert to world Space
-	return normalize(tangentX * H.x + tangentY * H.y + normal * H.z);
-}
+	// from tangent-space vector to world-space sample vector
+	float3 up = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+	float3 tangent = normalize(cross(up, N));
+	float3 bitangent = cross(N, tangent);
 
-// Normal Distribution function
-float D_GGX(float dotNH, float roughness)
-{
-	float alpha = roughness * roughness;
-	float alpha2 = alpha * alpha;
-	float denom = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
-	return (alpha2)/(M_PI_F * denom*denom); 
+	float3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
+	return normalize(sampleVec);
 }
 
 float3 prefilterEnvMap(float3 R)
 {
 	float3 N = R;
 	float3 V = R;
-	float3 color = 0;
 	float totalWeight = 0.0;
-	uint numSamples = 32; //todo could pass this value in
+	float3 prefilteredColor = float3(0.0, 0.0, 0.0);
 
-	float width;
-	float height;
-	texture_environmentMap.GetDimensions(width, height);
-	for(uint i = 0u; i < numSamples; i++) 
+	for (int i = 0; i < sampleCount; ++i)
 	{
-		float2 Xi = hammersley2d(i, numSamples);
-		float3 H = importanceSample_GGX(Xi, roughness, N);
-		float3 L = 2.0 * dot(V, H) * H - V;
-		float dotNL = clamp(dot(N, L), 0.0, 1.0);
-		if(dotNL > 0.0) 
-		{
-			// Filtering based on https://placeholderart.wordpress.com/2015/07/28/implementation-notes-runtime-environment-map-filtering-for-image-based-lighting/
-			float dotNH = clamp(dot(N, H), 0.0, 1.0);
-			float dotVH = clamp(dot(V, H), 0.0, 1.0);
-			// Probability Distribution Function
-			float pdf = D_GGX(dotNH, roughness) * dotNH / (4.0 * dotVH) + 0.0001;
-			// Slid angle of current smple
-			float omegaS = 1.0 / (float(numSamples) * pdf);
-			// Solid angle of 1 pixel across all cube faces
-			float omegaP = 4.0 * M_PI_F / (6.0 * width * height);
-			// Biased (+1.0) mip level for better result
-			float mipLevel = roughness == 0.0 ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
-			color += TORQUE_TEXCUBELOD(environmentMap, float4(L, mipLevel)).rgb * dotNL;
-			totalWeight += dotNL;
-		}
+			float2 Xi = Hammersley(i, sampleCount);
+			float3 H = ImportanceSampleGGX(Xi, N);
+			float3 L = normalize(2.0 * dot(V, H) * H - V);
+
+			float NdotL = max(dot(N, L), 0.0);
+			if (NdotL > 0.0)
+			{
+				// sample from the environment's mip level based on roughness/pdf
+				float D = DistributionGGX(N, H, roughness);
+				float NdotH = max(dot(N, H), 0.0);
+				float HdotV = max(dot(H, V), 0.0);
+				float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
+
+				float saTexel = 4.0 * M_PI_F / (6.0 * mipSize * mipSize);
+				float saSample = 1.0 / (float(sampleCount) * pdf + 0.0001);
+
+				float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
+
+				prefilteredColor += TORQUE_TEXCUBELOD(environmentMap, float4(L, mipLevel)).rgb * NdotL;				
+
+				totalWeight += NdotL;
+			}
 	}
 
-	return (color / totalWeight);
+	return (prefilteredColor / totalWeight);
 }
 
 float4 main(ConnectData IN) : TORQUE_TARGET0
 {
 	float3 N = getCubeDir(face, IN.uv);
-	return float4(prefilterEnvMap(N), 1);
+	return float4(prefilterEnvMap(N), 1.0);
 }

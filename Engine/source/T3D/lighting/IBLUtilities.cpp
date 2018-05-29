@@ -72,6 +72,7 @@ namespace IBLUtilities
       GFXShaderConstHandle* prefilterEnvMapSC = prefilterShader->getShaderConstHandle("$environmentMap");
       GFXShaderConstHandle* prefilterFaceSC = prefilterShader->getShaderConstHandle("$face");
       GFXShaderConstHandle* prefilterRoughnessSC = prefilterShader->getShaderConstHandle("$roughness");
+      GFXShaderConstHandle* prefilterMipSizeSC = prefilterShader->getShaderConstHandle("$mipSize");
 
       GFX->pushActiveRenderTarget();
       GFX->setShader(prefilterShader);
@@ -85,8 +86,10 @@ namespace IBLUtilities
          prefilterConsts->setSafe(prefilterFaceSC, (S32)face);
          for (U32 mip = 0; mip < mipLevels; mip++)
          {
+            S32 mipSize = prefilterSize >> mip;
             F32 roughness = (float)mip / (float)(mipLevels - 1);
             prefilterConsts->setSafe(prefilterRoughnessSC, roughness);
+            prefilterConsts->setSafe(prefilterMipSizeSC, mipSize);
             U32 size = prefilterSize * mPow(0.5f, mip);
             renderTarget->attachTexture(GFXTextureTarget::Color0, cubemapOut, face, mip);
             GFX->setActiveRenderTarget(renderTarget, false);//we set the viewport ourselves
