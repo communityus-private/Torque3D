@@ -291,58 +291,6 @@ PS_OUTPUT main(FarFrustumQuadConnectP IN)
 
 #endif // !NO_SHADOW
 
-   // Specular term   
-   /*float3 viewSpacePos = IN.vsEyeRay * depth;
-
-   float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
-                                    lightColor.rgb,
-                                    normalize( -lightDirection ),
-                                    viewSpacePos,
-                                    normal,
-                                    1.0-matInfo.b,
-                                    matInfo.a );
-   //float3 lightColorOut = real_specular.rgb * lightBrightness * shadowed;
-
-   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   float Sat_NdotV = saturate(dot(normalize(-IN.vsEyeRay), normal));
-   float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * Sat_NdotV );
-
-   // Sample the AO texture.
-   #ifdef USE_SSAO_MASK
-      float ao = 1.0 - TORQUE_TEX2D( ssaoMask, viewportCoordToRenderTarget( IN.uv0.xy, rtParams3 ) ).r;
-      //addToResult *= ao;
-   #endif
-
-   #ifdef PSSM_DEBUG_RENDER
-      lightColorOut = debugColor;
-   #endif*/
-
-   /*float3 l = normalize(-lightDirection);
-   float3 v = normalize(eyePosWorld - worldPos.xyz);
-
-   float3 h = normalize(v + l);
-   float dotNLa = clamp(dot(normal,l), 0.0, 1.0);
-   float dotNVa = clamp(dot(normal,v), 0.0, 1.0);
-   float dotNHa = clamp(dot(normal,h), 0.0, 1.0);
-   float dotHVa = clamp(dot(normal,v), 0.0, 1.0);
-   float dotLHa = clamp(dot(l,h), 0.0, 1.0);
-
-   float Sat_NL_Att = saturate( dotNL * shadowed ) * lightBrightness;
-   float Sat_NdotV = saturate(dot(normalize(-IN.vsEyeRay), normal));
-   float4 addToResult = ( lightAmbient * (1 - ambientCameraFactor)) + ( lightAmbient * ambientCameraFactor * Sat_NdotV );
-
-   float roughness = matInfo.g;
-
-//float4 light =  float4(matInfo.g*(lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a);
-   float disneyDiffuse = Fr_DisneyDiffuse(dotNVa, dotNLa, dotLHa, roughness);
-   float3 diffuse = float3(disneyDiffuse,disneyDiffuse,disneyDiffuse) / M_PI_F;
-   //diffuse += addToResult.rgb;
-
-   Output.diffuse = float4(diffuse * lightBrightness * shadowed *  Sat_NL_Att + subsurface * (1.0-Sat_NL_Att), 0);
-
-   float3 specular = directSpecular(normal, v, l, roughness, 0) * lightColor.rgb;
-   Output.spec = float4(specular * lightBrightness, 0);*/
-
    float3 l = normalize(-lightDirection);
    float3 v = normalize(eyePosWorld - worldPos.xyz);
 
@@ -359,17 +307,15 @@ PS_OUTPUT main(FarFrustumQuadConnectP IN)
    //diffuse
    //float dotNL = clamp(dot(normal,l), 0.0, 1.0);
    float disDiff = Fr_DisneyDiffuse(dotNVa, dotNLa, dotLHa, roughness);
-   float3 diffuse = float3(1,1,1);//float3(disDiff, disDiff, disDiff) / M_PI_F;// alternative: (lightColor * dotNL) / Pi;
+   float3 diffuse = float3(disDiff, disDiff, disDiff) / M_PI_F;// alternative: (lightColor * dotNL) / Pi;
    //specular
    float3 specular = directSpecular(normal, v, l, roughness, 1.0) * lightColor.rgb;
-
+   
    float finalShadowed = shadowed;
-   //diffuse *= finalShadowed;
-   //specular *= finalShadowed;
 
 //output
-   Output.diffuse = float4(diffuse * finalShadowed * lightBrightness, 0.5);
-   Output.spec = float4(specular * finalShadowed * lightBrightness, 0.5);
+   Output.diffuse = float4(diffuse * (lightBrightness+shadowed), 1.0);
+   Output.spec = float4(specular * (lightBrightness+shadowed), 1.0);
 
    return Output;
 }
