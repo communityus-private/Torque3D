@@ -396,7 +396,7 @@ void Skylight::updateProbeParams()
    setGlobalBounds();
 
    mProbeInfo->mIsSkylight = true; 
-   mProbeInfo->mScore = 9001.0;
+   mProbeInfo->mScore = -1.0f; //sky comes first
 }
 
 bool Skylight::createClientResources()

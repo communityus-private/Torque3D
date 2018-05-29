@@ -874,7 +874,7 @@ bool SkylightMatInstance::setupPass(SceneRenderState *state, const SceneData &sg
 	  desc.setZReadWrite(false);
 	  desc.zWriteEnable = false;
 	  desc.setCullMode(GFXCullNone);
-	  desc.setBlend(true, GFXBlendInvDestAlpha,GFXBlendDestAlpha );
+	  desc.setBlend(true, GFXBlendSrcColor, GFXBlendDestColor);
       mProjectionState = GFX->createStateBlock(desc);
    }
    // Now override stateblock with our own
