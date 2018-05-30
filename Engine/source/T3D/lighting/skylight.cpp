@@ -109,8 +109,8 @@ Skylight::Skylight()
    mPrefilterMap = NULL;
    mBrdfTexture = NULL;
    mResourcesCreated = false;
-   mPrefilterMipLevels = 6;
    mPrefilterSize = 512;
+   mPrefilterMipLevels = 6;
 
    mProbeInfo = new ProbeInfo();
 }

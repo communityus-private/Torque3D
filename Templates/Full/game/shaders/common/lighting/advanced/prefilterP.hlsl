@@ -33,9 +33,7 @@ TORQUE_UNIFORM_SAMPLERCUBE(environmentMap, 0);
 uniform float roughness;
 uniform int face;
 uniform int mipSize;
-
-static int sampleCount = 256;
-
+uniform int resolution;
 float RadicalInverse_VdC(uint bits)
 {
 	bits = (bits << 16u) | (bits >> 16u);
@@ -90,6 +88,7 @@ float3 ImportanceSampleGGX(float2 Xi, float3 N)
 
 float3 prefilterEnvMap(float3 R)
 {
+    int sampleCount = resolution*2;
 	float3 N = R;
 	float3 V = R;
 	float totalWeight = 0.0;
@@ -110,7 +109,7 @@ float3 prefilterEnvMap(float3 R)
 				float HdotV = max(dot(H, V), 0.0);
 				float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
 
-				float saTexel = 4.0 * M_PI_F / (6.0 * mipSize * mipSize);
+				float saTexel = 4.0 * M_PI_F / (6.0 * sampleCount * sampleCount);
 				float saSample = 1.0 / (float(sampleCount) * pdf + 0.0001);
 
 				float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
