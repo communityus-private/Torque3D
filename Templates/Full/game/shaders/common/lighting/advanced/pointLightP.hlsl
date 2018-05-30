@@ -259,38 +259,6 @@ PS_OUTPUT main(ConvexConnectP IN)
    // NOTE: Do not clip on fully shadowed pixels as it would
    // cause the hardware occlusion query to disable the shadow.
 
-   // Specular term
-   /*float specular = 0;
-
-   float4 real_specular = EvalBDRF( float3( 1.0, 1.0, 1.0 ),
-                                    lightcol,
-                                    lightVec,
-                                    viewSpacePos,
-                                    normal,
-                                    1.0-matInfo.b,
-                                    matInfo.a );
-   float3 lightColorOut = real_specular.rgb * lightBrightness * shadowed* atten;
-   //lightColorOut /= colorSample.rgb;
-   float Sat_NL_Att = saturate( nDotL * atten * shadowed ) * lightBrightness;
-   float4 addToResult = 0.0;
-
-   // TODO: This needs to be removed when lightmapping is disabled
-   // as its extra work per-pixel on dynamic lit scenes.
-   //
-   // Special lightmapping pass.
-   if ( lightMapParams.a < 0.0 )
-   {
-      // This disables shadows on the backsides of objects.
-      shadowed = nDotL < 0.0f ? 1.0f : shadowed;
-
-      Sat_NL_Att = 1.0f;
-      shadowed = lerp( 1.0f, shadowed, atten );
-      lightColorOut = shadowed;
-      specular *= lightBrightness;
-      addToResult = ( 1.0 - shadowed ) * abs(lightMapParams);
-   }
-   return float4((lightColorOut*Sat_NL_Att+subsurface*(1.0-Sat_NL_Att)+addToResult.rgb),real_specular.a);*/
-
    float3 l = lightVec;// normalize(-lightDirection);
    float3 v = eyeRay;// normalize(eyePosWorld - worldPos.xyz);
 
@@ -310,13 +278,12 @@ PS_OUTPUT main(ConvexConnectP IN)
                                                                //specular
    float3 specular = directSpecular(normal, v, l, roughness, 1.0) * lightColor.rgb;
 
-   //float finalShadowed = 1 - (roughness-shadowed);
-   //diffuse *= finalShadowed;
-   //specular *= finalShadowed;
-
+   
+   if (nDotL<0) shadowed = 0;
+   float Sat_NL_Att = saturate( nDotL * shadowed ) * lightBrightness;
    //output
-   Output.diffuse = float4(diffuse * lightBrightness, 1);
-   Output.spec = float4(specular * lightBrightness, 1);
+   Output.diffuse = float4(diffuse * lightBrightness*shadowed, Sat_NL_Att);
+   Output.spec = float4(specular * lightBrightness*shadowed, Sat_NL_Att);
 
    return Output;
 }

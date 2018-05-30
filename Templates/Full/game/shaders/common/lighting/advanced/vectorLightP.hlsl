@@ -314,8 +314,8 @@ PS_OUTPUT main(FarFrustumQuadConnectP IN)
    float finalShadowed = shadowed;
 
 //output
-   Output.diffuse = float4(diffuse * (lightBrightness+shadowed), 1.0);
-   Output.spec = float4(specular * (lightBrightness+shadowed), 1.0);
+   Output.diffuse = float4(diffuse * (lightBrightness*shadowed), dotNLa);
+   Output.spec = float4(specular * (lightBrightness*shadowed), dotNLa);
 
    return Output;
 }
