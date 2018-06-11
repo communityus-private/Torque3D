@@ -119,24 +119,14 @@ PS_OUTPUT main( ConvexConnectP IN )
     // Need world-space normal.
     float3 wsNormal = mul(float4(normal, 1), invViewMat).rgb;
 
-    //float4 color = float4(1, 1, 1, 1);
-    //float4 ref = float4(0,0,0,0);
-    //float alpha = 1; //TODO: fix blending and bring this back to a real value
-
     float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
-    //float3 viewSpacePos = eyeRay * depth;
 
     float3 wsEyeRay = mul(float4(eyeRay, 1), invViewMat).rgb;
 
     // Use eye ray to get ws pos
     float3 worldPos = float3(eyePosWorld + wsEyeRay * depth);
-    //float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
 
     float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,1)).xyz;
-
-    //ref = float4(reflectionVec, smoothness);
-
-    //color = TORQUE_TEXCUBELOD(cubeMap, ref);
 
     float roughness = 1 - matInfo.b;
 
@@ -146,15 +136,9 @@ PS_OUTPUT main( ConvexConnectP IN )
 
     float3 specular = iblSpecular(wsEyeRay, wsNormal, roughness);
 
-    //float3 specular = TORQUE_TEXCUBELOD(cubeMap, float4(reflectionVec, 6)).rgb;
 
     Output.diffuse = float4(irradiance.rgb, 1);
     Output.spec = float4(specular.rgb, 1);
-
-    //float4 specularColor = (color);
-    //float4 indirectColor = (decodeSH(wsNormal));
-
-    //color.rgb = lerp(indirectColor.rgb * 1.5, specularColor.rgb * 1.5, matInfo.b);
 
     return Output;
 
