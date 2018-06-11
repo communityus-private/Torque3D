@@ -81,6 +81,7 @@ public:
    virtual U32 getTotalVideoMemory();
 
    virtual GFXCubemap * createCubemap();
+   virtual GFXCubemapArray *createCubemapArray() { return NULL; } //TODO: implement
 
    virtual F32 getFillConventionOffset() const { return 0.0f; }
 

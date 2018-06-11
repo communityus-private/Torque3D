@@ -100,5 +100,47 @@ public:
    void free() { StrongObjectRef::set( NULL ); }
 };
 
+/// Cubemap array
+class GFXCubemapArray : public StrongRefBase, public GFXResource
+{
+   friend class GFXDevice;
+   friend class GFXTextureManager;
+
+protected:
+   // should only be called by GFXDevice
+   virtual void setToTexUnit( U32 tuNum ) = 0;
+   /// number of cubemaps in the array
+   U32 mNumCubemaps;
+   U32 mSize;
+   U32 mMipMapLevels;
+   GFXFormat mFormat;
+
+public:
+
+   virtual ~GFXCubemapArray() {};
+
+   virtual void initStatic(GFXCubemapHandle *cubemaps, const U32 cubemapCount) = 0;
+   /// Return number of textures in the array
+   const U32 getNumCubemaps() const { return mNumCubemaps; }
+   /// Get the number of mip maps
+   const U32 getMipMapLevels() const { return mMipMapLevels; }
+   /// Returns the size of the faces.
+   const U32 getSize() const { return mSize; }
+
+   virtual const String describeSelf() const;
+};
+
+/// A reference counted handle to a cubemap array resource.
+class GFXCubemapArrayHandle : public StrongRefPtr<GFXCubemapArray>
+{
+public:
+   GFXCubemapArrayHandle() {}
+   GFXCubemapArrayHandle(GFXCubemapArray *cubemapArray) { StrongRefPtr<GFXCubemapArray>::set(cubemapArray); }
+
+   /// Releases the texture handle.
+   void free() { StrongObjectRef::set(NULL); }
+};
+
+
 
 #endif // GFXCUBEMAP

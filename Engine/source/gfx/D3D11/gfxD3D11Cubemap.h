@@ -76,4 +76,27 @@ private:
    void _onTextureEvent(GFXTexCallbackCode code);
 };
 
+class GFXD3D11CubemapArray : public GFXCubemapArray
+{
+public:
+   GFXD3D11CubemapArray();
+   virtual ~GFXD3D11CubemapArray();
+   virtual void initStatic(GFXCubemapHandle *cubemaps, const U32 cubemapCount);
+   virtual void setToTexUnit(U32 tuNum);
+
+   ID3D11ShaderResourceView* getSRView() { return mSRView; }
+   ID3D11Texture2D* get2DTex() { return mTexture; }
+
+   // GFXResource interface
+   virtual void zombify();
+   virtual void resurrect();
+
+private:
+   friend class GFXD3D11TextureTarget;
+   friend class GFXD3D11Device;
+
+   ID3D11Texture2D *mTexture;
+   ID3D11ShaderResourceView* mSRView; // for shader resource input
+};
+
 #endif

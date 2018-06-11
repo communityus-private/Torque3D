@@ -449,7 +449,7 @@ void GFXD3D11Device::init(const GFXVideoMode &mode, PlatformWindow *window)
    DXGI_SWAP_CHAIN_DESC d3dpp = setupPresentParams(mode, winHwnd);
 
    // TODO support at least feature level 10 to match GL
-   D3D_FEATURE_LEVEL pFeatureLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0 };
+   D3D_FEATURE_LEVEL pFeatureLevels[] = { D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1 };
    U32 nFeatureCount = ARRAYSIZE(pFeatureLevels);
    D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;// use D3D_DRIVER_TYPE_REFERENCE for reference device
    // create a device, device context and swap chain using the information in the d3dpp struct
@@ -1854,6 +1854,13 @@ GFXCubemap * GFXD3D11Device::createCubemap()
    GFXD3D11Cubemap* cube = new GFXD3D11Cubemap();
    cube->registerResourceWithDevice(this);
    return cube;
+}
+
+GFXCubemapArray * GFXD3D11Device::createCubemapArray()
+{
+   GFXD3D11CubemapArray* cubeArray = new GFXD3D11CubemapArray();
+   cubeArray->registerResourceWithDevice(this);
+   return cubeArray;
 }
 
 // Debug events

@@ -95,7 +95,7 @@ void GFXD3D11Cubemap::initStatic(GFXTexHandle *faces)
 	desc.Width = mTexSize;
 	desc.Height = mTexSize;
    desc.MipLevels = mAutoGenMips ? 0 : mMipMapLevels;
-	desc.ArraySize = 6;
+	desc.ArraySize = CubeFaces;
 	desc.Format = GFXD3D11TextureFormat[mFaceFormat];
 	desc.SampleDesc.Count = 1;
 	desc.SampleDesc.Quality = 0;
@@ -377,4 +377,105 @@ ID3D11DepthStencilView* GFXD3D11Cubemap::getDSView()
 ID3D11Texture2D* GFXD3D11Cubemap::get2DTex()
 {
    return mTexture;
+}
+
+//-----------------------------------------------------------------------------
+// Cubemap Array
+//-----------------------------------------------------------------------------
+
+GFXD3D11CubemapArray::GFXD3D11CubemapArray() : mTexture(NULL), mSRView(NULL)
+{
+}
+
+GFXD3D11CubemapArray::~GFXD3D11CubemapArray()
+{
+   SAFE_RELEASE(mSRView);
+   SAFE_RELEASE(mTexture);
+}
+
+void GFXD3D11CubemapArray::initStatic(GFXCubemapHandle *cubemaps, const U32 cubemapCount)
+{
+   AssertFatal(cubemaps, "GFXD3D11CubemapArray - Got null GFXCubemapHandle!");
+   AssertFatal(*cubemaps, "GFXD3D11CubemapArray - Got empty cubemap!");
+
+   //all cubemaps must be the same size,format and number of mipmaps. Grab the details from the first cubemap
+   mSize = cubemaps[0]->getSize();
+   mFormat = cubemaps[0]->getFormat();
+   mMipMapLevels = cubemaps[0]->getMipMapLevels();
+   mNumCubemaps = cubemapCount;
+
+   //create texture object
+   UINT bindFlags = D3D11_BIND_SHADER_RESOURCE;
+   UINT miscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+   D3D11_TEXTURE2D_DESC desc;
+   ZeroMemory(&desc, sizeof(D3D11_TEXTURE2D_DESC));
+   desc.Width = mSize;
+   desc.Height = mSize;
+   desc.MipLevels = mMipMapLevels;
+   desc.ArraySize = CubeFaces * cubemapCount;
+   desc.Format = GFXD3D11TextureFormat[mFormat];
+   desc.SampleDesc.Count = 1;
+   desc.SampleDesc.Quality = 0;
+   desc.Usage = D3D11_USAGE_DEFAULT;
+   desc.BindFlags = bindFlags;
+   desc.MiscFlags = miscFlags;
+   desc.CPUAccessFlags = 0;
+
+   HRESULT hr = D3D11DEVICE->CreateTexture2D(&desc, NULL, &mTexture);
+
+   if (FAILED(hr))
+      AssertFatal(false, "GFXD3D11CubemapArray:initStatic(GFXCubemap *cubemaps,const U32 cubemapCount) - CreateTexture2D failure");
+
+   for (U32 i = 0; i < cubemapCount; i++)
+   {
+      GFXD3D11Cubemap *cubeObj = static_cast<GFXD3D11Cubemap*>((GFXCubemap*)cubemaps[i]);
+      //yes checking the first one(cubemap at index 0) is pointless but saves a further if statement
+      if (cubemaps[i]->getSize() != mSize || cubemaps[i]->getFormat() != mFormat || cubemaps[i]->getMipMapLevels() != mMipMapLevels)
+      {
+         Con::printf("Trying to add an invalid Cubemap to a CubemapArray");
+         //destroy array here first
+         AssertFatal(false, "GFXD3D11CubemapArray:initStatic(GFXCubemap *cubemaps,const U32 cubemapCount) - invalid cubemap");
+      }
+
+      for (U32 face = 0; face < CubeFaces; face++)
+      {
+         const U32 arraySlice = face + CubeFaces * i;
+         for (U32 currentMip = 0; currentMip < mMipMapLevels; currentMip++)
+         {
+            const U32 srcSubResource = D3D11CalcSubresource(currentMip, face, mMipMapLevels);
+            const U32 dstSubResource = D3D11CalcSubresource(currentMip, arraySlice, mMipMapLevels);
+            D3D11DEVICECONTEXT->CopySubresourceRegion(mTexture, dstSubResource, 0, 0, 0, cubeObj->get2DTex(), srcSubResource, NULL);
+         }
+      }
+   }
+
+   //create shader resource view
+   D3D11_SHADER_RESOURCE_VIEW_DESC SMViewDesc;
+   SMViewDesc.Format = GFXD3D11TextureFormat[mFormat];
+   SMViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
+   SMViewDesc.TextureCubeArray.MipLevels = mMipMapLevels;
+   SMViewDesc.TextureCubeArray.MostDetailedMip = 0;
+   SMViewDesc.TextureCubeArray.NumCubes = mNumCubemaps;
+   SMViewDesc.TextureCubeArray.First2DArrayFace = 0;
+
+   hr = D3D11DEVICE->CreateShaderResourceView(mTexture, &SMViewDesc, &mSRView);
+   if (FAILED(hr))
+      AssertFatal(false, "GFXD3D11CubemapArray:initStatic(GFXCubemap *cubemaps,const U32 cubemapCount) - shader resource view  creation failure");
+
+}
+
+void GFXD3D11CubemapArray::setToTexUnit(U32 tuNum)
+{
+   D3D11DEVICECONTEXT->PSSetShaderResources(tuNum, 1, &mSRView);
+}
+
+void GFXD3D11CubemapArray::zombify()
+{
+   // Static cubemaps are handled by D3D
+}
+
+void GFXD3D11CubemapArray::resurrect()
+{
+   // Static cubemaps are handled by D3D
 }

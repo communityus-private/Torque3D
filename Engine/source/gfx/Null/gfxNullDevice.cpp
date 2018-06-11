@@ -161,6 +161,21 @@ public:
    virtual void resurrect() {}
 };
 
+class GFXNullCubemapArray : public GFXCubemapArray
+{
+   friend class GFXDevice;
+private:
+   // should only be called by GFXDevice
+   virtual void setToTexUnit(U32 tuNum) { };
+
+public:
+   virtual void initStatic(GFXCubemapHandle *cubemaps, const U32 cubemapCount) { };
+
+   virtual ~GFXNullCubemapArray() {};
+   virtual void zombify() {}
+   virtual void resurrect() {}
+};
+
 class GFXNullVertexBuffer : public GFXVertexBuffer 
 {
    unsigned char* tempBuf;
@@ -293,6 +308,11 @@ GFXPrimitiveBuffer *GFXNullDevice::allocPrimitiveBuffer( U32 numIndices,
 GFXCubemap* GFXNullDevice::createCubemap()
 { 
    return new GFXNullCubemap(); 
+};
+
+GFXCubemapArray* GFXNullDevice::createCubemapArray()
+{
+   return new GFXNullCubemapArray();
 };
 
 void GFXNullDevice::enumerateAdapters( Vector<GFXAdapter*> &adapterList )
