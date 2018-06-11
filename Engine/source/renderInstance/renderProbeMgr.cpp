@@ -655,36 +655,12 @@ bool ReflectProbeMatInstance::setupPass(SceneRenderState *state, const SceneData
    
    if (!mProjectionState)
    {
-      GFXStateBlockDesc litState = rpd->mRenderStates[0]->getDesc();
-
-      // Create state blocks for each of the 3 possible combos in setupPass
-
-      //DynamicLight State: This will effect lightmapped and non-lightmapped geometry
-      // in the same way.
-      //litState.separateAlphaBlendDefined = true;
-      //litState.separateAlphaBlendEnable = true;
-      //litState.stencilMask = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
-
-      litState.blendDefined = true;
-      litState.blendEnable = true;
-      litState.blendSrc = GFXBlendSrcAlpha;
-      litState.blendDest = GFXBlendInvSrcAlpha;
-      litState.blendOp = GFXBlendOpAdd;
-	  litState.separateAlphaBlendDefined = true;
-	  litState.separateAlphaBlendEnable = true;
-	  litState.separateAlphaBlendSrc = GFXBlendOne;
-	  litState.separateAlphaBlendDest = GFXBlendOne;
-	  litState.separateAlphaBlendOp = GFXBlendOpAdd;
-      litState.stencilDefined = true;
-      litState.stencilEnable = true;
-      litState.stencilWriteMask = 0x03;
-      litState.stencilMask = 0x03;
-      litState.stencilRef = RenderDeferredMgr::OpaqueDynamicLitMask | RenderDeferredMgr::OpaqueStaticLitMask;
-      litState.stencilPassOp = GFXStencilOpReplace;
-      litState.stencilFailOp = GFXStencilOpKeep;
-      litState.stencilZFailOp = GFXStencilOpKeep;
-      litState.stencilFunc = GFXCmpAlways;
-      mProjectionState = GFX->createStateBlock(litState);
+	   GFXStateBlockDesc desc;
+	   desc.setZReadWrite(false);
+	   desc.zWriteEnable = false;
+	   desc.setCullMode(GFXCullNone);
+	   desc.setBlend(true, GFXBlendOne, GFXBlendOne);
+	   mProjectionState = GFX->createStateBlock(desc);
    }
    // Now override stateblock with our own
    GFX->setStateBlock(mProjectionState);
