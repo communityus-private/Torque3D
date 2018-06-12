@@ -1,0 +1,2 @@
+This directory contains shadergen results. At time of writing, HLSLs may also be edited while the application is running to alter them, though GLSLs may not
+Removing this directory will still allow for shadergen to do it's job by keeping the results in memory.
