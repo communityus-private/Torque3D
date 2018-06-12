@@ -135,6 +135,9 @@ ReflectionProbe::ReflectionProbe()
    mResourcesCreated = false;
 
    mProbeInfo = new ProbeInfo();
+
+   mPrefilterSize = 64;
+   mPrefilterMipLevels = mLog2(F32(mPrefilterSize));
 }
 
 ReflectionProbe::~ReflectionProbe()
@@ -583,6 +586,8 @@ void ReflectionProbe::updateMaterial()
    {
       mProbeInfo->mCubemap = &mDynamicCubemap;
    }
+   
+   generateTextures();
 
    if (mPrefilterMap.isValid())
    {
