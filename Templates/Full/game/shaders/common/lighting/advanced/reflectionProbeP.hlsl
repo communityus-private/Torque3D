@@ -75,7 +75,6 @@ float3 iblBoxDiffuse(float3 normal,
 {
     // Irradiance (Diffuse)
     float3 cubeN = normalize(normal);
-    cubeN = boxProject(wsPos, cubeN, boxPos, boxMin, boxMax);
     float3 irradiance = TORQUE_TEXCUBE(irradianceCube, cubeN).xyz;
 
     return irradiance;
@@ -103,6 +102,7 @@ float3 iblBoxSpecular(float3 normal,
     float3 r = 2.0 * ndotv * n - v; // reflect(v, n);
     float3 cubeR = normalize(r);
     cubeR = boxProject(wsPos, cubeR, boxPos, boxMin, boxMax);
+	
     float3 radiance = TORQUE_TEXCUBELOD(radianceCube, float4(cubeR, lod)).xyz * (brdf.x + brdf.y);
     
     return radiance;
@@ -214,6 +214,4 @@ PS_OUTPUT main( ConvexConnectP IN )
 	   Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, pixDir, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
        return Output;	   
     }
-	
-
 }
