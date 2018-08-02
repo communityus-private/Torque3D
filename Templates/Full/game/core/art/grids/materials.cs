@@ -53,11 +53,10 @@ singleton Material( Grid512_Green_Mat )
    mapTo = "Grid512_Green_Mat";
    diffuseMap[0] = "core/art/grids/512_green";
    materialTag0 = "TestMaterial";
-   smoothness[0] = "0.431373";
+   smoothness[0] = "1";
    metalness[0] = "1";
    translucent = "0";
    translucentBlendOp = "Add";
-   normalMap[0] = "art/shapes/Cheetah/Cheetah_N.dds";
 };
 
 singleton Material( Grid512_Grey_Mat )
