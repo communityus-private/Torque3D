@@ -33,8 +33,6 @@ TORQUE_UNIFORM_SAMPLER2D(deferredTex,4);
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
    float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
-   if (depth>0.9999)
-      return float4(0,0,0,0);
 
    float3 colorBuffer = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb; //albedo
    float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0); //flags|smoothness|ao|metallic
@@ -48,5 +46,5 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    float4 diffuseLighting = TORQUE_TEX2D( diffuseLightingBuffer, IN.uv0 ); //shadowmap*specular
    colorBuffer *= diffuseLighting.rgb;
    
-   return hdrEncode( float4(colorBuffer.rgb, 1.0) );
+   return hdrEncode( float4(depth,depth,depth,depth) );
 }
