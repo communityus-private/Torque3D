@@ -193,7 +193,7 @@ PS_OUTPUT main( ConvexConnectP IN )
 
 		float3 irradiance = TORQUE_TEXCUBELOD(irradianceCubemap, ref).rgb;
 
-		float3 specular = TORQUE_TEXCUBELOD(cubeMap, ref).rgb;// iblSpecular(wsEyeRay, wsNormal, roughness);
+		float3 specular = TORQUE_TEXCUBELOD(cubeMap, ref).rgb;
 
 		Output.diffuse = float4(irradiance.rgb, alpha);
 		Output.spec = float4(specular.rgb, alpha);
@@ -212,6 +212,19 @@ PS_OUTPUT main( ConvexConnectP IN )
 	   float3 pixDir = normalize(eyePosWorld.xyz - worldPos.xyz);
        Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
 	   Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, pixDir, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
+	   	   
+        // Build light vec, get length, clip pixel if needed
+        float3 fromlightVec = probeLSPos-viewSpacePos;
+        float lenLightV = length( fromlightVec );
+        fromlightVec = normalize(fromlightVec);
+		float nDotL = dot( fromlightVec, normal );
+		float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,nDotL)).xyz;
+		
+		float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).r; //change to .a once we sort why it's not saving that off
+		if (lenLightV>depthRef)
+			clip(-1);
+		Output.spec = float4(depthRef,depthRef,depthRef,1.0);
+	   
        return Output;	   
     }
 }
