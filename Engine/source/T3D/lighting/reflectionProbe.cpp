@@ -1119,7 +1119,7 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    {
       //mCubemap->createMap();
       mDynamicCubemap = GFX->createCubemap();
-      mDynamicCubemap->initDynamic(resolution, GFXFormatR8G8B8);
+      mDynamicCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
    }
    else if (mReflectionModeType != DynamicCubemap)
    {
