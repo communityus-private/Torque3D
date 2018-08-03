@@ -829,7 +829,7 @@ void Skylight::bake(String outputPath, S32 resolution)
          return;
       }
 
-      GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8);
+      GBitmap bitmap(blendTex->getWidth(), blendTex->getHeight(), false, GFXFormatR8G8B8A8);
       blendTex->copyToBmp(&bitmap);
       bitmap.writeBitmap("png", stream);
 

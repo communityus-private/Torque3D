@@ -464,7 +464,7 @@ namespace IBLUtilities
       }
 
       //If we fail to parse the cubemap for whatever reason, we really can't continue
-      if (!CubemapSaver::getBitmaps(cubemap, GFXFormatR8G8B8, cubeFaceBitmaps))
+      if (!CubemapSaver::getBitmaps(cubemap, GFXFormatR8G8B8A8, cubeFaceBitmaps))
          return;
 
       //Set up our constants

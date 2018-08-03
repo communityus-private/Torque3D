@@ -978,11 +978,11 @@ void ReflectionProbe::calculateSHTerms()
 
    for (U32 i = 0; i < 6; i++)
    {
-      mCubeFaceBitmaps[i] = new GBitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
+      mCubeFaceBitmaps[i] = new GBitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8A8);
    }
 
    //If we fail to parse the cubemap for whatever reason, we really can't continue
-   if (!CubemapSaver::getBitmaps(mCubemap->mCubemap, GFXFormatR8G8B8, mCubeFaceBitmaps))
+   if (!CubemapSaver::getBitmaps(mCubemap->mCubemap, GFXFormatR8G8B8A8, mCubeFaceBitmaps))
       return; 
 
    //Set up our constants
@@ -1033,7 +1033,7 @@ void ReflectionProbe::calculateSHTerms()
          FileStream stream;
          if (stream.open(fileName, Torque::FS::File::Write))
          {
-            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
+            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8A8);
 
             bitmap.fill(color.toColorI());
 
@@ -1052,7 +1052,7 @@ void ReflectionProbe::calculateSHTerms()
          FileStream stream;
          if (stream.open(fileName, Torque::FS::File::Write))
          {
-            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8);
+            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8A8);
 
             bitmap.fill(color.toColorI());
 
