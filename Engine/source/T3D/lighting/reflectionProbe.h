@@ -78,7 +78,7 @@ public:
       DynamicCubemap = 5,
    };
 
-private:
+protected:
 
    // Networking masks
    // We need to implement a mask specifically to handle
@@ -115,8 +115,6 @@ private:
 
    //Indirect Lighting Contribution stuff
    IndrectLightingModeType mIndrectLightingModeType;
-   LinearColorF mAmbientColor;
-   LinearColorF mSphericalHarmonics;
 
    //Reflection Contribution stuff
    ReflectionModeType mReflectionModeType;
@@ -191,15 +189,9 @@ public:
    static bool _setEnabled(void *object, const char *index, const char *data);
    static bool _doBake(void *object, const char *index, const char *data);
 
-   static bool protectedSetSHTerms(void *object, const char *index, const char *data);
-   static bool protectedSetSHConsts(void *object, const char *index, const char *data);
-
    // Handle when we are added to the scene and removed from the scene
    bool onAdd();
    void onRemove();
-
-   virtual void writeFields(Stream &stream, U32 tabStop);
-   virtual bool writeField(StringTableEntry fieldname, const char *value);
 
    // Override this so that we can dirty the network flag when it is called
    void setTransform(const MatrixF &mat);
@@ -239,28 +231,6 @@ public:
       BaseMatInstance *overrideMat);
 
    void setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat);
-
-   //Spherical Harmonics
-   void calculateSHTerms();
-   F32 texelSolidAngle(F32 aU, F32 aV, U32 width, U32 height);
-   F32 areaElement(F32 x, F32 y);
-
-   //
-   MatrixF getSideMatrix(U32 side);
-   LinearColorF decodeSH(Point3F normal);
-
-   //
-   void calcDirectionVector(U32 face, U32 face_x, U32 face_y, F32& out_x, F32& out_y, F32& out_z) const;
-   F32 calcSolidAngle(U32 face, U32 x, U32 y) const;
-   LinearColorF sampleFace(U32 face, F32 s, F32 t);
-   LinearColorF readTexelClamped(U32 face, U32 x, U32 y);
-   void computeTexCoords(F32 x, F32 y, F32 z, U32& out_face, F32& out_s, F32& out_t);
-   LinearColorF readTexel(U32 face, U32 x, U32 y) const;
-
-   //
-   LinearColorF sampleSide(U32 termindex, U32 sideIndex);
-   F32 harmonics(U32 termId, Point3F normal);
-
 
    //Baking
    void bake(String outputPath, S32 resolution);

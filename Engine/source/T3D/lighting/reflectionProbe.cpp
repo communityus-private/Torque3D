@@ -105,11 +105,9 @@ ReflectionProbe::ReflectionProbe()
 
    mTypeMask = LightObjectType | MarkerObjectType;
 
-   mProbeShapeType = ProbeInfo::Sphere;
+   mProbeShapeType = ProbeInfo::Box;
 
    mIndrectLightingModeType = NoIndirect;
-   mAmbientColor = LinearColorF(1, 1, 1, 1);
-   mSphericalHarmonics = LinearColorF(0, 0, 0, 1);
 
    mReflectionModeType = BakedCubemap;
 
@@ -205,74 +203,6 @@ void ReflectionProbe::initPersistFields()
 
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
-}
-
-bool ReflectionProbe::protectedSetSHTerms(void *object, const char *index, const char *data)
-{
-   ReflectionProbe *probe = static_cast< ReflectionProbe* >(object);
-
-   LinearColorF term;
-   U32 idx;
-
-   dSscanf(data, "%i %g %g %g", &idx, &term.red, &term.green, &term.blue);
-
-   probe->mProbeInfo->mSHTerms[idx] = term;
-
-   return false;
-}
-
-bool ReflectionProbe::protectedSetSHConsts(void *object, const char *index, const char *data)
-{
-   ReflectionProbe *probe = static_cast< ReflectionProbe* >(object);
-
-   dSscanf(data, "%g %g %g %g %g", &probe->mProbeInfo->mSHConstants[0],
-      &probe->mProbeInfo->mSHConstants[1], &probe->mProbeInfo->mSHConstants[2], &probe->mProbeInfo->mSHConstants[3], &probe->mProbeInfo->mSHConstants[4]);
-
-   return false;
-}
-
-void ReflectionProbe::writeFields(Stream &stream, U32 tabStop)
-{
-   Parent::writeFields(stream, tabStop);
-
-   if (mIndrectLightingModeType != SphericalHarmonics)
-      return;
-
-   // Now write all planes.
-
-   stream.write(2, "\r\n");
-
-   for (U32 i = 0; i < 9; i++)
-   {
-      const LinearColorF shTerm = mProbeInfo->mSHTerms[i];
-
-      stream.writeTabs(tabStop);
-
-      char buffer[1024];
-      dMemset(buffer, 0, 1024);
-
-      dSprintf(buffer, 1024, "SHTerm = \"%i %g %g %g\";", i, shTerm.red, shTerm.green, shTerm.blue);
-
-      stream.writeLine((const U8*)buffer);
-   }
-
-   stream.writeTabs(tabStop);
-
-   char buffer[1024];
-   dMemset(buffer, 0, 1024);
-
-   dSprintf(buffer, 1024, "SHConsts = \"%g %g %g %g %g\";", mProbeInfo->mSHConstants[0],
-      mProbeInfo->mSHConstants[1], mProbeInfo->mSHConstants[2], mProbeInfo->mSHConstants[3], mProbeInfo->mSHConstants[4]);
-
-   stream.writeLine((const U8*)buffer);
-}
-
-bool ReflectionProbe::writeField(StringTableEntry fieldname, const char *value)
-{
-   if (fieldname == StringTable->insert("SHTerm") || fieldname == StringTable->insert("SHConsts"))
-      return false;
-
-   return Parent::writeField(fieldname, value);
 }
 
 void ReflectionProbe::inspectPostApply()
@@ -379,7 +309,6 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
 
    if (stream->writeFlag(mask & UpdateMask))
    {
-      stream->write(mAmbientColor);
       stream->write(mRadius);
    }
 
@@ -433,7 +362,6 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
 
    if (stream->readFlag())  // UpdateMask
    {
-      stream->read(&mAmbientColor);
       stream->read(&mRadius);
    }
 
@@ -474,8 +402,11 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
 
    updateProbeParams();
 
-   if(isMaterialDirty)
+   if (isMaterialDirty)
+   {
+      generateTextures();
       updateMaterial();
+   }
 }
 
 void ReflectionProbe::createGeometry()
@@ -505,14 +436,7 @@ void ReflectionProbe::updateProbeParams()
    if (mProbeInfo == nullptr)
       return;
 
-   if (mIndrectLightingModeType == AmbientColor)
-   {
-      mProbeInfo->mAmbient = mAmbientColor;
-   }
-   else
-   {
-      mProbeInfo->mAmbient = LinearColorF(0, 0, 0, 0);
-   }
+   mProbeInfo->mAmbient = LinearColorF(0, 0, 0, 0);
 
    mProbeInfo->mProbeShapeType = mProbeShapeType;
 
@@ -591,7 +515,7 @@ void ReflectionProbe::updateMaterial()
 
    if (mPrefilterMap.isValid())
    {
-      mProbeInfo->mCubemap = &mPrefilterMap;
+      //mProbeInfo->mCubemap = &mPrefilterMap;
       mProbeInfo->mIrradianceCubemap = &mIrridianceMap;
       mProbeInfo->mBRDFTexture = &mBrdfTexture;
    }
@@ -610,7 +534,15 @@ bool ReflectionProbe::createClientResources()
 
    //brdf lookup resources
    //make the brdf lookup texture the same size as the prefilter texture
-   mBrdfTexture = TEXMGR->createTexture(mPrefilterSize, mPrefilterSize, GFXFormatR16G16B16A16F, &GFXRenderTargetProfile, 1, 0);
+   
+   String brdfPath = Con::getVariable("$Core::BRDFTexture");
+
+   mBrdfTexture = TEXMGR->createTexture(brdfPath, &GFXRenderTargetProfile);// TEXMGR->createTexture(mPrefilterSize, mPrefilterSize, GFXFormatR16G16B16A16F, &GFXRenderTargetProfile, 1, 0);
+
+   if (!mBrdfTexture)
+   {
+      mBrdfTexture = IBLUtilities::GenerateAndSaveBRDFTexture(brdfPath, 512);
+   }
 
    mResourcesCreated = true;
 
@@ -640,7 +572,7 @@ void ReflectionProbe::generateTextures()
    IBLUtilities::GeneratePrefilterMap(renderTarget, mCubemap->mCubemap, mPrefilterMipLevels, mPrefilterMap);
 
    //create brdf lookup
-   IBLUtilities::GenerateBRDFTexture(mBrdfTexture);
+   //IBLUtilities::GenerateBRDFTexture(mBrdfTexture);
 }
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
@@ -804,289 +736,6 @@ void ReflectionProbe::setPreviewMatParameters(SceneRenderState* renderState, Bas
    MaterialParameterHandle *invViewMat = mat->getMaterialParameterHandle("$invViewMat");
 
    matParams->setSafe(invViewMat, worldToCameraXfm);
-}
-
-LinearColorF ReflectionProbe::decodeSH(Point3F normal)
-{
-   float x = normal.x;
-   float y = normal.y;
-   float z = normal.z;
-
-   LinearColorF l00 = mProbeInfo->mSHTerms[0];
-
-   LinearColorF l10 = mProbeInfo->mSHTerms[1];
-   LinearColorF l11 = mProbeInfo->mSHTerms[2];
-   LinearColorF l12 = mProbeInfo->mSHTerms[3];
-
-   LinearColorF l20 = mProbeInfo->mSHTerms[4];
-   LinearColorF l21 = mProbeInfo->mSHTerms[5];
-   LinearColorF l22 = mProbeInfo->mSHTerms[6];
-   LinearColorF l23 = mProbeInfo->mSHTerms[7];
-   LinearColorF l24 = mProbeInfo->mSHTerms[8];
-
-   LinearColorF result = (
-         l00 * mProbeInfo->mSHConstants[0] +
-
-         l12 * mProbeInfo->mSHConstants[1] * x +
-         l10 * mProbeInfo->mSHConstants[1] * y +
-         l11 * mProbeInfo->mSHConstants[1] * z +
-
-         l20 * mProbeInfo->mSHConstants[2] * x*y +
-         l21 * mProbeInfo->mSHConstants[2] * y*z +
-         l22 * mProbeInfo->mSHConstants[3] * (3.0*z*z - 1.0) +
-         l23 * mProbeInfo->mSHConstants[2] * x*z +
-         l24 * mProbeInfo->mSHConstants[4] * (x*x - y*y)
-      );
-
-   return LinearColorF(mMax(result.red, 0), mMax(result.green, 0), mMax(result.blue, 0));
-}
-
-MatrixF ReflectionProbe::getSideMatrix(U32 side)
-{
-   // Standard view that will be overridden below.
-   VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
-
-   switch (side)
-   {
-   case 0: // D3DCUBEMAP_FACE_POSITIVE_X:
-      vLookatPt = VectorF(1.0f, 0.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   case 1: // D3DCUBEMAP_FACE_NEGATIVE_X:
-      vLookatPt = VectorF(-1.0f, 0.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   case 2: // D3DCUBEMAP_FACE_POSITIVE_Y:
-      vLookatPt = VectorF(0.0f, 1.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 0.0f, -1.0f);
-      break;
-   case 3: // D3DCUBEMAP_FACE_NEGATIVE_Y:
-      vLookatPt = VectorF(0.0f, -1.0f, 0.0f);
-      vUpVec = VectorF(0.0f, 0.0f, 1.0f);
-      break;
-   case 4: // D3DCUBEMAP_FACE_POSITIVE_Z:
-      vLookatPt = VectorF(0.0f, 0.0f, 1.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   case 5: // D3DCUBEMAP_FACE_NEGATIVE_Z:
-      vLookatPt = VectorF(0.0f, 0.0f, -1.0f);
-      vUpVec = VectorF(0.0f, 1.0f, 0.0f);
-      break;
-   }
-
-   // create camera matrix
-   VectorF cross = mCross(vUpVec, vLookatPt);
-   cross.normalizeSafe();
-
-   MatrixF rotMat(true);
-   rotMat.setColumn(0, cross);
-   rotMat.setColumn(1, vLookatPt);
-   rotMat.setColumn(2, vUpVec);
-   //rotMat.inverse();
-
-   return rotMat;
-}
-
-F32 ReflectionProbe::harmonics(U32 termId, Point3F normal)
-{
-   F32 x = normal.x;
-   F32 y = normal.y;
-   F32 z = normal.z;
-
-   switch(termId)
-   {
-   case 0:
-      return 1.0;
-   case 1:
-      return y;
-   case 2:
-      return z;
-   case 3:
-      return x;
-   case 4:
-      return x*y;
-   case 5:
-      return y*z;
-   case 6:
-      return 3.0*z*z - 1.0;
-   case 7:
-      return x*z;
-   default:
-      return x*x - y*y;
-   }
-}
-
-LinearColorF ReflectionProbe::sampleSide(U32 termindex, U32 sideIndex)
-{
-   MatrixF sideRot = getSideMatrix(sideIndex);
-
-   LinearColorF result = LinearColorF::ZERO;
-   F32 divider = 0;
-
-   for (int y = 0; y<mCubemapResolution; y++)
-   {
-      for (int x = 0; x<mCubemapResolution; x++)
-      {
-         Point2F sidecoord = ((Point2F(x, y) + Point2F(0.5, 0.5)) / Point2F(mCubemapResolution, mCubemapResolution))*2.0 - Point2F(1.0, 1.0);
-         Point3F normal = Point3F(sidecoord.x, sidecoord.y, -1.0);
-         normal.normalize();
-
-         F32 minBrightness = Con::getFloatVariable("$pref::GI::Cubemap_Sample_MinBrightness", 0.001f);
-
-         LinearColorF texel = mCubeFaceBitmaps[sideIndex]->sampleTexel(y, x);
-         texel = LinearColorF(mMax(texel.red, minBrightness), mMax(texel.green, minBrightness), mMax(texel.blue, minBrightness)) * Con::getFloatVariable("$pref::GI::Cubemap_Gain", 1.5);
-
-         Point3F dir;
-         sideRot.mulP(normal, &dir);
-
-         result += texel * harmonics(termindex,dir) * -normal.z;
-         divider += -normal.z;
-      }
-   }
-
-   result /= divider;
-
-   return result;
-}
-
-//
-//SH Calculations
-// From http://sunandblackcat.com/tipFullView.php?l=eng&topicid=32&topic=Spherical-Harmonics-From-Cube-Texture
-// With shader decode logic from https://github.com/nicknikolov/cubemap-sh
-void ReflectionProbe::calculateSHTerms()
-{
-   if (!mCubemap || !mCubemap->mCubemap)
-      return;
-
-   const VectorF cubemapFaceNormals[6] =
-   {
-      // D3DCUBEMAP_FACE_POSITIVE_X:
-      VectorF(1.0f, 0.0f, 0.0f),
-      // D3DCUBEMAP_FACE_NEGATIVE_X:
-      VectorF(-1.0f, 0.0f, 0.0f),
-      // D3DCUBEMAP_FACE_POSITIVE_Y:
-      VectorF(0.0f, 1.0f, 0.0f),
-      // D3DCUBEMAP_FACE_NEGATIVE_Y:
-      VectorF(0.0f, -1.0f, 0.0f),
-      // D3DCUBEMAP_FACE_POSITIVE_Z:
-      VectorF(0.0f, 0.0f, 1.0f),
-      // D3DCUBEMAP_FACE_NEGATIVE_Z:
-      VectorF(0.0f, 0.0f, -1.0f),
-   };
-
-   mCubemapResolution = mCubemap->mCubemap->getSize();
-
-   for (U32 i = 0; i < 6; i++)
-   {
-      mCubeFaceBitmaps[i] = new GBitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8A8);
-   }
-
-   //If we fail to parse the cubemap for whatever reason, we really can't continue
-   if (!CubemapSaver::getBitmaps(mCubemap->mCubemap, GFXFormatR8G8B8A8, mCubeFaceBitmaps))
-      return; 
-
-   //Set up our constants
-   F32 L0 = Con::getFloatVariable("$pref::GI::SH_Term_L0", 1.0f);
-   F32 L1 = Con::getFloatVariable("$pref::GI::SH_Term_L1", 1.8f);
-   F32 L2 = Con::getFloatVariable("$pref::GI::SH_Term_L2", 0.83f);
-   F32 L2m2_L2m1_L21 = Con::getFloatVariable("$pref::GI::SH_Term_L2m2", 2.9f);
-   F32 L20 = Con::getFloatVariable("$pref::GI::SH_Term_L20", 0.58f);
-   F32 L22 = Con::getFloatVariable("$pref::GI::SH_Term_L22", 1.1f);
-
-   mProbeInfo->mSHConstants[0] = L0;
-   mProbeInfo->mSHConstants[1] = L1;
-   mProbeInfo->mSHConstants[2] = L2 * L2m2_L2m1_L21;
-   mProbeInfo->mSHConstants[3] = L2 * L20;
-   mProbeInfo->mSHConstants[4] = L2 * L22;
-
-   for (U32 i = 0; i < 9; i++)
-   {
-      //Clear it, just to be sure
-      mProbeInfo->mSHTerms[i] = LinearColorF(0.f, 0.f, 0.f);
-
-      //Now, encode for each side
-      mProbeInfo->mSHTerms[i] = sampleSide(i, 0); //POS_X
-      mProbeInfo->mSHTerms[i] += sampleSide(i, 1); //NEG_X
-      mProbeInfo->mSHTerms[i] += sampleSide(i, 2); //POS_Y
-      mProbeInfo->mSHTerms[i] += sampleSide(i, 3); //NEG_Y
-      mProbeInfo->mSHTerms[i] += sampleSide(i, 4); //POS_Z
-      mProbeInfo->mSHTerms[i] += sampleSide(i, 5); //NEG_Z
-
-      //Average
-      mProbeInfo->mSHTerms[i] /= 6;
-   }
-
-   for (U32 i = 0; i < 6; i++)
-      SAFE_DELETE(mCubeFaceBitmaps[i]);
-
-   bool mExportSHTerms = false;
-   if (mExportSHTerms)
-   {
-      for (U32 f = 0; f < 6; f++)
-      {
-         char fileName[256];
-         dSprintf(fileName, 256, "%s%s_DecodedFaces_%d.png", mReflectionPath.c_str(),
-            mProbeUniqueID.c_str(), f);
-
-         LinearColorF color = decodeSH(cubemapFaceNormals[f]);
-
-         FileStream stream;
-         if (stream.open(fileName, Torque::FS::File::Write))
-         {
-            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8A8);
-
-            bitmap.fill(color.toColorI());
-
-            bitmap.writeBitmap("png", stream);
-         }
-      }
-
-      for (U32 f = 0; f < 9; f++)
-      {
-         char fileName[256];
-         dSprintf(fileName, 256, "%s%s_SHTerms_%d.png", mReflectionPath.c_str(),
-            mProbeUniqueID.c_str(), f);
-
-         LinearColorF color = mProbeInfo->mSHTerms[f];
-
-         FileStream stream;
-         if (stream.open(fileName, Torque::FS::File::Write))
-         {
-            GBitmap bitmap(mCubemapResolution, mCubemapResolution, false, GFXFormatR8G8B8A8);
-
-            bitmap.fill(color.toColorI());
-
-            bitmap.writeBitmap("png", stream);
-         }
-      }
-   }
-}
-
-F32 ReflectionProbe::texelSolidAngle(F32 aU, F32 aV, U32 width, U32 height)
-{
-   // transform from [0..res - 1] to [- (1 - 1 / res) .. (1 - 1 / res)]
-   // ( 0.5 is for texel center addressing)
-   const F32 U = (2.0 * (aU + 0.5) / width) - 1.0;
-   const F32 V = (2.0 * (aV + 0.5) / height) - 1.0;
-
-   // shift from a demi texel, mean 1.0 / size  with U and V in [-1..1]
-   const F32 invResolutionW = 1.0 / width;
-   const F32 invResolutionH = 1.0 / height;
-
-   // U and V are the -1..1 texture coordinate on the current face.
-   // get projected area for this texel
-   const F32 x0 = U - invResolutionW;
-   const F32 y0 = V - invResolutionH;
-   const F32 x1 = U + invResolutionW;
-   const F32 y1 = V + invResolutionH;
-   const F32 angle = areaElement(x0, y0) - areaElement(x0, y1) - areaElement(x1, y0) + areaElement(x1, y1);
-
-   return angle;
-}
-
-F32 ReflectionProbe::areaElement(F32 x, F32 y) 
-{
-   return mAtan2(x * y, (F32)mSqrt(x * x + y * y + 1.0));
 }
 
 DefineEngineMethod(ReflectionProbe, postApply, void, (), ,
@@ -1256,9 +905,7 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       char fileName[256];
       dSprintf(fileName, 256, "%s%s.DDS", mReflectionPath.c_str(), mProbeUniqueID.c_str());
 
-      CubemapSaver::save(mCubemap->mCubemap, fileName);
-
-      if (!Platform::isFile(fileName))
+      if (!CubemapSaver::save(mCubemap->mCubemap, fileName))
       {
          validCubemap = false; //if we didn't save right, just 
          Con::errorf("Failed to properly save out the skylight baked cubemap!");

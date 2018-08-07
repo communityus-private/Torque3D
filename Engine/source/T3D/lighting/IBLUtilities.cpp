@@ -3,6 +3,8 @@
 #include "gfx/gfxTextureManager.h"
 #include "gfx/gfxTransformSaver.h"
 #include "gfx/bitmap/cubemapSaver.h"
+#include "core/stream/fileStream.h"
+#include "gfx/bitmap/imageUtils.h"
 
 namespace IBLUtilities
 {
@@ -131,6 +133,33 @@ namespace IBLUtilities
       renderTarget->resolve();
 
       GFX->popActiveRenderTarget();
+   }
+
+   GFXTexHandle GenerateAndSaveBRDFTexture(String outputPath, S32 resolution)
+   {
+      GFXTexHandle brdfTexture = TEXMGR->createTexture(resolution, resolution, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, 1, 0);
+      GenerateBRDFTexture(brdfTexture);
+
+      FileStream fs;
+      if (fs.open(outputPath, Torque::FS::File::Write))
+      {
+         // Read back the render target, dxt compress it, and write it to disk.
+         GBitmap brdfBmp(brdfTexture.getHeight(), brdfTexture.getWidth(), false, GFXFormatR8G8B8A8);
+         brdfTexture.copyToBmp(&brdfBmp);
+
+         brdfBmp.extrudeMipLevels();
+
+         DDSFile *brdfDDS = DDSFile::createDDSFileFromGBitmap(&brdfBmp);
+         ImageUtil::ddsCompress(brdfDDS, GFXFormatBC1);
+
+         // Write result to file stream
+         brdfDDS->write(fs);
+
+         delete brdfDDS;
+      }
+      fs.close();
+
+      return brdfTexture;
    }
 
    void bakeReflection(String outputPath, S32 resolution)
@@ -571,3 +600,9 @@ namespace IBLUtilities
       return angle;
    }
 };
+
+DefineEngineFunction(GenerateBRDFTexture, bool, (String outputPath, S32 resolution), ("", 256),
+   "@brief returns true if control object is inside the fog\n\n.")
+{
+   return IBLUtilities::GenerateAndSaveBRDFTexture(outputPath, resolution);
+}

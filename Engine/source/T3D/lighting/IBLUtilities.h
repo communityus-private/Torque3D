@@ -6,6 +6,7 @@ namespace IBLUtilities
 
    void GeneratePrefilterMap(GFXTextureTargetRef renderTarget, GFXCubemapHandle cubemap, U32 mipLevels, GFXCubemapHandle &cubemapOut);
 
+   GFXTexHandle GenerateAndSaveBRDFTexture(String outputPath, S32 resolution);
    void GenerateBRDFTexture(GFXTexHandle &textureOut);
 
    void bakeReflection(String outputPath, S32 resolution);

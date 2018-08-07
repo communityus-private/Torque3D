@@ -59,7 +59,6 @@
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool Skylight::smRenderSkylights = true;
-bool Skylight::smRenderPreviewProbes = true;
 
 IMPLEMENT_CO_NETOBJECT_V1(Skylight);
 
@@ -74,45 +73,11 @@ ConsoleDocClass(Skylight,
    "See the C++ code for implementation details.\n\n"
    "@ingroup Examples\n");
 
-ImplementEnumType(SkylightReflectionModeEnum,
-   "Type of mesh data available in a shape.\n"
-   "@ingroup gameObjects")
-{ Skylight::StaticCubemap, "Static Cubemap", "Uses a static CubemapData" },
-{ Skylight::BakedCubemap, "Baked Cubemap", "Uses a cubemap baked from the probe's current position" },
-   EndImplementEnumType;
-
 //-----------------------------------------------------------------------------
 // Object setup and teardown
 //-----------------------------------------------------------------------------
-Skylight::Skylight()
+Skylight::Skylight() : ReflectionProbe()
 {
-   // Flag this object so that it will always
-   // be sent across the network to clients
-   mNetFlags.set(Ghostable | ScopeAlways);
-
-   mTypeMask = LightObjectType | MarkerObjectType;
-
-   mReflectionModeType = StaticCubemap;
-
-   mEnabled = true;
-   mBake = false;
-   mDirty = false;
-
-   mCubemap = NULL;
-   mReflectionPath = "";
-   mProbeUniqueID = "";
-
-   mEditorShapeInst = NULL;
-   mEditorShape = NULL;
-
-   mIrridianceMap = NULL;
-   mPrefilterMap = NULL;
-   mBrdfTexture = NULL;
-   mResourcesCreated = false;
-   mPrefilterSize = 512;
-   mPrefilterMipLevels = 6;
-
-   mProbeInfo = new ProbeInfo();
 }
 
 Skylight::~Skylight()
@@ -129,34 +94,6 @@ Skylight::~Skylight()
 //-----------------------------------------------------------------------------
 void Skylight::initPersistFields()
 {
-   addGroup("Rendering");
-      addProtectedField("enabled", TypeBool, Offset(mEnabled, Skylight),
-         &_setEnabled, &defaultProtectedGetFn, "Regenerate Voxel Grid");
-   endGroup("Rendering");
-
-   addGroup("Reflection");
-      //addField("ReflectionMode", TypeSkylightReflectionModeEnum, Offset(mReflectionModeType, Skylight),
-      //   "The type of mesh data to use for collision queries.");
-
-      //addField("reflectionPath", TypeImageFilename, Offset(mReflectionPath, Skylight),
-      //   "The type of mesh data to use for collision queries.");
-
-      addField("StaticCubemap", TypeCubemapName, Offset(mCubemapName, Skylight), "Cubemap used instead of reflection texture if fullReflect is off.");
-
-      //addProtectedField("Bake", TypeBool, Offset(mBake, Skylight),
-      //   &_doBake, &defaultProtectedGetFn, "Regenerate Voxel Grid", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
-   endGroup("Reflection");
-
-   Con::addVariable("$Light::renderSkylights", TypeBool, &Skylight::smRenderSkylights,
-      "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
-      "@note Only works for shadow mapped lights.\n\n"
-      "@ingroup Lighting");
-
-   Con::addVariable("$Light::renderPreviewProbes", TypeBool, &Skylight::smRenderPreviewProbes,
-      "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
-      "@note Only works for shadow mapped lights.\n\n"
-      "@ingroup Lighting");
-
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
 }
@@ -172,55 +109,10 @@ void Skylight::inspectPostApply()
    setMaskBits(-1);
 }
 
-bool Skylight::_setEnabled(void *object, const char *index, const char *data)
-{
-   Skylight* probe = reinterpret_cast< Skylight* >(object);
-
-   probe->mEnabled = dAtob(data);
-   probe->setMaskBits(-1);
-
-   return true;
-}
-
-bool Skylight::_doBake(void *object, const char *index, const char *data)
-{
-   Skylight* probe = reinterpret_cast< Skylight* >(object);
-
-   if (probe->mDirty)
-      probe->bake(probe->mReflectionPath, 256);
-
-   return false;
-}
-
 bool Skylight::onAdd()
 {
    if (!Parent::onAdd())
       return false;
-
-   mObjBox.minExtents.set(-1, -1, -1);
-   mObjBox.maxExtents.set(1, 1, 1);
-
-   // Skip our transform... it just dirties mask bits.
-   Parent::setTransform(mObjToWorld);
-
-   resetWorldBox();
-
-   // Add this object to the scene
-   addToScene();
-
-   if (isServerObject())
-   {
-      if (!mPersistentId)
-         mPersistentId = getOrCreatePersistentId();
-
-      mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
-   }
-
-   // Refresh this object's material (if any)
-   if (isClientObject())
-      updateMaterial();
-  
-   setMaskBits(-1);
 
    return true;
 }
@@ -250,39 +142,6 @@ U32 Skylight::packUpdate(NetConnection *conn, U32 mask, BitStream *stream)
    // Allow the Parent to get a crack at writing its info
    U32 retMask = Parent::packUpdate(conn, mask, stream);
 
-   if (stream->writeFlag(mask & InitialUpdateMask))
-   {
-      //initial work, just in case?
-   }
-
-   // Write our transform information
-   if (stream->writeFlag(mask & TransformMask))
-   {
-      mathWrite(*stream, getTransform());
-      mathWrite(*stream, getScale());
-   }
-
-   /*if (stream->writeFlag(mask & BakeInfoMask))
-   {
-      stream->write(mReflectionPath);
-      stream->write(mProbeUniqueID);
-   }*/
-
-   if (stream->writeFlag(mask & EnabledMask))
-   {
-      stream->writeFlag(mEnabled);
-   }
-
-   /*if (stream->writeFlag(mask & ModeMask))
-   {
-      stream->write((U32)mReflectionModeType);
-   }*/
-
-   if (stream->writeFlag(mask & CubemapMask))
-   {
-      stream->write(mCubemapName);
-   }
-
    return retMask;
 }
 
@@ -290,72 +149,6 @@ void Skylight::unpackUpdate(NetConnection *conn, BitStream *stream)
 {
    // Let the Parent read any info it sent
    Parent::unpackUpdate(conn, stream);
-
-   if (stream->readFlag())
-   {
-      //some initial work?
-      createGeometry();
-   }
-
-   if (stream->readFlag())  // TransformMask
-   {
-      mathRead(*stream, &mObjToWorld);
-      mathRead(*stream, &mObjScale);
-
-      setTransform(mObjToWorld);
-   }
-
-   /*if (stream->readFlag())  // BakeInfoMask
-   {
-      stream->read(&mReflectionPath);
-      stream->read(&mProbeUniqueID);
-   }*/
-
-   if (stream->readFlag())  // EnabledMask
-   {
-      mEnabled = stream->readFlag();
-   }
-
-   bool isMaterialDirty = false;
-
-   /*if (stream->readFlag())  // ModeMask
-   {
-      U32 reflectModeType = StaticCubemap;
-      stream->read(&reflectModeType);
-      mReflectionModeType = (ReflectionModeType)reflectModeType;
-
-      isMaterialDirty = true;
-   }*/
-
-   if (stream->readFlag())  // CubemapMask
-   {
-      stream->read(&mCubemapName);
-
-      isMaterialDirty = true;
-   }
-
-   updateProbeParams();
-
-   if(isMaterialDirty)
-      updateMaterial();
-}
-
-void Skylight::createGeometry()
-{
-   // Clean up our previous shape
-   if (mEditorShapeInst)
-      SAFE_DELETE(mEditorShapeInst);
-   
-   mEditorShape = NULL;
-   
-   String shapeFile = "tools/resources/ReflectProbeSphere.dae";
-   
-   // Attempt to get the resource from the ResourceManager
-   mEditorShape = ResourceManager::get().load(shapeFile);
-   if (mEditorShape)
-   {
-      mEditorShapeInst = new TSShapeInstance(mEditorShape, isClientObject());
-   }
 }
 
 //-----------------------------------------------------------------------------
@@ -367,17 +160,11 @@ void Skylight::updateProbeParams()
    if (mProbeInfo == nullptr)
       return;
 
-   mProbeInfo->mIntensity = 1;
-
-   mProbeInfo->mAmbient = LinearColorF(0, 0, 0, 0);
+   Parent::updateProbeParams();
 
    mProbeInfo->mProbeShapeType = ProbeInfo::Sphere;
 
    mProbeInfo->setPosition(getPosition());
-
-   //Update the bounds
-   mObjBox.minExtents.set(-1, -1, -1);
-   mObjBox.maxExtents.set(1, 1, 1);
 
    // Skip our transform... it just dirties mask bits.
    Parent::setTransform(mObjToWorld);
@@ -397,193 +184,6 @@ void Skylight::updateProbeParams()
 
    mProbeInfo->mIsSkylight = true; 
    mProbeInfo->mScore = -1.0f; //sky comes first
-}
-
-bool Skylight::createClientResources()
-{
-   //irridiance resources
-   mIrridianceMap = GFX->createCubemap();
-   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F, 1);
-
-   //prefilter resources - we share the irridiance stateblock
-   mPrefilterMap = GFX->createCubemap();
-   mPrefilterMap->initDynamic(mPrefilterSize, GFXFormatR16G16B16A16F, mPrefilterMipLevels);
-
-   //brdf lookup resources
-   //make the brdf lookup texture the same size as the prefilter texture
-   mBrdfTexture = TEXMGR->createTexture(mPrefilterSize, mPrefilterSize, GFXFormatR16G16B16A16F, &GFXRenderTargetProfile, 1, 0);
-
-   mResourcesCreated = true;
-
-   return true;
-}
-
-void Skylight::updateMaterial()
-{
-   if ((mReflectionModeType == BakedCubemap) && !mProbeUniqueID.isEmpty())
-   {
-      bool validCubemap = true;
-
-      char fileName[256];
-      dSprintf(fileName, 256, "%s%s.DDS", mReflectionPath.c_str(), mProbeUniqueID.c_str());
-
-      Vector<FileName> fileNames;
-
-      if (Platform::isFile(fileName))
-      {
-         if (!mCubemap)
-         {
-            mCubemap = new CubemapData();
-            mCubemap->registerObject();
-         }
-
-         mCubemap->setCubemapFile(FileName(fileName));
-      }
-      else
-      {
-         validCubemap = false;
-      }
-
-      if (validCubemap)
-      {
-         if (mCubemap->mCubemap)
-            mCubemap->updateFaces();
-         else
-            mCubemap->createMap();
-
-         mDirty = false;
-
-         mProbeInfo->mCubemap = &mCubemap->mCubemap;
-      }
-
-      /*for (U32 i = 0; i < 6; ++i)
-      {
-         char faceFile[256];
-         dSprintf(faceFile, sizeof(faceFile), "%s%s_%i.png", mReflectionPath.c_str(),
-            mProbeUniqueID.c_str(), i);
-
-         if (Platform::isFile(faceFile))
-         {
-            fileNames.push_back(FileName(faceFile));
-         }
-         else
-         {
-            validCubemap = false;
-            break;
-         }
-      }
-
-      if (validCubemap)
-      {
-         if (!mCubemap)
-         {
-            mCubemap = new CubemapData();
-            mCubemap->registerObject();
-         }
-
-         for(U32 i=0; i < 6; i++)
-            mCubemap->setCubeFaceFile(i, fileNames[i]);
-
-         mCubemap->createMap();
-         mCubemap->updateFaces();
-
-         mProbeInfo->mCubemap = &mCubemap->mCubemap;
-      }*/
-   }
-   else if (mReflectionModeType == StaticCubemap && !mCubemapName.isEmpty())
-   {
-      Sim::findObject(mCubemapName, mCubemap);
-
-      if (!mCubemap)
-         return;
-
-      if (mCubemap->mCubemap)
-         mCubemap->updateFaces();
-      else
-         mCubemap->createMap();
-
-      mProbeInfo->mCubemap = &mCubemap->mCubemap;
-   }
-
-   //calculateSHTerms();
-
-   generateTextures();
-
-   //Now that the work is done, assign the relevent maps
-   if (mPrefilterMap.isValid())
-   {
-      mProbeInfo->mCubemap = &mPrefilterMap;
-      mProbeInfo->mIrradianceCubemap = &mIrridianceMap;
-      mProbeInfo->mBRDFTexture = &mBrdfTexture;
-   }
-}
-
-void Skylight::generateTextures()
-{
-   if (!mCubemap)
-      return;
-
-   if (!mResourcesCreated)
-   {
-      if (!createClientResources())
-      {
-         Con::errorf("SkyLight::createIrridianceMap: Failed to create resources");
-         return;
-      }
-   }
-
-   //GFXTransformSaver saver;
-
-   GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
-
-   IBLUtilities::GenerateIrradianceMap(renderTarget, mCubemap->mCubemap, mIrridianceMap);
-
-   //Write it out
-   char fileName[256];
-   dSprintf(fileName, 256, "levels/test/irradiance.DDS");
-
-   CubemapSaver::save(mIrridianceMap, fileName);
-
-   if (!Platform::isFile(fileName))
-   {
-      Con::errorf("Failed to properly save out the skylight baked irradiance!");
-   }
-
-   //create prefilter cubemap (radiance)
-   IBLUtilities::GeneratePrefilterMap(renderTarget, mCubemap->mCubemap, mPrefilterMipLevels, mPrefilterMap);
-
-   //Write it out
-   fileName[256];
-   dSprintf(fileName, 256, "levels/test/prefilter.DDS");
-
-   CubemapSaver::save(mPrefilterMap, fileName);
-
-   if (!Platform::isFile(fileName))
-   {
-      Con::errorf("Failed to properly save out the skylight baked irradiance!");
-   }
-
-   //create brdf lookup
-   IBLUtilities::GenerateBRDFTexture(mBrdfTexture);
-
-   /*FileStream fs;
-   if (fs.open("levels/test/brdf.DDS", Torque::FS::File::Write))
-   {
-      // Read back the render target, dxt compress it, and write it to disk.
-      GBitmap brdfBmp(mBrdfTexture.getHeight(), mBrdfTexture.getWidth(), false, GFXFormatR8G8B8A8);
-      mBrdfTexture.copyToBmp(&brdfBmp);
-
-      brdfBmp.extrudeMipLevels();
-
-      DDSFile *brdfDDS = DDSFile::createDDSFileFromGBitmap(&brdfBmp);
-      ImageUtil::ddsCompress(brdfDDS, GFXFormatBC1);
-
-      // Write result to file stream
-      brdfDDS->write(fs);
-
-      delete brdfDDS;
-   }
-   fs.close();*/
 }
 
 void Skylight::prepRenderImage(SceneRenderState *state)
@@ -670,31 +270,7 @@ void Skylight::prepRenderImage(SceneRenderState *state)
 
 void Skylight::setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat)
 {
-   if (!mat->getFeatures().hasFeature(MFT_isDeferred))
-      return;
-
-   //Set up the params
-   MaterialParameters *matParams = mat->getMaterialParameters();
-
-   //Get the deferred render target
-   NamedTexTarget* deferredTexTarget = NamedTexTarget::find("deferred");
-
-   GFXTextureObject *deferredTexObject = deferredTexTarget->getTexture();
-   if (!deferredTexObject) 
-      return;
-
-   GFX->setTexture(0, deferredTexObject);
-
-   //Set the cubemap
-   GFX->setCubeTexture(1, mCubemap->mCubemap);
-
-   //Set the invViewMat
-   MatrixSet &matrixSet = renderState->getRenderPass()->getMatrixSet();
-   const MatrixF &worldToCameraXfm = matrixSet.getWorldToCamera();
-
-   MaterialParameterHandle *invViewMat = mat->getMaterialParameterHandle("$invViewMat");
-
-   matParams->setSafe(invViewMat, worldToCameraXfm);
+   Parent::setPreviewMatParameters(renderState, mat);
 }
 
 DefineEngineMethod(Skylight, postApply, void, (), ,
@@ -703,7 +279,7 @@ DefineEngineMethod(Skylight, postApply, void, (), ,
    object->inspectPostApply();
 }
 
-void Skylight::bake(String outputPath, S32 resolution)
+/*void Skylight::bake(String outputPath, S32 resolution)
 {
    GFXDEBUGEVENT_SCOPE(Skylight_Bake, ColorI::WHITE);
 
@@ -896,4 +472,4 @@ DefineEngineMethod(Skylight, Bake, void, (String outputPath, S32 resolution), ("
    "@brief returns true if control object is inside the fog\n\n.")
 {
    object->bake(outputPath, resolution);
-}
+}*/
