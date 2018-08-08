@@ -8,7 +8,7 @@
 
 namespace IBLUtilities
 {
-   void GenerateIrradianceMap(GFXTextureTargetRef renderTarget, GFXCubemapHandle cubemap, GFXCubemapHandle &cubemapOut)
+   void GenerateIrradianceMap(GFXTextureTargetRef renderTarget, S32 resolution, GFXCubemapHandle cubemap, GFXCubemapHandle &cubemapOut)
    {
       GFXTransformSaver saver;
 
@@ -45,9 +45,14 @@ namespace IBLUtilities
       GFX->setVertexBuffer(NULL);
       GFX->setCubeTexture(0, cubemap);
 
+	  GFXTexHandle pTextures[6];
       for (U32 i = 0; i < 6; i++)
       {
-         renderTarget->attachTexture(GFXTextureTarget::Color0, cubemapOut, i);
+		  pTextures[i].set(resolution, resolution, GFXFormatR8G8B8A8_SRGB,
+			  &GFXRenderTargetProfile, avar("%s() - (line %d)", __FUNCTION__, __LINE__),
+			  1, GFXTextureManager::AA_MATCH_BACKBUFFER);
+
+         renderTarget->attachTexture(GFXTextureTarget::RenderSlot(GFXTextureTarget::Color0 + i), pTextures[i]);
          irrConsts->setSafe(irrFaceSC, (S32)i);
          GFX->setActiveRenderTarget(renderTarget);
          GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
@@ -68,7 +73,7 @@ namespace IBLUtilities
 
       GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
 
-      IBLUtilities::GenerateIrradianceMap(renderTarget, cubemap, cubemapOut);
+      IBLUtilities::GenerateIrradianceMap(renderTarget, resolution, cubemap, cubemapOut);
 
       //Write it out
       CubemapSaver::save(cubemapOut, outputPath);

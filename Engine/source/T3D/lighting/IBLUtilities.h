@@ -2,7 +2,7 @@
 
 namespace IBLUtilities
 {
-   void GenerateIrradianceMap(GFXTextureTargetRef renderTarget, GFXCubemapHandle cubemap, GFXCubemapHandle &cubemapOut);
+   void GenerateIrradianceMap(GFXTextureTargetRef renderTarget, S32 resolution, GFXCubemapHandle cubemap, GFXCubemapHandle &cubemapOut);
    void GenerateAndSaveIrradianceMap(String outputPath, S32 resolution, GFXCubemapHandle cubemap, GFXCubemapHandle &cubemapOut);
 
    void GeneratePrefilterMap(GFXTextureTargetRef renderTarget, GFXCubemapHandle cubemap, U32 mipLevels, GFXCubemapHandle &cubemapOut);
