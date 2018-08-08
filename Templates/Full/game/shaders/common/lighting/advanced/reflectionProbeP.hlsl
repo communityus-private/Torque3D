@@ -220,10 +220,10 @@ PS_OUTPUT main( ConvexConnectP IN )
 		float nDotL = dot( fromlightVec, normal );
 		float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,nDotL)).xyz;
 		
-		float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).r; //change to .a once we sort why it's not saving that off
-		if (lenLightV>depthRef)
-			clip(-1);
-		Output.spec = float4(depthRef,depthRef,depthRef,1.0);
+		float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).a; //change to .a once we sort why it's not saving that off
+		//if (lenLightV>depthRef)
+			//clip(-1);
+		Output.spec = float4(Output.spec.rgb,1.0);
 	   
        return Output;	   
     }

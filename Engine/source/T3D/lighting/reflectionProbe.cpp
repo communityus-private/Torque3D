@@ -537,7 +537,7 @@ bool ReflectionProbe::createClientResources()
    
    String brdfPath = Con::getVariable("$Core::BRDFTexture", "core/art/brdfTexture.DDS");
 
-   mBrdfTexture = TEXMGR->createTexture(brdfPath, &GFXRenderTargetProfile);// TEXMGR->createTexture(mPrefilterSize, mPrefilterSize, GFXFormatR16G16B16A16F, &GFXRenderTargetProfile, 1, 0);
+   mBrdfTexture = TEXMGR->createTexture(brdfPath, &GFXTexturePersistentProfile);// TEXMGR->createTexture(mPrefilterSize, mPrefilterSize, GFXFormatR16G16B16A16F, &GFXRenderTargetProfile, 1, 0);
 
    if (!mBrdfTexture)
    {
