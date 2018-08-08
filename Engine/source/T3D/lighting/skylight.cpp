@@ -78,15 +78,11 @@ ConsoleDocClass(Skylight,
 //-----------------------------------------------------------------------------
 Skylight::Skylight() : ReflectionProbe()
 {
+
 }
 
 Skylight::~Skylight()
 {
-   if (mEditorShapeInst)
-      SAFE_DELETE(mEditorShapeInst);
-
-   if (mReflectionModeType != StaticCubemap && mCubemap)
-      mCubemap->deleteObject();
 }
 
 //-----------------------------------------------------------------------------
@@ -119,9 +115,6 @@ bool Skylight::onAdd()
 
 void Skylight::onRemove()
 {
-   // Remove this object from the scene
-   removeFromScene();
-
    Parent::onRemove();
 }
 
@@ -181,6 +174,8 @@ void Skylight::updateProbeParams()
    mProbeInfo->mBounds = skylightBounds;
 
    setGlobalBounds();
+
+   mProbeInfo->mAmbient = LinearColorF(1, 1, 1, 1);
 
    mProbeInfo->mIsSkylight = true; 
    mProbeInfo->mScore = -1.0f; //sky comes first

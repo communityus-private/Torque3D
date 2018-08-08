@@ -63,13 +63,6 @@ class Skylight : public ReflectionProbe
 
 private:
 
-   bool mBake;
-   bool mEnabled;
-   bool mDirty;
-
-   Resource<TSShape> mEditorShape;
-   TSShapeInstance* mEditorShapeInst;
-
     //Debug rendering
    static bool smRenderSkylights;
 
