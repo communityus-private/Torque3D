@@ -122,15 +122,15 @@ protected:
    F32 mRadius;
 
    String mCubemapName;
-   CubemapData *mCubemap;
+   CubemapData *mStaticCubemap;
    GFXCubemapHandle  mDynamicCubemap;
    bool mUseCubemap;
 
    //irridiance resources
-   GFXCubemapHandle mIrridianceMap;
+   CubemapData *mIrridianceMap;
 
    //prefilter resources
-   GFXCubemapHandle mPrefilterMap;
+   CubemapData *mPrefilterMap;
    U32 mPrefilterMipLevels;
    U32 mPrefilterSize;
 
@@ -233,6 +233,8 @@ public:
    void setPreviewMatParameters(SceneRenderState* renderState, BaseMatInstance* mat);
 
    //Baking
+   String getPrefilterMapPath();
+   String getIrradianceMapPath();
    void bake(String outputPath, S32 resolution);
 };
 

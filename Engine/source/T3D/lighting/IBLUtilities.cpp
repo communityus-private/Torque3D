@@ -58,6 +58,27 @@ namespace IBLUtilities
       GFX->popActiveRenderTarget();
    }
 
+   void GenerateAndSaveIrradianceMap(String outputPath, S32 resolution, GFXCubemapHandle cubemap, GFXCubemapHandle &cubemapOut)
+   {
+      if (outputPath.isEmpty())
+      {
+         Con::errorf("IBLUtilities::GenerateAndSaveIrradianceMap - Cannot save to an empty path!");
+         return;
+      }
+
+      GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
+
+      IBLUtilities::GenerateIrradianceMap(renderTarget, cubemap, cubemapOut);
+
+      //Write it out
+      CubemapSaver::save(cubemapOut, outputPath);
+
+      if (!Platform::isFile(outputPath))
+      {
+         Con::errorf("IBLUtilities::GenerateAndSaveIrradianceMap - Failed to properly save out the baked irradiance!");
+      }
+   }
+
    void GeneratePrefilterMap(GFXTextureTargetRef renderTarget, GFXCubemapHandle cubemap, U32 mipLevels, GFXCubemapHandle &cubemapOut)
    {
       GFXTransformSaver saver;
@@ -105,6 +126,27 @@ namespace IBLUtilities
       }
 
       GFX->popActiveRenderTarget();
+   }
+
+   void GenerateAndSavePrefilterMap(String outputPath, S32 resolution, GFXCubemapHandle cubemap, U32 mipLevels, GFXCubemapHandle &cubemapOut)
+   {
+      if (outputPath.isEmpty())
+      {
+         Con::errorf("IBLUtilities::GenerateAndSavePrefilterMap - Cannot save to an empty path!");
+         return;
+      }
+
+      GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
+
+      IBLUtilities::GeneratePrefilterMap(renderTarget, cubemap, mipLevels, cubemapOut);
+
+      //Write it out
+      CubemapSaver::save(cubemapOut, outputPath);
+
+      if (!Platform::isFile(outputPath))
+      {
+         Con::errorf("IBLUtilities::GenerateAndSavePrefilterMap - Failed to properly save out the baked irradiance!");
+      }
    }
 
    void GenerateBRDFTexture(GFXTexHandle &textureOut)

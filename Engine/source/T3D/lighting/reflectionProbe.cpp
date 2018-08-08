@@ -118,7 +118,7 @@ ReflectionProbe::ReflectionProbe()
    mRadius = 10;
 
    mUseCubemap = false;
-   mCubemap = NULL;
+   mStaticCubemap = NULL;
    mReflectionPath = "";
    mProbeUniqueID = "";
 
@@ -136,6 +136,8 @@ ReflectionProbe::ReflectionProbe()
 
    mPrefilterSize = 64;
    mPrefilterMipLevels = mLog2(F32(mPrefilterSize));
+   mPrefilterMap = nullptr;
+   mIrridianceMap = nullptr;
 }
 
 ReflectionProbe::~ReflectionProbe()
@@ -143,8 +145,8 @@ ReflectionProbe::~ReflectionProbe()
    if (mEditorShapeInst)
       SAFE_DELETE(mEditorShapeInst);
 
-   if (mReflectionModeType != StaticCubemap && mCubemap)
-      mCubemap->deleteObject();
+   if (mReflectionModeType != StaticCubemap && mStaticCubemap)
+      mStaticCubemap->deleteObject();
 }
 
 //-----------------------------------------------------------------------------
@@ -230,8 +232,15 @@ bool ReflectionProbe::_doBake(void *object, const char *index, const char *data)
 {
    ReflectionProbe* probe = reinterpret_cast< ReflectionProbe* >(object);
 
-   if (probe->mDirty)
-      probe->bake(probe->mReflectionPath, 256);
+   //if (probe->mDirty)
+   //   probe->bake(probe->mReflectionPath, 256);
+
+   ReflectionProbe *clientProbe = (ReflectionProbe*)probe->getClientObject();
+
+   if (clientProbe)
+   {
+      clientProbe->bake(clientProbe->mReflectionPath, 64);
+   }
 
    return false;
 }
@@ -465,72 +474,50 @@ void ReflectionProbe::updateMaterial()
    {
       if ((mReflectionModeType == BakedCubemap) && !mProbeUniqueID.isEmpty())
       {
-         bool validCubemap = true;
-
-         char fileName[256];
-         dSprintf(fileName, 256, "%s%s.DDS", mReflectionPath.c_str(), mProbeUniqueID.c_str());
-
-         Vector<FileName> fileNames;
-
-         if (Platform::isFile(fileName))
+         if (mPrefilterMap != nullptr && mPrefilterMap->mCubemap.isValid())
          {
-            if (!mCubemap)
-            {
-               mCubemap = new CubemapData();
-               mCubemap->registerObject();
-            }
-
-            mCubemap->setCubemapFile(FileName(fileName));
-         }
-         else
-         {
-            validCubemap = false;
-         }
-
-         if (validCubemap)
-         {
-            if (mCubemap->mCubemap)
-               mCubemap->updateFaces();
-            else
-               mCubemap->createMap();
-
-            mDirty = false;
-
-            mProbeInfo->mCubemap = &mCubemap->mCubemap;
+            mProbeInfo->mCubemap = &mPrefilterMap->mCubemap;
+            mProbeInfo->mIrradianceCubemap = &mIrridianceMap->mCubemap;
+            mProbeInfo->mBRDFTexture = &mBrdfTexture;
          }
       }
       else if (mReflectionModeType == StaticCubemap && !mCubemapName.isEmpty())
       {
-         Sim::findObject(mCubemapName, mCubemap);
+         Sim::findObject(mCubemapName, mStaticCubemap);
 
-         mProbeInfo->mCubemap = &mCubemap->mCubemap;
+         mProbeInfo->mCubemap = &mStaticCubemap->mCubemap;
       }
    }
    else if (mReflectionModeType == DynamicCubemap && !mDynamicCubemap.isNull())
    {
       mProbeInfo->mCubemap = &mDynamicCubemap;
    }
-   
-   generateTextures();
-
-   if (mPrefilterMap.isValid())
-   {
-      //mProbeInfo->mCubemap = &mPrefilterMap;
-      mProbeInfo->mIrradianceCubemap = &mIrridianceMap;
-      mProbeInfo->mBRDFTexture = &mBrdfTexture;
-   }
-   //calculateSHTerms();
 }
 
 bool ReflectionProbe::createClientResources()
 {
    //irridiance resources
-   mIrridianceMap = GFX->createCubemap();
-   mIrridianceMap->initDynamic(128, GFXFormatR16G16B16A16F,1);
+   if (!mIrridianceMap)
+   {
+      mIrridianceMap = new CubemapData();
+      mIrridianceMap->registerObject();
+   }
 
-   //prefilter resources - we share the irridiance stateblock
-   mPrefilterMap = GFX->createCubemap();
-   mPrefilterMap->initDynamic(mPrefilterSize, GFXFormatR16G16B16A16F, mPrefilterMipLevels);
+   mIrridianceMap->setFilename(FileName(getIrradianceMapPath().c_str()));
+
+   if(mIrridianceMap->mCubemap.isNull())
+      Con::errorf("ReflectionProbe::createClientResources() - Unable to load baked irradiance map at %s", getIrradianceMapPath().c_str());
+
+   if (!mPrefilterMap)
+   {
+      mPrefilterMap = new CubemapData();
+      mPrefilterMap->registerObject();
+   }
+
+   mPrefilterMap->setFilename(FileName(getPrefilterMapPath().c_str()));
+
+   if (mPrefilterMap->mCubemap.isNull())
+      Con::errorf("ReflectionProbe::createClientResources() - Unable to load baked prefilter map at %s", getPrefilterMapPath().c_str());
 
    //brdf lookup resources
    //make the brdf lookup texture the same size as the prefilter texture
@@ -551,28 +538,6 @@ bool ReflectionProbe::createClientResources()
 
 void ReflectionProbe::generateTextures()
 {
-   if (!mCubemap)
-      return;
-
-   if (!mResourcesCreated)
-   {
-      if (!createClientResources())
-      {
-         Con::errorf("SkyLight::createIrridianceMap: Failed to create resources");
-         return;
-      }
-   }
-
-   GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
-
-   //create irridiance cubemap
-   IBLUtilities::GenerateIrradianceMap(renderTarget, mCubemap->mCubemap, mIrridianceMap);
-
-   //create prefilter cubemap (radiance)
-   IBLUtilities::GeneratePrefilterMap(renderTarget, mCubemap->mCubemap, mPrefilterMipLevels, mPrefilterMap);
-
-   //create brdf lookup
-   //IBLUtilities::GenerateBRDFTexture(mBrdfTexture);
 }
 
 void ReflectionProbe::prepRenderImage(SceneRenderState *state)
@@ -608,7 +573,7 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
    //Register
    PROBEMGR->registerProbe(mProbeInfo, this);
 
-   if (ReflectionProbe::smRenderPreviewProbes && gEditingMission && mEditorShapeInst && mCubemap != nullptr)
+   if (ReflectionProbe::smRenderPreviewProbes && gEditingMission && mEditorShapeInst && mPrefilterMap != nullptr)
    {
       GFXTransformSaver saver;
 
@@ -643,7 +608,7 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       rdata.setFadeOverride(1.0f);
 
       if(mReflectionModeType != DynamicCubemap)
-         rdata.setCubemap(mCubemap->mCubemap);
+         rdata.setCubemap(mPrefilterMap->mCubemap);
       else
          rdata.setCubemap(mDynamicCubemap);
 
@@ -727,7 +692,7 @@ void ReflectionProbe::setPreviewMatParameters(SceneRenderState* renderState, Bas
    GFX->setTexture(0, deferredTexObject);
 
    //Set the cubemap
-   GFX->setCubeTexture(1, mCubemap->mCubemap);
+   GFX->setCubeTexture(1, mPrefilterMap->mCubemap);
 
    //Set the invViewMat
    MatrixSet &matrixSet = renderState->getRenderPass()->getMatrixSet();
@@ -744,6 +709,34 @@ DefineEngineMethod(ReflectionProbe, postApply, void, (), ,
    object->inspectPostApply();
 }
 
+String ReflectionProbe::getPrefilterMapPath()
+{
+   if (mReflectionPath.isEmpty() || !mPersistentId)
+   {
+      Con::errorf("ReflectionProbe::getPrefilterMapPath() - We don't have a set output path or persistant id, so no valid path can be provided!");
+      return "";
+   }
+
+   char fileName[256];
+   dSprintf(fileName, 256, "%s%s_Prefilter.DDS", mReflectionPath.c_str(), mProbeUniqueID.c_str());
+
+   return fileName;
+}
+
+String ReflectionProbe::getIrradianceMapPath()
+{
+   if (mReflectionPath.isEmpty() || !mPersistentId)
+   {
+      Con::errorf("ReflectionProbe::getIrradianceMapPath() - We don't have a set output path or persistant id, so no valid path can be provided!");
+      return "";
+   }
+
+   char fileName[256];
+   dSprintf(fileName, 256, "%s%s_Irradiance.DDS", mReflectionPath.c_str(), mProbeUniqueID.c_str());
+
+   return fileName;
+}
+
 void ReflectionProbe::bake(String outputPath, S32 resolution)
 {
    GFXDEBUGEVENT_SCOPE(ReflectionProbe_Bake, ColorI::WHITE);
@@ -755,23 +748,19 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    if (deferredShading)
       deferredShading->disable();
 
-   //if (mReflectionModeType == StaticCubemap || mReflectionModeType == BakedCubemap || mReflectionModeType == SkyLight)
-   {
-      if (!mCubemap)
-      {
-         mCubemap = new CubemapData();
-         mCubemap->registerObject();
-      }
-   }
+   GFXCubemapHandle sceneCaptureCubemap;
 
    if (mReflectionModeType == DynamicCubemap && mDynamicCubemap.isNull())
    {
       //mCubemap->createMap();
       mDynamicCubemap = GFX->createCubemap();
       mDynamicCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
+
+      sceneCaptureCubemap = mDynamicCubemap;
    }
    else if (mReflectionModeType != DynamicCubemap)
    {
+      //Prep our bake path
       if (mReflectionPath.isEmpty() || !mPersistentId)
       {
          if (!mPersistentId)
@@ -781,6 +770,9 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
          mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
       }
+
+      sceneCaptureCubemap = GFX->createCubemap();
+      sceneCaptureCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
    }
 
    bool validCubemap = true;
@@ -800,13 +792,11 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       GFXTexHandle blendTex;
       blendTex.set(resolution, resolution, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, "");
 
-      GFXTextureTargetRef mBaseTarget = GFX->allocRenderToTextureTarget();
+      GFXTextureTargetRef baseTarget = GFX->allocRenderToTextureTarget();
 
       GFX->clearTextureStateImmediate(0);
-      if (mReflectionModeType == DynamicCubemap)
-         mBaseTarget->attachTexture(GFXTextureTarget::Color0, mDynamicCubemap, i);
-      else
-         mBaseTarget->attachTexture(GFXTextureTarget::Color0, blendTex);
+      
+      baseTarget->attachTexture(GFXTextureTarget::Color0, sceneCaptureCubemap, i);
 
       // Standard view that will be overridden below.
       VectorF vLookatPt(0.0f, 0.0f, 0.0f), vUpVec(0.0f, 0.0f, 0.0f), vRight(0.0f, 0.0f, 0.0f);
@@ -858,11 +848,11 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       MathUtils::makeFrustum(&left, &right, &top, &bottom, M_HALFPI_F, 1.0f, nearPlane);
       Frustum frustum(false, left, right, top, bottom, nearPlane, farDist);
 
-      renderFrame(&mBaseTarget, matView, frustum, StaticObjectType | StaticShapeObjectType & EDITOR_RENDER_TYPEMASK, gCanvasClearColor);
+      renderFrame(&baseTarget, matView, frustum, StaticObjectType | StaticShapeObjectType & EDITOR_RENDER_TYPEMASK, gCanvasClearColor);
 
-      mBaseTarget->resolve();
+      baseTarget->resolve();
 
-      mCubemap->setCubeFaceTexture(i, blendTex);
+      //mStaticCubemap->setCubeFaceTexture(i, blendTex);
    }
 
       /*if (mReflectionModeType != DynamicCubemap)
@@ -895,26 +885,50 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       }
    }*/
 
-   if (mReflectionModeType != DynamicCubemap && validCubemap)
+   if (sceneCaptureCubemap.isValid())
    {
-      if (mCubemap->mCubemap)
-         mCubemap->updateFaces();
-      else
-         mCubemap->createMap();
-
-      char fileName[256];
-      dSprintf(fileName, 256, "%s%s.DDS", mReflectionPath.c_str(), mProbeUniqueID.c_str());
-
-      if (!CubemapSaver::save(mCubemap->mCubemap, fileName))
-      {
-         validCubemap = false; //if we didn't save right, just 
-         Con::errorf("Failed to properly save out the skylight baked cubemap!");
-      }
-
+      validCubemap = true;
       mDirty = false;
    }
+   else
+   {
+      validCubemap = false;
+   }
 
-   //calculateSHTerms();
+   /*if (mReflectionModeType != DynamicCubemap && validCubemap)
+   {
+      if (mStaticCubemap->mCubemap)
+         mStaticCubemap->updateFaces();
+      else
+         mStaticCubemap->createMap();
+
+      if (mStaticCubemap->mCubemap.isNull())
+         validCubemap = false;
+
+      mDirty = false;
+   }*/
+
+   //Now, save out the maps
+   //create irridiance cubemap
+   if (validCubemap)
+   {
+      bool se = isServerObject();
+
+      //Just to ensure we're prepped for the generation
+      createClientResources();
+
+      IBLUtilities::GenerateAndSaveIrradianceMap(getIrradianceMapPath(), resolution, sceneCaptureCubemap, mIrridianceMap->mCubemap);
+      IBLUtilities::GenerateAndSavePrefilterMap(getPrefilterMapPath(), resolution, sceneCaptureCubemap, mPrefilterMipLevels, mPrefilterMap->mCubemap);
+   }
+   else
+   {
+      Con::errorf("ReflectionProbe::bake() - Didn't generate a valid scene capture cubemap, unable to generate prefilter and irradiance maps!");
+   }
+
+   //Delete the scene capture, as we no longer need it
+   //mStaticCubemap->deleteObject();
+   if(mReflectionModeType != DynamicCubemap)
+      sceneCaptureCubemap->destroySelf();
 
    ReflectionProbe::smRenderReflectionProbes = probeRenderState;
    setMaskBits(-1);
@@ -928,5 +942,11 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath, S32 resolution), ("", 256),
    "@brief returns true if control object is inside the fog\n\n.")
 {
-   object->bake(outputPath, resolution);
+   ReflectionProbe *clientProbe = (ReflectionProbe*)object->getClientObject();
+
+   if (clientProbe)
+   {
+      clientProbe->bake(outputPath, resolution);
+   }
+   //object->bake(outputPath, resolution);
 }
