@@ -272,7 +272,10 @@ bool ReflectionProbe::onAdd()
 
    // Refresh this object's material (if any)
    if (isClientObject())
+   {
+      createClientResources();
       updateMaterial();
+   }
   
    setMaskBits(-1);
 
@@ -477,7 +480,13 @@ void ReflectionProbe::updateMaterial()
          if (mPrefilterMap != nullptr && mPrefilterMap->mCubemap.isValid())
          {
             mProbeInfo->mCubemap = &mPrefilterMap->mCubemap;
+         }
+         if (mIrridianceMap != nullptr && mIrridianceMap->mCubemap.isValid())
+         {
             mProbeInfo->mIrradianceCubemap = &mIrridianceMap->mCubemap;
+         }
+         if (mBrdfTexture.isValid())
+         {
             mProbeInfo->mBRDFTexture = &mBrdfTexture;
          }
       }
@@ -505,11 +514,17 @@ bool ReflectionProbe::createClientResources()
       mIrridianceMap->createMap();
    }
 
-   mIrridianceMap->setFilename(FileName(getIrradianceMapPath().c_str()));
+   String irrPath = getIrradianceMapPath();
+   if (Platform::isFile(irrPath))
+   {
+      mIrridianceMap->setCubemapFile(FileName(irrPath));
+      mIrridianceMap->updateFaces();
+   }
 
    if(mIrridianceMap->mCubemap.isNull())
       Con::errorf("ReflectionProbe::createClientResources() - Unable to load baked irradiance map at %s", getIrradianceMapPath().c_str());
 
+   //
    if (!mPrefilterMap)
    {
       mPrefilterMap = new CubemapData();
@@ -518,7 +533,12 @@ bool ReflectionProbe::createClientResources()
       mPrefilterMap->createMap();
    }
 
-   mPrefilterMap->setFilename(FileName(getPrefilterMapPath().c_str()));
+   String prefilPath = getPrefilterMapPath();
+   if (Platform::isFile(prefilPath))
+   {
+      mPrefilterMap->setCubemapFile(FileName(prefilPath));
+      mPrefilterMap->updateFaces();
+   }
 
    if (mPrefilterMap->mCubemap.isNull())
       Con::errorf("ReflectionProbe::createClientResources() - Unable to load baked prefilter map at %s", getPrefilterMapPath().c_str());
@@ -715,7 +735,7 @@ DefineEngineMethod(ReflectionProbe, postApply, void, (), ,
 
 String ReflectionProbe::getPrefilterMapPath()
 {
-   if (mReflectionPath.isEmpty() || !mPersistentId)
+   if (mReflectionPath.isEmpty() || mProbeUniqueID.isEmpty())
    {
       Con::errorf("ReflectionProbe::getPrefilterMapPath() - We don't have a set output path or persistant id, so no valid path can be provided!");
       return "";
@@ -729,7 +749,7 @@ String ReflectionProbe::getPrefilterMapPath()
 
 String ReflectionProbe::getIrradianceMapPath()
 {
-   if (mReflectionPath.isEmpty() || !mPersistentId)
+   if (mReflectionPath.isEmpty() || mProbeUniqueID.isEmpty())
    {
       Con::errorf("ReflectionProbe::getIrradianceMapPath() - We don't have a set output path or persistant id, so no valid path can be provided!");
       return "";
@@ -765,14 +785,16 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    else if (mReflectionModeType != DynamicCubemap)
    {
       //Prep our bake path
-      if (mReflectionPath.isEmpty() || !mPersistentId)
+      if (mReflectionPath.isEmpty())
       {
-         if (!mPersistentId)
-            mPersistentId = getOrCreatePersistentId();
+         Con::errorf("ReflectionProbe::bake() - Unable to bake our captures because probe doesn't have a path set");
+         return;
+      }
 
-         mReflectionPath = outputPath.c_str();
-
-         mProbeUniqueID = std::to_string(mPersistentId->getUUID().getHash()).c_str();
+      if (mProbeUniqueID.isEmpty())
+      {
+         Con::errorf("ReflectionProbe::bake() - Unable to bake our captures because probe doesn't have a unique ID set");
+         return;
       }
 
       sceneCaptureCubemap = GFX->createCubemap();
