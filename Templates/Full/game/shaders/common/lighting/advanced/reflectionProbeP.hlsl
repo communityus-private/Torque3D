@@ -162,7 +162,7 @@ PS_OUTPUT main( ConvexConnectP IN )
         clip( atten - 1e-6 );
 
         // Normalize lightVec
-        lightVec = normalize(lightVec);
+        lightVec = lightVec /= lenLightV;
 
         // If we can do dynamic branching then avoid wasting
         // fillrate on pixels that are backfacing to the light.
@@ -197,6 +197,6 @@ PS_OUTPUT main( ConvexConnectP IN )
 	float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).a; //change to .a once we sort why it's not saving that off
 	//if (lenLightV>depthRef)
 	//clip(-1);
-	Output.spec = float4(Output.spec.rgb,1.0);
+	Output.spec = float4(Output.spec.rgb,blendVal);
 	return Output;
 }
