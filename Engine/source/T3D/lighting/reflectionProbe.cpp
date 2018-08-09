@@ -501,6 +501,8 @@ bool ReflectionProbe::createClientResources()
    {
       mIrridianceMap = new CubemapData();
       mIrridianceMap->registerObject();
+
+      mIrridianceMap->createMap();
    }
 
    mIrridianceMap->setFilename(FileName(getIrradianceMapPath().c_str()));
@@ -512,6 +514,8 @@ bool ReflectionProbe::createClientResources()
    {
       mPrefilterMap = new CubemapData();
       mPrefilterMap->registerObject();
+
+      mPrefilterMap->createMap();
    }
 
    mPrefilterMap->setFilename(FileName(getPrefilterMapPath().c_str()));
@@ -916,6 +920,10 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 
       //Just to ensure we're prepped for the generation
       createClientResources();
+
+      //Prep it with whatever resolution we've dictated for our bake
+      mIrridianceMap->mCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
+      mPrefilterMap->mCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
 
       IBLUtilities::GenerateAndSaveIrradianceMap(getIrradianceMapPath(), resolution, sceneCaptureCubemap, mIrridianceMap->mCubemap);
       IBLUtilities::GenerateAndSavePrefilterMap(getPrefilterMapPath(), resolution, sceneCaptureCubemap, mPrefilterMipLevels, mPrefilterMap->mCubemap);
