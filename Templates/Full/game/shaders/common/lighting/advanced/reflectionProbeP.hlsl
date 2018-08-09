@@ -137,10 +137,6 @@ PS_OUTPUT main( ConvexConnectP IN )
     // Need world-space normal.
     float3 wsNormal = mul(float4(normal, 1), invViewMat).rgb;
 
-    float4 color = float4(1, 1, 1, 1);
-    float4 ref = float4(0,0,0,0);
-    float alpha = 1;
-
     float3 eyeRay = getDistanceVectorToPlane( -vsFarPlane.w, IN.vsEyeDir.xyz, vsFarPlane );
     float3 viewSpacePos = eyeRay * depth;
 
@@ -148,8 +144,12 @@ PS_OUTPUT main( ConvexConnectP IN )
 
     // Use eye ray to get ws pos
     float3 worldPos = float3(eyePosWorld + wsEyeRay * depth);
-    float smoothness = min((1.0 - matInfo.b)*11.0 + 1.0, 8.0);//bump up to 8 for finalization
-
+		  
+    float blendVal = 1.0;
+	float3 pixDir = normalize(eyePosWorld.xyz - worldPos.xyz);
+	
+	//clip bounds and (TODO properly: set falloff)
+	
     if(useSphereMode)
     {
         // Build light vec, get length, clip pixel if needed
@@ -166,39 +166,11 @@ PS_OUTPUT main( ConvexConnectP IN )
 
         // If we can do dynamic branching then avoid wasting
         // fillrate on pixels that are backfacing to the light.
-        float nDotL = abs(dot( lightVec, normal ));
+        float nDotL = dot( lightVec, normal );
 
         float Sat_NL_Att = saturate( nDotL * atten );
-
-        float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,nDotL)).xyz;
-
-        float3 nrdir = normalize(reflectionVec);
-        float3 rbmax = (bbMax - worldPos.xyz) / nrdir;
-        float3 rbmin = (bbMin - worldPos.xyz) / nrdir;
-
-        float3 rbminmax = (nrdir > 0.0) ? rbmax : rbmin;
-        float fa = min(min(rbminmax.x,rbminmax.y),rbminmax.z);
-		  if (dot( lightVec, normal )<0.0f)
-           clip(fa);
-
-        float3 posOnBox = worldPos.xyz + nrdir * fa;
-        reflectionVec = posOnBox - probeWSPos;
-
-        reflectionVec = mul(probeWSPos,reflectionVec);
-
-        ref = float4(reflectionVec, smoothness);
-
-        alpha = Sat_NL_Att;
-		float roughness = 1 - matInfo.b;
-
-		float3 irradiance = TORQUE_TEXCUBELOD(irradianceCubemap, ref).rgb;
-
-		float3 specular = TORQUE_TEXCUBELOD(cubeMap, ref).rgb;
-
-		Output.diffuse = float4(irradiance.rgb, alpha);
-		Output.spec = float4(specular.rgb, alpha);
-
-		return Output;
+		
+        blendVal = Sat_NL_Att;
     }
     else
     {
@@ -207,24 +179,24 @@ PS_OUTPUT main( ConvexConnectP IN )
        if(worldPos.x > bbMax.x || worldPos.y > bbMax.y || worldPos.z > bbMax.z ||
           worldPos.x < bbMin.x || worldPos.y < bbMin.y || worldPos.z < bbMin.z)
           clip(-1);
-		  
-       float blendVal = 1.0;
-	   float3 pixDir = normalize(eyePosWorld.xyz - worldPos.xyz);
-       Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
-	   Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, pixDir, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
-	   	   
-        // Build light vec, get length, clip pixel if needed
-        float3 fromlightVec = probeLSPos-viewSpacePos;
-        float lenLightV = length( fromlightVec );
-        fromlightVec = normalize(fromlightVec);
-		float nDotL = dot( fromlightVec, normal );
-		float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,nDotL)).xyz;
-		
-		float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).a; //change to .a once we sort why it's not saving that off
-		//if (lenLightV>depthRef)
-			//clip(-1);
-		Output.spec = float4(Output.spec.rgb,1.0);
-	   
-       return Output;	   
     }
+	
+	//render into the bound space defined above
+	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
+	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, pixDir, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
+	
+	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
+	//and comparing legths
+	
+	float3 fromlightVec = probeLSPos-viewSpacePos;
+	float lenLightV = length( fromlightVec );
+	fromlightVec = normalize(fromlightVec);
+	float nDotL = dot( fromlightVec, normal );
+	float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,nDotL)).xyz;
+	
+	float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).a; //change to .a once we sort why it's not saving that off
+	//if (lenLightV>depthRef)
+	//clip(-1);
+	Output.spec = float4(Output.spec.rgb,1.0);
+	return Output;
 }
