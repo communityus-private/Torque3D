@@ -765,6 +765,10 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
 {
    GFXDEBUGEVENT_SCOPE(ReflectionProbe_Bake, ColorI::WHITE);
 
+   Con::warnf("ReflectionProbe::bake() - Beginning bake!");
+
+   U32 startMSTime = Platform::getRealMilliseconds();
+
    PostEffect *preCapture = dynamic_cast<PostEffect*>(Sim::findObject("AL_PreCapture"));
    PostEffect *deferredShading = dynamic_cast<PostEffect*>(Sim::findObject("AL_DeferredShading"));
    if (preCapture)
@@ -955,11 +959,6 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       Con::errorf("ReflectionProbe::bake() - Didn't generate a valid scene capture cubemap, unable to generate prefilter and irradiance maps!");
    }
 
-   //Delete the scene capture, as we no longer need it
-   //mStaticCubemap->deleteObject();
-   if(mReflectionModeType != DynamicCubemap)
-      sceneCaptureCubemap->destroySelf();
-
    ReflectionProbe::smRenderReflectionProbes = probeRenderState;
    setMaskBits(-1);
 
@@ -967,6 +966,11 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       preCapture->disable();
    if (deferredShading)
       deferredShading->enable();
+
+   U32 endMSTime = Platform::getRealMilliseconds();
+   F32 diffTime = F32(endMSTime - startMSTime);
+
+   Con::warnf("ReflectionProbe::bake() - Finished bake! Took %g milliseconds", diffTime);
 }
 
 DefineEngineMethod(ReflectionProbe, Bake, void, (String outputPath, S32 resolution), ("", 256),
