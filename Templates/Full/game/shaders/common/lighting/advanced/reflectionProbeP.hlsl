@@ -166,7 +166,7 @@ PS_OUTPUT main( ConvexConnectP IN )
 
         // If we can do dynamic branching then avoid wasting
         // fillrate on pixels that are backfacing to the light.
-        float nDotL = dot( lightVec, normal );
+        float nDotL = abs(dot( lightVec, normal ));
 
         float Sat_NL_Att = saturate( nDotL * atten );
 		
