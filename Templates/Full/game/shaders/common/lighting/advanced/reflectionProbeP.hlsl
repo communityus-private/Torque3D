@@ -182,8 +182,9 @@ PS_OUTPUT main( ConvexConnectP IN )
     }
 	
 	//render into the bound space defined above
-	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
-	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, pixDir, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
+	float3 probeRpos = (probeWSPos-worldPos);
+	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeRpos, bbMin, bbMax), blendVal);
+	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, pixDir, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeRpos, bbMin, bbMax), blendVal);
 	
 	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
 	//and comparing legths
