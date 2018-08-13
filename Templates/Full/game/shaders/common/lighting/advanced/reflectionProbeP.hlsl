@@ -83,14 +83,14 @@ float3 iblBoxDiffuse(float3 normal,
 float3 iblBoxSpecular(float3 normal,
 					float3 wsPos, 
 					float roughness,
-                    float3 viewDir, 
+                    float3 eyeToSurf, 
                     TORQUE_SAMPLER2D(brdfTexture), 
                     TORQUE_SAMPLERCUBE(radianceCube),
                     float3 boxPos,
                     float3 boxMin,
                     float3 boxMax)
 {
-    float3 v = viewDir;
+    float3 v = eyeToSurf;
     float3 n = normalize(normal);
     float ndotv = clamp(dot(n, v), 0.0, 1.0);
 
@@ -99,7 +99,7 @@ float3 iblBoxSpecular(float3 normal,
 
     // Radiance (Specular)
     float lod = roughness * 6.0;
-    float3 r = 2.0 * ndotv * n - v; // reflect(v, n);
+    float3 r = reflect(-v, n);
     float3 cubeR = normalize(r);
     cubeR = boxProject(wsPos, cubeR, boxPos, boxMin, boxMax);
 	
@@ -146,7 +146,6 @@ PS_OUTPUT main( ConvexConnectP IN )
     float3 worldPos = float3(eyePosWorld + wsEyeRay * depth);
 		  
     float blendVal = 1.0;
-	float3 pixDir = normalize(eyePosWorld.xyz - worldPos.xyz);
 	
 	//clip bounds and (TODO properly: set falloff)
 	
@@ -182,9 +181,10 @@ PS_OUTPUT main( ConvexConnectP IN )
     }
 	
 	//render into the bound space defined above
-	float3 probeRpos = (probeWSPos-worldPos);
-	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeRpos, bbMin, bbMax), blendVal);
-	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, pixDir, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeRpos, bbMin, bbMax), blendVal);
+	float3 eyeToSurf = normalize(eyePosWorld.xyz - worldPos.xyz);
+	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
+	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, eyeToSurf, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
+	
 	
 	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
 	//and comparing legths
@@ -195,7 +195,7 @@ PS_OUTPUT main( ConvexConnectP IN )
 	float nDotL = dot( fromlightVec, normal );
 	float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,nDotL)).xyz;
 	
-	float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).a; //change to .a once we sort why it's not saving that off
+	float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).a;
 	//if (lenLightV>depthRef)
 	//clip(-1);
 	Output.spec = float4(Output.spec.rgb,blendVal);
