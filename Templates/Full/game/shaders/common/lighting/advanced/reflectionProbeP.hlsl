@@ -48,20 +48,17 @@ float3 iblSpecular(float3 v, float3 n, float roughness)
 
 // Box Projected IBL Lighting
 // Based on: http://www.gamedev.net/topic/568829-box-projected-cubemap-environment-mapping/
-
+// and https://seblagarde.wordpress.com/2012/09/29/image-based-lighting-approaches-and-parallax-corrected-cubemap/
 float3 boxProject(float3 wsPosition, float3 reflectDir, float3 boxWSPos, float3 boxMin, float3 boxMax)
 { 
     float3 nrdir = normalize(reflectDir);
-    float3 rbmax = (boxMax - wsPosition) / nrdir;
-    float3 rbmin = (boxMin - wsPosition) / nrdir;
+	float3 offset = wsPosition;
+    float3 plane1vec = (boxMax - offset) / nrdir;
+    float3 plane2vec = (boxMin - offset) / nrdir;
 	
-    float3 rbminmax;
-    rbminmax.x = (nrdir.x > 0.0) ? rbmax.x: rbmin.x;
-    rbminmax.y = (nrdir.y > 0.0) ? rbmax.y : rbmin.y;
-    rbminmax.z = (nrdir.z > 0.0) ? rbmax.z: rbmin.z;
-
-    float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
-    float3 posonbox = wsPosition + nrdir * fa;
+	float3 furthestPlane = max(plane1vec, plane2vec);
+	float dist = min(min(furthestPlane.x, furthestPlane.y), furthestPlane.z);
+    float3 posonbox = offset + nrdir * dist;
 
     return posonbox - boxWSPos;
 }
@@ -83,21 +80,21 @@ float3 iblBoxDiffuse(float3 normal,
 float3 iblBoxSpecular(float3 normal,
 					float3 wsPos, 
 					float roughness,
-                    float3 eyeToSurf, 
+                    float3 surfToEye, 
                     TORQUE_SAMPLER2D(brdfTexture), 
                     TORQUE_SAMPLERCUBE(radianceCube),
                     float3 boxPos,
                     float3 boxMin,
                     float3 boxMax)
 {
-    float ndotv = clamp(dot(normal, eyeToSurf), 0.0, 1.0);
+    float ndotv = clamp(dot(normal, surfToEye), 0.0, 1.0);
 
     // BRDF
     float2 brdf = TORQUE_TEX2D(brdfTexture, float2(roughness, ndotv)).xy;
 
     // Radiance (Specular)
     float lod = roughness * 6.0;
-    float3 r = reflect(eyeToSurf, normal);
+    float3 r = reflect(surfToEye, normal);
     float3 cubeR = normalize(r);
     cubeR = boxProject(wsPos, cubeR, boxPos, boxMin, boxMax);
 	
@@ -177,9 +174,9 @@ PS_OUTPUT main( ConvexConnectP IN )
     }
 	
 	//render into the bound space defined above
-	float3 eyeToSurf = normalize(eyePosWorld.xyz - worldPos.xyz);
+	float3 surfToEye = normalize(worldPos.xyz-eyePosWorld.xyz);
 	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
-	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, -eyeToSurf, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
+	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, surfToEye, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
 	
 	
 	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
