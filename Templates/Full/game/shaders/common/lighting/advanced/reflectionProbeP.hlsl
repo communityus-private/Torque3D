@@ -54,11 +54,11 @@ float3 boxProject(float3 wsPosition, float3 reflectDir, float3 boxWSPos, float3 
     float3 nrdir = normalize(reflectDir);
     float3 rbmax = (boxMax - wsPosition) / nrdir;
     float3 rbmin = (boxMin - wsPosition) / nrdir;
-
+	
     float3 rbminmax;
-    rbminmax.x = (nrdir.x > 0.0) ? rbmax.x : rbmin.x;
+    rbminmax.x = (nrdir.x > 0.0) ? rbmax.x: rbmin.x;
     rbminmax.y = (nrdir.y > 0.0) ? rbmax.y : rbmin.y;
-    rbminmax.z = (nrdir.z > 0.0) ? rbmax.z : rbmin.z; 
+    rbminmax.z = (nrdir.z > 0.0) ? rbmax.z: rbmin.z;
 
     float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
     float3 posonbox = wsPosition + nrdir * fa;
@@ -90,16 +90,14 @@ float3 iblBoxSpecular(float3 normal,
                     float3 boxMin,
                     float3 boxMax)
 {
-    float3 v = eyeToSurf;
-    float3 n = normalize(normal);
-    float ndotv = clamp(dot(n, v), 0.0, 1.0);
+    float ndotv = clamp(dot(normal, eyeToSurf), 0.0, 1.0);
 
     // BRDF
     float2 brdf = TORQUE_TEX2D(brdfTexture, float2(roughness, ndotv)).xy;
 
     // Radiance (Specular)
     float lod = roughness * 6.0;
-    float3 r = reflect(-v, n);
+    float3 r = reflect(eyeToSurf, normal);
     float3 cubeR = normalize(r);
     cubeR = boxProject(wsPos, cubeR, boxPos, boxMin, boxMax);
 	
@@ -121,7 +119,6 @@ PS_OUTPUT main( ConvexConnectP IN )
     // Compute scene UV
     float3 ssPos = IN.ssPos.xyz / IN.ssPos.w; 
 
-    //float4 hardCodedRTParams0 = float4(0,0.0277777780,1,0.972222209);
     float2 uvScene = getUVFromSSPos( ssPos, rtParams0 );
 
     // Matinfo flags
@@ -148,8 +145,7 @@ PS_OUTPUT main( ConvexConnectP IN )
     float blendVal = 1.0;
 	
 	//clip bounds and (TODO properly: set falloff)
-	
-    if(useSphereMode)
+	if(useSphereMode)
     {
         // Build light vec, get length, clip pixel if needed
         float3 lightVec = probeLSPos - viewSpacePos;
@@ -183,7 +179,7 @@ PS_OUTPUT main( ConvexConnectP IN )
 	//render into the bound space defined above
 	float3 eyeToSurf = normalize(eyePosWorld.xyz - worldPos.xyz);
 	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
-	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, eyeToSurf, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
+	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, -eyeToSurf, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
 	
 	
 	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
