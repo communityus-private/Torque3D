@@ -36,16 +36,6 @@ uniform float3 bbMax;
 
 uniform float useSphereMode;
 
-float3 iblSpecular(float3 v, float3 n, float roughness)
-{
-   float3 R = reflect(v, n);
-   const float MAX_REFLECTION_LOD = 6.0;
-   float3 prefilteredColor = TORQUE_TEXCUBELOD(cubeMap, float4(R, roughness * MAX_REFLECTION_LOD)).rgb;
-   float2 envBRDF = TORQUE_TEX2D(BRDFTexture, float2(max(dot(n, v), 0.0), roughness)).rg;
-   //return prefilteredColor * (envBRDF.x + envBRDF.y);
-   return prefilteredColor;
-}
-
 // Box Projected IBL Lighting
 // Based on: http://www.gamedev.net/topic/568829-box-projected-cubemap-environment-mapping/
 // and https://seblagarde.wordpress.com/2012/09/29/image-based-lighting-approaches-and-parallax-corrected-cubemap/
