@@ -18,6 +18,7 @@ TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 1);
 TORQUE_UNIFORM_SAMPLERCUBE(cubeMap, 2);
 TORQUE_UNIFORM_SAMPLERCUBE(irradianceCubemap, 3);
 TORQUE_UNIFORM_SAMPLER2D(BRDFTexture, 4);
+uniform float cubeMips;
 
 uniform float4 rtParams0;
 
@@ -83,7 +84,8 @@ float3 iblBoxSpecular(float3 normal,
     float2 brdf = TORQUE_TEX2D(brdfTexture, float2(roughness, ndotv)).xy;
 
     // Radiance (Specular)
-    float lod = roughness * 6.0;
+	float maxmip = pow(cubeMips+1,2);
+    float lod = roughness*maxmip;
     float3 r = reflect(surfToEye, normal);
     float3 cubeR = normalize(r);
     cubeR = boxProject(wsPos, cubeR, boxPos, boxMin, boxMax);
