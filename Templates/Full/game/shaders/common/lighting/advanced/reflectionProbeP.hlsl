@@ -51,7 +51,7 @@ float3 iblSpecular(float3 v, float3 n, float roughness)
 // and https://seblagarde.wordpress.com/2012/09/29/image-based-lighting-approaches-and-parallax-corrected-cubemap/
 float3 boxProject(float3 wsPosition, float3 reflectDir, float3 boxWSPos, float3 boxMin, float3 boxMax)
 { 
-    float3 nrdir = normalize(reflectDir);
+    float3 nrdir = reflectDir;
 	float3 offset = wsPosition;
     float3 plane1vec = (boxMax - offset) / nrdir;
     float3 plane2vec = (boxMin - offset) / nrdir;
@@ -171,6 +171,8 @@ PS_OUTPUT main( ConvexConnectP IN )
        if(worldPos.x > bbMax.x || worldPos.y > bbMax.y || worldPos.z > bbMax.z ||
           worldPos.x < bbMin.x || worldPos.y < bbMin.y || worldPos.z < bbMin.z)
           clip(-1);
+	   float3 atten = min(bbMax-worldPos,worldPos-bbMin);
+       blendVal = min(min(atten.x,atten.y),atten.z);
     }
 	
 	//render into the bound space defined above
