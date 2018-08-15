@@ -138,6 +138,21 @@ float defineBoxSpaceInfluence(float3 surfPosWS, float3 boxMin, float3 boxMax, fl
 	return blendVal;
 }
 
+float defineDepthInfluence(float3 probePosWS, float3 surfPosWS, TORQUE_SAMPLERCUBE(radianceCube))
+{
+	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
+	//and comparing legths
+	float3 probeToSurf = probePosWS-surfPosWS;
+	float dist = length( probeToSurf );
+	probeToSurf = normalize(probeToSurf);
+	probeToSurf = reflect(-probeToSurf,float3(1,0,0));
+	float depthRef = TORQUE_TEXCUBE(cubeMap, probeToSurf).a*1000;
+
+	//if (dist>depthRef)
+		//return -1;
+	return depthRef-dist;	
+}
+
 PS_OUTPUT main( ConvexConnectP IN )
 { 
     PS_OUTPUT Output = (PS_OUTPUT)0;
@@ -181,24 +196,15 @@ PS_OUTPUT main( ConvexConnectP IN )
     }
 	clip(blendVal);
 	
+	//flip me on to have probes filter by depth
+	//clip(defineDepthInfluence(probeWSPos,worldPos,TORQUE_SAMPLERCUBE_MAKEARG(cubeMap)));
+		
+	
 	//render into the bound space defined above
 	float3 surfToEye = normalize(worldPos.xyz-eyePosWorld.xyz);
 	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
 	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, surfToEye, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
 	
 	
-	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
-	//and comparing legths
-	
-	float3 fromlightVec = probeLSPos-viewSpacePos;
-	float lenLightV = length( fromlightVec );
-	fromlightVec = normalize(fromlightVec);
-	float nDotL = dot( fromlightVec, normal );
-	float3 reflectionVec = reflect(IN.wsEyeDir, float4(wsNormal,nDotL)).xyz;
-	
-	float depthRef = TORQUE_TEXCUBE(cubeMap, reflectionVec).a;
-	//if (lenLightV>depthRef)
-	//clip(-1);
-	Output.spec = float4(Output.spec.rgb,blendVal);
 	return Output;
 }
