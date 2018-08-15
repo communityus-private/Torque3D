@@ -101,6 +101,43 @@ struct PS_OUTPUT
     float4 spec: TORQUE_TARGET1;
 };
 
+float defineSphereSpaceInfluence(float3 centroidPosVS, float rad, float2 atten, float3 surfPosVS, float3 norm)
+{
+    // Build light vec, get length, clip pixel if needed
+    float3 lightVec = centroidPosVS - surfPosVS;
+    float lenLightV = length( lightVec );
+    if (( rad - lenLightV )<0)
+		return -1;
+
+    // Get the attenuated falloff.
+    float attn = attenuate( float4(1,1,1,1), atten, lenLightV );
+    if ((attn - 1e-6)<0)
+		return -1;
+
+    // Normalize lightVec
+    lightVec = lightVec /= lenLightV;
+
+    // If we can do dynamic branching then avoid wasting
+    // fillrate on pixels that are backfacing to the light.
+    float nDotL = abs(dot( lightVec, norm ));
+
+    return saturate( nDotL * attn );
+}
+
+float defineBoxSpaceInfluence(float3 surfPosWS, float3 boxMin, float3 boxMax, float2 atten) //atten currently unused
+{
+	//Try to clip anything that falls outside our box as well
+	//TODO: Make it support rotated boxes as well
+	if(surfPosWS.x > boxMax.x || surfPosWS.y > boxMax.y || surfPosWS.z > boxMax.z ||
+		surfPosWS.x < boxMin.x || surfPosWS.y < boxMin.y || surfPosWS.z < boxMin.z)
+		return -1;
+		
+	float blendVal = 1;
+	//float3 atten = min(boxMax-surfPosWS,surfPosWS-boxMin);
+	//blendVal = min(min(atten.x,atten.y),atten.z);
+	return blendVal;
+}
+
 PS_OUTPUT main( ConvexConnectP IN )
 { 
     PS_OUTPUT Output = (PS_OUTPUT)0;
@@ -136,36 +173,13 @@ PS_OUTPUT main( ConvexConnectP IN )
 	//clip bounds and (TODO properly: set falloff)
 	if(useSphereMode)
     {
-        // Build light vec, get length, clip pixel if needed
-        float3 lightVec = probeLSPos - viewSpacePos;
-        float lenLightV = length( lightVec );
-        clip( radius - lenLightV );
-
-        // Get the attenuated falloff.
-        float atten = attenuate( float4(1,1,1,1), attenuation, lenLightV );
-        clip( atten - 1e-6 );
-
-        // Normalize lightVec
-        lightVec = lightVec /= lenLightV;
-
-        // If we can do dynamic branching then avoid wasting
-        // fillrate on pixels that are backfacing to the light.
-        float nDotL = abs(dot( lightVec, normal ));
-
-        float Sat_NL_Att = saturate( nDotL * atten );
-		
-        blendVal = Sat_NL_Att;
+        blendVal = defineSphereSpaceInfluence(probeLSPos, radius, attenuation, viewSpacePos, normal);
     }
     else
     {
-       //Try to clip anything that falls outside our box as well
-       //TODO: Make it support rotated boxes as well
-       if(worldPos.x > bbMax.x || worldPos.y > bbMax.y || worldPos.z > bbMax.z ||
-          worldPos.x < bbMin.x || worldPos.y < bbMin.y || worldPos.z < bbMin.z)
-          clip(-1);
-	   float3 atten = min(bbMax-worldPos,worldPos-bbMin);
-       blendVal = min(min(atten.x,atten.y),atten.z);
+	   blendVal = defineBoxSpaceInfluence(worldPos,bbMin,bbMax,attenuation);
     }
+	clip(blendVal);
 	
 	//render into the bound space defined above
 	float3 surfToEye = normalize(worldPos.xyz-eyePosWorld.xyz);
