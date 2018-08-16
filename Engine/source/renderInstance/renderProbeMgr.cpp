@@ -546,7 +546,7 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
 
    matParams->setSafe(radius, probeInfo->mRadius);
 
-   Point3F probePos = probeInfo->getPosition();
+   Point3F probePos = probeInfo->getPosition() + probeInfo->mProbePosOffset;
    //worldViewOnly.mulP(probeInfo->getPosition(), &probePos);
    matParams->setSafe(probeWSPos, probePos);
 
@@ -607,7 +607,7 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
       GFX->setTexture(4, NULL);
    }
 
-   matParams->setSafe(cubeMips, S32(mPow(probeInfo->mCubemap->getPointer()->getMipMapLevels(),2.0f)));
+   matParams->setSafe(cubeMips, F32(mPow(probeInfo->mCubemap->getPointer()->getMipMapLevels(),2.0f)));
    matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
    matParams->setSafe(bbMin, probeInfo->mBounds.minExtents);
    matParams->setSafe(bbMax, probeInfo->mBounds.maxExtents);
@@ -885,7 +885,8 @@ ProbeRenderInst::ProbeRenderInst()
    mDebugRender(false),
    mCubemap(NULL),
    mRadius(1.0f),
-   mIntensity(1.0f)
+   mIntensity(1.0f),
+   mProbePosOffset(0,0,0)
 {
 }
 
@@ -910,6 +911,7 @@ void ProbeRenderInst::set(const ProbeRenderInst *probeInfo)
    mBounds = probeInfo->mBounds;
    mScore = probeInfo->mScore;
    mIsSkylight = probeInfo->mIsSkylight;
+   mProbePosOffset = probeInfo->mProbePosOffset;
 
    for (U32 i = 0; i < 9; i++)
    {
@@ -938,6 +940,7 @@ void ProbeRenderInst::set(const ProbeInfo *probeInfo)
    mBounds = probeInfo->mBounds;
    mScore = probeInfo->mScore;
    mIsSkylight = probeInfo->mIsSkylight;
+   mProbePosOffset = probeInfo->mProbePosOffset;
 
    for (U32 i = 0; i < 9; i++)
    {

@@ -120,6 +120,8 @@ protected:
    ReflectionModeType mReflectionModeType;
 
    F32 mRadius;
+   Point3F mProbePosOffset;
+   bool mEditPosOffset;
 
    String mCubemapName;
    CubemapData *mStaticCubemap;
@@ -188,6 +190,7 @@ public:
 
    static bool _setEnabled(void *object, const char *index, const char *data);
    static bool _doBake(void *object, const char *index, const char *data);
+   static bool _toggleEditPosOffset(void *object, const char *index, const char *data);
 
    // Handle when we are added to the scene and removed from the scene
    bool onAdd();

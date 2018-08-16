@@ -488,6 +488,7 @@ struct ProbeRenderInst : public RenderInst
    F32 mIntensity;
 
    Box3F mBounds;
+   Point3F mProbePosOffset;
 
    GFXCubemapHandle *mCubemap;
 

@@ -138,6 +138,9 @@ ReflectionProbe::ReflectionProbe()
    mPrefilterMipLevels = mLog2(F32(mPrefilterSize));
    mPrefilterMap = nullptr;
    mIrridianceMap = nullptr;
+
+   mProbePosOffset = Point3F::Zero;
+   mEditPosOffset = false;
 }
 
 ReflectionProbe::~ReflectionProbe()
@@ -161,14 +164,11 @@ void ReflectionProbe::initPersistFields()
       addField("ProbeShape", TypeReflectProbeType, Offset(mProbeShapeType, ReflectionProbe),
          "The type of mesh data to use for collision queries.");
       addField("radius", TypeF32, Offset(mRadius, ReflectionProbe), "The name of the material used to render the mesh.");
+	  addField("posOffset", TypePoint3F, Offset(mProbePosOffset, ReflectionProbe), "");
+
+     addProtectedField("Edit Pos Offset", TypeBool, Offset(mEditPosOffset, ReflectionProbe),
+        &_toggleEditPosOffset, &defaultProtectedGetFn, "Toggle Edit Pos Offset Mode", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
    endGroup("Rendering");
-
-   /*addGroup("IndirectLighting");
-      addField("IndirectLightMode", TypeIndrectLightingModeEnum, Offset(mIndrectLightingModeType, ReflectionProbe),
-         "The type of mesh data to use for collision queries.");
-
-      addField("IndirectLight", TypeColorF, Offset(mAmbientColor, ReflectionProbe), "Path of file to save and load results.");
-   endGroup("IndirectLighting");*/
 
    addGroup("Reflection");
       addField("ReflectionMode", TypeReflectionModeEnum, Offset(mReflectionModeType, ReflectionProbe),
@@ -192,16 +192,6 @@ void ReflectionProbe::initPersistFields()
       "Toggles rendering of light frustums when the light is selected in the editor.\n\n"
       "@note Only works for shadow mapped lights.\n\n"
       "@ingroup Lighting");
-
-   /*addGroup("Internal");
-
-   addProtectedField("SHTerm", TypeRealString, NULL, &protectedSetSHTerms, &defaultProtectedGetFn,
-      "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors);
-
-   addProtectedField("SHConsts", TypeRealString, NULL, &protectedSetSHConsts, &defaultProtectedGetFn,
-      "Do not modify, for internal use.", AbstractClassRep::FIELD_HideInInspectors);
-
-   endGroup("Internal");*/
 
    // SceneObject already handles exposing the transform
    Parent::initPersistFields();
@@ -245,6 +235,18 @@ bool ReflectionProbe::_doBake(void *object, const char *index, const char *data)
    return false;
 }
 
+bool ReflectionProbe::_toggleEditPosOffset(void *object, const char *index, const char *data)
+{
+   ReflectionProbe* probe = reinterpret_cast< ReflectionProbe* >(object);
+
+   probe->mEditPosOffset = !probe->mEditPosOffset;
+
+   //if (probe->mDirty)
+   //   probe->bake(probe->mReflectionPath, 256);
+
+   return false;
+}
+
 bool ReflectionProbe::onAdd()
 {
    if (!Parent::onAdd())
@@ -252,7 +254,7 @@ bool ReflectionProbe::onAdd()
 
    mObjBox.minExtents.set(-1, -1, -1);
    mObjBox.maxExtents.set(1, 1, 1);
-   mObjScale.set(mRadius/2, mRadius/2, mRadius/2);
+   //mObjScale.set(mRadius/2, mRadius/2, mRadius/2);
 
    // Skip our transform... it just dirties mask bits.
    Parent::setTransform(mObjToWorld);
@@ -293,7 +295,10 @@ void ReflectionProbe::onRemove()
 void ReflectionProbe::setTransform(const MatrixF & mat)
 {
    // Let SceneObject handle all of the matrix manipulation
-   Parent::setTransform(mat);
+   if (!mEditPosOffset)
+      Parent::setTransform(mat);
+   else
+      mProbePosOffset = mat.getPosition();
 
    mDirty = true;
 
@@ -312,6 +317,7 @@ U32 ReflectionProbe::packUpdate(NetConnection *conn, U32 mask, BitStream *stream
    {
       mathWrite(*stream, getTransform());
       mathWrite(*stream, getScale());
+      mathWrite(*stream, mProbePosOffset);
    }
 
    if (stream->writeFlag(mask & ShapeTypeMask))
@@ -361,6 +367,8 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
       mathRead(*stream, &mObjScale);
 
       setTransform(mObjToWorld);
+
+      mathRead(*stream, &mProbePosOffset);
    }
 
    if (stream->readFlag())  // ShapeTypeMask
@@ -455,10 +463,10 @@ void ReflectionProbe::updateProbeParams()
    mProbeInfo->setPosition(getPosition());
 
    //Update the bounds
-   mObjBox.minExtents.set(-1, -1, -1);
-   mObjBox.maxExtents.set(1, 1, 1);
+   //mObjBox.minExtents.set(-1, -1, -1);
+   //mObjBox.maxExtents.set(1, 1, 1);
 
-   mObjScale.set(mRadius / 2, mRadius / 2, mRadius / 2);
+   //mObjScale.set(mRadius / 2, mRadius / 2, mRadius / 2);
 
    // Skip our transform... it just dirties mask bits.
    Parent::setTransform(mObjToWorld);
@@ -469,6 +477,8 @@ void ReflectionProbe::updateProbeParams()
    mProbeInfo->mRadius = mRadius;
 
    mProbeInfo->mIsSkylight = false;
+
+   mProbeInfo->mProbePosOffset = mProbePosOffset;
 }
 
 void ReflectionProbe::updateMaterial()
@@ -645,6 +655,11 @@ void ReflectionProbe::prepRenderImage(SceneRenderState *state)
       // Set the world matrix to the objects render transform
       MatrixF mat = getRenderTransform();
       mat.scale(Point3F(1, 1, 1));
+      
+      Point3F centerPos = mat.getPosition();
+      centerPos += mProbePosOffset;
+      mat.setPosition(centerPos);
+
       GFX->setWorldMatrix(mat);
 
       // Animate the the shape
@@ -684,7 +699,7 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
 
    // Base the sphere color on the light color.
    ColorI color = ColorI::WHITE;
-   color.alpha = 50;
+   color.alpha = 25;
 
    if (mProbeShapeType == ProbeInfo::Sphere)
    {
@@ -692,8 +707,8 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    }
    else
    {
-      Box3F cube(mRadius);
-      cube.setCenter(getPosition());
+      Box3F cube(getWorldBox());
+      //cube.setCenter(getPosition());
       draw->drawCube(desc, cube, color);
    }
 }
