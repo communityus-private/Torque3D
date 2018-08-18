@@ -96,8 +96,8 @@ namespace IBLUtilities
       GFXShaderConstHandle* prefilterFaceSC = prefilterShader->getShaderConstHandle("$face");
       GFXShaderConstHandle* prefilterRoughnessSC = prefilterShader->getShaderConstHandle("$roughness");
       GFXShaderConstHandle* prefilterMipSizeSC = prefilterShader->getShaderConstHandle("$mipSize");
-	  GFXShaderConstHandle* prefilterResolutionSC = prefilterShader->getShaderConstHandle("$resolution");
-	  
+      GFXShaderConstHandle* prefilterResolutionSC = prefilterShader->getShaderConstHandle("$resolution");
+
       GFX->pushActiveRenderTarget();
       GFX->setShader(prefilterShader);
       GFX->setShaderConstBuffer(prefilterConsts);
@@ -108,7 +108,8 @@ namespace IBLUtilities
       for (U32 face = 0; face < 6; face++)
       {
          prefilterConsts->setSafe(prefilterFaceSC, (S32)face);
-		 prefilterConsts->setSafe(prefilterResolutionSC, renderTarget->getSize().x);
+         prefilterConsts->setSafe(prefilterResolutionSC, renderTarget->getSize().x);
+
          for (U32 mip = 0; mip < mipLevels; mip++)
          {
             S32 mipSize = prefilterSize >> mip;
@@ -119,7 +120,7 @@ namespace IBLUtilities
             renderTarget->attachTexture(GFXTextureTarget::Color0, cubemapOut, face, mip);
             GFX->setActiveRenderTarget(renderTarget, false);//we set the viewport ourselves
             GFX->setViewport(RectI(0, 0, size, size));
-            GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
+            //GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
             GFX->drawPrimitive(GFXTriangleList, 0, 3);
             renderTarget->resolve();
          }
