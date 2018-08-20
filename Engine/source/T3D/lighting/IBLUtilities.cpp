@@ -79,6 +79,23 @@ namespace IBLUtilities
       }
    }
 
+   void SaveCubeMap(String outputPath, GFXCubemapHandle &cubemap)
+   {
+      if (outputPath.isEmpty())
+      {
+         Con::errorf("IBLUtilities::SaveCubeMap - Cannot save to an empty path!");
+         return;
+      }
+
+      //Write it out
+      CubemapSaver::save(cubemap, outputPath);
+
+      if (!Platform::isFile(outputPath))
+      {
+         Con::errorf("IBLUtilities::SaveCubeMap - Failed to properly save out the baked irradiance!");
+      }
+   }
+
    void GeneratePrefilterMap(GFXTextureTargetRef renderTarget, GFXCubemapHandle cubemap, U32 mipLevels, GFXCubemapHandle &cubemapOut)
    {
       GFXTransformSaver saver;
@@ -105,10 +122,12 @@ namespace IBLUtilities
 
       U32 prefilterSize = cubemapOut->getSize();
 
+      U32 resolutionSize = prefilterSize;
+
       for (U32 face = 0; face < 6; face++)
       {
          prefilterConsts->setSafe(prefilterFaceSC, (S32)face);
-         prefilterConsts->setSafe(prefilterResolutionSC, renderTarget->getSize().x);
+         prefilterConsts->setSafe(prefilterResolutionSC, (S32)resolutionSize);
 
          for (U32 mip = 0; mip < mipLevels; mip++)
          {
@@ -120,7 +139,7 @@ namespace IBLUtilities
             renderTarget->attachTexture(GFXTextureTarget::Color0, cubemapOut, face, mip);
             GFX->setActiveRenderTarget(renderTarget, false);//we set the viewport ourselves
             GFX->setViewport(RectI(0, 0, size, size));
-            //GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
+            GFX->clear(GFXClearTarget, LinearColorF::BLACK, 1.0f, 0);
             GFX->drawPrimitive(GFXTriangleList, 0, 3);
             renderTarget->resolve();
          }

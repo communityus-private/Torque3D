@@ -607,7 +607,11 @@ void RenderProbeMgr::ReflectProbeMaterialInfo::setProbeParameters(const ProbeRen
       GFX->setTexture(4, NULL);
    }
 
-   matParams->setSafe(cubeMips, mPow(probeInfo->mCubemap->getPointer()->getMipMapLevels(),2.0f));
+   if(probeInfo->mCubemap->isValid())
+      matParams->setSafe(cubeMips, mPow(probeInfo->mCubemap->getPointer()->getMipMapLevels(),2.0f));
+   else
+      matParams->setSafe(cubeMips, F32(0.0));
+
    matParams->setSafe(eyePosWorld, renderState->getCameraPosition());
    matParams->setSafe(bbMin, probeInfo->mBounds.minExtents);
    matParams->setSafe(bbMax, probeInfo->mBounds.maxExtents);

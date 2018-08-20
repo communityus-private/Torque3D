@@ -817,7 +817,8 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       }
 
       sceneCaptureCubemap = GFX->createCubemap();
-      sceneCaptureCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
+      sceneCaptureCubemap->initDynamic(resolution, GFXFormatR8G8B8A8);
+      //sceneCaptureCubemap->initDynamic(resolution, GFXFormatR16G16B16A16F);
    }
 
    bool validCubemap = true;
@@ -835,7 +836,7 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    for (U32 i = 0; i < 6; ++i)
    {
       GFXTexHandle blendTex;
-      blendTex.set(resolution, resolution, GFXFormatR8G8B8A8, &GFXRenderTargetProfile, "");
+      blendTex.set(resolution, resolution, GFXFormatR16G16B16A16, &GFXRenderTargetProfile, "");
 
       GFXTextureTargetRef baseTarget = GFX->allocRenderToTextureTarget();
 
@@ -963,11 +964,19 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       createClientResources();
 
       //Prep it with whatever resolution we've dictated for our bake
-      mIrridianceMap->mCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
-      mPrefilterMap->mCubemap->initDynamic(resolution, GFXFormatB8G8R8A8);
+      mIrridianceMap->mCubemap->initDynamic(resolution, GFXFormatR8G8B8A8);
+      mPrefilterMap->mCubemap->initDynamic(resolution, GFXFormatR8G8B8A8);
 
-      IBLUtilities::GenerateAndSaveIrradianceMap(getIrradianceMapPath(), resolution, sceneCaptureCubemap, mIrridianceMap->mCubemap);
-      IBLUtilities::GenerateAndSavePrefilterMap(getPrefilterMapPath(), resolution, sceneCaptureCubemap, mPrefilterMipLevels, mPrefilterMap->mCubemap);
+      //IBLUtilities::GenerateAndSaveIrradianceMap(getIrradianceMapPath(), resolution, sceneCaptureCubemap, mIrridianceMap->mCubemap);
+      //IBLUtilities::GenerateAndSavePrefilterMap(getPrefilterMapPath(), resolution, sceneCaptureCubemap, mPrefilterMipLevels, mPrefilterMap->mCubemap);
+
+      GFXTextureTargetRef renderTarget = GFX->allocRenderToTextureTarget(false);
+
+      IBLUtilities::GenerateIrradianceMap(renderTarget, sceneCaptureCubemap, mIrridianceMap->mCubemap);
+      IBLUtilities::GeneratePrefilterMap(renderTarget, sceneCaptureCubemap, mPrefilterMipLevels, mPrefilterMap->mCubemap);
+
+      IBLUtilities::SaveCubeMap(getIrradianceMapPath(), mIrridianceMap->mCubemap);
+      IBLUtilities::SaveCubeMap(getPrefilterMapPath(), mPrefilterMap->mCubemap);
    }
    else
    {
