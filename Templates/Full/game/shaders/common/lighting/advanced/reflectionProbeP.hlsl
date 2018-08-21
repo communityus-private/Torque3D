@@ -124,8 +124,10 @@ float defineSphereSpaceInfluence(float3 centroidPosVS, float rad, float2 atten, 
     return saturate( nDotL * attn );
 }
 
-float defineBoxSpaceInfluence(float3 surfPosWS, float3 boxMin, float3 boxMax, float2 atten) //atten currently unused
+float defineBoxSpaceInfluence(float3 surfPosWS, float3 probePos, float rad, float2 atten) //atten currently unused
 {
+    float3 boxMin = probePos-(float3(0.5,0.5,0.5)*rad);
+	float3 boxMax = probePos+(float3(0.5,0.5,0.5)*rad);
 	//Try to clip anything that falls outside our box as well
 	//TODO: Make it support rotated boxes as well
 	if(surfPosWS.x > boxMax.x || surfPosWS.y > boxMax.y || surfPosWS.z > boxMax.z ||
@@ -192,19 +194,19 @@ PS_OUTPUT main( ConvexConnectP IN )
     }
     else
     {
-	   blendVal = defineBoxSpaceInfluence(worldPos,bbMin,bbMax,attenuation);
+	   blendVal = defineBoxSpaceInfluence(worldPos, probeWSPos, radius, attenuation);
     }
 	clip(blendVal);
 	
 	//flip me on to have probes filter by depth
-	//clip(defineDepthInfluence(probeWSPos,worldPos,TORQUE_SAMPLERCUBE_MAKEARG(cubeMap)));
+	//clip(defineDepthInfluence(probeWSPos, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(cubeMap)));
 		
 	
 	//render into the bound space defined above
 	float3 surfToEye = normalize(worldPos.xyz-eyePosWorld.xyz);
 	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
 	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, surfToEye, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
-	
+
 	
 	return Output;
 }

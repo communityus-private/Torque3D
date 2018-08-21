@@ -166,7 +166,7 @@ void ReflectionProbe::initPersistFields()
       addField("radius", TypeF32, Offset(mRadius, ReflectionProbe), "The name of the material used to render the mesh.");
 	  addField("posOffset", TypePoint3F, Offset(mProbePosOffset, ReflectionProbe), "");
 
-     addProtectedField("Edit Pos Offset", TypeBool, Offset(mEditPosOffset, ReflectionProbe),
+     addProtectedField("EditPosOffset", TypeBool, Offset(mEditPosOffset, ReflectionProbe),
         &_toggleEditPosOffset, &defaultProtectedGetFn, "Toggle Edit Pos Offset Mode", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
    endGroup("Rendering");
 
@@ -251,6 +251,8 @@ bool ReflectionProbe::onAdd()
 {
    if (!Parent::onAdd())
       return false;
+
+   mEditPosOffset = false;
 
    mObjBox.minExtents.set(-1, -1, -1);
    mObjBox.maxExtents.set(1, 1, 1);
@@ -707,9 +709,13 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    }
    else
    {
-      Box3F cube(getWorldBox());
-      //cube.setCenter(getPosition());
+      F32 halfRad = mRadius / 2;
+      Box3F cube(-Point3F(halfRad,halfRad,halfRad),Point3F(halfRad, halfRad, halfRad));
+      cube.setCenter(getPosition()+mProbePosOffset);
       draw->drawCube(desc, cube, color);
+	  cube = getWorldBox();
+	  draw->drawCube(desc, cube, color);
+
    }
 }
 
@@ -789,7 +795,7 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    if (preCapture)
    {
 	   preCapture->setShaderConst("$radius",String::ToString(mRadius));
-      preCapture->enable();
+	   preCapture->enable();
    }
    if (deferredShading)
       deferredShading->disable();
