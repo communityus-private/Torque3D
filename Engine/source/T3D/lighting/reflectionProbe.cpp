@@ -787,7 +787,10 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    PostEffect *preCapture = dynamic_cast<PostEffect*>(Sim::findObject("AL_PreCapture"));
    PostEffect *deferredShading = dynamic_cast<PostEffect*>(Sim::findObject("AL_DeferredShading"));
    if (preCapture)
+   {
+	   preCapture->setShaderConst("$radius",String::ToString(mRadius));
       preCapture->enable();
+   }
    if (deferredShading)
       deferredShading->disable();
 

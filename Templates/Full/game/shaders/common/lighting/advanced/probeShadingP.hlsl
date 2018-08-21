@@ -30,6 +30,8 @@ TORQUE_UNIFORM_SAMPLER2D(matInfoTex,2);
 TORQUE_UNIFORM_SAMPLER2D(specularLightingBuffer,3);
 TORQUE_UNIFORM_SAMPLER2D(deferredTex,4);
 
+uniform float radius;
+
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
    float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
@@ -47,5 +49,5 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    float4 diffuseLighting = TORQUE_TEX2D( diffuseLightingBuffer, IN.uv0 ); //shadowmap*specular
    colorBuffer *= diffuseLighting.rgb;
    
-   return hdrEncode( float4(colorBuffer,depth) );
+   return hdrEncode( float4(colorBuffer,min(depth*radius/2,1.0)) );
 }
