@@ -145,11 +145,11 @@ float defineDepthInfluence(float3 probePosWS, float3 surfPosWS, TORQUE_SAMPLERCU
 	float3 probeToSurf = probePosWS-surfPosWS;
 	float dist = length( probeToSurf );
 	probeToSurf = normalize(probeToSurf);
-	probeToSurf = reflect(-probeToSurf,float3(1,0,0));
-	float depthRef = TORQUE_TEXCUBE(cubeMap, probeToSurf).a*1000;
+	probeToSurf = reflect(-probeToSurf,float3(0,0,1));
+	probeToSurf = reflect(probeToSurf,float3(0,0,1));
+			
+	float depthRef = acos(1.0-TORQUE_TEXCUBE(cubeMap, probeToSurf).a)*radius;
 
-	//if (dist>depthRef)
-		//return -1;
 	return depthRef-dist;	
 }
 
