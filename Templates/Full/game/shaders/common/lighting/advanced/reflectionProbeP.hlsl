@@ -145,14 +145,11 @@ float defineDepthInfluence(float3 probePosWS, float3 surfPosWS, TORQUE_SAMPLERCU
 	//TODO properly: filter out pixels projected uppon by probes behind walls by looking up the depth stored in the probes cubemap alpha
 	//and comparing legths
 	float3 probeToSurf = probePosWS-surfPosWS;
-	float dist = length( probeToSurf );
-	probeToSurf = normalize(probeToSurf);
-	probeToSurf = reflect(-probeToSurf,float3(0,0,1));
-	probeToSurf = reflect(probeToSurf,float3(0,0,1));
 			
-	float depthRef = acos(1.0-TORQUE_TEXCUBE(cubeMap, probeToSurf).a)*radius;
+	float depthRef = acos(1.0-TORQUE_TEXCUBE(cubeMap, -probeToSurf).a);
+	float dist = length( probeToSurf )/length(float3(radius,radius,radius)*2);
 
-	return depthRef-dist;	
+	return depthRef-dist;
 }
 
 PS_OUTPUT main( ConvexConnectP IN )
@@ -194,7 +191,7 @@ PS_OUTPUT main( ConvexConnectP IN )
     }
     else
     {
-	   blendVal = defineBoxSpaceInfluence(worldPos, probeWSPos, radius, attenuation);
+	   blendVal = defineBoxSpaceInfluence(worldPos, probeWSPos, radius*2, attenuation);
     }
 	clip(blendVal);
 	
@@ -207,6 +204,5 @@ PS_OUTPUT main( ConvexConnectP IN )
 	Output.diffuse = float4(iblBoxDiffuse(wsNormal, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax), blendVal);
 	Output.spec = float4(iblBoxSpecular(wsNormal, worldPos, 1.0 - matInfo.b, surfToEye, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax), blendVal);
 
-	
 	return Output;
 }

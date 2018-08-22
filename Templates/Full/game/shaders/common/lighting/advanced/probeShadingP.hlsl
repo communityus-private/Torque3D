@@ -49,5 +49,5 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    float4 diffuseLighting = TORQUE_TEX2D( diffuseLightingBuffer, IN.uv0 ); //shadowmap*specular
    colorBuffer *= diffuseLighting.rgb;
    
-   return hdrEncode( float4(colorBuffer,min(depth*radius/2,1.0)) );
+   return hdrEncode( float4(colorBuffer,min(depth*radius,1.0)) );
 }

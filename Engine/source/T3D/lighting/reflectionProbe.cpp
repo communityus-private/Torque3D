@@ -714,8 +714,7 @@ void ReflectionProbe::_onRenderViz(ObjectRenderInst *ri,
    }
    else
    {
-      F32 halfRad = mRadius / 2;
-      Box3F cube(-Point3F(halfRad,halfRad,halfRad),Point3F(halfRad, halfRad, halfRad));
+      Box3F cube(-Point3F(mRadius, mRadius, mRadius),Point3F(mRadius, mRadius, mRadius));
       cube.setCenter(getPosition()+mProbePosOffset);
       draw->drawCube(desc, cube, color);
 	  cube = getWorldBox();
