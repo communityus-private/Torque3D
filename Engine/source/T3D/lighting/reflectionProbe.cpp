@@ -166,8 +166,8 @@ void ReflectionProbe::initPersistFields()
       addField("radius", TypeF32, Offset(mRadius, ReflectionProbe), "The name of the material used to render the mesh.");
 	  addField("posOffset", TypePoint3F, Offset(mProbePosOffset, ReflectionProbe), "");
 
-     addProtectedField("EditPosOffset", TypeBool, Offset(mEditPosOffset, ReflectionProbe),
-        &_toggleEditPosOffset, &defaultProtectedGetFn, "Toggle Edit Pos Offset Mode", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
+     //addProtectedField("EditPosOffset", TypeBool, Offset(mEditPosOffset, ReflectionProbe),
+     //   &_toggleEditPosOffset, &defaultProtectedGetFn, "Toggle Edit Pos Offset Mode", AbstractClassRep::FieldFlags::FIELD_ComponentInspectors);
    endGroup("Rendering");
 
    addGroup("Reflection");
@@ -277,8 +277,10 @@ bool ReflectionProbe::onAdd()
    // Refresh this object's material (if any)
    if (isClientObject())
    {
-      createClientResources();
-      updateMaterial();
+      //createClientResources();
+      //updateMaterial();
+      createGeometry();
+      updateProbeParams();
    }
   
    setMaskBits(-1);
@@ -426,7 +428,6 @@ void ReflectionProbe::unpackUpdate(NetConnection *conn, BitStream *stream)
 
    if (isMaterialDirty)
    {
-      generateTextures();
       updateMaterial();
    }
 }
@@ -458,6 +459,8 @@ void ReflectionProbe::updateProbeParams()
    if (mProbeInfo == nullptr)
       return;
 
+   updateMaterial();
+
    mProbeInfo->mAmbient = LinearColorF(0, 0, 0, 0);
 
    mProbeInfo->mProbeShapeType = mProbeShapeType;
@@ -485,6 +488,8 @@ void ReflectionProbe::updateProbeParams()
 
 void ReflectionProbe::updateMaterial()
 {
+   createClientResources();
+
    if (mReflectionModeType != DynamicCubemap)
    {
       if ((mReflectionModeType == BakedCubemap) && !mProbeUniqueID.isEmpty())
