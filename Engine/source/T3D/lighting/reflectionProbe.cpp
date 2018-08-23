@@ -896,7 +896,7 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
       matView.setColumn(0, cross);
       matView.setColumn(1, vLookatPt);
       matView.setColumn(2, vUpVec);
-      matView.setPosition(getPosition());
+      matView.setPosition(getPosition()+mProbePosOffset);
       matView.inverse();
 
       // set projection to 90 degrees vertical and horizontal
