@@ -268,14 +268,14 @@ new SimGroup(MissionGroup) {
    new ReflectionProbe() {
       enabled = "1";
       ProbeShape = "Box";
-      radius = "8";
-      posOffset = "0 0 0";
+      radius = "20";
+      posOffset = "0 -2 0";
       ReflectionMode = "Baked Cubemap";
       reflectionPath = "levels/probeTest/probes/";
       Bake = "0";
-      position = "-0.996247 -1.09379 4.83025";
+      position = "0.500491 0.268889 4.83025";
       rotation = "1 0 0 0";
-      scale = "10 10 10";
+      scale = "5 5 5";
       canSave = "1";
       canSaveDynamicFields = "1";
       persistentId = "8072e1be-2846-11e7-9f56-abd46b190c60";

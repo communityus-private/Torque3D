@@ -31,7 +31,8 @@ TORQUE_UNIFORM_SAMPLER2D(specularLightingBuffer,3);
 TORQUE_UNIFORM_SAMPLER2D(deferredTex,4);
 
 uniform float radius;
-
+uniform float2 targetSize;
+uniform int captureRez;
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
    float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
@@ -48,6 +49,12 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 	  
    float4 diffuseLighting = TORQUE_TEX2D( diffuseLightingBuffer, IN.uv0 ); //shadowmap*specular
    colorBuffer *= diffuseLighting.rgb;
+   float2 relUV = IN.uv0*targetSize/captureRez;
    
-   return hdrEncode( float4(colorBuffer,min(depth*radius,1.0)) );
+   //we use a 1k depth range in the capture frustum. 
+   //reduce that a bit to get something resembling depth fidelity out of 8 bits
+   depth*=2000/radius;
+   
+   float rLen = length(float3(relUV,depth)-float3(0.5,0.5,0));
+   return hdrEncode( float4(colorBuffer,rLen));
 }

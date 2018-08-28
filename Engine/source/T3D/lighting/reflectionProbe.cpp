@@ -799,6 +799,7 @@ void ReflectionProbe::bake(String outputPath, S32 resolution)
    if (preCapture)
    {
 	   preCapture->setShaderConst("$radius",String::ToString(mRadius));
+	   preCapture->setShaderConst("$captureRez", String::ToString(F32(resolution)));
 	   preCapture->enable();
    }
    if (deferredShading)
