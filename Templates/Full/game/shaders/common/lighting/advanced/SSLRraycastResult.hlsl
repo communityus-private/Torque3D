@@ -71,7 +71,7 @@ void swap(inout float a, inout float b)
     b = t;
 }
 
-float getDepthAt(int2 hitPixel)
+float getDepthAt(float2 hitPixel)
 {
     //return 0 for any value accessed out of bounds
 	if ((hitPixel.x != saturate(hitPixel).x)&&((hitPixel.y != saturate(hitPixel).y)))
@@ -80,7 +80,7 @@ float getDepthAt(int2 hitPixel)
     return TORQUE_DEFERRED_UNCONDITION( deferredTex, hitPixel ).w;	
 }
 
-float linearDepthTexelFetch(int2 hitPixel)
+float linearDepthTexelFetch(float2 hitPixel)
 {
     return getDepthAt(hitPixel);
 }

@@ -197,7 +197,7 @@ PS_OUTPUT main( ConvexConnectP IN )
 	
 	//flip me on to have probes filter by depth
 	//clip(defineDepthInfluence(probeWSPos, worldPos, TORQUE_SAMPLERCUBE_MAKEARG(cubeMap)));
-		
+	
 	
 	//render into the bound space defined above
 	float3 surfToEye = normalize(worldPos.xyz-eyePosWorld.xyz);

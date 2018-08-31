@@ -48,7 +48,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 	  
    float4 diffuse = TORQUE_TEX2D( diffuseLightingBuffer, IN.uv0 ); //shadowmap*specular
    float4 specular = TORQUE_TEX2D( specularLightingBuffer, IN.uv0 ); //environment mapping*lightmaps
-   
+      
    float metalness = matInfo.a;
    
    float3 diffuseColor = albedo - (albedo * metalness);
