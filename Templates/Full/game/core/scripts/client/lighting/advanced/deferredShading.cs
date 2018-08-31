@@ -96,6 +96,7 @@ new ShaderData( SSR_RaycastShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/SSLRraycastResult.glsl";
    samplerNames[0] = "deferredTex";
+   pixVersion = 2.0;
 };
 
 new ShaderData( SSR_BlurShader )
@@ -106,6 +107,7 @@ new ShaderData( SSR_BlurShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/SSLRblur.glsl";
    samplerNames[0] = "colorBufferTex";
+   pixVersion = 2.0;
 };
 
 new ShaderData( SSR_ResultShader )
@@ -152,7 +154,7 @@ singleton PostEffect( AL_DeferredShading )
    shader = SSR_RaycastShader;
    stateBlock = AL_DeferredShadingState;
    targetFormat = "GFXFormatR16G16B16A16F";
-   target = "$outTex";
+   target = "$rayTrace";
       
    new PostEffect()
    {
