@@ -206,7 +206,7 @@ bool traceScreenSpaceRay(
 //  Black pixels mark areas where no intersection occurred.
 float4 main(PFXVertToPix IN) : TORQUE_TARGET0
 {
-    float3 normalVS = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 );.xyz;
+    float3 normalVS = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).xyz;
     if(!any(normalVS))
     {
         return 0.0f;
