@@ -48,6 +48,9 @@
 #ifndef CONVOLUTIONPS_HLSLI
 #define CONVOLUTIONPS_HLSLI
 
+#include "../../shaderModelAutoGen.hlsl"
+#include "../../postfx/postFx.hlsl"
+#include "shaders/common/torque.hlsl"
 #include "SSLRConstantBuffer.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);

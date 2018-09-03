@@ -41,6 +41,9 @@
  * Modified version of the work stated above.
  */
 #include "SSLRConstantBuffer.hlsl"
+#include "../../shaderModelAutoGen.hlsl"
+#include "../../postfx/postFx.hlsl"
+#include "shaders/common/torque.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(deferredTex,0);
 

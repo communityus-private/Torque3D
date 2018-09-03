@@ -62,19 +62,27 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
-#include "../../shaderModelAutoGen.hlsl"
-#include "../../postfx/postFx.hlsl"
-#include "shaders/common/torque.hlsl"
 
-#define cb_zThickness 2			// thickness to ascribe to each pixel in the depth buffer
-#define cb_nearPlaneZ 0.01		// the camera's near z plane
-#define cb_stride 2 			// Step in horizontal or vertical pixels between samples. This is a float
-								// because integer math is slow on GPUs, but should be set to an integer >= 1.
-#define	cb_maxSteps 10			// Maximum number of iterations. Higher gives better images but may be slow.
-#define	cb_maxDistance 0.9999 	// Maximum camera-space distance to trace before returning a miss.
-#define	cb_strideZCutoff 0.5 	// More distant pixels are smaller in screen space. This value tells at what point to
-								// start relaxing the stride to give higher quality reflections for objects far from
-								// the camera.
+// thickness to ascribe to each pixel in the depth buffer
+#define cb_zThickness 2
+
+// the camera's near z plane
+#define cb_nearPlaneZ 0.01
+
+// Step in horizontal or vertical pixels between samples. This is a float
+// because integer math is slow on GPUs, but should be set to an integer >= 1.
+#define cb_stride 2
+
+// Maximum number of iterations. Higher gives better images but may be slow.
+#define	cb_maxSteps 10
+
+// Maximum camera-space distance to trace before returning a miss.
+#define	cb_maxDistance 0.9999
+
+// More distant pixels are smaller in screen space. This value tells at what point to
+// start relaxing the stride to give higher quality reflections for objects far from
+// the camera.
+#define	cb_strideZCutoff 0.5
 								
 uniform float cb_numMips; 			// the number of mip levels in the convolved color buffer
 uniform float cb_fadeStart; 		// determines where to start screen edge fading of effect
