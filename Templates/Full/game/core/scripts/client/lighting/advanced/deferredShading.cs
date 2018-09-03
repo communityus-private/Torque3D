@@ -138,7 +138,7 @@ new ShaderData( AL_DeferredShader )
    samplerNames[0] = "colorBufferTex";
    samplerNames[1] = "diffuseLightingBuffer";
    samplerNames[2] = "matInfoTex";
-   samplerNames[3] = "specularLightingBuffer";
+   samplerNames[3] = "ssrLighting";
    samplerNames[4] = "deferredTex";
    pixVersion = 2.0;
 };
@@ -158,7 +158,7 @@ singleton PostEffect( AL_DeferredShading )
       
    new PostEffect()
    {
-      internalName = "ssrSpecularResultPass";
+      internalName = "ssrColorBlurPass";
       shader = SSR_ResultShader;
       stateBlock = AL_DeferredShadingState;
       texture[0] = "#color";
@@ -195,8 +195,20 @@ singleton PostEffect( AL_DeferredShading )
 
 function AL_DeferredShading::setShaderConsts( %this )
 {
-   %this.setShaderConst( "cb_numMips", 10 );//we'll actually want to look this one up from the input tex/resolution calc
-   %this.setShaderConst( "cb_fadeStart", theLevelInfo.visibleDistance*theLevelInfo.nearClip );
+   %this-->ssrColorBlurPass.setShaderConst( "cb_numMips", 10 );//we'll actually want to look this one up from the input tex/resolution calc
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_numMips", 10 );
+   %this-->finalCombinePass.setShaderConst( "cb_numMips", 10 );
+   %this.setShaderConst( "cb_numMips", 10 );
+   
+   %startfade = theLevelInfo.visibleDistance*theLevelInfo.nearClip;
+   %this-->ssrColorBlurPass.setShaderConst( "cb_fadeStart",  %startfade);
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_fadeStart",  %startfade);
+   %this-->finalCombinePass.setShaderConst( "cb_fadeStart",  %startfade);
+   %this.setShaderConst( "cb_fadeStart", %startfade );
+   
+   %this-->ssrColorBlurPass.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
+   %this-->finalCombinePass.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
    %this.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
 }
 
