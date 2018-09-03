@@ -47,7 +47,7 @@
 
 #define CNST_MAX_SPECULAR_EXP 64
 
-TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
+TORQUE_UNIFORM_SAMPLER2D(colorBlur,0);
 TORQUE_UNIFORM_SAMPLER2D(matInfoTex,1);
 TORQUE_UNIFORM_SAMPLER2D(specularLightingBuffer,2);
 TORQUE_UNIFORM_SAMPLER2D(deferredTex,3);
@@ -88,7 +88,7 @@ float isoscelesTriangleInRadius(float a, float h)
 
 float4 coneSampleWeightedColor(float2 samplePos, float mipChannel, float gloss)
 {
-    float3 sampleColor = TORQUE_TEX2DLOD(colorBufferTex, float3(samplePos, mipChannel)).rgb;
+    float3 sampleColor = TORQUE_TEX2DLOD(colorBlur, float3(samplePos, mipChannel)).rgb;
     return float4(sampleColor * gloss, gloss);
 }
 

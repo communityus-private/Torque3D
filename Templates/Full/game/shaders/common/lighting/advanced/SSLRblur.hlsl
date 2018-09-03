@@ -48,6 +48,8 @@
 #ifndef CONVOLUTIONPS_HLSLI
 #define CONVOLUTIONPS_HLSLI
 
+#define CONVOLVE_HORIZONTAL 1
+
 #include "../../shaderModelAutoGen.hlsl"
 #include "../../postfx/postFx.hlsl"
 #include "shaders/common/torque.hlsl"

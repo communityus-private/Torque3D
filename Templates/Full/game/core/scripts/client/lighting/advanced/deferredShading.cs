@@ -118,12 +118,11 @@ new ShaderData( SSR_ResultShader )
    OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
    OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/SSLR.glsl";
 
-   samplerNames[0] = "colorBufferTex";
-   samplerNames[1] = "diffuseLightingBuffer";
-   samplerNames[2] = "matInfoTex";
-   samplerNames[3] = "specularLightingBuffer";
-   samplerNames[4] = "deferredTex";
-   samplerNames[5] = "$rayTraceTex";
+   samplerNames[0] = "colorBlur";
+   samplerNames[1] = "matInfoTex";
+   samplerNames[2] = "specularLightingBuffer";
+   samplerNames[3] = "deferredTex";
+   samplerNames[4] = "$rayTraceTex";
    pixVersion = 2.0;
 };
 
@@ -153,17 +152,18 @@ singleton PostEffect( AL_DeferredShading )
    allowReflectPass = true;   
    shader = SSR_RaycastShader;
    stateBlock = AL_DeferredShadingState;
+   texture[0] = "#deferred";
    targetFormat = "GFXFormatR16G16B16A16F";
-   target = "$rayTrace";
+   target = "#rayTrace";
       
    new PostEffect()
    {
       internalName = "ssrColorBlurPass";
-      shader = SSR_ResultShader;
+      shader = SSR_BlurShader;
       stateBlock = AL_DeferredShadingState;
       texture[0] = "#color";
       targetFormat = "GFXFormatR16G16B16A16F";
-      target = "$colorBlur";
+      target = "#colorBlur";
    };
    
    new PostEffect()
@@ -171,13 +171,13 @@ singleton PostEffect( AL_DeferredShading )
       internalName = "ssrSpecularResultPass";
       shader = SSR_ResultShader;
       stateBlock = AL_DeferredShadingState;
-      texture[0] = "$colorBlur";
-      texture[2] = "#matinfo";
-      texture[3] = "#specularLighting";
-      texture[4] = "#deferred";
-      texture[5] = "$rayTrace";
+      texture[0] = "#color";
+      texture[1] = "#matinfo";
+      texture[2] = "#specularLighting";
+      texture[3] = "#deferred";
+      texture[4] = "#rayTrace";
       targetFormat = "GFXFormatR16G16B16A16F";
-      target = "$ssrLighting";
+      target = "#ssrLighting";
    };
    new PostEffect()
    {
@@ -187,7 +187,7 @@ singleton PostEffect( AL_DeferredShading )
       texture[0] = "#color";
       texture[1] = "#diffuseLighting";
       texture[2] = "#matinfo";
-      texture[3] = "$ssrLighting";
+      texture[3] = "#ssrLighting";
       texture[4] = "#deferred";
       target = "$backBuffer";
    };
