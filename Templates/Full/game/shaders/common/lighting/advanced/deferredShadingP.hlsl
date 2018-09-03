@@ -27,7 +27,7 @@
 TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
 TORQUE_UNIFORM_SAMPLER2D(diffuseLightingBuffer,1);
 TORQUE_UNIFORM_SAMPLER2D(matInfoTex,2);
-TORQUE_UNIFORM_SAMPLER2D(specularLightingBuffer,3);
+TORQUE_UNIFORM_SAMPLER2D(ssrLighting,3);
 TORQUE_UNIFORM_SAMPLER2D(deferredTex,4);
 
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
@@ -47,7 +47,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    }
 	  
    float4 diffuse = TORQUE_TEX2D( diffuseLightingBuffer, IN.uv0 ); //shadowmap*specular
-   float4 specular = TORQUE_TEX2D( specularLightingBuffer, IN.uv0 ); //environment mapping*lightmaps
+   float4 specular = TORQUE_TEX2D( ssrLighting, IN.uv0 ); //environment mapping*lightmaps
       
    float metalness = matInfo.a;
    
