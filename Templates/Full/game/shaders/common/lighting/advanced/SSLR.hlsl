@@ -40,11 +40,12 @@
  * The ray tracing step of the SSLR implementation.
  * Modified version of the work stated above.
  */
-#include "SSLRConstantBuffer.hlsl"
-
 #include "../../shaderModelAutoGen.hlsl"
 #include "../../postfx/postFx.hlsl"
 #include "shaders/common/torque.hlsl"
+#include "SSLRConstantBuffer.hlsl"
+
+#define CNST_MAX_SPECULAR_EXP 64
 
 TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
 TORQUE_UNIFORM_SAMPLER2D(matInfoTex,1);
