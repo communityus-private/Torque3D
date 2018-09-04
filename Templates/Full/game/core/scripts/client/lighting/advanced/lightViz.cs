@@ -194,7 +194,7 @@ singleton PostEffect( AL_LightSpecularVisualize )
 {   
    shader = AL_LightColorVisualizeShader;
    stateBlock = AL_DefaultVisualizeState;
-   texture[0] = "#specularLighting";
+   texture[0] = "#ssrLighting";
    target = "$backBuffer";
    renderPriority = 9999;
 };
