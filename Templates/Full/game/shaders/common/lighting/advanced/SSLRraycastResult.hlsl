@@ -40,10 +40,10 @@
  * The ray tracing step of the SSLR implementation.
  * Modified version of the work stated above.
  */
-#include "SSLRConstantBuffer.hlsl"
 #include "../../shaderModelAutoGen.hlsl"
 #include "../../postfx/postFx.hlsl"
 #include "shaders/common/torque.hlsl"
+#include "SSLRConstantBuffer.hlsl"
 
 TORQUE_UNIFORM_SAMPLER2D(deferredTex,0);
 
@@ -109,9 +109,9 @@ bool traceScreenSpaceRay(
 
     // Project into homogeneous clip space
     float4 H0 = mul(float4(csOrig, 1.0f), viewToTextureSpaceMatrix);
-    H0.xy *= targetSize;
+    H0.xy *= cb_windowSize;
     float4 H1 = mul(float4(csEndPoint, 1.0f), viewToTextureSpaceMatrix);
-    H1.xy *= targetSize;
+    H1.xy *= cb_windowSize;
     float k0 = 1.0f / H0.w;
     float k1 = 1.0f / H1.w;
 
@@ -241,7 +241,7 @@ float4 main(PFXVertToPix IN) : TORQUE_TARGET0
     depth = getDepthAt(hitPixel);
 
     // move hit pixel from pixel position to UVs
-    hitPixel *= oneOverTargetSize;
+    hitPixel *= cb_oneOverwindowSize;
     if(hitPixel.x > 1.0f || hitPixel.x < 0.0f || hitPixel.y > 1.0f || hitPixel.y < 0.0f)
     {
         intersection = false;

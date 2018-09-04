@@ -88,7 +88,7 @@ float isoscelesTriangleInRadius(float a, float h)
 
 float4 coneSampleWeightedColor(float2 samplePos, float mipChannel, float gloss)
 {
-    float3 sampleColor = TORQUE_TEX2DLOD(colorBlur, float3(samplePos, mipChannel)).rgb;
+    float3 sampleColor = TORQUE_TEX2DLOD(colorBlur, float4(samplePos,0, mipChannel)).rgb;
     return float4(sampleColor * gloss, gloss);
 }
 
@@ -98,18 +98,25 @@ float isoscelesTriangleNextAdjacent(float adjacentLength, float incircleRadius)
     return adjacentLength - (incircleRadius * 2.0f);
 }
 
+float3 viewSpacePositionFromDepth(in PFXVertToPix inp)
+{
+  float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, inp.uv0 ).w;
+  float3 rayOriginVS = inp.wsEyeRay * (depth);
+
+  return normalize(rayOriginVS);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {
-    int3 loadIndices = int3(IN.hpos.xy, 0);
     // get screen-space ray intersection point
     float4 raySS = TORQUE_TEX2D( rayTraceTex, IN.uv0 );
 	
     float3 fallbackColor = TORQUE_TEX2D( specularLightingBuffer, IN.uv0 ).rgb;
     if(raySS.w <= 0.0f) // either means no hit or the ray faces back towards the camera
     {
-        // no data for this point - a fallback like localized environment maps should be used
+        // no data for this point - a fallback like localized environment maps should be used        
         return float4(fallbackColor, 1.0f);
     }
     float4 normDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 );
@@ -121,8 +128,8 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
     float3 normalVS = normDepth.xyz;
 
     // get specular power from roughness
-	float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0); //flags|smoothness|ao|metallic
-    float gloss = matInfoTex.g;
+	 float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0); //flags|smoothness|ao|metallic
+    float gloss = matInfo.g;
     float specularPower = roughnessToSpecularPower(1.0-gloss);
 
     // convert to cone angle (maximum extent of the specular lobe aperture)
@@ -151,7 +158,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
         float2 samplePos = positionSS.xy + adjacentUnit * (adjacentLength - incircleSize);
 
         // convert the in-radius into screen size then check what power N to raise 2 to reach it - that power N becomes mip level to sample from
-        float mipChannel = clamp(log2(incircleSize * max(cb_depthBufferSize.x, cb_depthBufferSize.y)), 0.0f, maxMipLevel);
+        float mipChannel = clamp(log2(incircleSize * max(cb_windowSize.x, cb_windowSize.y)), 0.0f, maxMipLevel);
 
         /*
          * Read color and accumulate it using trilinear filtering and weight it.
@@ -185,7 +192,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
     float fadeOnBorder = 1.0f - saturate((boundary.x - cb_fadeStart) * fadeDiffRcp);
     fadeOnBorder *= 1.0f - saturate((boundary.y - cb_fadeStart) * fadeDiffRcp);
     fadeOnBorder = smoothstep(0.0f, 1.0f, fadeOnBorder);
-    float3 rayHitPositionVS = viewSpacePositionFromDepth(raySS.xy, raySS.z);
+    float3 rayHitPositionVS = viewSpacePositionFromDepth(IN);
     float fadeOnDistance = 1.0f - saturate(distance(rayHitPositionVS, positionVS) / cb_maxDistance);
     // ray tracing steps stores rdotv in w component - always > 0 due to check at start of this method
     float fadeOnPerpendicular = saturate(lerp(0.0f, 1.0f, saturate(raySS.w * 4.0f)));

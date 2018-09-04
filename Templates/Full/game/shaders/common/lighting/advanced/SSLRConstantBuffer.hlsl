@@ -88,8 +88,8 @@ uniform float cb_numMips; 			// the number of mip levels in the convolved color 
 uniform float cb_fadeStart; 		// determines where to start screen edge fading of effect
 uniform float cb_fadeEnd; 			// determines where to end screen edge fading of effect
 
-uniform float2 targetSize;          //window resolution
-uniform float2 oneOverTargetSize;   //used for texel denisty
+uniform float2 cb_windowSize;          //window resolution
+uniform float2 cb_oneOverwindowSize;   //used for texel denisty
 
 
 static const float4x4 viewToTextureSpaceMatrix =	{0.5f, 0.0f, 0.0f, 0.5f,

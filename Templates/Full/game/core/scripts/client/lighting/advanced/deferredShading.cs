@@ -171,7 +171,7 @@ singleton PostEffect( AL_DeferredShading )
       internalName = "ssrSpecularResultPass";
       shader = SSR_ResultShader;
       stateBlock = AL_DeferredShadingState;
-      texture[0] = "#color";
+      texture[0] = "#colorBlur";
       texture[1] = "#matinfo";
       texture[2] = "#specularLighting";
       texture[3] = "#deferred";
@@ -210,6 +210,19 @@ function AL_DeferredShading::setShaderConsts( %this )
    %this-->ssrSpecularResultPass.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
    %this-->finalCombinePass.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
    %this.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
+   
+   %res = getWords($pref::Video::mode, 0, 1);
+   %oneOverRes = 1/getWord($pref::Video::mode, 0) SPC 1/getWord($pref::Video::mode, 1);
+   %this-->ssrColorBlurPass.setShaderConst( "cb_windowSize",%res);
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_windowSize", %res);
+   %this-->finalCombinePass.setShaderConst( "cb_windowSize", %res);
+   %this.setShaderConst( "cb_windowSize", %res);
+   
+   %this-->ssrColorBlurPass.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
+   %this-->finalCombinePass.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
+   %this.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
+   
 }
 
 // Debug Shaders.
@@ -341,7 +354,7 @@ singleton PostEffect( AL_LightMapVisualize )
 {   
    shader = AL_LightMapShader;
    stateBlock = AL_DefaultVisualizeState;
-   texture[0] = "#specularLighting";
+   texture[0] = "#ssrLighting";
    target = "$backBuffer";
    renderPriority = 9999;
 };
