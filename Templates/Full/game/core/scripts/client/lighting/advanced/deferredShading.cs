@@ -163,6 +163,15 @@ singleton PostEffect( AL_DeferredShading )
       stateBlock = AL_DeferredShadingState;
       texture[0] = "#color";
       targetFormat = "GFXFormatR16G16B16A16F";
+      target = "$outTex";
+   };
+      new PostEffect()
+   {
+      internalName = "ssrColorBlurPass2";
+      shader = SSR_BlurShader;
+      stateBlock = PFX_DefaultStateBlock;
+      texture[0] = "$inTex";
+      targetFormat = "GFXFormatR16G16B16A16F";
       target = "#colorBlur";
    };
    
@@ -195,6 +204,9 @@ singleton PostEffect( AL_DeferredShading )
 
 function AL_DeferredShading::setShaderConsts( %this )
 {
+   %this-->ssrColorBlurPass.setShaderConst( "blurDir", 0);
+   %this-->ssrColorBlurPass2.setShaderConst( "blurDir", 1);
+
    %this-->ssrColorBlurPass.setShaderConst( "cb_numMips", 10 );//we'll actually want to look this one up from the input tex/resolution calc
    %this-->ssrSpecularResultPass.setShaderConst( "cb_numMips", 10 );
    %this-->finalCombinePass.setShaderConst( "cb_numMips", 10 );

@@ -48,7 +48,7 @@
 #ifndef CONVOLUTIONPS_HLSLI
 #define CONVOLUTIONPS_HLSLI
 
-#define CONVOLVE_HORIZONTAL 1
+uniform float blurDir;
 
 #include "../../shaderModelAutoGen.hlsl"
 #include "../../postfx/postFx.hlsl"
@@ -57,11 +57,7 @@
 
 TORQUE_UNIFORM_SAMPLER2D(colorBufferTex,0);
 
-#if CONVOLVE_HORIZONTAL
 static const int2 offsets[7] = {{-3, 0}, {-2, 0}, {-1, 0}, {0, 0}, {1, 0}, {2, 0}, {3, 0}};
-#elif CONVOLVE_VERTICAL
-static const int2 offsets[7] = {{0, -3}, {0, -2}, {0, -1}, {0, 0}, {0, 1}, {0, 2}, {0, 3}};
-#endif
 static const float weights[7] = {0.001f, 0.028f, 0.233f, 0.474f, 0.233f, 0.028f, 0.001f};
 
 float4 main(PFXVertToPix IN) : TORQUE_TARGET0
@@ -70,7 +66,10 @@ float4 main(PFXVertToPix IN) : TORQUE_TARGET0
     [unroll]
     for(uint i = 0u; i < 7u; ++i)
     {
-        color += TORQUE_TEX2D(colorBufferTex, IN.uv0+offsets[i]) * weights[i];
+      if (blurDir>0)
+         color += TORQUE_TEX2D(colorBufferTex, IN.uv0+offsets[i].xy) * weights[i];
+      else
+         color += TORQUE_TEX2D(colorBufferTex, IN.uv0+offsets[i].yx) * weights[i];
     }
     return float4(color.rgb, 1.0f);
 }
