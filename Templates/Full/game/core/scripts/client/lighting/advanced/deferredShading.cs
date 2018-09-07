@@ -151,7 +151,7 @@ singleton PostEffect( AL_DeferredShading )
    renderPriority = 10000;
    allowReflectPass = true;   
    shader = SSR_RaycastShader;
-   stateBlock = AL_DeferredShadingState;
+   stateBlock = PFX_DefaultStateBlock;
    texture[0] = "#deferred";
    targetFormat = "GFXFormatR16G16B16A16F";
    target = "#rayTrace";
@@ -160,7 +160,7 @@ singleton PostEffect( AL_DeferredShading )
    {
       internalName = "ssrColorBlurPass";
       shader = SSR_BlurShader;
-      stateBlock = AL_DeferredShadingState;
+      stateBlock = PFX_DefaultStateBlock;
       texture[0] = "#color";
       targetFormat = "GFXFormatR16G16B16A16F";
       target = "$outTex";
@@ -179,7 +179,7 @@ singleton PostEffect( AL_DeferredShading )
    {
       internalName = "ssrSpecularResultPass";
       shader = SSR_ResultShader;
-      stateBlock = AL_DeferredShadingState;
+      stateBlock = PFX_DefaultStateBlock;
       texture[0] = "#colorBlur";
       texture[1] = "#matinfo";
       texture[2] = "#specularLighting";
