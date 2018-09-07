@@ -101,7 +101,7 @@ float isoscelesTriangleNextAdjacent(float adjacentLength, float incircleRadius)
 float3 viewSpacePositionFromDepth(in PFXVertToPix inp)
 {
   float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, inp.uv0 ).w;
-  float3 rayOriginVS = inp.wsEyeRay * (depth);
+  float3 rayOriginVS = float3((inp.uv0-float2(0.5,0.5))*float2(cb_windowSizeX,cb_windowSizeY),depth*nearFar.y);
 
   return normalize(rayOriginVS);
 }
@@ -121,8 +121,8 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
     }
     float4 normDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 );
     float depth = normDepth.w;
-    float3 positionSS = float3(IN.uv0, depth);
-    float3 positionVS = IN.wsEyeRay * depth;
+    float3 positionSS = float3(IN.uv0-float2(0.5,0.5), depth);
+    float3 positionVS = float3((IN.uv0-float2(0.5,0.5))*float2(cb_windowSizeX,cb_windowSizeY), depth);
     // since calculations are in view-space, we can just normalize the position to point at it
     float3 toPositionVS = normalize(positionVS);
     float3 normalVS = normDepth.xyz;
