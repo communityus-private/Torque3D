@@ -74,18 +74,9 @@ void swap(inout float a, inout float b)
     b = t;
 }
 
-float getDepthAt(float2 hitPixel)
-{
-    //return 0 for any value accessed out of bounds
-	if ((hitPixel.x != saturate(hitPixel).x)&&((hitPixel.y != saturate(hitPixel).y)))
-		return 0;
-		
-    return TORQUE_DEFERRED_UNCONDITION( deferredTex, hitPixel ).w;	
-}
-
 float linearDepthTexelFetch(float2 hitPixel)
 {
-    return getDepthAt(hitPixel);
+    return TORQUE_DEFERRED_UNCONDITION( deferredTex, hitPixel ).w;
 }
 
 // Returns true if the ray hit something
@@ -234,7 +225,7 @@ float4 main(PFXVertToPix IN) : TORQUE_TARGET0
     // perform ray tracing - true if hit found, false otherwise
     bool intersection = traceScreenSpaceRay(rayOriginVS, rayDirectionVS, jitter, hitPixel, hitPoint);
 
-    depth = getDepthAt(hitPixel);
+   depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitPixel ).w;
 
     // move hit pixel from pixel position to UVs
    hitPixel *= float2(cb_oneOverwindowSizeX, cb_oneOverwindowSizeY);
