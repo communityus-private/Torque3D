@@ -223,17 +223,30 @@ function AL_DeferredShading::setShaderConsts( %this )
    %this-->finalCombinePass.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
    %this.setShaderConst( "cb_fadeEnd", theLevelInfo.visibleDistance );
    
-   %res = getWords($pref::Video::mode, 0, 1);
-   %oneOverRes = 1/getWord($pref::Video::mode, 0) SPC 1/getWord($pref::Video::mode, 1);
-   %this-->ssrColorBlurPass.setShaderConst( "cb_windowSize",%res);
-   %this-->ssrSpecularResultPass.setShaderConst( "cb_windowSize", %res);
-   %this-->finalCombinePass.setShaderConst( "cb_windowSize", %res);
-   %this.setShaderConst( "cb_windowSize", %res);
+   %resX = getWord($pref::Video::mode, 0);
+   %resY = getWord($pref::Video::mode, 1);
+   %oneOverResX = 1/getWord($pref::Video::mode, 0);
+   %oneOverResY = 1/getWord($pref::Video::mode, 1);
    
-   %this-->ssrColorBlurPass.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
-   %this-->ssrSpecularResultPass.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
-   %this-->finalCombinePass.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
-   %this.setShaderConst( "cb_oneOverwindowSize", %oneOverRes);
+   %this-->ssrColorBlurPass.setShaderConst( "cb_windowSizeX",%resX);
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_windowSizeX", %resX);
+   %this-->finalCombinePass.setShaderConst( "cb_windowSizeX", %resX);
+   %this.setShaderConst( "cb_windowSizeX", %resX);
+   
+   %this-->ssrColorBlurPass.setShaderConst( "cb_windowSizeY",%resY);
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_windowSizeY", %resY);
+   %this-->finalCombinePass.setShaderConst( "cb_windowSizeY", %resY);
+   %this.setShaderConst( "cb_windowSizeY", %resY);
+   
+   %this-->ssrColorBlurPass.setShaderConst( "cb_oneOverwindowSizeX", %oneOverResX);
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_oneOverwindowSizeX", %oneOverResX);
+   %this-->finalCombinePass.setShaderConst( "cb_oneOverwindowSizeX", %oneOverResX);
+   %this.setShaderConst( "cb_oneOverwindowSizeX", %oneOverResX);
+   
+   %this-->ssrColorBlurPass.setShaderConst( "cb_oneOverwindowSizeY", %oneOverResY);
+   %this-->ssrSpecularResultPass.setShaderConst( "cb_oneOverwindowSizeY", %oneOverResY);
+   %this-->finalCombinePass.setShaderConst( "cb_oneOverwindowSizeY", %oneOverResY);
+   %this.setShaderConst( "cb_oneOverwindowSizeY", %oneOverResY);
    
 }
 

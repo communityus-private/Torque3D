@@ -158,7 +158,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
         float2 samplePos = positionSS.xy + adjacentUnit * (adjacentLength - incircleSize);
 
         // convert the in-radius into screen size then check what power N to raise 2 to reach it - that power N becomes mip level to sample from
-        float mipChannel = clamp(log2(incircleSize * max(cb_windowSize.x, cb_windowSize.y)), 0.0f, maxMipLevel);
+        float mipChannel = clamp(log2(incircleSize * max(cb_windowSizeX, cb_windowSizeY)), 0.0f, maxMipLevel);
 
         /*
          * Read color and accumulate it using trilinear filtering and weight it.

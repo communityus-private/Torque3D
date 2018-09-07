@@ -109,9 +109,9 @@ bool traceScreenSpaceRay(
 
     // Project into homogeneous clip space
     float4 H0 = mul(float4(csOrig, 1.0f), viewToTextureSpaceMatrix);
-    H0.xy *= cb_windowSize;
+   H0.xy *= float2(cb_windowSizeX,cb_windowSizeY);
     float4 H1 = mul(float4(csEndPoint, 1.0f), viewToTextureSpaceMatrix);
-    H1.xy *= cb_windowSize;
+   H1.xy *= float2(cb_windowSizeX,cb_windowSizeY);
     float k0 = 1.0f / H0.w;
     float k1 = 1.0f / H1.w;
 
@@ -183,12 +183,10 @@ bool traceScreenSpaceRay(
         rayZMax = (dPQk.z * 0.5f + PQk.z) / (dPQk.w * 0.5f + PQk.w);
         prevZMaxEstimate = rayZMax;
         if(rayZMin > rayZMax)
-        {
             swap(rayZMin, rayZMax);
-        }
 
         hitPixel = permute ? PQk.yx : PQk.xy;
-        // You may need hitPixel.y = depthBufferSize.y - hitPixel.y; here if your vertical axis
+      // You may need hitPixel.y = cb_windowSizeY - hitPixel.y; here if your vertical axis
         // is different than ours in screen space
         sceneZMax = linearDepthTexelFetch(hitPixel);
 
@@ -211,9 +209,7 @@ float4 main(PFXVertToPix IN) : TORQUE_TARGET0
 {
     float3 normalVS = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).xyz;
     if(!any(normalVS))
-    {
         return 0.0f;
-    }
 
     float depth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 ).w;
     float3 rayOriginVS = IN.wsEyeRay * depth;
@@ -241,7 +237,7 @@ float4 main(PFXVertToPix IN) : TORQUE_TARGET0
     depth = getDepthAt(hitPixel);
 
     // move hit pixel from pixel position to UVs
-    hitPixel *= cb_oneOverwindowSize;
+   hitPixel *= float2(cb_oneOverwindowSizeX, cb_oneOverwindowSizeY);
     if(hitPixel.x > 1.0f || hitPixel.x < 0.0f || hitPixel.y > 1.0f || hitPixel.y < 0.0f)
     {
         intersection = false;
