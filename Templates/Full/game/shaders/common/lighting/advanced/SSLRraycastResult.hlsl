@@ -103,8 +103,8 @@ bool traceScreenSpaceRay(
     out float3 hitPoint)
 {
     // Clip to the near plane
-    float rayLength = ((csOrig.z + csDir.z * cb_maxDistance) < cb_nearPlaneZ) ?
-    (cb_nearPlaneZ - csOrig.z) / csDir.z : cb_maxDistance;
+   float rayLength = ((csOrig.z + csDir.z * nearFar.y) < nearFar.x) ?
+   (nearFar.x - csOrig.z) / csDir.z : nearFar.y;
     float3 csEndPoint = csOrig + csDir * rayLength;
 
     // Project into homogeneous clip space

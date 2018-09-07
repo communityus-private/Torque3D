@@ -193,7 +193,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
     fadeOnBorder *= 1.0f - saturate((boundary.y - cb_fadeStart) * fadeDiffRcp);
     fadeOnBorder = smoothstep(0.0f, 1.0f, fadeOnBorder);
     float3 rayHitPositionVS = viewSpacePositionFromDepth(IN);
-    float fadeOnDistance = 1.0f - saturate(distance(rayHitPositionVS, positionVS) / cb_maxDistance);
+    float fadeOnDistance = 1.0f - saturate(distance(rayHitPositionVS, positionVS) / nearFar.y);
     // ray tracing steps stores rdotv in w component - always > 0 due to check at start of this method
     float fadeOnPerpendicular = saturate(lerp(0.0f, 1.0f, saturate(raySS.w * 4.0f)));
     float fadeOnRoughness = saturate(lerp(0.0f, 1.0f, gloss * 4.0f));
