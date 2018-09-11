@@ -309,7 +309,9 @@ PostEffect::PostEffect()
       mCameraForwardSC( NULL ),
       mAccumTimeSC( NULL ),
       mDeltaTimeSC( NULL ),
-      mInvCameraMatSC( NULL )
+	  mCameraMatSC(NULL),
+	  mCameraProjSC(NULL),
+	  mInvCameraMatSC( NULL )
 {
    dMemset( mTexSRGB, 0, sizeof(bool) * NumTextures);
    dMemset( mActiveTextures, 0, sizeof( GFXTextureObject* ) * NumTextures );
@@ -613,7 +615,8 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
       mAccumTimeSC = mShader->getShaderConstHandle( "$accumTime" );
       mDeltaTimeSC = mShader->getShaderConstHandle( "$deltaTime" );
-
+	  mCameraMatSC = mShader->getShaderConstHandle("$cameraMat");
+	  mCameraProjSC = mShader->getShaderConstHandle("$cameraProj");
       mInvCameraMatSC = mShader->getShaderConstHandle( "$invCameraMat" );
    }
 
@@ -847,6 +850,17 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
          mShaderConsts->set( mCameraForwardSC, camFwd );
       }
 
+	  if (mCameraMatSC->isValid())
+	  {
+		  MatrixF mat = state->getCameraTransform();
+		  mShaderConsts->set(mCameraMatSC, mat, mCameraMatSC->getType());
+	  }
+	  if (mCameraProjSC->isValid())
+	  {
+		  MatrixF mat = GFX->getProjectionMatrix();
+		  mShaderConsts->set(mCameraProjSC, mat, mCameraMatSC->getType());
+	  }
+	  
       if ( mInvCameraMatSC->isValid() )
       {
          MatrixF mat = state->getCameraTransform();
