@@ -117,7 +117,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    if (depth>0.9999)
       return float4(0,0,0,0);
       
-   float3 posWS = reconstructVS(IN.uv0,depth,invCameraMat).xyz;   
+   float3 posWS = reconstructVS(IN.uv0,depth* nearFar.y,invCameraMat).xyz;   
    float3 normWS = mul(float4(normDepth.xyz, 1), invCameraMat).xyz;
    
    float3 posVS = mul(float4(posWS, 0),cameraMat).xyz;   
