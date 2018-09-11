@@ -34,7 +34,6 @@ uniform float4x4 invCameraMat;
 uniform float4x4 cameraMat;
 uniform float4x4 cameraProj;
 uniform float2 nearFar;
-uniform float2 oneOverTargetSize;
 
 // Avoid stepping zero distance
 static const float	g_fMinRayStep = 0.01f;
@@ -56,7 +55,6 @@ float4 SSRBinarySearch(float3 vDir, inout float3 hitCoord)
 		float4 vProjectedCoord = mul(float4(hitCoord, 1.0f), cameraProj);
 		vProjectedCoord.xy /= vProjectedCoord.w;
 		vProjectedCoord.xy = vProjectedCoord.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-      vProjectedCoord.xy *= oneOverTargetSize;
       
 		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, vProjectedCoord.xy ).w * nearFar.y;
 		float fDepthDiff = hitCoord.z - fDepth;
@@ -109,7 +107,7 @@ inline float3 reconstructVS(in float2 inUV, in float depth, in float4x4 InvVP)
 {
 	float4 positionSS = float4(inUV.x * 2 - 1, inUV.y * 2 - 1, depth* 2 - 1, 1.0f);
 	float4 positionVS = mul(positionSS, InvVP);
-	return positionVS.xyz / positionVS.w;
+	return positionVS.xyz;
 }
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
