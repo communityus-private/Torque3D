@@ -32,8 +32,10 @@ TORQUE_UNIFORM_SAMPLER2D(deferredTex,4);
 
 uniform float4x4 invCameraMat;
 uniform float4x4 cameraMat;
-uniform float4x4 cameraProj;
 uniform float2 nearFar;
+uniform float4x4 matWorldToScreen;
+uniform float4x4 matScreenToWorld;
+uniform float2 worldToScreenScale;
 
 // Avoid stepping zero distance
 static const float	g_fMinRayStep = 0.01f;
@@ -46,69 +48,68 @@ static const int	g_iNumBinarySearchSteps = 16;
 // Approximate the precision of the search (smaller is more precise)
 static const float  g_fRayhitThreshold = 0.9f;
 
-float4 SSRBinarySearch(float3 vDir, inout float3 hitCoord)
+inline float4 reconstruct3DPos(in float2 inUV, in float depth, in float4x4 spaceMat)
+{
+	float4 positionSS = float4(float3(inUV.x, inUV.y, depth)*2-1, 1.0f);
+   
+	float4 position3D = mul(positionSS, spaceMat);
+	return position3D/position3D.w;
+}
+
+inline float2 deconstruct3DPos(in float3 pos, in float4x4 invSpaceMat)
+{
+		float4 vProjectedCoord = mul(float4(pos, 1.0f), invSpaceMat);
+		vProjectedCoord.xy /= vProjectedCoord.w;
+		vProjectedCoord.xy = (vProjectedCoord.xy + float2(1,1))/2;
+		return vProjectedCoord.xy;
+}
+
+float4 SSRBinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat)
 {
 	float fDepth;
-
 	for (int i = 0; i < g_iNumBinarySearchSteps; i++)
 	{
-		float4 vProjectedCoord = mul(float4(hitCoord, 1.0f), cameraProj);
-		vProjectedCoord.xy /= vProjectedCoord.w;
-		vProjectedCoord.xy = vProjectedCoord.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
       
-		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, vProjectedCoord.xy ).w * nearFar.y;
+		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w * nearFar.y;
 		float fDepthDiff = hitCoord.z - fDepth;
 
 		if (fDepthDiff <= 0.0f)
 			hitCoord += vDir;
-
-		vDir *= 0.5f;
+		vDir *= 0.5;
 		hitCoord -= vDir;
 	}
 
-	float4 vProjectedCoord = mul(float4(hitCoord, 1.0f), cameraProj);
-	vProjectedCoord.xy /= vProjectedCoord.w;
-	vProjectedCoord.xy = vProjectedCoord.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
+	float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
 
-	fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, vProjectedCoord.xy ).w * nearFar.y;
+	fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w * nearFar.y;
 	float fDepthDiff = hitCoord.z - fDepth;
 
-	return float4(vProjectedCoord.xy, fDepth, abs(fDepthDiff) < g_fRayhitThreshold ? 1.0f : 0.0f);
+	return float4(hitUV, fDepth, abs(fDepthDiff) < g_fRayhitThreshold ? 1.0f : 0.0f);
 }
 
-float4 SSRRayMarch(float3 vDir, inout float3 hitCoord)
+float4 SSRRayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, float steplen)
 {
 	float fDepth;
-
+   float fDepthDiff = 0;
 	for (int i = 0; i < g_iMaxSteps; i++)
 	{
 		hitCoord += vDir;
+		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
 
-		float4 vProjectedCoord = mul(float4(hitCoord, 1.0f), cameraProj);
-		vProjectedCoord.xy /= vProjectedCoord.w;
-		vProjectedCoord.xy = vProjectedCoord.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-
-		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, vProjectedCoord.xy).w * nearFar.y;
-
-		float fDepthDiff = hitCoord.z - fDepth;
-
+		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex,hitUV).w * nearFar.y;
+		fDepthDiff = hitCoord.z - fDepth;
 		[branch]
 		if (fDepthDiff > 0.0f)
-			return SSRBinarySearch(vDir, hitCoord);
+			return SSRBinarySearch(vDir, hitCoord,invSpaceMat);
 
-		vDir *= g_fRayStep;
-
+		vDir *= steplen;
 	}
 
 	return float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
-inline float3 reconstructVS(in float2 inUV, in float depth, in float4x4 InvVP)
-{
-	float4 positionSS = float4(inUV.x * 2 - 1, inUV.y * 2 - 1, depth* 2 - 1, 1.0f);
-	float4 positionVS = mul(positionSS, InvVP);
-	return positionVS.xyz;
-}
+
 float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 {        
    float4 normDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, IN.uv0 );
@@ -117,15 +118,11 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    if (depth>0.9999)
       return float4(0,0,0,0);
       
-   float3 posWS = reconstructVS(IN.uv0,depth* nearFar.y,invCameraMat).xyz;   
-   float3 normWS = mul(float4(normDepth.xyz, 1), invCameraMat).xyz;
-   
-   float3 posVS = mul(float4(posWS, 0),cameraMat).xyz;   
-   float3 normVS = mul(float4(normWS, 1), cameraMat).xyz;
-   
-	float3 reflectDir = normalize(reflect(posVS.xyz, normVS.xyz));
+   float3 posVS = reconstruct3DPos(IN.uv0,depth,cameraMat).xyz;   
 
-	float4 vCoords = SSRRayMarch(reflectDir, posVS);
+	float3 reflectDir = normalize(reflect(posVS.xyz, normDepth.xyz));
+	float4 vCoords = SSRRayMarch(reflectDir, posVS, invCameraMat, g_fRayStep);
+   
 	float2 vCoordsEdgeFact = float2(1, 1) - pow(saturate(abs(vCoords.xy - float2(0.5f, 0.5f)) * 2), 8);
 	float fScreenEdgeFactor = saturate(min(vCoordsEdgeFact.x, vCoordsEdgeFact.y));
 
@@ -159,9 +156,6 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 
    float3 light = (diffuseColor * diffuse.rgb) + (specularColor * specular.rgb);
 
-   //albedo = diffuseColor+lerp(reflectColor,indiffuseLighting,frez);
-   //albedo *= max(diffuseLighting.rgb,float3(0,0,0));
    
    return float4(light.rgb, 1.0);
-   //return float4(light.rgb, 1.0);
 }
