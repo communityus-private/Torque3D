@@ -310,7 +310,6 @@ PostEffect::PostEffect()
       mAccumTimeSC( NULL ),
       mDeltaTimeSC( NULL ),
 	  mCameraMatSC(NULL),
-	  mCameraProjSC(NULL),
 	  mInvCameraMatSC( NULL )
 {
    dMemset( mTexSRGB, 0, sizeof(bool) * NumTextures);
@@ -616,7 +615,6 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
       mAccumTimeSC = mShader->getShaderConstHandle( "$accumTime" );
       mDeltaTimeSC = mShader->getShaderConstHandle( "$deltaTime" );
 	  mCameraMatSC = mShader->getShaderConstHandle("$cameraMat");
-	  mCameraProjSC = mShader->getShaderConstHandle("$cameraProj");
       mInvCameraMatSC = mShader->getShaderConstHandle( "$invCameraMat" );
    }
 
@@ -855,19 +853,13 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 		  MatrixF mat = state->getCameraTransform();
 		  mShaderConsts->set(mCameraMatSC, mat, mCameraMatSC->getType());
 	  }
-	  if (mCameraProjSC->isValid())
-	  {
-		  MatrixF mat = GFX->getProjectionMatrix();
-		  mShaderConsts->set(mCameraProjSC, mat, mCameraMatSC->getType());
-	  }
 	  
       if ( mInvCameraMatSC->isValid() )
       {
          MatrixF mat = state->getCameraTransform();
-         mat.inverse();
+         mat.fullInverse();
          mShaderConsts->set( mInvCameraMatSC, mat, mInvCameraMatSC->getType() );
       }
-
    } // if ( state )
 
    // Set EffectConsts - specified from script
