@@ -850,14 +850,14 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 
 	  if (mCameraMatSC->isValid())
 	  {
-		  MatrixF mat = state->getCameraTransform();
+		  MatrixF mat = thisFrame.cameraToScreen;
 		  mShaderConsts->set(mCameraMatSC, mat, mCameraMatSC->getType());
 	  }
 	  
       if ( mInvCameraMatSC->isValid() )
       {
-         MatrixF mat = state->getCameraTransform();
-         mat.fullInverse();
+         MatrixF mat = thisFrame.cameraToScreen;
+		 mat.fullInverse();
          mShaderConsts->set( mInvCameraMatSC, mat, mInvCameraMatSC->getType() );
       }
    } // if ( state )
