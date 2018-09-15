@@ -64,7 +64,7 @@ inline float2 deconstruct3DPos(in float3 pos, in float4x4 invSpaceMat)
 		return vProjectedCoord.xy;
 }
 
-float4 SSRBinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat)
+float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat,float steplenMul)
 {
 	float fDepth;
 	for (int i = 0; i < g_iNumBinarySearchSteps; i++)
@@ -72,7 +72,7 @@ float4 SSRBinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceM
 		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
       
 		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w;
-		float fDepthDiff = hitCoord.z - fDepth;
+		float fDepthDiff = (hitCoord.z - fDepth)/steplenMul;
 
 		if (fDepthDiff <= 0.0f)
 			hitCoord += vDir;
@@ -83,12 +83,12 @@ float4 SSRBinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceM
 	float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
 
 	fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w;
-	float fDepthDiff = hitCoord.z - fDepth;
+	float fDepthDiff = (hitCoord.z - fDepth)/steplenMul;
 
 	return float4(hitUV, fDepth, abs(fDepthDiff) < g_fRayhitThreshold ? 1.0f : 0.0f);
 }
 
-float4 SSRRayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, float steplen)
+float4 RayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, float steplen, float steplenMul)
 {
 	float fDepth;
    float fDepthDiff = 0;
@@ -98,12 +98,12 @@ float4 SSRRayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, 
 		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
 
 		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex,hitUV).w;
-		fDepthDiff = hitCoord.z - fDepth;
+		fDepthDiff = (hitCoord.z - fDepth)/steplenMul;
 		[branch]
 		if (fDepthDiff > 0.0f)
-			return SSRBinarySearch(vDir, hitCoord,invSpaceMat);
+			return BinarySearch(vDir, hitCoord,invSpaceMat,steplenMul);
 
-		vDir *= steplen;
+		vDir *= steplen*steplenMul;
 	}
 
 	return float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -118,11 +118,11 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    if (depth>0.9999)
       return float4(0,0,0,0);
       
-   float3 posVS = reconstruct3DPos(IN.uv0,depth,cameraMat).xyz;
-   
+   float3 posVS = reconstruct3DPos(IN.uv0,depth,cameraMat).xyz;   
 
 	float3 reflectDir = normalize(reflect(posVS.xyz, normDepth.xyz));
-	float4 vCoords = SSRRayMarch(reflectDir, posVS,invCameraMat, g_fRayStep*nearFar.y*2);
+   float steplenMul = length(worldToScreenScale);
+	float4 vCoords = RayMarch(reflectDir, posVS, invCameraMat, g_fRayStep, steplenMul);
    
 //float2 posSS = deconstruct3DPos(posVS,invCameraMat);
 //return TORQUE_TEX2D( colorBufferTex, posSS );
