@@ -40,7 +40,7 @@ uniform float2 worldToScreenScale;
 // Avoid stepping zero distance
 static const float	g_fMinRayStep = 0.01f;
 // Crude raystep count
-static const int	g_iMaxSteps = 16;
+static const int	g_iMaxSteps = 64;
 // Crude raystep scaling
 static const float	g_fRayStep = 1.18f;
 // Fine raystep count
@@ -64,7 +64,7 @@ inline float2 deconstruct3DPos(in float3 pos, in float4x4 invSpaceMat)
 		return vProjectedCoord.xy;
 }
 
-float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat,float steplenMul)
+float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat)
 {
 	float fDepth;
 	for (int i = 0; i < g_iNumBinarySearchSteps; i++)
@@ -72,7 +72,7 @@ float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat,
 		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
       
 		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w;
-		float fDepthDiff = (hitCoord.z - fDepth)/steplenMul;
+		float fDepthDiff = (hitCoord.z - fDepth);
 
 		if (fDepthDiff <= 0.0f)
 			hitCoord += vDir;
@@ -83,12 +83,12 @@ float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat,
 	float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
 
 	fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w;
-	float fDepthDiff = (hitCoord.z - fDepth)/steplenMul;
+	float fDepthDiff = (hitCoord.z - fDepth);
 
 	return float4(hitUV, fDepth, abs(fDepthDiff) < g_fRayhitThreshold ? 1.0f : 0.0f);
 }
 
-float4 RayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, float steplen, float steplenMul)
+float4 RayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, float steplen)
 {
 	float fDepth;
    float fDepthDiff = 0;
@@ -98,12 +98,12 @@ float4 RayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, flo
 		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
 
 		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex,hitUV).w;
-		fDepthDiff = (hitCoord.z - fDepth)/steplenMul;
+		fDepthDiff = (hitCoord.z - fDepth);
 		[branch]
 		if (fDepthDiff > 0.0f)
-			return BinarySearch(vDir, hitCoord,invSpaceMat,steplenMul);
+			return BinarySearch(vDir, hitCoord,invSpaceMat);
 
-		vDir *= steplen*steplenMul;
+		vDir *= steplen;
 	}
 
 	return float4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -118,14 +118,11 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    if (depth>0.9999)
       return float4(0,0,0,0);
       
-   float3 posVS = reconstruct3DPos(IN.uv0,depth,cameraMat).xyz;   
-
+   float3 posVS = reconstruct3DPos(IN.uv0,depth,cameraMat).xyz;
 	float3 reflectDir = normalize(reflect(posVS.xyz, normDepth.xyz));
    float steplenMul = length(worldToScreenScale);
-	float4 vCoords = RayMarch(reflectDir, posVS, invCameraMat, g_fRayStep, steplenMul);
+	float4 vCoords = RayMarch(reflectDir, posVS,invCameraMat, g_fRayStep);
    
-//float2 posSS = deconstruct3DPos(posVS,invCameraMat);
-//return TORQUE_TEX2D( colorBufferTex, posSS );
 
 	float2 vCoordsEdgeFact = float2(1, 1) - pow(saturate(abs(vCoords.xy - float2(0.5f, 0.5f)) * 2), 8);
 	float fScreenEdgeFactor = saturate(min(vCoordsEdgeFact.x, vCoordsEdgeFact.y));
@@ -140,7 +137,6 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
          
 	float4 ssrColor = TORQUE_TEX2D( colorBufferTex, vCoords.xy );
    ssrColor *= TORQUE_TEX2D( specularLightingBuffer, vCoords.xy );
-//return float4(ssrColor.rgb,1.0);
    float3 albedo = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb; //albedo
    float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0); //flags|smoothness|ao|metallic
 
