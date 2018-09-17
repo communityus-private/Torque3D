@@ -31,11 +31,11 @@ new GFXStateBlockData( AL_DeferredShadingState : PFX_DefaultStateBlock )
    blendDest = GFXBlendInvSrcAlpha;
 
    samplersDefined = true;
-   samplerStates[0] = SamplerWrapLinear;
-   samplerStates[1] = SamplerWrapLinear;
-   samplerStates[2] = SamplerWrapLinear;
-   samplerStates[3] = SamplerWrapLinear;
-   samplerStates[4] = SamplerWrapLinear;
+   samplerStates[0] = SamplerClampLinear;
+   samplerStates[1] = SamplerClampLinear;
+   samplerStates[2] = SamplerClampLinear;
+   samplerStates[3] = SamplerClampLinear;
+   samplerStates[4] = SamplerClampLinear;
 };
 
 new ShaderData( AL_DeferredShader )
