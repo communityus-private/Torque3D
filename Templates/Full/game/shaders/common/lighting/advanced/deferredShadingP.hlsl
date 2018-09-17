@@ -139,7 +139,8 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
 			);
          
 	float4 ssrColor = TORQUE_TEX2D( colorBufferTex, vCoords.xy );
-//return ssrColor;
+   ssrColor *= TORQUE_TEX2D( specularLightingBuffer, vCoords.xy );
+//return float4(ssrColor.rgb,1.0);
    float3 albedo = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb; //albedo
    float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0); //flags|smoothness|ao|metallic
 
