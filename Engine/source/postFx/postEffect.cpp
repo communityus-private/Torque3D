@@ -310,7 +310,11 @@ PostEffect::PostEffect()
       mAccumTimeSC( NULL ),
       mDeltaTimeSC( NULL ),
 	  mCameraMatSC(NULL),
-	  mInvCameraMatSC( NULL )
+	  mInvCameraMatSC( NULL ),
+      mCameraTransSC(NULL),
+      mInvCameraTransSC(NULL),
+	  mViewMatSC(NULL),
+	  mInvViewMatSC(NULL)
 {
    dMemset( mTexSRGB, 0, sizeof(bool) * NumTextures);
    dMemset( mActiveTextures, 0, sizeof( GFXTextureObject* ) * NumTextures );
@@ -616,6 +620,10 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
       mDeltaTimeSC = mShader->getShaderConstHandle( "$deltaTime" );
 	  mCameraMatSC = mShader->getShaderConstHandle("$cameraMat");
       mInvCameraMatSC = mShader->getShaderConstHandle( "$invCameraMat" );
+	  mCameraTransSC = mShader->getShaderConstHandle("$cameraTrans");
+	  mInvCameraTransSC = mShader->getShaderConstHandle("$invCameraTrans");
+	  mViewMatSC = mShader->getShaderConstHandle("$viewMat");
+	  mInvViewMatSC = mShader->getShaderConstHandle("$invViewMat");	  
    }
 
    // Set up shader constants for source image size
@@ -860,6 +868,32 @@ void PostEffect::_setupConstants( const SceneRenderState *state )
 		 mat.fullInverse();
          mShaderConsts->set( mInvCameraMatSC, mat, mInvCameraMatSC->getType() );
       }
+
+	  if (mCameraTransSC->isValid())
+	  {
+		  MatrixF mat = state->getCameraTransform();
+		  mShaderConsts->set(mCameraTransSC, mat, mCameraTransSC->getType());
+	  }
+
+	  if (mInvCameraTransSC->isValid())
+	  {
+		  MatrixF mat = state->getCameraTransform();
+		  mat.fullInverse();
+		  mShaderConsts->set(mInvCameraTransSC, mat, mInvCameraTransSC->getType());
+	  }
+
+	  if (mViewMatSC->isValid())
+	  {
+		  MatrixF mat = GFX->getViewMatrix();
+		  mShaderConsts->set(mViewMatSC, mat, mViewMatSC->getType());
+	  }
+
+	  if (mInvViewMatSC->isValid())
+	  {
+		  MatrixF mat = GFX->getViewMatrix();
+		  mat.fullInverse();
+		  mShaderConsts->set(mInvViewMatSC, mat, mInvViewMatSC->getType());
+	  }
    } // if ( state )
 
    // Set EffectConsts - specified from script

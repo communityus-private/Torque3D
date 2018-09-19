@@ -32,10 +32,14 @@ TORQUE_UNIFORM_SAMPLER2D(deferredTex,4);
 
 uniform float4x4 invCameraMat;
 uniform float4x4 cameraMat;
+uniform float4x4 invCameraTrans;
+uniform float4x4 cameraTrans;
 uniform float2 nearFar;
 uniform float4x4 matWorldToScreen;
 uniform float4x4 matScreenToWorld;
 uniform float2 worldToScreenScale;
+uniform float4x4 viewMat;
+uniform float4x4 invViewMat;
 
 // Avoid stepping zero distance
 static const float	g_fMinRayStep = 0.01f;
@@ -50,7 +54,7 @@ static const float  g_fRayhitThreshold = 0.9f;
 
 inline float4 reconstruct3DPos(in float2 inUV, in float depth, in float4x4 spaceMat)
 {
-	float4 positionSS = float4(float3(inUV.x*2-1, inUV.y*2-1, depth), 1.0f);
+	float4 positionSS = float4(float3(inUV.x*2-1, inUV.y*2-1, depth*2-1), 1.0f);
    
 	float4 position3D = mul(positionSS, spaceMat);
 	return position3D/position3D.w;
@@ -67,12 +71,14 @@ inline float2 deconstruct3DPos(in float3 pos, in float4x4 invSpaceMat)
 float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat)
 {
 	float fDepth;
+   float2 hitUV;
+   float fDepthDiff;
 	for (int i = 0; i < g_iNumBinarySearchSteps; i++)
 	{
-		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
+		hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
       
 		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w;
-		float fDepthDiff = (hitCoord.z - fDepth);
+		fDepthDiff = (hitCoord.z - fDepth);
 
 		if (fDepthDiff <= 0.0f)
 			hitCoord += vDir;
@@ -80,11 +86,11 @@ float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat)
 		hitCoord -= vDir;
 	}
 
-	float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
+	hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
 
-	fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex, hitUV ).w;
-	float fDepthDiff = (hitCoord.z - fDepth);
-
+	fDepth = TORQUE_DEFERRED_UNCONDITION( deferredTex,hitUV).w;
+	fDepthDiff = (hitCoord.z - fDepth);
+   
 	return float4(hitUV, fDepth, abs(fDepthDiff) < g_fRayhitThreshold ? 1.0f : 0.0f);
 }
 
@@ -118,11 +124,16 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
    if (depth>0.9999)
       return float4(0,0,0,0);
       
-   float3 posVS = reconstruct3DPos(IN.uv0,depth,cameraMat).xyz;
-	float3 reflectDir = normalize(reflect(posVS.xyz, normDepth.xyz));
+   float3 posVS = reconstruct3DPos(IN.uv0,depth,viewMat).xyz;
+   float3 normVS = mul(float4(normDepth.xyz,1),invCameraMat).xyz;
+
+//return float4(normVS,1);
+
+
+	float3 reflectDir = normalize(reflect(posVS, normVS));   
+//return float4(reflectDir,1);
    float steplenMul = length(worldToScreenScale);
-	float4 vCoords = RayMarch(reflectDir, posVS,invCameraMat, g_fRayStep);
-   
+	float4 vCoords = RayMarch(reflectDir, posVS, invViewMat, g_fRayStep);   
 
 	float2 vCoordsEdgeFact = float2(1, 1) - pow(saturate(abs(vCoords.xy - float2(0.5f, 0.5f)) * 2), 8);
 	float fScreenEdgeFactor = saturate(min(vCoordsEdgeFact.x, vCoordsEdgeFact.y));
@@ -137,6 +148,7 @@ float4 main( PFXVertToPix IN) : TORQUE_TARGET0
          
 	float4 ssrColor = TORQUE_TEX2D( colorBufferTex, vCoords.xy );
    ssrColor *= TORQUE_TEX2D( specularLightingBuffer, vCoords.xy );
+return ssrColor;
    float3 albedo = TORQUE_TEX2D( colorBufferTex, IN.uv0 ).rgb; //albedo
    float4 matInfo = TORQUE_TEX2D(matInfoTex, IN.uv0); //flags|smoothness|ao|metallic
 
