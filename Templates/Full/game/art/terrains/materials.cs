@@ -47,6 +47,8 @@ new TerrainMaterial()
    detailBrightness = "1";
    Enabled = "1";
    diffuseSize = "200";
+   normalMap = "art/terrains/Example/grass1_n";
+   parallaxScale = "0.1";
 };
 
 singleton Material(TerrainFX_grass2)
@@ -97,6 +99,8 @@ new TerrainMaterial()
    Enabled = "1";
    diffuseSize = "250";
    detailStrength = "2";
+   normalMap = "art/terrains/Example/grass1_n";
+   parallaxScale = "0.1";
 };
 
 singleton Material(TerrainFX_dirt_grass)
@@ -108,6 +112,16 @@ singleton Material(TerrainFX_dirt_grass)
    showFootprints = "1";
    materialTag0 = "Terrain";
    effectColor[0] = "0.63 0.55 0 1";
+   diffuseMap = "art/terrains/Example/dirt_grass";
+   diffuseSize = "200";
+   detailMap = "art/terrains/Example/dirt_grass_d";
+   detailDistance = "100";
+   internalName = "dirt_grass";
+   enabled = "1";
+   isManaged = "1";
+   detailBrightness = "1";
+   parallaxScale = "0.1";
+   normalMap = "art/terrains/Example/dirt_grass_n";
 };
 
 new TerrainMaterial()
@@ -138,6 +152,17 @@ singleton Material(TerrainFX_rocktest)
    impactSoundId = "1";
    effectColor[0] = "0.25 0.25 0.25 1";
    effectColor[1] = "0.25 0.25 0.25 0";
+   diffuseMap = "art/terrains/Example/rocktest";
+   diffuseSize = "400";
+   normalMap = "art/terrains/Example/rocktest_n";
+   detailMap = "art/terrains/Example/rocktest_d";
+   detailSize = "10";
+   detailDistance = "100";
+   internalName = "rocktest";
+   enabled = "1";
+   isManaged = "1";
+   detailBrightness = "1";
+   parallaxScale = "0.1";
 };
 
 new TerrainMaterial()
@@ -168,6 +193,17 @@ singleton Material(TerrainFX_stone)
    impactSoundId = "1";
    effectColor[0] = "0.25 0.25 0.25 1";
    effectColor[1] = "0.25 0.25 0.25 0";
+   diffuseMap = "art/terrains/Example/stone";
+   diffuseSize = "400";
+   normalMap = "art/terrains/Example/stone_n";
+   detailMap = "art/terrains/Example/stone_d";
+   detailSize = "10";
+   detailDistance = "100";
+   internalName = "stone";
+   enabled = "1";
+   isManaged = "1";
+   detailBrightness = "1";
+   parallaxScale = "0.1";
 };
 
 new TerrainMaterial()
@@ -198,6 +234,17 @@ singleton Material(TerrainFX_sand)
    specularPower[0] = "1";
    effectColor[0] = "0.84 0.71 0.5 1";
    effectColor[1] = "0.84 0.71 0.5 0.349";
+   diffuseMap = "art/terrains/Example/sand";
+   diffuseSize = "200";
+   normalMap = "art/terrains/Example/sand_n";
+   detailMap = "art/terrains/Example/sand_d";
+   detailSize = "10";
+   detailDistance = "100";
+   parallaxScale = "0.1";
+   internalName = "sand";
+   isManaged = "1";
+   enabled = "1";
+   detailBrightness = "1";
 };
 
 new TerrainMaterial()
@@ -211,4 +258,6 @@ new TerrainMaterial()
    detailBrightness = "1";
    Enabled = "1";
    diffuseSize = "200";
+   normalMap = "art/terrains/Example/sand_n";
+   parallaxScale = "0.1";
 };
