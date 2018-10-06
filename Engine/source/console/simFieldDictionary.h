@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-field-mgmt -- Enhancements to dynamic field handling that allow for
-//            name filtering and replacement limiting.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _SIMFIELDDICTIONARY_H_
@@ -51,7 +47,7 @@ class SimFieldDictionary
 public:
    struct Entry
    {
-      Entry() : type( NULL ) {};
+      Entry() : type(NULL) {};
 
       StringTableEntry slotName;
       char *value;
@@ -68,10 +64,10 @@ private:
    static Entry   *smFreeList;
 
    void           freeEntry(Entry *entry);
-   Entry*         addEntry( U32 bucket, StringTableEntry slotName, ConsoleBaseType* type, char* value = 0 );
+   Entry*         addEntry(U32 bucket, StringTableEntry slotName, ConsoleBaseType* type, char* value = 0);
 
-   static U32     getHashValue( StringTableEntry slotName );
-   static U32     getHashValue( const String& fieldName );
+   static U32     getHashValue(StringTableEntry slotName);
+   static U32     getHashValue(const String& fieldName);
 
    U32   mNumFields;
 
@@ -92,18 +88,15 @@ public:
    const char *getFieldValue(StringTableEntry slotName);
    U32 getFieldType(StringTableEntry slotName) const;
    Entry  *findDynamicField(const String &fieldName) const;
-   Entry  *findDynamicField( StringTableEntry fieldName) const;
+   Entry  *findDynamicField(StringTableEntry fieldName) const;
    void writeFields(SimObject *obj, Stream &strem, U32 tabStop);
    void printFields(SimObject *obj);
    void assignFrom(SimFieldDictionary *dict);
    U32   getNumFields() const { return mNumFields; }
 
    Entry  *operator[](U32 index);
-
-   // AFX CODE BLOCK (enhanced-field-mgmt) <<
    void setFieldValue(StringTableEntry slotName, const char *value, ConsoleBaseType *type, bool no_replace);
    void assignFrom(SimFieldDictionary *dict, const char* filter, bool no_replace);
-   // AFX CODE BLOCK (enhanced-field-mgmt) >>
 };
 
 class SimFieldDictionaryIterator

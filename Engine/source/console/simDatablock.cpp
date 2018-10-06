@@ -23,12 +23,7 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        substitutions -- Implementation of special substitution statements on
-//            datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
-
 #include "platform/platform.h"
 #include "console/simDatablock.h"
 
@@ -38,10 +33,8 @@
 #include "T3D/gameBase/gameConnectionEvents.h"
 #include "T3D/gameBase/gameConnection.h"
 
-// AFX CODE BLOCK (substitutions) <<
 #include "core/stream/bitStream.h"
 #include "console/compiler.h"
-// AFX CODE BLOCK (substitutions) >>
 
 IMPLEMENT_CO_DATABLOCK_V1(SimDataBlock);
 SimObjectId SimDataBlock::sNextObjectId = DataBlockObjectIdFirst;
@@ -65,30 +58,25 @@ SimDataBlock::SimDataBlock()
    setModDynamicFields(true);
    setModStaticFields(true);
 }
-
-// AFX CODE BLOCK (substitutions) <<
-
 // this implements a simple structure for managing substitution statements.
 
 SimDataBlock::SubstitutionStatement::SubstitutionStatement(StringTableEntry slot, S32 idx, const char* value)
 {
-   this->slot = slot;
-   this->idx = idx;
-   this->value = dStrdup(value);
+   this->mSlot = slot;
+   this->mIdx = idx;
+   this->mValue = dStrdup(value);
 }
 
 SimDataBlock::SubstitutionStatement::~SubstitutionStatement()
 {
-   dFree(value);
+   dFree(mValue);
 }
 
 void SimDataBlock::SubstitutionStatement::replaceValue(const char* value)
 {
-   dFree(this->value);
-   this->value = dStrdup(value);
+   dFree(this->mValue);
+   this->mValue = dStrdup(value);
 }
-
-//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//
 
 // this is the copy-constructor for creating temp-clones.
 SimDataBlock::SimDataBlock(const SimDataBlock& other, bool temp_clone) : SimObject(other, temp_clone)
@@ -121,7 +109,7 @@ void SimDataBlock::addSubstitution(StringTableEntry slot, S32 idx, const char* s
 
    for (S32 i = 0; i < substitutions.size(); i++)
    {
-      if (substitutions[i] && substitutions[i]->slot == slot && substitutions[i]->idx == idx)
+      if (substitutions[i] && substitutions[i]->mSlot == slot && substitutions[i]->mIdx == idx)
       {
          if (empty_subs)
          {
@@ -149,8 +137,8 @@ const char* SimDataBlock::getSubstitution(StringTableEntry slot, S32 idx)
 {
    for (S32 i = 0; i < substitutions.size(); i++)
    {
-      if (substitutions[i] && substitutions[i]->slot == slot && substitutions[i]->idx == idx)
-         return substitutions[i]->value;
+      if (substitutions[i] && substitutions[i]->mSlot == slot && substitutions[i]->mIdx == idx)
+         return substitutions[i]->mValue;
    }
 
    return 0;
@@ -159,7 +147,7 @@ const char* SimDataBlock::getSubstitution(StringTableEntry slot, S32 idx)
 bool SimDataBlock::fieldHasSubstitution(StringTableEntry slot)
 {
    for (S32 i = 0; i < substitutions.size(); i++)
-      if (substitutions[i] && substitutions[i]->slot == slot)
+      if (substitutions[i] && substitutions[i]->mSlot == slot)
          return true;
    return false;
 }
@@ -168,7 +156,7 @@ void SimDataBlock::printSubstitutions()
 {
    for (S32 i = 0; i < substitutions.size(); i++)
       if (substitutions[i])
-         Con::errorf("SubstitutionStatement[%s] = \"%s\" -- %d", substitutions[i]->slot, substitutions[i]->value, i);
+         Con::errorf("SubstitutionStatement[%s] = \"%s\" -- %d", substitutions[i]->mSlot, substitutions[i]->mValue, i);
 }
 
 void SimDataBlock::copySubstitutionsFrom(SimDataBlock* other)
@@ -182,12 +170,12 @@ void SimDataBlock::copySubstitutionsFrom(SimDataBlock* other)
       if (other->substitutions[i])
       {
          SubstitutionStatement* subs = other->substitutions[i];
-         substitutions.push_back(new SubstitutionStatement(subs->slot, subs->idx, subs->value));
+         substitutions.push_back(new SubstitutionStatement(subs->mSlot, subs->mIdx, subs->mValue));
       }
    }
 }
 
-//
+
 // This is the method that evaluates any substitution statements on a datablock and does the
 // actual replacement of substituted datablock fields. 
 //
@@ -210,10 +198,10 @@ void SimDataBlock::performSubstitutions(SimDataBlock* dblock, const SimObject* o
    }
 
    char obj_str[32];
-   dStrcpy(obj_str, Con::getIntArg(obj->getId()));
+   dStrcpy(obj_str, Con::getIntArg(obj->getId()), 32);
 
    char index_str[32];
-   dStrcpy(index_str, Con::getIntArg(index));
+   dStrcpy(index_str, Con::getIntArg(index), 32);
 
    for (S32 i = 0; i < substitutions.size(); i++)
    {
@@ -224,7 +212,7 @@ void SimDataBlock::performSubstitutions(SimDataBlock* dblock, const SimObject* o
          char* b = buffer;
 
          // perform special token expansion (%% and ##)
-         const char* v = substitutions[i]->value;
+         const char* v = substitutions[i]->mValue;
          while (*v != '\0')
          {
             // identify "%%" tokens and replace with <obj> id
@@ -270,7 +258,7 @@ void SimDataBlock::performSubstitutions(SimDataBlock* dblock, const SimObject* o
          if (Compiler::gSyntaxError)
          {
             Con::errorf("Field Substitution Failed: field=\"%s\" substitution=\"%s\" -- syntax error", 
-               substitutions[i]->slot, substitutions[i]->value);
+               substitutions[i]->mSlot, substitutions[i]->mValue);
             Compiler::gSyntaxError = false;
             return;
          }
@@ -279,7 +267,7 @@ void SimDataBlock::performSubstitutions(SimDataBlock* dblock, const SimObject* o
          if (result == 0 || result[0] == '\0')
          {
             Con::errorf("Field Substitution Failed: field=\"%s\" substitution=\"%s\" -- empty result", 
-               substitutions[i]->slot, substitutions[i]->value);
+               substitutions[i]->mSlot, substitutions[i]->mValue);
             return;
          }
 
@@ -294,29 +282,29 @@ void SimDataBlock::performSubstitutions(SimDataBlock* dblock, const SimObject* o
                result = "";
          }
 
-         const AbstractClassRep::Field* field = dblock->getClassRep()->findField(substitutions[i]->slot);
+         const AbstractClassRep::Field* field = dblock->getClassRep()->findField(substitutions[i]->mSlot);
          if (!field)
          {
             // this should be very unlikely...
-            Con::errorf("Field Substitution Failed: unknown field, \"%s\".", substitutions[i]->slot);
+            Con::errorf("Field Substitution Failed: unknown field, \"%s\".", substitutions[i]->mSlot);
             continue;
          }
 
          if (field->keepClearSubsOnly && result[0] != '\0')
          {
             Con::errorf("Field Substitution Failed: field \"%s\" of datablock %s only allows \"$$ ~~\" (keep) and \"$$ ~0\" (clear) field substitutions. [%s]", 
-               substitutions[i]->slot, this->getClassName(), this->getName());
+               substitutions[i]->mSlot, this->getClassName(), this->getName());
             continue;
          }
 
          // substitute the field value with its replacement
-         Con::setData(field->type, (void*)(((const char*)(dblock)) + field->offset), substitutions[i]->idx, 1, &result, field->table, field->flag);
+         Con::setData(field->type, (void*)(((const char*)(dblock)) + field->offset), substitutions[i]->mIdx, 1, &result, field->table, field->flag);
 
          //dStrncpy(buffer, result, 255);
          //Con::errorf("SUBSTITUTION %s.%s[%d] = %s idx=%s", Con::getIntArg(getId()), substitutions[i]->slot, substitutions[i]->idx, buffer, index_str);
 
          // notify subclasses of a field modification
-         dblock->onStaticModified(substitutions[i]->slot);
+         dblock->onStaticModified(substitutions[i]->mSlot);
       }
    }
 
@@ -324,7 +312,6 @@ void SimDataBlock::performSubstitutions(SimDataBlock* dblock, const SimObject* o
    if (substitutions.size() > 0)
       dblock->onPerformSubstitutions();
 }
-// AFX CODE BLOCK (substitutions) >>
 
 //-----------------------------------------------------------------------------
 
@@ -367,8 +354,8 @@ void SimDataBlock::onStaticModified(const char* slotName, const char* newValue)
    modifiedKey = sNextModifiedKey++;
 }
 
-// AFX CODE BLOCK (substitutions) <<
-//
+//-----------------------------------------------------------------------------
+
 // packData() and unpackData() do nothing in the stock implementation, but here
 // they've been modified to pack and unpack any substitution statements.
 //
@@ -379,9 +366,9 @@ void SimDataBlock::packData(BitStream* stream)
       if (substitutions[i])
       {
          stream->writeFlag(true);
-         stream->writeString(substitutions[i]->slot);
-         stream->write(substitutions[i]->idx);
-         stream->writeString(substitutions[i]->value);
+         stream->writeString(substitutions[i]->mSlot);
+         stream->write(substitutions[i]->mIdx);
+         stream->writeString(substitutions[i]->mValue);
       }
    }
    stream->writeFlag(false);
@@ -401,21 +388,6 @@ void SimDataBlock::unpackData(BitStream* stream)
       substitutions.push_back(new SubstitutionStatement(StringTable->insert(slotName), idx, value));
    }
 }
-/* ORIGINAL CODE
-//-----------------------------------------------------------------------------
-
-void SimDataBlock::packData(BitStream*)
-{
-}
-
-//-----------------------------------------------------------------------------
-
-void SimDataBlock::unpackData(BitStream*)
-{
-}
-*/
-// AFX CODE BLOCK (substitutions) >>
-
 
 //-----------------------------------------------------------------------------
 

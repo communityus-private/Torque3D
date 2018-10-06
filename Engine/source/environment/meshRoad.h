@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-meshroad -- adds option for building top-surface-only PolyList.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _MESHROAD_H_
@@ -568,13 +565,10 @@ protected:
    Convex* mConvexList;
    Vector<MeshRoadConvex*> mDebugConvex;
    PhysicsBody *mPhysicsRep;
-
-   // AFX CODE BLOCK (enhanced-meshroad) <<
 private:
    static bool buildPolyList_TopSurfaceOnly;
 public:
    bool buildTopPolyList(PolyListContext, AbstractPolyList*);
-   // AFX CODE BLOCK (enhanced-meshroad) >>
 };
 
 

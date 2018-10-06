@@ -23,11 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-emitter -- numerous enhancements to ParticleEmitter class.
-//        pooled-particles -- optional support for pooled particles which combines
-//            multiple emitters in a common sorting pool.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _H_PARTICLE_EMITTER
@@ -52,13 +47,13 @@
 class RenderPassManager;
 class ParticleData;
 
-// AFX CODE BLOCK (pooled-particles) <<
-#define AFX_CAP_PARTICLE_POOLS
-#if defined(AFX_CAP_PARTICLE_POOLS)
-class afxParticlePoolData;
-class afxParticlePool;
+#ifdef TORQUE_AFX_ENABLED
+	#define AFX_CAP_PARTICLE_POOLS
+	#if defined(AFX_CAP_PARTICLE_POOLS)
+	class afxParticlePoolData;
+	class afxParticlePool;
+	#endif
 #endif
-// AFX CODE BLOCK (pooled-particles) >>
 
 //*****************************************************************************
 // Particle Emitter Data
@@ -131,8 +126,6 @@ class ParticleEmitterData : public GameBaseData
    bool glow;                                ///< Renders this emitter into the glow buffer.
 
    bool reload();
-
-   // AFX CODE BLOCK (enhanced-emitter) <<
 public:
    bool         fade_color;
    bool         fade_size;
@@ -140,24 +133,19 @@ public:
    bool         ejectionInvert;
    U8           parts_per_eject;
    bool         use_emitter_xfm;
-   // AFX CODE BLOCK (enhanced-emitter) >>
-
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
 public:
    afxParticlePoolData* pool_datablock;
    U32          pool_index;
    bool         pool_depth_fade;
    bool         pool_radial_fade;
    bool         do_pool_id_convert;
-#endif // AFX CODE BLOCK (pooled-particles) >>
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
+#endif
 public:
    /*C*/ ParticleEmitterData(const ParticleEmitterData&, bool = false);
    /*D*/ ~ParticleEmitterData();
    virtual ParticleEmitterData* cloneAndPerformSubstitutions(const SimObject*, S32 index=0);
    virtual bool allowSubstitutions() const { return true; }
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 };
 
 //*****************************************************************************
@@ -166,10 +154,9 @@ public:
 class ParticleEmitter : public GameBase
 {
    typedef GameBase Parent;
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
    friend class afxParticlePool;
-#endif // AFX CODE BLOCK (pooled-particles) >>
-
+#endif 
 
   public:
 
@@ -239,12 +226,8 @@ class ParticleEmitter : public GameBase
    /// @param   axis
    /// @param   vel   Initial velocity
    /// @param   axisx
-   // AFX CODE BLOCK (enhanced-emitter) <<
    void addParticle(const Point3F &pos, const Point3F &axis, const Point3F &vel, const Point3F &axisx, const U32 age_offset);
-   /* ORIGINAL CODE
-   void addParticle(const Point3F &pos, const Point3F &axis, const Point3F &vel, const Point3F &axisx);
-   */
-   // AFX CODE BLOCK (enhanced-emitter) >>
+
 
    inline void setupBillboard( Particle *part,
                                Point3F *basePts,
@@ -280,13 +263,12 @@ class ParticleEmitter : public GameBase
    // PEngine interface
   private:
 
-   // AFX CODE BLOCK (enhanced-emitter) <<
    // AFX subclasses to ParticleEmitter require access to some members and methods of
    // ParticleEmitter which are normally declared with private scope. In this section,
    // protected and private scope statements have been inserted inline with the original
    // code to expose the necessary members and methods.
    void update( U32 ms );
-protected:  // AFX CODE INSERT
+protected:
    inline void updateKeyData( Particle *part );
  
 
@@ -298,30 +280,30 @@ protected:  // AFX CODE INSERT
 
    ParticleEmitterData* mDataBlock;
 
-protected:  // AFX CODE INSERT
+protected: 
    U32       mInternalClock;
 
    U32       mNextParticleTime;
 
    Point3F   mLastPosition;
    bool      mHasLastPosition;
-private:  // AFX CODE INSERT   
+private:   
    MatrixF   mBBObjToWorld;
 
    bool      mDeleteWhenEmpty;
    bool      mDeleteOnTick;
 
-protected:  // AFX CODE INSERT
+protected: 
    S32       mLifetimeMS;
    S32       mElapsedTimeMS;
 
-private:  // AFX CODE INSERT  
+private:  
    F32       sizes[ ParticleData::PDC_NUM_KEYS ];
    LinearColorF    colors[ ParticleData::PDC_NUM_KEYS ];
 
    GFXVertexBufferHandle<ParticleVertexType> mVertBuff;
 
-protected:  // AFX CODE INSERT
+protected:
    //   These members are for implementing a link-list of the active emitter 
    //   particles. Member part_store contains blocks of particles that can be
    //   chained in a link-list. Usually the first part_store block is large
@@ -332,10 +314,9 @@ protected:  // AFX CODE INSERT
    Particle   part_list_head;
    S32        n_part_capacity;
    S32        n_parts;
-private:  // AFX CODE INSERT     
+private:    
    S32       mCurBuffSize;
-   // AFX CODE BLOCK (enhanced-emitter) >>
-   // AFX CODE BLOCK (enhanced-emitter) <<
+
   protected:
    F32 fade_amt;
    bool forced_bbox;
@@ -355,7 +336,6 @@ private:  // AFX CODE INSERT
    void clearPool() { pool = 0; }
    void setPool(afxParticlePool* p) { pool = p; }
 #endif
-   // AFX CODE BLOCK (enhanced-emitter) >>
 };
 
 #endif // _H_PARTICLE_EMITTER

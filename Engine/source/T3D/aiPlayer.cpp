@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        anim-clip -- sequence selection by afx effects
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -105,12 +102,9 @@ AIPlayer::AIPlayer()
    mMoveSlowdown = true;
    mMoveState = ModeStop;
 
-   // AFX CODE BLOCK (anim-clip) <<
    // This new member saves the movement state of the AI so that
    // it can be restored after a substituted animation is finished.
    mMoveState_saved = -1;
-   // AFX CODE BLOCK (anim-clip) >>
-
    mAimObject = 0;
    mAimLocationSet = false;
    mTargetInLOS = false;
@@ -561,33 +555,28 @@ bool AIPlayer::getAIMove(Move *movePtr)
             mMoveState = ModeMove;
          }
 
-         // AFX CODE BLOCK (anim-clip) <<
          // Don't check for ai stuckness if animation during
          // an anim-clip effect override.
          if (mDamageState == Enabled && !(anim_clip_flags & ANIM_OVERRIDDEN) && !isAnimationLocked()) {
-         // AFX CODE BLOCK (anim-clip) >>
-
-         if (mMoveStuckTestCountdown > 0)
-            --mMoveStuckTestCountdown;
-         else
-         {
-            // We should check to see if we are stuck...
-            F32 locationDelta = (location - mLastLocation).len();
+	         if (mMoveStuckTestCountdown > 0)
+	            --mMoveStuckTestCountdown;
+	         else
+	         {
+	            // We should check to see if we are stuck...
+	            F32 locationDelta = (location - mLastLocation).len();
             if (locationDelta < mMoveStuckTolerance && mDamageState == Enabled) 
             {
                // If we are slowing down, then it's likely that our location delta will be less than
                // our move stuck tolerance. Because we can be both slowing and stuck
                // we should TRY to check if we've moved. This could use better detection.
                if ( mMoveState != ModeSlowing || locationDelta == 0 )
-               {
-                  mMoveState = ModeStuck;
-                  onStuck();
-               }
-            }
+	               {
+	                  mMoveState = ModeStuck;
+	                  onStuck();
+	               }
+	            }
+	         }
          }
-         // AFX CODE BLOCK (anim-clip) <<
-         }
-         // AFX CODE BLOCK (anim-clip) >>
       }
    }
 
@@ -649,9 +638,7 @@ bool AIPlayer::getAIMove(Move *movePtr)
    }
 #endif // TORQUE_NAVIGATION_ENABLED
 
-   // AFX CODE BLOCK (anim-clip) <<
    if (!(anim_clip_flags & ANIM_OVERRIDDEN) && !isAnimationLocked())
-   // AFX CODE BLOCK (anim-clip) >>
    mLastLocation = location;
 
    return true;
@@ -1440,7 +1427,7 @@ DefineEngineMethod( AIPlayer, clearMoveTriggers, void, ( ),,
 {
    object->clearMoveTriggers();
 }
-// AFX CODE BLOCK (anim-clip) <<
+
 // These changes coordinate with anim-clip mods to parent class, Player.
 
 // New method, restartMove(), restores the AIPlayer to its normal move-state
@@ -1481,7 +1468,6 @@ void AIPlayer::saveMoveState()
    if (mMoveState_saved == -1)
       mMoveState_saved = (S32) mMoveState;
 }
-// AFX CODE BLOCK (anim-clip) >>
 
 F32 AIPlayer::getTargetDistance(GameBase* target, bool _checkEnabled)
 {

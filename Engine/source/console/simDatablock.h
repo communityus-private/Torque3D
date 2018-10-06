@@ -23,12 +23,7 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        substitutions -- Implementation of special substitution statements on
-//            datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
-
 #ifndef _SIMDATABLOCK_H_
 #define _SIMDATABLOCK_H_
 
@@ -181,14 +176,12 @@ public:
    /// Used by the console system to automatically tell datablock classes apart
    /// from non-datablock classes.
    static const bool __smIsDatablock = true;
-
-   // AFX CODE BLOCK (substitutions) <<
 protected:
    struct SubstitutionStatement
    {
-      StringTableEntry  slot;
-      S32               idx;
-      char*             value;
+      StringTableEntry  mSlot;
+      S32               mIdx;
+      char*             mValue;
       SubstitutionStatement(StringTableEntry slot, S32 idx, const char* value);
       ~SubstitutionStatement();
       void replaceValue(const char* value);
@@ -209,7 +202,6 @@ public:
    virtual void onAddSubstitution(StringTableEntry, S32 idx, const char* subst) { }
    virtual void onRemoveSubstitution(StringTableEntry, S32 idx) { }
    virtual void onPerformSubstitutions() { }
-   // AFX CODE BLOCK (substitutions) >>
 };
 
 //---------------------------------------------------------------------------

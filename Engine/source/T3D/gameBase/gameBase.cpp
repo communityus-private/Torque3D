@@ -23,12 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        scope-tracking -- changes related to the tracking of AFX constraint objects as
-//            they move in and out of scope.
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -47,10 +41,9 @@
 #include "T3D/aiConnection.h"
 #endif
 
-// AFX CODE BLOCK (scope-tracking) <<
+#ifdef TORQUE_AFX_ENABLED
 #include "afx/arcaneFX.h"
-// AFX CODE BLOCK (scope-tracking) >>
-
+#endif
 //----------------------------------------------------------------------------
 // Ghost update relative priority values
 
@@ -134,18 +127,15 @@ IMPLEMENT_CALLBACK( GameBase, setControl, void, ( bool controlled ), ( controlle
 
 GameBaseData::GameBaseData()
 {
-   category = "";
-   packed = false;
+   mCategory = "";
+   mPacked = false;
 }
-
-// AFX CODE BLOCK (datablock-temp-clone) <<
 GameBaseData::GameBaseData(const GameBaseData& other, bool temp_clone) : SimDataBlock(other, temp_clone)
 {
-   packed = other.packed;
-   category = other.category;
+   mPacked = other.mPacked;
+   mCategory = other.mCategory;
    //mReloadSignal = other.mReloadSignal; // DO NOT copy the mReloadSignal member. 
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
 
 void GameBaseData::inspectPostApply()
 {
@@ -168,7 +158,7 @@ void GameBaseData::initPersistFields()
 {
    addGroup("Scripting");
 
-      addField( "category", TypeCaseString, Offset( category, GameBaseData ),
+      addField( "category", TypeCaseString, Offset(mCategory, GameBaseData ),
          "The group that this datablock will show up in under the \"Scripted\" "
          "tab in the World Editor Library." );
 
@@ -181,14 +171,14 @@ bool GameBaseData::preload(bool server, String &errorStr)
 {
    if (!Parent::preload(server, errorStr))
       return false;
-   packed = false;
+   mPacked = false;
    return true;
 }
 
 void GameBaseData::unpackData(BitStream* stream)
 {
    Parent::unpackData(stream);
-   packed = true;
+   mPacked = true;
 }
 
 //----------------------------------------------------------------------------
@@ -268,10 +258,10 @@ GameBase::GameBase()
 
 GameBase::~GameBase()
 {
-   // AFX CODE BLOCK (scope-tracking) <<
-   if (scope_registered)
+#ifdef TORQUE_AFX_ENABLED
+   if (mScope_registered)
       arcaneFX::unregisterScopedObject(this);
-   // AFX CODE BLOCK (scope-tracking) >>
+#endif
 }
 
 
@@ -284,11 +274,10 @@ bool GameBase::onAdd()
 
    // Datablock must be initialized on the server.
    // Client datablock are initialized by the initial update.
-   
-   // AFX CODE BLOCK (scope-tracking) <<
+#ifdef TORQUE_AFX_ENABLED
    if (isClientObject())
    {
-      if (scope_id > 0 && !scope_registered)
+      if (mScope_id > 0 && !mScope_registered)
          arcaneFX::registerScopedObject(this);
    }
    else
@@ -296,11 +285,10 @@ bool GameBase::onAdd()
       if ( mDataBlock && !onNewDataBlock( mDataBlock, false ) )
          return false;
    }
-   /* ORIGINAL CODE
+#else
    if ( isServerObject() && mDataBlock && !onNewDataBlock( mDataBlock, false ) )
       return false;
-   */
-   // AFX CODE BLOCK (scope-tracking) >>
+#endif
 
    setProcessTick( true );
 
@@ -309,11 +297,10 @@ bool GameBase::onAdd()
 
 void GameBase::onRemove()
 {
-   // AFX CODE BLOCK (scope-tracking) <<
-   if (scope_registered)
+#ifdef TORQUE_AFX_ENABLED
+   if (mScope_registered)
       arcaneFX::unregisterScopedObject(this);
-   // AFX CODE BLOCK (scope-tracking) >>
-
+#endif
    // EDITOR FEATURE: Remove us from the reload signal of our datablock.
    if ( mDataBlock )
       mDataBlock->mReloadSignal.remove( this, &GameBase::_onDatablockModified );
@@ -338,12 +325,11 @@ bool GameBase::onNewDataBlock( GameBaseData *dptr, bool reload )
 
    if ( !mDataBlock )
       return false;
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
+#ifdef TORQUE_AFX_ENABLED
    // Don't set mask when new datablock is a temp-clone.
    if (mDataBlock->isTempClone())
       return true;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
+#endif
 
    setMaskBits(DataBlockMask);
    return true;
@@ -469,7 +455,7 @@ F32 GameBase::getUpdatePriority(CameraScopeQuery *camInfo, U32 updateMask, S32 u
       // Projectiles are more interesting if they
       // are heading for us.
       wInterest = 0.30f;
-      F32 dot = -mDot(pos,getVelocity());
+      dot = -mDot(pos,getVelocity());
       if (dot > 0.0f)
          wInterest += 0.20 * dot;
    }
@@ -597,14 +583,13 @@ U32 GameBase::packUpdate( NetConnection *connection, U32 mask, BitStream *stream
    stream->writeFlag(mIsAiControlled);
 #endif
 
-   // AFX CODE BLOCK (scope-tracking) <<
+#ifdef TORQUE_AFX_ENABLED
    if (stream->writeFlag(mask & ScopeIdMask))
    {
-      if (stream->writeFlag(scope_refs > 0))
-         stream->writeInt(scope_id, SCOPE_ID_BITS);
+      if (stream->writeFlag(mScope_refs > 0))
+         stream->writeInt(mScope_id, SCOPE_ID_BITS);
    }
-   // AFX CODE BLOCK (scope-tracking) >>
-
+#endif
    return retMask;
 }
 
@@ -643,14 +628,13 @@ void GameBase::unpackUpdate(NetConnection *con, BitStream *stream)
    mTicksSinceLastMove = 0;
    mIsAiControlled = stream->readFlag();
 #endif
-
-   // AFX CODE BLOCK (scope-tracking) <<
+#ifdef TORQUE_AFX_ENABLED
    if (stream->readFlag())
    {
-      scope_id = (stream->readFlag()) ? (U16) stream->readInt(SCOPE_ID_BITS) : 0;
-      scope_refs = 0;
+      mScope_id = (stream->readFlag()) ? (U16) stream->readInt(SCOPE_ID_BITS) : 0;
+	  mScope_refs = 0;
    }
-   // AFX CODE BLOCK (scope-tracking) >>
+#endif
 }
 
 void GameBase::onMount( SceneObject *obj, S32 node )

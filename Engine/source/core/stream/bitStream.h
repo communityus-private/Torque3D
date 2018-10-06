@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        packet-overflow-checks -- Monitor packet sizes to avoid packet overflow, especially
-//            when dynamic variables are used for AFX effect parameterization.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _BITSTREAM_H_
@@ -57,7 +53,7 @@ class QuatF;
 class BitStream : public Stream
 {
 protected:
-   U8 *dataPtr;
+   U8 *mDataPtr;
    S32  bitNum;
    S32  bufSize;
    bool error;
@@ -72,7 +68,7 @@ public:
    static void sendPacketStream(const NetAddress *addr);
 
    void setBuffer(void *bufPtr, S32 bufSize, S32 maxSize = 0);
-   U8*  getBuffer() { return dataPtr; }
+   U8*  getBuffer() { return mDataPtr; }
    U8*  getBytePtr();
 
    U32 getReadByteSize();
@@ -263,9 +259,7 @@ public:
    U32  getPosition() const;
    bool setPosition(const U32 in_newPosition);
    U32  getStreamSize();
-   // AFX CODE BLOCK (packet-overflow-checks) <<
    S32  getMaxWriteBitNum() const { return maxWriteBitNum; }
-   // AFX CODE BLOCK (packet-overflow-checks) >>
 };
 
 class ResizeBitStream : public BitStream
@@ -343,7 +337,7 @@ inline bool BitStream::readFlag()
       return false;
    }
    S32 mask = 1 << (bitNum & 0x7);
-   bool ret = (*(dataPtr + (bitNum >> 3)) & mask) != 0;
+   bool ret = (*(mDataPtr + (bitNum >> 3)) & mask) != 0;
    bitNum++;
    return ret;
 }

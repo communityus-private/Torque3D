@@ -23,11 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        meshroad-zodiacs -- MeshRoad customizations for rendering zodiacs on them.
-//        enhanced-meshroad -- adds option for building top-surface-only PolyList.
-//        special-types -- defines type bits for interior-like and terrain-like types.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -61,10 +56,9 @@
 #include "T3D/physics/physicsBody.h"
 #include "T3D/physics/physicsCollision.h"
 #include "environment/nodeListManager.h"
-
-// AFX CODE BLOCK (meshroad-zodiacs) <<
+#ifdef TORQUE_AFX_ENABLED
 #include "afx/ce/afxZodiacMgr.h"
-// AFX CODE BLOCK (meshroad-zodiacs) >>
+#endif
 
 #define MIN_METERS_PER_SEGMENT 1.0f
 #define MIN_NODE_DEPTH 0.25f
@@ -634,10 +628,7 @@ MeshRoad::MeshRoad()
 	mMatInst[Top] = NULL;
    mMatInst[Bottom] = NULL;
    mMatInst[Side] = NULL;
-
-   // AFX CODE BLOCK (special-types) <<
    mTypeMask |= TerrainLikeObjectType;
-   // AFX CODE BLOCK (special-types) >>
 }
 
 MeshRoad::~MeshRoad()
@@ -839,10 +830,9 @@ void MeshRoad::prepRenderImage( SceneRenderState* state )
    // otherwise obey the smShowRoad flag
    if ( smShowRoad || !smEditorOpen )
    {
-      // AFX CODE BLOCK (meshroad-zodiacs) <<
+#ifdef TORQUE_AFX_ENABLED
       afxZodiacMgr::renderMeshRoadZodiacs(state, this);
-      // AFX CODE BLOCK (meshroad-zodiacs) >>
-
+#endif
       MeshRenderInst coreRI;
       coreRI.clear();
       coreRI.objectToWorld = &MatrixF::Identity;
@@ -1401,14 +1391,11 @@ bool MeshRoad::buildSegmentPolyList( AbstractPolyList* polyList, U32 startSegIdx
          ddraw->setLastTTL( 0 );
       }
 
-      // AFX CODE BLOCK (enhanced-meshroad) <<
       if (buildPolyList_TopSurfaceOnly)
       {
          offset += 4;
          continue;
       }
-      // AFX CODE BLOCK (enhanced-meshroad) >>
-
       // Left Face
 
       polyList->begin( 0,0 );
@@ -1694,54 +1681,40 @@ void MeshRoad::_generateSlices()
          }          
       }
    }
-
-   //
-   // Calculate uvec, fvec, and rvec for all slices
-   //   
-
+   
    MatrixF mat(true);
-
-   for ( U32 i = 0; i < mSlices.size(); i++ )
-   {
-      calcSliceTransform( i, mat );
-      mat.getColumn( 0, &mSlices[i].rvec );
-      mat.getColumn( 1, &mSlices[i].fvec );
-      mat.getColumn( 2, &mSlices[i].uvec );
-   } 
-
-   //
-   // Calculate p0/p2/pb0/pb2 for all slices
-   //      
-   for ( U32 i = 0; i < mSlices.size(); i++ )
-   {
-      MeshRoadSlice *slice = &mSlices[i];
-      slice->p0 = slice->p1 - slice->rvec * slice->width * 0.5f;
-      slice->p2 = slice->p1 + slice->rvec * slice->width * 0.5f;
-      slice->pb0 = slice->p0 - slice->uvec * slice->depth;
-      slice->pb2 = slice->p2 - slice->uvec * slice->depth;
-   }
-
-   // Generate the object/world bounds
    Box3F box;
    for ( U32 i = 0; i < mSlices.size(); i++ )
    {
-      const MeshRoadSlice &slice = mSlices[i];
+      // Calculate uvec, fvec, and rvec for all slices
+      calcSliceTransform( i, mat );
+	  MeshRoadSlice *slicePtr = &mSlices[i];
+      mat.getColumn( 0, &slicePtr->rvec );
+      mat.getColumn( 1, &slicePtr->fvec );
+      mat.getColumn( 2, &slicePtr->uvec );
 
+      // Calculate p0/p2/pb0/pb2 for all slices
+	  slicePtr->p0 = slicePtr->p1 - slicePtr->rvec * slicePtr->width * 0.5f;
+	  slicePtr->p2 = slicePtr->p1 + slicePtr->rvec * slicePtr->width * 0.5f;
+	  slicePtr->pb0 = slicePtr->p0 - slicePtr->uvec * slicePtr->depth;
+	  slicePtr->pb2 = slicePtr->p2 - slicePtr->uvec * slicePtr->depth;
+
+	  // Generate or extend the object/world bounds
       if ( i == 0 )
       {
-         box.minExtents = slice.p0;
-         box.maxExtents = slice.p2;
-         box.extend( slice.pb0 );
-         box.extend( slice.pb2 );
+         box.minExtents = slicePtr->p0;
+         box.maxExtents = slicePtr->p2;
+         box.extend(slicePtr->pb0 );
+         box.extend(slicePtr->pb2 );
       }
       else
       {
-         box.extend( slice.p0 ); 
-         box.extend( slice.p2 );
-         box.extend( slice.pb0 );
-         box.extend( slice.pb2 );
+         box.extend(slicePtr->p0 );
+         box.extend(slicePtr->p2 );
+         box.extend(slicePtr->pb0 );
+         box.extend(slicePtr->pb2 );
       }
-   }
+   } 
 
    mWorldBox = box;
    resetObjectBox();
@@ -2484,8 +2457,6 @@ DefineEngineMethod( MeshRoad, postApply, void, (),,
 {
    object->inspectPostApply();
 }
-
-// AFX CODE BLOCK (enhanced-meshroad) <<
 bool MeshRoad::buildPolyList_TopSurfaceOnly = false;
 
 bool MeshRoad::buildTopPolyList(PolyListContext plc, AbstractPolyList* polyList)
@@ -2498,3 +2469,4 @@ bool MeshRoad::buildTopPolyList(PolyListContext plc, AbstractPolyList* polyList)
 
    return result;
 }
+

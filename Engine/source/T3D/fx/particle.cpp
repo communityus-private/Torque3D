@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-particle -- increased keys to 8.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "particle.h"
@@ -81,11 +78,8 @@ static const F32 sgDefaultSpinSpeed = 1.f;
 static const F32 sgDefaultSpinRandomMin = 0.f;
 static const F32 sgDefaultSpinRandomMax = 0.f;
 
-// AFX CODE BLOCK (enhanced-particle) <<
 static const F32 sgDefaultSpinBias = 1.0f;
 static const F32 sgDefaultSizeBias = 1.0f;
-// AFX CODE BLOCK (enhanced-particle) >>
-
 
 //-----------------------------------------------------------------------------
 // Constructor
@@ -115,18 +109,10 @@ ParticleData::ParticleData()
       sizes[i] = 1.0;
    }
 
-   // AFX CODE BLOCK (enhanced-particle) <<
    times[0] = 0.0f;
    times[1] = 1.0f;
    for (i = 2; i < PDC_NUM_KEYS; i++)
      times[i] = -1.0f;
-   /* ORIGINAL CODE
-   times[0] = 0.0f;
-   times[1] = 0.33f;
-   times[2] = 0.66f;
-   times[3] = 1.0f;
-   */
-   // AFX CODE BLOCK (enhanced-particle) >>
 
    texCoords[0].set(0.0,0.0);   // texture coords at 4 corners
    texCoords[1].set(0.0,1.0);   // of particle quad
@@ -137,8 +123,6 @@ ParticleData::ParticleData()
    animTexUVs = NULL;           // array of tile vertex UVs
    textureName = NULL;          // texture filename
    textureHandle = NULL;        // loaded texture handle
-
-   // AFX CODE BLOCK (enhanced-particle) <<
    textureExtName = NULL;
    textureExtHandle = NULL;
    constrain_pos = false;
@@ -147,24 +131,12 @@ ParticleData::ParticleData()
    sizeBias = sgDefaultSizeBias;
    spinBias = sgDefaultSpinBias;
    randomizeSpinDir = false;
-   // AFX CODE BLOCK (enhanced-particle) >>
 }
 
 //-----------------------------------------------------------------------------
 // Destructor
 //-----------------------------------------------------------------------------
-// AFX CODE BLOCK (enhanced-particle) <<
-// moved to later in this file
-/*
-ParticleData::~ParticleData()
-{
-   if (animTexUVs)
-   {
-      delete [] animTexUVs;
-   }
-}
-*/
-// AFX CODE BLOCK (enhanced-particle) >>
+
 
 FRangeValidator dragCoefFValidator(0.f, 5.f);
 FRangeValidator gravCoefFValidator(-10.f, 10.f);
@@ -252,7 +224,6 @@ void ParticleData::initPersistFields()
       "@brief Time keys used with the colors and sizes keyframes.\n\n"
       "Values are from 0.0 (particle creation) to 1.0 (end of lifespace)." );
 
-   // AFX CODE BLOCK (enhanced-particle) <<
    addGroup("AFX"); 
    addField("textureExtName",       TypeFilename, Offset(textureExtName,     ParticleData));
    addField("constrainPos",         TypeBool,     Offset(constrain_pos,      ParticleData));
@@ -262,8 +233,6 @@ void ParticleData::initPersistFields()
    addField("spinBias",             TypeF32,      Offset(spinBias,           ParticleData));
    addField("randomizeSpinDir",     TypeBool,     Offset(randomizeSpinDir,   ParticleData));
    endGroup("AFX"); 
-   // AFX CODE BLOCK (enhanced-particle) >>
-   
    Parent::initPersistFields();
 }
 
@@ -293,36 +262,22 @@ void ParticleData::packData(BitStream* stream)
       stream->writeInt((S32)(spinRandomMin + 1000), 11);
       stream->writeInt((S32)(spinRandomMax + 1000), 11);
    }
-   
-   // AFX CODE BLOCK (enhanced-particle) <<
    if(stream->writeFlag(spinBias != sgDefaultSpinBias))
       stream->write(spinBias);
    stream->writeFlag(randomizeSpinDir);
-   // AFX CODE BLOCK (enhanced-particle) >>
-   
    stream->writeFlag(useInvAlpha);
 
    S32 i, count;
 
    // see how many frames there are:
-   // AFX CODE BLOCK (enhanced-particle) <<
    for(count = 0; count < ParticleData::PDC_NUM_KEYS-1; count++)
-   /* ORIGINAL CODE
-   for(count = 0; count < 3; count++)
-   */
-   // AFX CODE BLOCK (enhanced-particle) >>
       if(times[count] >= 1)
          break;
 
    count++;
 
-   // AFX CODE BLOCK (enhanced-particle) <<
    // An extra bit is needed for 8 keys.
    stream->writeInt(count-1, 3);
-   /* ORIGINAL CODE
-   stream->writeInt(count-1, 2);
-   */
-   // AFX CODE BLOCK (enhanced-particle) >>
 
    for( i=0; i<count; i++ )
    {
@@ -330,13 +285,8 @@ void ParticleData::packData(BitStream* stream)
       stream->writeFloat( colors[i].green, 7);
       stream->writeFloat( colors[i].blue, 7);
       stream->writeFloat( colors[i].alpha, 7);
-      // AFX CODE BLOCK (enhanced-particle) <<
       // AFX bits raised from 14 to 16 to allow larger sizes
       stream->writeFloat( sizes[i]/MaxParticleSize, 16);
-      /* ORIGINAL CODE
-      stream->writeFloat( sizes[i]/MaxParticleSize, 14);
-      */
-      // AFX CODE BLOCK (enhanced-particle) >>
       stream->writeFloat( times[i], 8);
    }
 
@@ -353,8 +303,6 @@ void ParticleData::packData(BitStream* stream)
       mathWrite(*stream, animTexTiling);
       stream->writeInt(framesPerSec, 8);
    }
-      
-   // AFX CODE BLOCK (enhanced-particle) <<
    if (stream->writeFlag(textureExtName && textureExtName[0]))
      stream->writeString(textureExtName);
    stream->writeFlag(constrain_pos);
@@ -362,7 +310,6 @@ void ParticleData::packData(BitStream* stream)
    stream->writeFloat(angle_variance/180.0f, 10);
    if(stream->writeFlag(sizeBias != sgDefaultSizeBias))
       stream->write(sizeBias);
-   // AFX CODE BLOCK (enhanced-particle) >>
 }
 
 //-----------------------------------------------------------------------------
@@ -406,37 +353,24 @@ void ParticleData::unpackData(BitStream* stream)
       spinRandomMax = sgDefaultSpinRandomMax;
    }
 
-   // AFX CODE BLOCK (enhanced-particle) <<
    if(stream->readFlag())
       stream->read(&spinBias);
    else
       spinBias = sgDefaultSpinBias;
    randomizeSpinDir = stream->readFlag();
-   // AFX CODE BLOCK (enhanced-particle) >>
-
    useInvAlpha = stream->readFlag();
 
    S32 i;
-   // AFX CODE BLOCK (enhanced-particle) <<
    // An extra bit is needed for 8 keys.
    S32 count = stream->readInt(3) + 1;
-   /* ORIGINAL CODE
-   S32 count = stream->readInt(2) + 1;
-   */
-   // AFX CODE BLOCK (enhanced-particle) >>
    for(i = 0;i < count; i++)
    {
       colors[i].red = stream->readFloat(7);
       colors[i].green = stream->readFloat(7);
       colors[i].blue = stream->readFloat(7);
       colors[i].alpha = stream->readFloat(7);
-      // AFX CODE BLOCK (enhanced-particle) <<
       // AFX bits raised from 14 to 16 to allow larger sizes
       sizes[i] = stream->readFloat(16) * MaxParticleSize;
-      /* ORIGINAL CODE
-      sizes[i] = stream->readFloat(14) * MaxParticleSize;
-      */
-      // AFX CODE BLOCK (enhanced-particle) >>
       times[i] = stream->readFloat(8);
    }
    textureName = (stream->readFlag()) ? stream->readSTString() : 0;
@@ -450,8 +384,6 @@ void ParticleData::unpackData(BitStream* stream)
      mathRead(*stream, &animTexTiling);
      framesPerSec = stream->readInt(8);
    }
-      
-   // AFX CODE BLOCK (enhanced-particle) <<
    textureExtName = (stream->readFlag()) ? stream->readSTString() : 0;
    constrain_pos = stream->readFlag();
    start_angle = 360.0f*stream->readFloat(11);
@@ -460,7 +392,6 @@ void ParticleData::unpackData(BitStream* stream)
       stream->read(&sizeBias);
    else
       sizeBias = sgDefaultSizeBias;
-   // AFX CODE BLOCK (enhanced-particle) >>
 }
 
 bool ParticleData::protectedSetSizes( void *object, const char *index, const char *data) 
@@ -541,7 +472,6 @@ bool ParticleData::onAdd()
       return false;
    }
 
-   // AFX CODE BLOCK (enhanced-particle) <<
    times[0] = 0.0f;
    for (U32 i = 1; i < PDC_NUM_KEYS; i++) 
    {
@@ -571,16 +501,6 @@ bool ParticleData::onAdd()
       colors[i] = colors[last_idx];
       sizes[i] = sizes[last_idx];
    }
-   /* ORIGINAL CODE
-   times[0] = 0.0f;
-   for (U32 i = 1; i < 4; i++) {
-      if (times[i] < times[i-1]) {
-         Con::warnf(ConsoleLogEntry::General, "ParticleData(%s) times[%d] < times[%d]", getName(), i, i-1);
-         times[i] = times[i-1];
-      }
-   }
-   */
-   // AFX CODE BLOCK (enhanced-particle) >>
 
    // Here we validate parameters
    if (animateTexture) 
@@ -618,13 +538,10 @@ bool ParticleData::onAdd()
      }
    }
 
-   // AFX CODE BLOCK (enhanced-particle) <<
    start_angle = mFmod(start_angle, 360.0f);
    if (start_angle < 0.0f)
      start_angle += 360.0f;
    angle_variance = mClampF(angle_variance, -180.0f, 180.0f);
-   // AFX CODE BLOCK (enhanced-particle) >>
-
    return true;
 }
 
@@ -650,18 +567,15 @@ bool ParticleData::preload(bool server, String &errorStr)
           error = true;
         }
       }
-
-      // AFX CODE BLOCK (enhanced-particle) <<
       if (textureExtName && textureExtName[0])
       {
-         textureExtHandle = GFXTexHandle(textureExtName, &GFXStaticTextureProfile, avar("%s() - textureExtHandle (line %d)", __FUNCTION__, __LINE__));
+         textureExtHandle = GFXTexHandle(textureExtName, &GFXStaticTextureSRGBProfile, avar("%s() - textureExtHandle (line %d)", __FUNCTION__, __LINE__));
          if (!textureExtHandle)
          {
             errorStr = String::ToString("Missing particle texture: %s", textureName);
             error = true;
          }
       }
-      // AFX CODE BLOCK (enhanced-particle) >>
 
       if (animateTexture) 
       {
@@ -680,8 +594,9 @@ bool ParticleData::preload(bool server, String &errorStr)
 
         animTexFrames.clear();
 
-        char* tokCopy = new char[dStrlen(animTexFramesString) + 1];
-        dStrcpy(tokCopy, animTexFramesString);
+        dsize_t tokLen = dStrlen(animTexFramesString) + 1;
+        char* tokCopy = new char[tokLen];
+        dStrcpy(tokCopy, animTexFramesString, tokLen);
 
         char* currTok = dStrtok(tokCopy, " \t");
         while (currTok != NULL) 
@@ -773,14 +688,11 @@ void ParticleData::initializeParticle(Particle* init, const Point3F& inheritVelo
 
    // assign spin amount
    init->spinSpeed = spinSpeed * gRandGen.randF( spinRandomMin, spinRandomMax );
-
-   // AFX CODE BLOCK (enhanced-particle) <<
    // apply spin bias
    init->spinSpeed *= spinBias;
    // randomize spin direction
    if (randomizeSpinDir && (gRandGen.randI( 0, 1 ) == 1))
      init->spinSpeed = -init->spinSpeed;
-   // AFX CODE BLOCK (enhanced-particle) >>
 }
 
 bool ParticleData::reload(char errorBuffer[256])
@@ -828,8 +740,6 @@ DefineEngineMethod(ParticleData, reload, void, (),,
    char errorBuffer[256];
    object->reload(errorBuffer);
 }
-
-// AFX CODE BLOCK (datablock-temp-clone) <<
 //#define TRACK_PARTICLE_DATA_CLONES
 
 #ifdef TRACK_PARTICLE_DATA_CLONES
@@ -905,5 +815,3 @@ void ParticleData::onPerformSubstitutions()
   char errorBuffer[256];
   reload(errorBuffer);
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
-

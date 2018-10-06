@@ -23,11 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
-//        enhanced-particle -- Accounts for larger number of particle size keys.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -123,7 +118,6 @@ DebrisData::DebrisData()
    ignoreWater = true;
 }
 
-// AFX CODE BLOCK (datablock-temp-clone) <<
 //#define TRACK_DEBRIS_DATA_CLONES
 
 #ifdef TRACK_DEBRIS_DATA_CLONES
@@ -202,7 +196,6 @@ void DebrisData::onPerformSubstitutions()
          Con::errorf("DebrisData::onPerformSubstitutions(): failed to load shape \"%s\"", shapeName);
    }
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
 
 bool DebrisData::onAdd()
 {
@@ -360,12 +353,9 @@ void DebrisData::initPersistFields()
    addField("ignoreWater",          TypeBool,                    Offset(ignoreWater,         DebrisData), "If true, this debris object will not collide with water, acting as if the water is not there.");
    endGroup("Behavior");
 
-   // AFX CODE BLOCK (substitutions) <<
    // disallow some field substitutions
    onlyKeepClearSubstitutions("emitters"); // subs resolving to "~~", or "~0" are OK
    onlyKeepClearSubstitutions("explosion");
-   // AFX CODE BLOCK (substitutions) >>
-   
    Parent::initPersistFields();
 }
 
@@ -406,7 +396,7 @@ void DebrisData::packData(BitStream* stream)
 
    if( stream->writeFlag( explosion ) )
    {
-      stream->writeRangedU32(packed? SimObjectId((uintptr_t)explosion):
+      stream->writeRangedU32(mPacked ? SimObjectId((uintptr_t)explosion):
          explosion->getId(),DataBlockObjectIdFirst,DataBlockObjectIdLast);
    }
 
@@ -548,11 +538,8 @@ Debris::Debris()
 
    // Only allocated client side.
    mNetFlags.set( IsGhost );
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    ss_object = 0;
    ss_index = 0;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 }
 
 Debris::~Debris()
@@ -568,14 +555,12 @@ Debris::~Debris()
       delete mPart;
       mPart = NULL;
    }
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
+   
    if (mDataBlock && mDataBlock->isTempClone())
    { 
       delete mDataBlock;
       mDataBlock = 0;
    }
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 }
 
 void Debris::initPersistFields()
@@ -605,11 +590,8 @@ bool Debris::onNewDataBlock( GameBaseData *dptr, bool reload )
    if( !mDataBlock || !Parent::onNewDataBlock( dptr, reload ) )
       return false;
 
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    if (mDataBlock->isTempClone())
       return true;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
-
    scriptOnNewDataBlock();
    return true;
 
@@ -634,12 +616,7 @@ bool Debris::onAdd()
       if( mDataBlock->emitterList[i] != NULL )
       {
          ParticleEmitter * pEmitter = new ParticleEmitter;
-         // AFX CODE BLOCK (datablock-temp-clone) <<
          pEmitter->onNewDataBlock(mDataBlock->emitterList[i]->cloneAndPerformSubstitutions(ss_object, ss_index), false);
-         /* ORIGINAL CODE
-         pEmitter->onNewDataBlock( mDataBlock->emitterList[i], false );
-         */
-         // AFX CODE BLOCK (datablock-temp-clone) >>
          if( !pEmitter->registerObject() )
          {
             Con::warnf( ConsoleLogEntry::General, "Could not register emitter for particle of class: %s", mDataBlock->getName() );
@@ -657,13 +634,8 @@ bool Debris::onAdd()
    {
       sizeList[0] = mSize * 0.5;
       sizeList[1] = mSize;
-      // AFX CODE BLOCK (enhanced-particle) <<
       for (U32 i = 2; i < ParticleData::PDC_NUM_KEYS; i++)
          sizeList[i] = mSize * 1.5;
-      /* ORIGINAL CODE
-      sizeList[2] = mSize * 1.5;
-      */
-      // AFX CODE BLOCK (enhanced-particle) >>
 
       mEmitterList[0]->setSizes( sizeList );
    }
@@ -672,13 +644,8 @@ bool Debris::onAdd()
    {
       sizeList[0] = 0.0;
       sizeList[1] = mSize * 0.5;
-      // AFX CODE BLOCK (enhanced-particle) <<
       for (U32 i = 2; i < ParticleData::PDC_NUM_KEYS; i++)
          sizeList[i] = mSize;
-      /* ORIGINAL CODE
-      sizeList[2] = mSize;
-      */
-      // AFX CODE BLOCK (enhanced-particle) >>
 
       mEmitterList[1]->setSizes( sizeList );
    }
@@ -702,7 +669,7 @@ bool Debris::onAdd()
    // Setup our bounding box
    if( mDataBlock->shape )
    {
-      mObjBox = mDataBlock->shape->bounds;
+      mObjBox = mDataBlock->shape->mBounds;
    }
    else
    {
@@ -930,13 +897,8 @@ void Debris::explode()
    Point3F explosionPos = getPosition();
 
    Explosion* pExplosion = new Explosion;
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    pExplosion->setSubstitutionData(ss_object, ss_index);
    pExplosion->onNewDataBlock(mDataBlock->explosion->cloneAndPerformSubstitutions(ss_object, ss_index), false);
-   /* ORIGINAL CODE
-   pExplosion->onNewDataBlock(mDataBlock->explosion, false);
-   */
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 
    MatrixF trans( true );
    trans.setPosition( getPosition() );

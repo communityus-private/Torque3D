@@ -23,12 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
-//        substitutions -- Types equating SFXDescription with legacy AudioDescription
-//            and SFXProfile with legacy AudioProfile. (deprecated)
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -103,13 +97,6 @@ SFXProfile::SFXProfile( SFXDescription* desc, const String& filename, bool prelo
 
 //-----------------------------------------------------------------------------
 
-// AFX CODE BLOCK (datablock-temp-clone) <<
-/* ORIGINAL CODE
-SFXProfile::~SFXProfile()
-{
-}
-*/
-// AFX CODE BLOCK (datablock-temp-clone) >>
 
 //-----------------------------------------------------------------------------
 
@@ -129,11 +116,9 @@ void SFXProfile::initPersistFields()
       
    endGroup( "Sound" );
 
-   // AFX CODE BLOCK (substitutions) <<
    // disallow some field substitutions
    disableFieldSubstitutions("description");
-   // AFX CODE BLOCK (substitutions) >>
-   
+
    Parent::initPersistFields();
 }
 
@@ -394,8 +379,6 @@ DefineEngineMethod( SFXProfile, getSoundDuration, F32, (),,
    return ( F32 ) object->getSoundDuration() * 0.001f;
 }
 
-// AFX CODE BLOCK (datablock-temp-clone) <<
-
 // enable this to help verify that temp-clones of AudioProfile are being deleted
 //#define TRACK_AUDIO_PROFILE_CLONES
 
@@ -442,10 +425,8 @@ SFXProfile::~SFXProfile()
 #endif
 }
 
-//
 // Clone and perform substitutions on the SFXProfile and on any SFXDescription
 // it references.
-//
 SFXProfile* SFXProfile::cloneAndPerformSubstitutions(const SimObject* owner, S32 index)
 {
   if (!owner)
@@ -489,9 +470,6 @@ void SFXProfile::onPerformSubstitutions()
       SFX->getEventSignal().notify( this, &SFXProfile::_onDeviceEvent );
    }
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
-
-// AFX CODE BLOCK (sfx-legacy) <<
 // This allows legacy AudioProfile datablocks to be recognized as an alias
 // for SFXProfile. It is intended to ease the transition from older scripts
 // especially those that still need to support pre-1.7 applications.
@@ -512,6 +490,4 @@ ConsoleDocClass( AudioProfile,
    "@ingroup AFX\n"
    "@ingroup Datablocks\n"
 );
-
-// AFX CODE BLOCK (sfx-legacy) >>
 

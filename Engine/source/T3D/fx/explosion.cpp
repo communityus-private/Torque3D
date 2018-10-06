@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -59,9 +55,7 @@
 #include "renderInstance/renderPassManager.h"
 #include "console/engineAPI.h"
 
-// AFX CODE BLOCK (datablock-temp-clone) <<
 #include "sfx/sfxProfile.h"
-// AFX CODE BLOCK (datablock-temp-clone) >>
 
 IMPLEMENT_CONOBJECT(Explosion);
 
@@ -294,7 +288,6 @@ ExplosionData::ExplosionData()
    lightNormalOffset = 0.1f;
 }
 
-// AFX CODE BLOCK (datablock-temp-clone) <<
 //#define TRACK_EXPLOSION_DATA_CLONES
 
 #ifdef TRACK_EXPLOSION_DATA_CLONES
@@ -393,7 +386,6 @@ ExplosionData* ExplosionData::cloneAndPerformSubstitutions(const SimObject* owne
 
    return sub_explosion_db;
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
 
 void ExplosionData::initPersistFields()
 {
@@ -526,15 +518,12 @@ void ExplosionData::initPersistFields()
       "Distance (in the explosion normal direction) of the PointLight position "
       "from the explosion center." );
 
-   // AFX CODE BLOCK (substitutions) <<
    // disallow some field substitutions
    onlyKeepClearSubstitutions("debris"); // subs resolving to "~~", or "~0" are OK
    onlyKeepClearSubstitutions("emitter");
    onlyKeepClearSubstitutions("particleEmitter");
    onlyKeepClearSubstitutions("soundProfile");
    onlyKeepClearSubstitutions("subExplosion");
-   // AFX CODE BLOCK (substitutions) >>
-   
    Parent::initPersistFields();
 }
 
@@ -931,13 +920,10 @@ Explosion::Explosion()
    mLight = LIGHTMGR->createLightInfo();
 
    mNetFlags.set( IsGhost );
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    ss_object = 0;
    ss_index = 0;
    mDataBlock = 0;
    soundProfile_clone = 0;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 }
 
 Explosion::~Explosion()
@@ -950,8 +936,7 @@ Explosion::~Explosion()
    }
    
    SAFE_DELETE(mLight);
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
+   
    if (soundProfile_clone)
    { 
       delete soundProfile_clone;
@@ -963,7 +948,6 @@ Explosion::~Explosion()
       delete mDataBlock;
       mDataBlock = 0;
    }
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 }
 
 
@@ -1122,11 +1106,8 @@ bool Explosion::onNewDataBlock( GameBaseData *dptr, bool reload )
    if (!mDataBlock || !Parent::onNewDataBlock( dptr, reload ))
       return false;
 
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    if (mDataBlock->isTempClone())
       return true;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
-
    scriptOnNewDataBlock();
    return true;
 }
@@ -1339,13 +1320,8 @@ void Explosion::launchDebris( Point3F &axis )
       launchDir *= debrisVel;
 
       Debris *debris = new Debris;
-      // AFX CODE BLOCK (datablock-temp-clone) <<
       debris->setSubstitutionData(ss_object, ss_index);
       debris->setDataBlock(mDataBlock->debrisList[0]->cloneAndPerformSubstitutions(ss_object, ss_index));
-      /* ORIGINAL CODE
-      debris->setDataBlock( mDataBlock->debrisList[0] );
-      */
-      // AFX CODE BLOCK (datablock-temp-clone) >>
       debris->setTransform( getTransform() );
       debris->init( pos, launchDir );
 
@@ -1373,13 +1349,8 @@ void Explosion::spawnSubExplosions()
       {
          MatrixF trans = getTransform();
          Explosion* pExplosion = new Explosion;
-         // AFX CODE BLOCK (datablock-temp-clone) <<
          pExplosion->setSubstitutionData(ss_object, ss_index);
          pExplosion->setDataBlock(mDataBlock->explosionList[i]->cloneAndPerformSubstitutions(ss_object, ss_index));
-         /* ORIGINAL CODE
-         pExplosion->setDataBlock( mDataBlock->explosionList[i] );
-         */
-         // AFX CODE BLOCK (datablock-temp-clone) >>
          pExplosion->setTransform( trans );
          pExplosion->setInitialState( trans.getPosition(), mInitialNormal, 1);
          if (!pExplosion->registerObject())
@@ -1413,11 +1384,10 @@ bool Explosion::explode()
       mEndingMS = U32(mExplosionInstance->getScaledDuration(mExplosionThread) * 1000.0f);
 
       mObjScale.convolve(mDataBlock->explosionScale);
-      mObjBox = mDataBlock->explosionShape->bounds;
+      mObjBox = mDataBlock->explosionShape->mBounds;
       resetWorldBox();
    }
 
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    SFXProfile* sound_prof = dynamic_cast<SFXProfile*>(mDataBlock->soundProfile);
    if (sound_prof)
    {
@@ -1426,20 +1396,10 @@ bool Explosion::explode()
       if (!soundProfile_clone->isTempClone())
          soundProfile_clone = 0;
    }
-   /* ORIGINAL CODE
-   if (mDataBlock->soundProfile)
-      SFX->playOnce( mDataBlock->soundProfile, &getTransform() );
-   */
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 
    if (mDataBlock->particleEmitter) {
       mMainEmitter = new ParticleEmitter;
-      // AFX CODE BLOCK (datablock-temp-clone) <<
       mMainEmitter->setDataBlock(mDataBlock->particleEmitter->cloneAndPerformSubstitutions(ss_object, ss_index));
-      /* ORIGINAL CODE
-      mMainEmitter->setDataBlock(mDataBlock->particleEmitter);
-      */
-      // AFX CODE BLOCK (datablock-temp-clone) >>
       mMainEmitter->registerObject();
 
       mMainEmitter->emitParticles(getPosition(), mInitialNormal, mDataBlock->particleRadius,
@@ -1451,12 +1411,7 @@ bool Explosion::explode()
       if( mDataBlock->emitterList[i] != NULL )
       {
          ParticleEmitter * pEmitter = new ParticleEmitter;
-         // AFX CODE BLOCK (datablock-temp-clone) <<
          pEmitter->setDataBlock(mDataBlock->emitterList[i]->cloneAndPerformSubstitutions(ss_object, ss_index));
-         /* ORIGINAL CODE
-         pEmitter->setDataBlock( mDataBlock->emitterList[i] );
-         */
-         // AFX CODE BLOCK (datablock-temp-clone) >>
          if( !pEmitter->registerObject() )
          {
             Con::warnf( ConsoleLogEntry::General, "Could not register emitter for particle of class: %s", mDataBlock->getName() );

@@ -23,12 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//          db-cache -- implementation of datablock caching system.
-//        obj-select -- implementation of object selection used for spell targeting.
-//          zoned-in -- connection is flagged as "zoned-in" when client is fully
-//              connected and user can interact with it.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -50,10 +44,8 @@
 #include "console/engineAPI.h"
 #include "math/mTransform.h"
 
-#ifdef TORQUE_EXPERIMENTAL_EC
 #include "T3D/entity.h"
 #include "T3D/components/coreInterfaces.h"
-#endif
 
 #ifdef TORQUE_HIFI_NET
    #include "T3D/gameBase/hifi/hifiMoveList.h"
@@ -63,14 +55,13 @@
    #include "T3D/gameBase/std/stdMoveList.h"
 #endif
 
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#ifdef AFX_CAP_DATABLOCK_CACHE 
 #include "core/stream/fileStream.h"
-#endif // AFX CODE BLOCK (db-cache) >>
+#endif 
 
-// AFX CODE BLOCK (obj-select) <<
+#ifdef TORQUE_AFX_ENABLED
 #include "afx/arcaneFX.h"
-// AFX CODE BLOCK (obj-select) >>
-
+#endif
 //----------------------------------------------------------------------------
 #define MAX_MOVE_PACKET_SENDS 4
 
@@ -192,30 +183,28 @@ IMPLEMENT_CALLBACK( GameConnection, onFlash, void, (bool state), (state),
    "either is on or both are off.  Typically this is used to enable the flash postFx.\n\n"
    "@param state Set to true if either the damage flash or white out conditions are active.\n\n");
 
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#ifdef AFX_CAP_DATABLOCK_CACHE 
 StringTableEntry GameConnection::server_cache_filename = "";
 StringTableEntry GameConnection::client_cache_filename = "";
 bool GameConnection::server_cache_on = false;
 bool GameConnection::client_cache_on = false;
-#endif // AFX CODE BLOCK (db-cache) >>
-
+#endif 
 //----------------------------------------------------------------------------
 GameConnection::GameConnection()
 {
-   // AFX CODE BLOCK (obj-select)(zoned-in) <<
+#ifdef TORQUE_AFX_ENABLED
    mRolloverObj = NULL;
    mPreSelectedObj = NULL;
    mSelectedObj = NULL;
    mChangedSelectedObj = false;
    mPreSelectTimestamp = 0;
    zoned_in = false;
-   // AFX CODE BLOCK (obj-select)(zoned-in) >>
-
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#endif
+   
+#ifdef AFX_CAP_DATABLOCK_CACHE 
    client_db_stream = new InfiniteBitStream;
    server_cache_CRC = 0xffffffff;
-#endif // AFX CODE BLOCK (db-cache) >>
-
+#endif 
    mLagging = false;
    mControlObject = NULL;
    mCameraObject = NULL;
@@ -287,9 +276,9 @@ GameConnection::~GameConnection()
    dFree(mJoinPassword);
    delete mMoveList;
 
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#ifdef AFX_CAP_DATABLOCK_CACHE
    delete client_db_stream;
-#endif // AFX CODE BLOCK (db-cache) >>
+#endif 
 }
 
 //----------------------------------------------------------------------------
@@ -513,8 +502,8 @@ bool GameConnection::readConnectRequest(BitStream *stream, const char **errorStr
 
    for(U32 i = 0; i < mConnectArgc+3; i++)
    {
-	   connectArgv[i].value = &connectArgvValue[i];
-	   connectArgvValue[i].init();
+      connectArgv[i].value = &connectArgvValue[i];
+      connectArgvValue[i].init();
    }
 
    for(U32 i = 0; i < mConnectArgc; i++)
@@ -602,7 +591,7 @@ void GameConnection::setControlObject(GameBase *obj)
       // Update the camera's FOV to match the new control object
       //but only if we don't have a specific camera object
       if (!mCameraObject)
-      setControlCameraFov( obj->getCameraFov() );
+         setControlCameraFov(obj->getCameraFov());
    }
 
    // Okay, set our control object.
@@ -798,7 +787,6 @@ bool GameConnection::getControlCameraFov(F32 * fov)
    }
    if (cObj)
    {
-#ifdef TORQUE_EXPERIMENTAL_EC
       if (Entity* ent = dynamic_cast<Entity*>(cObj))
       {
          if (CameraInterface* camInterface = ent->getComponent<CameraInterface>())
@@ -808,11 +796,9 @@ bool GameConnection::getControlCameraFov(F32 * fov)
       }
       else
       {
-      *fov = cObj->getCameraFov();
+         *fov = cObj->getCameraFov();
       }
-#else
-      *fov = cObj->getCameraFov();
-#endif
+
       return(true);
    }
 
@@ -832,7 +818,6 @@ bool GameConnection::isValidControlCameraFov(F32 fov)
 
    if (cObj)
    {
-#ifdef TORQUE_EXPERIMENTAL_EC
       if (Entity* ent = dynamic_cast<Entity*>(cObj))
       {
          if (CameraInterface* camInterface = ent->getComponent<CameraInterface>())
@@ -844,9 +829,6 @@ bool GameConnection::isValidControlCameraFov(F32 fov)
       {
          return cObj->isValidCameraFov(fov);
       }
-#else
-      return cObj->isValidCameraFov(fov);
-#endif
    }
 
    return NULL;
@@ -864,8 +846,6 @@ bool GameConnection::setControlCameraFov(F32 fov)
    }
    if (cObj)
    {
-
-#ifdef TORQUE_EXPERIMENTAL_EC
       F32 newFov = 90.f;
       if (Entity* ent = dynamic_cast<Entity*>(cObj))
       {
@@ -885,11 +865,6 @@ bool GameConnection::setControlCameraFov(F32 fov)
          cObj->setCameraFov(mClampF(fov, MinCameraFov, MaxCameraFov));
          newFov = cObj->getCameraFov();
       }
-#else
-      // allow shapebase to clamp fov to its datablock values
-      cObj->setCameraFov(mClampF(fov, MinCameraFov, MaxCameraFov));
-      F32 newFov = cObj->getCameraFov();
-#endif
 
       // server fov of client has 1degree resolution
       if( S32(newFov) != S32(mCameraFov) || newFov != fov )
@@ -958,8 +933,8 @@ void GameConnection::onRemove()
       // clientgroup and what not (this is so that we can disconnect from a local server
       // without needing to destroy and recreate the server before we can connect to it 
       // again).
-	   // Safe-delete as we don't know whether the server connection is currently being
-	   // worked on.
+      // Safe-delete as we don't know whether the server connection is currently being
+      // worked on.
       getRemoteConnection()->safeDeleteObject();
       setRemoteConnectionObject(NULL);
    }
@@ -1188,7 +1163,7 @@ void GameConnection::readPacket(BitStream *bstream)
    {
       mMoveList->clientReadMovePacket(bstream);
 
-      // AFX CODE BLOCK (obj-select) <<
+#ifdef TORQUE_AFX_ENABLED
       // selected object - do we have a change in status?
       if (bstream->readFlag()) 
       { 
@@ -1200,7 +1175,7 @@ void GameConnection::readPacket(BitStream *bstream)
          else
             setSelectedObj(NULL);
       }
-      // AFX CODE BLOCK (obj-select) >>
+#endif
 
       bool hadFlash = mDamageFlash > 0 || mWhiteOut > 0;
       mDamageFlash = 0;
@@ -1445,8 +1420,7 @@ void GameConnection::writePacket(BitStream *bstream, PacketNotify *note)
       // all the damage flash & white out
 
       S32 gIndex = -1;
-
-      // AFX CODE BLOCK (obj-select) <<
+#ifdef TORQUE_AFX_ENABLED
       if (mChangedSelectedObj)
       {
          S32 gidx;
@@ -1475,8 +1449,8 @@ void GameConnection::writePacket(BitStream *bstream, PacketNotify *note)
       }
       else
          bstream->writeFlag(false);
-      // AFX CODE BLOCK (obj-select) >>
-
+#endif
+		 
       if (!mControlObject.isNull())
       {
          gIndex = getGhostIndex(mControlObject);
@@ -1699,12 +1673,12 @@ void GameConnection::preloadNextDataBlock(bool hadNewFiles)
 
 //          gResourceManager->setMissingFileLogging(false);
 
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#ifdef AFX_CAP_DATABLOCK_CACHE 
          // This should be the last of the datablocks. An argument of false
          // indicates that this is a client save.
          if (clientCacheEnabled())
             saveDatablockCache(false);
-#endif // AFX CODE BLOCK (db-cache) >>
+#endif 
 
          return;
       }
@@ -1869,11 +1843,11 @@ DefineEngineMethod( GameConnection, transmitDataBlocks, void, (S32 sequence),,
     const U32 iCount = pGroup->size();
 
     // If this is the local client...
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#ifdef AFX_CAP_DATABLOCK_CACHE 
     if (GameConnection::getLocalClientConnection() == object && !GameConnection::serverCacheEnabled())
 #else
     if (GameConnection::getLocalClientConnection() == object)
-#endif // AFX CODE BLOCK (db-cache) >>
+#endif 
     {
         // Set up a pointer to the datablock.
         SimDataBlock* pDataBlock = 0;
@@ -2269,12 +2243,12 @@ void GameConnection::consoleInit()
 
    // Con::addVariable("specialFog", TypeBool, &SceneGraph::useSpecial);
 
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#ifdef AFX_CAP_DATABLOCK_CACHE 
    Con::addVariable("$Pref::Server::DatablockCacheFilename",  TypeString,   &server_cache_filename);
    Con::addVariable("$pref::Client::DatablockCacheFilename",  TypeString,   &client_cache_filename);
    Con::addVariable("$Pref::Server::EnableDatablockCache",    TypeBool,     &server_cache_on);
    Con::addVariable("$pref::Client::EnableDatablockCache",    TypeBool,     &client_cache_on);
-#endif // AFX CODE BLOCK (db-cache) >>
+#endif 
 }
 
 DefineEngineMethod( GameConnection, startRecording, void, (const char* fileName),,
@@ -2470,14 +2444,12 @@ DefineEngineMethod( GameConnection, getVisibleGhostDistance, F32, (),,
 {
    return object->getVisibleGhostDistance();
 }
-// AFX CODE BLOCK (obj-select) <<
-//
+
+#ifdef TORQUE_AFX_ENABLED 
 // The object selection code here is, in part, based, on functionality described
 // in the following resource:
-//
 // Object Selection in Torque by Dave Myers 
 //   http://www.garagegames.com/index.php?sec=mg&mod=resource&page=view&qid=7335
-//
 
 ConsoleMethod(GameConnection, setSelectedObj, bool, 3, 4, "(object, [propagate_to_client])")
 {
@@ -2602,9 +2574,9 @@ void GameConnection::onDeleteNotify(SimObject* obj)
 
    Parent::onDeleteNotify(obj);
 }
-// AFX CODE BLOCK (obj-select) >>
+#endif
 
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#ifdef AFX_CAP_DATABLOCK_CACHE 
 
 void GameConnection::tempDisableStringBuffering(BitStream* bs) const 
 { 
@@ -2991,4 +2963,4 @@ bool GameConnection::loadDatablockCache_Continue()
    return true;
 }
 
-#endif // AFX CODE BLOCK (db-cache) >>
+#endif 

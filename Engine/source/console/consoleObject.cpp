@@ -23,12 +23,7 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        substitutions -- Implementation of special substitution statements on
-//            datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
-
 #include "platform/platform.h"
 #include "console/consoleObject.h"
 
@@ -42,6 +37,7 @@
 #include "console/engineTypes.h"
 #include "console/engineAPI.h"
 
+#include "sim/netObject.h"
 
 IMPLEMENT_SCOPE( ConsoleAPI, Console,,
    "Functionality related to the legacy TorqueScript console system." );
@@ -360,7 +356,7 @@ void ConsoleObject::addGroup(const char* in_pGroupname, const char* in_pGroupDoc
    char* pFieldNameBuf = suppressSpaces(in_pGroupname);
 
    // Append group type to fieldname.
-   dStrcat(pFieldNameBuf, "_begingroup");
+   dStrcat(pFieldNameBuf, "_begingroup", 1024);
 
    // Create Field.
    AbstractClassRep::Field f;
@@ -377,6 +373,7 @@ void ConsoleObject::addGroup(const char* in_pGroupname, const char* in_pGroupDoc
    f.setDataFn    = &defaultProtectedSetFn;
    f.getDataFn    = &defaultProtectedGetFn;
    f.writeDataFn = &defaultProtectedWriteFn;
+   f.networkMask  = 0;
 
    // Add to field list.
    sg_tempFieldList.push_back(f);
@@ -388,7 +385,7 @@ void ConsoleObject::endGroup(const char*  in_pGroupname)
    char* pFieldNameBuf = suppressSpaces(in_pGroupname);
 
    // Append group type to fieldname.
-   dStrcat(pFieldNameBuf, "_endgroup");
+   dStrcat(pFieldNameBuf, "_endgroup", 1024);
 
    // Create Field.
    AbstractClassRep::Field f;
@@ -401,6 +398,7 @@ void ConsoleObject::endGroup(const char*  in_pGroupname)
    f.getDataFn    = &defaultProtectedGetFn;
    f.writeDataFn = &defaultProtectedWriteFn;
    f.elementCount = 0;
+   f.networkMask  = 0;
 
    // Add to field list.
    sg_tempFieldList.push_back(f);
@@ -409,7 +407,7 @@ void ConsoleObject::endGroup(const char*  in_pGroupname)
 void ConsoleObject::addArray( const char *arrayName, S32 count )
 {
    char *nameBuff = suppressSpaces(arrayName);
-   dStrcat(nameBuff, "_beginarray");
+   dStrcat(nameBuff, "_beginarray", 1024);
 
    // Create Field.
    AbstractClassRep::Field f;
@@ -423,6 +421,7 @@ void ConsoleObject::addArray( const char *arrayName, S32 count )
    f.setDataFn    = &defaultProtectedSetFn;
    f.getDataFn    = &defaultProtectedGetFn;
    f.writeDataFn = &defaultProtectedWriteFn;
+   f.networkMask = 0;
 
    // Add to field list.
    sg_tempFieldList.push_back(f);
@@ -431,7 +430,7 @@ void ConsoleObject::addArray( const char *arrayName, S32 count )
 void ConsoleObject::endArray( const char *arrayName )
 {
    char *nameBuff = suppressSpaces(arrayName);
-   dStrcat(nameBuff, "_endarray");
+   dStrcat(nameBuff, "_endarray", 1024);
 
    // Create Field.
    AbstractClassRep::Field f;
@@ -444,6 +443,7 @@ void ConsoleObject::endArray( const char *arrayName )
    f.getDataFn    = &defaultProtectedGetFn;
    f.writeDataFn = &defaultProtectedWriteFn;
    f.elementCount = 0;
+   f.networkMask = 0;
 
    // Add to field list.
    sg_tempFieldList.push_back(f);
@@ -520,6 +520,7 @@ void ConsoleObject::addField(const char*  in_pFieldname,
    f.setDataFn = &defaultProtectedSetFn;
    f.getDataFn = &defaultProtectedGetFn;
    f.writeDataFn = in_writeDataFn;
+   f.networkMask = 0;
 
    ConsoleBaseType* conType = ConsoleBaseType::getType(in_fieldType);
    AssertFatal(conType, "ConsoleObject::addField - invalid console type");
@@ -614,6 +615,7 @@ void ConsoleObject::addProtectedField(const char*  in_pFieldname,
    f.setDataFn = in_setDataFn;
    f.getDataFn = in_getDataFn;
    f.writeDataFn = in_writeDataFn;
+   f.networkMask = 0;
 
    ConsoleBaseType* conType = ConsoleBaseType::getType(in_fieldType);
    AssertFatal(conType, "ConsoleObject::addProtectedField - invalid console type");
@@ -640,6 +642,7 @@ void ConsoleObject::addFieldV(const char*  in_pFieldname,
    f.getDataFn    = &defaultProtectedGetFn;
    f.writeDataFn = &defaultProtectedWriteFn;
    f.validator    = v;
+   f.networkMask = 0;
    v->fieldIndex  = sg_tempFieldList.size();
 
    sg_tempFieldList.push_back(f);
@@ -657,11 +660,12 @@ void ConsoleObject::addDeprecatedField(const char *fieldName)
    f.setDataFn    = &defaultProtectedSetFn;
    f.getDataFn    = &defaultProtectedGetFn;
    f.writeDataFn = &defaultProtectedWriteFn;
+   f.networkMask = 0;
 
    sg_tempFieldList.push_back(f);
 }
 
-
+//------------------------------------------------------------------
 bool ConsoleObject::removeField(const char* in_pFieldname)
 {
    for (U32 i = 0; i < sg_tempFieldList.size(); i++) {
@@ -690,7 +694,6 @@ AbstractClassRep* ConsoleObject::getClassRep() const
    return NULL;
 }
 
-// AFX CODE BLOCK (substitutions) <<
 bool ConsoleObject::disableFieldSubstitutions(const char* fieldname)
 {
    StringTableEntry slotname = StringTable->insert(fieldname);
@@ -724,8 +727,6 @@ bool ConsoleObject::onlyKeepClearSubstitutions(const char* fieldname)
 
    return false;
 }
-// AFX CODE BLOCK (substitutions) >>
-
 String ConsoleObject::_getLogMessage(const char* fmt, va_list args) const
 {
    String objClass = "UnknownClass";
@@ -772,11 +773,11 @@ static const char* returnClassList( Vector< AbstractClassRep* >& classes, U32 bu
    dQsort( classes.address(), classes.size(), sizeof( AbstractClassRep* ), ACRCompare );
 
    char* ret = Con::getReturnBuffer( bufSize );
-   dStrcpy( ret, classes[ 0 ]->getClassName() );
+   dStrcpy( ret, classes[ 0 ]->getClassName(), bufSize );
    for( U32 i = 1; i < classes.size(); i ++ )
    {
-      dStrcat( ret, "\t" );
-      dStrcat( ret, classes[ i ]->getClassName() );
+      dStrcat( ret, "\t", bufSize );
+      dStrcat( ret, classes[ i ]->getClassName(), bufSize );
    }
    
    return ret;
@@ -887,7 +888,7 @@ DefineEngineFunction( enumerateConsoleClassesByCategory, const char*, ( String c
           && ( repCategory[ categoryLength ] == ' ' || repCategory[ categoryLength ] == '\0' ) )
       {
          classes.push_back( rep );
-         bufSize += dStrlen( rep->getClassName() + 1 );
+         bufSize += dStrlen( rep->getClassName() ) + 1;
       }
    }
 
@@ -1022,3 +1023,4 @@ DefineEngineFunction(linkNamespaces, bool, ( String childNSName, String parentNS
    
    return true;
 }
+

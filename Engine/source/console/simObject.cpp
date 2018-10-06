@@ -23,13 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        substitutions -- Implementation of special substitution statements on
-//            datablock fields.
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
-//        enhanced-field-mgmt -- Special handling of dynamic field copying.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -48,6 +41,8 @@
 #include "core/fileObject.h"
 #include "persistence/taml/tamlCustom.h"
 
+#include "sim/netObject.h"
+
 IMPLEMENT_CONOBJECT( SimObject );
 
 // See full description in the new CHM manual
@@ -60,10 +55,7 @@ ConsoleDocClass( SimObject,
 bool SimObject::smForceId = false;
 SimObjectId SimObject::smForcedId = 0;
 
-// AFX CODE BLOCK (enhanced-field-mgmt) <<
 bool SimObject::preventNameChanging = false;
-// AFX CODE BLOCK (enhanced-field-mgmt) >>
-
 
 namespace Sim
 {
@@ -79,11 +71,11 @@ namespace Sim
 
 SimObject::SimObject()
 {
-   objectName            = NULL;
+   mObjectName = NULL;
    mOriginalName         = NULL;
    mInternalName         = NULL;
-   nextNameObject        = (SimObject*)-1;
-   nextManagerNameObject = (SimObject*)-1;
+   nextNameObject        = nullptr;
+   nextManagerNameObject = nullptr;
    nextIdObject          = NULL;
 
    mFilename             = NULL;
@@ -96,6 +88,8 @@ SimObject::SimObject()
    mNotifyList   = NULL;
    mFlags.set( ModStaticFields | ModDynamicFields );
 
+   mProgenitorFile = StringTable->EmptyString();
+
    mFieldDictionary = NULL;
    mCanSaveFieldDictionary =  true;
 
@@ -104,23 +98,17 @@ SimObject::SimObject()
 
    mCopySource = NULL;
    mPersistentId = NULL;
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    is_temp_clone = false;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 }
 
 //-----------------------------------------------------------------------------
 
 SimObject::~SimObject()
 {
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    // if this is a temp-clone, we don't delete any members that were shallow-copied
    // over from the source datablock.
    if (is_temp_clone)
       return;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
-
    if( mFieldDictionary )
    {
       delete mFieldDictionary;
@@ -138,12 +126,12 @@ SimObject::~SimObject()
    if( mCopySource )
       mCopySource->unregisterReference( &mCopySource );
 
-   AssertFatal(nextNameObject == (SimObject*)-1,avar(
+   AssertFatal(nextNameObject == nullptr,avar(
       "SimObject::~SimObject:  Not removed from dictionary: name %s, id %i",
-      objectName, mId));
-   AssertFatal(nextManagerNameObject == (SimObject*)-1,avar(
+	   mObjectName, mId));
+   AssertFatal(nextManagerNameObject == nullptr,avar(
       "SimObject::~SimObject:  Not removed from manager dictionary: name %s, id %i",
-      objectName,mId));
+	   mObjectName,mId));
    AssertFatal(mFlags.test(Added) == 0, "SimObject::object "
       "missing call to SimObject::onRemove");
 }
@@ -161,7 +149,7 @@ void SimObject::initPersistFields()
 {
    addGroup( "Ungrouped" );
 
-      addProtectedField( "name", TypeName, Offset(objectName, SimObject), &setProtectedName, &defaultProtectedGetFn, 
+      addProtectedField( "name", TypeName, Offset(mObjectName, SimObject), &setProtectedName, &defaultProtectedGetFn,
          "Optional global name of this object." );
                   
    endGroup( "Ungrouped" );
@@ -223,8 +211,8 @@ String SimObject::describeSelf() const
    
    if( mId != 0 )
       desc = avar( "%s|id: %i", desc.c_str(), mId );
-   if( objectName )
-      desc = avar( "%s|name: %s", desc.c_str(), objectName );
+   if(mObjectName)
+      desc = avar( "%s|name: %s", desc.c_str(), mObjectName);
    if( mInternalName )
       desc = avar( "%s|internal: %s", desc.c_str(), mInternalName );
    if( mNameSpace )
@@ -239,13 +227,10 @@ String SimObject::describeSelf() const
    return desc;
 }
 
-// AFX CODE BLOCK (enhanced-field-mgmt) <<
-//
 // Copies dynamic fields from one object to another, optionally limited by the settings for
 // <filter> and <no_replace>. When true, <no_replace> prohibits the replacement of fields that
 // already have a value. When <filter> is specified, only fields with leading characters that
 // exactly match the characters in <filter> are copied. 
-//
 void SimObject::assignDynamicFieldsFrom(SimObject* from, const char* filter, bool no_replace)
 {
    if (from->mFieldDictionary)
@@ -255,8 +240,6 @@ void SimObject::assignDynamicFieldsFrom(SimObject* from, const char* filter, boo
       mFieldDictionary->assignFrom(from->mFieldDictionary, filter, no_replace);
    }
 }
-// AFX CODE BLOCK (enhanced-field-mgmt) >>
-
 //=============================================================================
 //    Persistence.
 //=============================================================================
@@ -337,7 +320,7 @@ void SimObject::writeFields(Stream &stream, U32 tabStop)
 
          U32 nBufferSize = dStrlen( val ) + 1;
          FrameTemp<char> valCopy( nBufferSize );
-         dStrcpy( (char *)valCopy, val );
+         dStrcpy( (char *)valCopy, val, nBufferSize );
 
          if (!writeField(f->pFieldname, valCopy))
             continue;
@@ -364,7 +347,7 @@ void SimObject::writeFields(Stream &stream, U32 tabStop)
          }
 
          expandEscape((char*)expandedBuffer + dStrlen(expandedBuffer), val);
-         dStrcat(expandedBuffer, "\";\r\n");
+         dStrcat(expandedBuffer, "\";\r\n", expandedBufferSize);
 
          stream.writeTabs(tabStop);
          stream.write(dStrlen(expandedBuffer),expandedBuffer);
@@ -419,12 +402,12 @@ bool SimObject::save(const char *pcFileName, bool bOnlySelected, const char *pre
    char docRoot[256];
    char modRoot[256];
 
-   dStrcpy(docRoot, pcFileName);
+   dStrcpy(docRoot, pcFileName, 256);
    char *p = dStrrchr(docRoot, '/');
    if (p) *++p = '\0';
    else  docRoot[0] = '\0';
 
-   dStrcpy(modRoot, pcFileName);
+   dStrcpy(modRoot, pcFileName, 256);
    p = dStrchr(modRoot, '/');
    if (p) *++p = '\0';
    else  modRoot[0] = '\0';
@@ -546,17 +529,17 @@ void SimObject::onTamlCustomRead(TamlCustomNodes const& customNodes)
                for (TamlCustomFieldVector::const_iterator fieldItr = fields.begin(); fieldItr != fields.end(); ++fieldItr)
                {
                   // Fetch field.
-                  const TamlCustomField* pField = *fieldItr;
+                  const TamlCustomField* cField = *fieldItr;
 
                   // Fetch field name.
-                  StringTableEntry fieldName = pField->getFieldName();
+                  StringTableEntry fieldName = cField->getFieldName();
 
                   const AbstractClassRep::Field* field = findField(fieldName);
 
                   // Check common fields.
                   if (field)
                   {
-                     setDataField(fieldName, buf, pField->getFieldValue());
+                     setDataField(fieldName, buf, cField->getFieldValue());
                   }
                   else
                   {
@@ -771,9 +754,9 @@ void SimObject::setId(SimObjectId newId)
 
 void SimObject::assignName(const char *name)
 {
-   if( objectName && !isNameChangeAllowed() )
+   if(mObjectName && !isNameChangeAllowed() )
    {
-      Con::errorf( "SimObject::assignName - not allowed to change name of object '%s'", objectName );
+      Con::errorf( "SimObject::assignName - not allowed to change name of object '%s'", mObjectName);
       return;
    }
    
@@ -798,7 +781,7 @@ void SimObject::assignName(const char *name)
       Sim::gNameDictionary->remove( this );
    }
       
-   objectName = newName;
+   mObjectName = newName;
    
    if( mGroup )
       mGroup->mNameDictionary.insert( this );
@@ -931,6 +914,12 @@ void SimObject::assignFieldsFrom(SimObject *parent)
 
             if((*f->setDataFn)( this, NULL, bufferSecure ) )
                Con::setData(f->type, (void *) (((const char *)this) + f->offset), j, 1, &fieldVal, f->table);
+
+            if (f->networkMask != 0)
+            {
+               NetObject* netObj = static_cast<NetObject*>(this);
+               netObj->setMaskBits(f->networkMask);
+            }
          }
       }
    }
@@ -960,7 +949,6 @@ void SimObject::setDataField(StringTableEntry slotName, const char *array, const
 
          S32 array1 = array ? dAtoi(array) : 0;
 
-         // AFX CODE BLOCK (substitutions) <<
          // Here we check to see if <this> is a datablock and if <value>
          // starts with "$$". If both true than save value as a runtime substitution.
          if (dynamic_cast<SimDataBlock*>(this) && value[0] == '$' && value[1] == '$')
@@ -983,8 +971,7 @@ void SimObject::setDataField(StringTableEntry slotName, const char *array, const
             ((SimDataBlock*)this)->addSubstitution(slotName, array1, value);
             return;
          }
-         // AFX CODE BLOCK (substitutions) >>
-
+		 
          if(array1 >= 0 && array1 < fld->elementCount && fld->elementCount >= 1)
          {
             // If the set data notify callback returns true, then go ahead and
@@ -1008,6 +995,12 @@ void SimObject::setDataField(StringTableEntry slotName, const char *array, const
 
             if(fld->validator)
                fld->validator->validateType(this, (void *) (((const char *)this) + fld->offset));
+
+            if (fld->networkMask != 0)
+            {
+               NetObject* netObj = static_cast<NetObject*>(this);
+               netObj->setMaskBits(fld->networkMask);
+            }
 
             onStaticModified( slotName, value );
 
@@ -1035,8 +1028,8 @@ void SimObject::setDataField(StringTableEntry slotName, const char *array, const
       else
       {
          char buf[256];
-         dStrcpy(buf, slotName);
-         dStrcat(buf, array);
+         dStrcpy(buf, slotName, 256);
+         dStrcat(buf, array, 256);
          StringTableEntry permanentSlotName = StringTable->insert(buf);
          mFieldDictionary->setFieldValue(permanentSlotName, value);
          onDynamicModified( permanentSlotName, value );
@@ -1076,8 +1069,8 @@ const char *SimObject::getDataField(StringTableEntry slotName, const char *array
       else
       {
          static char buf[256];
-         dStrcpy(buf, slotName);
-         dStrcat(buf, array);
+         dStrcpy(buf, slotName, 256);
+         dStrcat(buf, array, 256);
          if (const char* val = mFieldDictionary->getFieldValue(StringTable->insert(buf)))
             return val;
       }
@@ -1317,8 +1310,8 @@ U32 SimObject::getDataFieldType( StringTableEntry slotName, const char* array )
    else
    {
       static char buf[256];
-      dStrcpy( buf, slotName );
-      dStrcat( buf, array );
+      dStrcpy( buf, slotName, 256 );
+      dStrcat( buf, array, 256 );
 
       return mFieldDictionary->getFieldType( StringTable->insert( buf ) );
    }
@@ -1340,8 +1333,8 @@ void SimObject::setDataFieldType(const U32 fieldTypeId, StringTableEntry slotNam
    else
    {
       static char buf[256];
-      dStrcpy( buf, slotName );
-      dStrcat( buf, array );
+      dStrcpy( buf, slotName, 256 );
+      dStrcat( buf, array, 256 );
 
       mFieldDictionary->setFieldType( StringTable->insert( buf ), fieldTypeId );
       onDynamicModified( slotName, mFieldDictionary->getFieldValue(slotName) );
@@ -1361,8 +1354,8 @@ void SimObject::setDataFieldType(const char *typeName, StringTableEntry slotName
    else
    {
       static char buf[256];
-      dStrcpy( buf, slotName );
-      dStrcat( buf, array );
+      dStrcpy( buf, slotName, 256 );
+      dStrcat( buf, array, 256 );
       StringTableEntry permanentSlotName = StringTable->insert(buf);
 
       mFieldDictionary->setFieldType( permanentSlotName, typeName );
@@ -1370,8 +1363,6 @@ void SimObject::setDataFieldType(const char *typeName, StringTableEntry slotName
    }
 }
 
-// AFX CODE BLOCK (datablock-temp-clone) <<
-//
 // This is the copy-constructor used to create temporary datablock clones.
 // The <temp_clone> argument is added to distinguish this copy-constructor
 // from any general-purpose copy-constructor that might be needed in the
@@ -1382,7 +1373,7 @@ SimObject::SimObject(const SimObject& other, bool temp_clone)
 {
    is_temp_clone = temp_clone;
 
-   objectName = other.objectName;
+   mObjectName = other.mObjectName;
    mOriginalName = other.mOriginalName;
    nextNameObject = other.nextNameObject;
    nextManagerNameObject = other.nextManagerNameObject;
@@ -1409,8 +1400,6 @@ SimObject::SimObject(const SimObject& other, bool temp_clone)
    else
       mIdString[ 0 ] = '\0';
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
-
 //-----------------------------------------------------------------------------
 
 void SimObject::dumpClassHierarchy()
@@ -2227,11 +2216,8 @@ bool SimObject::setProtectedParent( void *obj, const char *index, const char *da
 
 bool SimObject::setProtectedName(void *obj, const char *index, const char *data)
 {   
-   // AFX CODE BLOCK (enhanced-field-mgmt) <<
    if (preventNameChanging)
       return false;
-   // AFX CODE BLOCK (enhanced-field-mgmt) >>
-
    SimObject *object = static_cast<SimObject*>(obj);
    
    if ( object->isProperlyAdded() )
@@ -2728,7 +2714,6 @@ DefineEngineMethod( SimObject, dump, void, ( bool detailed ), ( false ),
       }
    }
 
-   // AFX CODE BLOCK (substitutions) <<
    // If the object is a datablock with substitution statements,
    // they get printed out as part of the dump.
    if (dynamic_cast<SimDataBlock*>(object))
@@ -2739,8 +2724,6 @@ DefineEngineMethod( SimObject, dump, void, ( bool detailed ), ( false ),
          ((SimDataBlock*)object)->printSubstitutions();
       }
    }
-   // AFX CODE BLOCK (substitutions) >>
-
    Con::printf( "Dynamic Fields:" );
    if(object->getFieldDictionary())
       object->getFieldDictionary()->printFields(object);

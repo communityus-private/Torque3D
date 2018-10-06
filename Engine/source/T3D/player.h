@@ -23,15 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        obj-select -- object selection functionality
-//        anim-clip -- sequence selection by afx effects
-//        player-look -- modified player head and arm control
-//        triggers -- implements effect triggers derived from player behaviors.
-//        player-movement -- mods allowing manipulation of player movement.
-//        player-puppet -- mods allowing manipulation of player via contraints.
-//        foot-switch -- mods for overriding built-in footstep sounds, decals, and dust.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _PLAYER_H_
@@ -415,13 +406,8 @@ protected:
       ActionMask   = Parent::NextFreeMask << 0,
       MoveMask     = Parent::NextFreeMask << 1,
       ImpactMask   = Parent::NextFreeMask << 2,
-      // AFX CODE BLOCK (player-look) <<
       TriggerMask      = Parent::NextFreeMask << 3,
       NextFreeMask     = Parent::NextFreeMask << 4
-      /* ORIGINAL CODE
-      NextFreeMask = Parent::NextFreeMask << 3
-      */
-      // AFX CODE BLOCK (player-look) >>
    };
 
    SimObjectPtr<ParticleEmitter> mSplashEmitter[PlayerData::NUM_SPLASH_EMITTERS];
@@ -450,7 +436,7 @@ protected:
       Point3F rotOffset;
      /// @}
    };
-   StateDelta delta;                ///< Used for interpolation on the client.  @see StateDelta
+   StateDelta mDelta;                ///< Used for interpolation on the client.  @see StateDelta
    S32 mPredictionCount;            ///< Number of ticks to predict
 
    // Current pos, vel etc.
@@ -800,21 +786,14 @@ public:
    virtual void prepRenderImage( SceneRenderState* state );
    virtual void renderConvex( ObjectRenderInst *ri, SceneRenderState *state, BaseMatInstance *overrideMat );   
    virtual void renderMountedImage( U32 imageSlot, TSRenderState &rstate, SceneRenderState *state );
-
-   // AFX CODE BLOCK (misc) <<
 private:
    static void  afx_consoleInit();
    void         afx_init();
    U32          afx_packUpdate(NetConnection*, U32 mask, BitStream*, U32 retMask);
    void         afx_unpackUpdate(NetConnection*, BitStream*);
-   // AFX CODE BLOCK (misc) >>
-   
-   // AFX CODE BLOCK (obj-select) <<
 private:
    static bool  sCorpsesHiddenFromRayCast;
-   // AFX CODE BLOCK (obj-select) >>
    
-   // AFX CODE BLOCK (anim-clip) <<
 public:
    virtual void restoreAnimation(U32 tag);
    virtual U32 getAnimationID(const char* name);
@@ -825,9 +804,7 @@ public:
    virtual void unlockAnimation(U32 tag, bool force=false);
    virtual U32 lockAnimation();
    virtual bool isAnimationLocked() const { return ((anim_clip_flags & BLOCK_USER_CONTROL) != 0); }
-   // AFX CODE BLOCK (anim-clip) >>
    
-   // AFX CODE BLOCK (player-look) <<
 protected:
    bool         overrideLookAnimation;
    F32          armLookOverridePos;
@@ -836,15 +813,9 @@ protected:
 public:
    void         setLookAnimationOverride(bool flag);
    void         copyHeadRotation(const Player* p) { mHead = p->mHead; }
-   // AFX CODE BLOCK (player-look) >>
-   
-   // AFX CODE BLOCK (player-puppet) <<
 public:
    bool ignore_updates;
    void resetContactTimer() { mContactTimer = 0; }
-   // AFX CODE BLOCK (player-puppet) >>
-   
-   // AFX CODE BLOCK (triggers) <<
 private:
    U8     move_trigger_states;
    U32    fx_s_triggers;
@@ -878,9 +849,6 @@ public:
    };
    U32  getClientEventTriggers() const { return fx_c_triggers; }
    U32  getServerEventTriggers() const { return fx_s_triggers; }
-   // AFX CODE BLOCK (triggers) >>
-   
-   // AFX CODE BLOCK (player-movement) <<
 private:
    F32      speed_bias;
    F32      speed_bias_goal;
@@ -893,9 +861,6 @@ public:
    void     setMovementSpeedBias(F32 bias);
    U32      setMovementOverride(F32 bias, const Point3F* mov=0, U32 op=1);
    void     restoreMovement(U32 tag);
-   // AFX CODE BLOCK (player-movement) >>
-   
-   // AFX CODE BLOCK (foot-switch) <<
 private:
    S32      footfallDecalOverride;
    S32      footfallSoundOverride;
@@ -904,7 +869,6 @@ private:
 public:
    void     overrideFootfallFX(bool decals=true, bool sounds=true, bool dust=true);
    void     restoreFootfallFX(bool decals=true, bool sounds=true, bool dust=true);
-   // AFX CODE BLOCK (foot-switch) >>
 };
 
 typedef Player::Pose PlayerPose;

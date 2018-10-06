@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        polysoup-zodiacs -- zodiac rendering on polysoup enabled objects
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _TSSTATIC_H_
@@ -141,6 +138,7 @@ protected:
    bool castRay(const Point3F &start, const Point3F &end, RayInfo* info);
    bool castRayRendered(const Point3F &start, const Point3F &end, RayInfo* info);
    bool buildPolyList(PolyListContext context, AbstractPolyList* polyList, const Box3F &box, const SphereF& sphere);
+   bool buildExportPolyList(ColladaUtils::ExportData* exportData, const Box3F &box, const SphereF &);
    void buildConvex(const Box3F& box, Convex* convex);
    
    bool _createShape();
@@ -240,11 +238,12 @@ public:
   
    TSShapeInstance* getShapeInstance() const { return mShapeInstance; }
 
+   U32 getNumDetails();
+
    const Vector<S32>& getCollisionDetails() const { return mCollisionDetails; }
 
    const Vector<S32>& getLOSDetails() const { return mLOSDetails; }
 
-   // AFX CODE BLOCK (polysoup-zodiacs) <<
 private:
    virtual void   onStaticModified(const char* slotName, const char*newValue = NULL);
 protected:
@@ -256,16 +255,9 @@ public:
    bool           mInvertGradientRange;
    Point2F        mGradientRangeUser;
    Point2F        mGradientRange;
-   // AFX CODE BLOCK (polysoup-zodiacs) >>
-
-   // AFX CODE BLOCK (special-types) <<
 private:
    void           set_special_typing();
-   // AFX CODE BLOCK (special-types) >>
-
-   // AFX CODE BLOCK (selection-highlight) <<
    virtual void setSelectionFlags(U8 flags);
-   // AFX CODE BLOCK (selection-highlight) >>
 };
 
 typedef TSStatic::MeshType TSMeshType;

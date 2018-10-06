@@ -23,15 +23,7 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-field-mgmt -- Enhancements to dynamic field handling that allow for
-//            name filtering and replacement limiting.
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
-//        reload-reset -- adds virtual method that is called when a datablock is reloaded.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
-
 #ifndef _SIMOBJECT_H_
 #define _SIMOBJECT_H_
 
@@ -301,7 +293,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       };
       
       // dictionary information stored on the object
-      StringTableEntry objectName;
+      StringTableEntry mObjectName;
       StringTableEntry mOriginalName;
       SimObject*       nextNameObject;
       SimObject*       nextManagerNameObject;
@@ -366,7 +358,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
          { static_cast<SimObject*>(object)->setSuperClassNamespace(data); return false; };
 
             static bool writeObjectName(void* obj, StringTableEntry pFieldName)
-         { SimObject* simObject = static_cast<SimObject*>(obj); return simObject->objectName != NULL && simObject->objectName != StringTable->EmptyString(); }
+         { SimObject* simObject = static_cast<SimObject*>(obj); return simObject->mObjectName != NULL && simObject->mObjectName != StringTable->EmptyString(); }
       static bool writeCanSaveDynamicFields(void* obj, StringTableEntry pFieldName)  
          { return static_cast<SimObject*>(obj)->mCanSaveFieldDictionary == false; }
       static bool writeInternalName(void* obj, StringTableEntry pFieldName)          
@@ -769,7 +761,7 @@ class SimObject: public ConsoleObject, public TamlCallbacks
       const char* getIdString() const { return mIdString; }
                   
       /// Return the name of this object.
-      StringTableEntry getName() const { return objectName; }
+      StringTableEntry getName() const { return mObjectName; }
 
       /// Return the SimGroup that this object is contained in.  Never NULL except for
       /// RootGroup and unregistered objects.
@@ -982,26 +974,19 @@ class SimObject: public ConsoleObject, public TamlCallbacks
 
       // EngineObject.
       virtual void destroySelf();
-   
-   // AFX CODE BLOCK (datablock-temp-clone) <<
 protected:
    bool   is_temp_clone;
 public:
    /*C*/  SimObject(const SimObject&, bool = false);
    bool   isTempClone() const { return is_temp_clone; }
    virtual bool allowSubstitutions() const { return false; }
-   // AFX CODE BLOCK (datablock-temp-clone) >>
    
-   // AFX CODE BLOCK (enhanced-field-mgmt) <<
 public:
    static bool preventNameChanging;
    void   assignDynamicFieldsFrom(SimObject*, const char* filter, bool no_replace=false);
-   // AFX CODE BLOCK (enhanced-field-mgmt) >>
    
-   // AFX CODE BLOCK (reload-reset) <<
 public:
    virtual void reloadReset() { }
-   // AFX CODE BLOCK (reload-reset) >>
 };
 
 

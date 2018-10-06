@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        process-order -- code to help positioning of objects in the process lists. 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -35,10 +32,8 @@
 #include "platform/profiler.h"
 #include "console/consoleTypes.h"
 
-#ifdef TORQUE_EXPERIMENTAL_EC
 #include "T3D/components/coreInterfaces.h"
 #include "T3D/components/component.h"
-#endif
 //----------------------------------------------------------------------------
 
 ProcessObject::ProcessObject()
@@ -280,19 +275,16 @@ void ProcessList::advanceObjects()
       onTickObject(pobj);
    }
 
-#ifdef TORQUE_EXPERIMENTAL_EC
    for (U32 i = 0; i < UpdateInterface::all.size(); i++)
    {
       UpdateInterface::all[i]->processTick();
    }
-#endif
 
    mTotalTicks++;
 
    PROFILE_END();
 }
 
-// AFX CODE BLOCK (process-order) <<
 ProcessObject* ProcessList::findNearestToEnd(Vector<ProcessObject*>& objs) const
 {
    if (objs.empty())
@@ -309,5 +301,4 @@ ProcessObject* ProcessList::findNearestToEnd(Vector<ProcessObject*>& objs) const
 
    return 0;
 }
-// AFX CODE BLOCK (process-order) >>
 

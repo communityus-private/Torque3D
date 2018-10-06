@@ -58,8 +58,6 @@ afxPhysicalZoneData::afxPhysicalZoneData()
   force_type = PhysicalZone::VECTOR;
   orient_force = false;
   exclude_cons_obj = false;
-  mTeamId = 0;
-  mIFF = false;
 }
 
 afxPhysicalZoneData::afxPhysicalZoneData(const afxPhysicalZoneData& other, bool temp_clone) : GameBaseData(other, temp_clone)
@@ -71,8 +69,6 @@ afxPhysicalZoneData::afxPhysicalZoneData(const afxPhysicalZoneData& other, bool 
   force_type = other.force_type;
   orient_force = other.orient_force;
   exclude_cons_obj = other.exclude_cons_obj;
-  mTeamId = other.mTeamId;
-  mIFF = other.mIFF;
 }
 
 #define myOffset(field) Offset(field, afxPhysicalZoneData)
@@ -101,29 +97,17 @@ void afxPhysicalZoneData::initPersistFields()
     "When true, an object used as the primary position constraint of a physical-zone "
     "effect will not be influenced by the forces of the zone.");
 
-  addField("team", TypeS8, myOffset(mTeamId), "Team ID.");
-  addField("iff", TypeBool, myOffset(mIFF), "iff");
-
   Parent::initPersistFields();
 }
 
 void afxPhysicalZoneData::packData(BitStream* stream)
 {
-   Parent::packData(stream);
-   if (stream->writeFlag(mIFF))
-   {
-      stream->writeInt(mTeamId, 8);
-   }
+	Parent::packData(stream);
 }
 
 void afxPhysicalZoneData::unpackData(BitStream* stream)
 {
-   Parent::unpackData(stream);
-   mIFF = stream->readFlag();
-   if (mIFF)
-   {
-      mTeamId = stream->readInt(8);
-   }
+  Parent::unpackData(stream);
 }
 
 

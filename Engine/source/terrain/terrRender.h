@@ -24,9 +24,6 @@
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
 //
-//    Change Summary:
-//        terrain-zodiacs -- implement zodiac rendering on regular terrain. 
-//
 //    The terrain implementation of zodiacs is largely contained in
 //    afxZodiac.[h,cpp], however, some changes are required to the terrain
 //    code. Structures EmitChunk and SquareStackNode now contain an
@@ -40,10 +37,7 @@
 #include "terrain/terrData.h"
 #endif
 
-// AFX CODE BLOCK (terrain-zodiacs) <<
 #include "afx/ce/afxZodiacDefs.h"
-// AFX CODE BLOCK (terrain-zodiacs) >>
-
 enum TerrConstants : U32
 {
    MaxClipPlanes       = 8, ///< left, right, top, bottom - don't need far tho...

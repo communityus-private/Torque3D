@@ -23,12 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//          db-cache -- implementation of datablock caching system.
-//        obj-select -- implementation of object selection used for spell targeting.
-//          zoned-in -- connection is flagged as "zoned-in" when client is fully
-//              connected and user can interact with it.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _GAMECONNECTION_H_
@@ -66,10 +60,6 @@ class MoveList;
 struct Move;
 struct AuthInfo;
 
-#define GameString TORQUE_APP_NAME
-
-// AFX CODE BLOCK (db-cache) <<
-//
 // To disable datablock caching, remove or comment out the AFX_CAP_DATABLOCK_CACHE define below.
 // Also, at a minimum, the following script preferences should be set to false:
 //   $pref::Client::EnableDatablockCache = false; (in arcane.fx/client/defaults.cs)
@@ -78,8 +68,6 @@ struct AuthInfo;
 // commented out.
 //
 #define AFX_CAP_DATABLOCK_CACHE
-// AFX CODE BLOCK (db-cache) >>
-
 const F32 MinCameraFov              = 1.f;      ///< min camera FOV
 const F32 MaxCameraFov              = 179.f;    ///< max camera FOV
 
@@ -398,7 +386,7 @@ protected:
    DECLARE_CALLBACK( void, onDataBlocksDone, (U32 sequence) );
    DECLARE_CALLBACK( void, onFlash, (bool state) );
 
-   // AFX CODE BLOCK (obj-select)(zoned-in) <<
+#ifdef TORQUE_AFX_ENABLED
    // GameConnection is modified to keep track of object selections which are used in
    // spell targeting. This code stores the current object selection as well as the
    // current rollover object beneath the cursor. The rollover object is treated as a
@@ -428,8 +416,8 @@ private:
 public:
    bool          isZonedIn() const { return zoned_in; }
    void          setZonedIn() { zoned_in = true; }
-   // AFX CODE BLOCK (obj-select)(zoned-in) >>
-#ifdef AFX_CAP_DATABLOCK_CACHE // AFX CODE BLOCK (db-cache) <<
+#endif
+#ifdef AFX_CAP_DATABLOCK_CACHE
 private:
    static StringTableEntry  server_cache_filename;
    static StringTableEntry  client_cache_filename;
@@ -452,7 +440,7 @@ public:
    static bool   clientCacheEnabled() { return client_cache_on; }
    static const char* serverCacheFilename() { return server_cache_filename; }
    static const char* clientCacheFilename() { return client_cache_filename; }
-#endif // AFX CODE BLOCK (db-cache) >>
+#endif
 };
 
 #endif

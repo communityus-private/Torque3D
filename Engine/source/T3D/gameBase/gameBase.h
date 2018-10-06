@@ -23,12 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        scope-tracking -- changes related to the tracking of AFX constraint objects as
-//            they move in and out of scope.
-//        datablock-temp-clone -- Implements creation of temporary datablock clones to
-//            allow late substitution of datablock fields.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _GAMEBASE_H_
@@ -97,8 +91,8 @@ private:
 
 public:
 
-   bool packed;
-   StringTableEntry category;
+   bool mPacked;
+   StringTableEntry mCategory;
 
    // Signal triggered when this datablock is modified.
    // GameBase objects referencing this datablock notify with this signal.
@@ -124,11 +118,8 @@ public:
    DECLARE_CALLBACK( void, onMount, ( SceneObject* obj, SceneObject* mountObj, S32 node ) );
    DECLARE_CALLBACK( void, onUnmount, ( SceneObject* obj, SceneObject* mountObj, S32 node ) );
    /// @}
-   
-   // AFX CODE BLOCK (datablock-temp-clone) <<
 public:
    GameBaseData(const GameBaseData&, bool = false);
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 };
 
 //----------------------------------------------------------------------------
@@ -245,13 +236,8 @@ public:
    enum GameBaseMasks {      
       DataBlockMask     = Parent::NextFreeMask << 0,
       ExtendedInfoMask  = Parent::NextFreeMask << 1,
-      // AFX CODE BLOCK (scope-tracking) <<
       ScopeIdMask       = Parent::NextFreeMask << 2,
       NextFreeMask      = Parent::NextFreeMask << 3,
-      /* ORIGINAL CODE
-      NextFreeMask      = Parent::NextFreeMask << 2
-      */
-      // AFX CODE BLOCK (scope-tracking) >>
    };
 
    // net flags added by game base
@@ -475,11 +461,8 @@ private:
    /// within this callback.
    ///   
    void _onDatablockModified();
-   
-   // AFX CODE BLOCK (scope-tracking) <<
 protected:
    void    onScopeIdChange() { setMaskBits(ScopeIdMask); }
-   // AFX CODE BLOCK (scope-tracking) >>
 };
 
 

@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        radius-search -- Expose search-list used for determining area damage.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _SCENECONTAINER_H_
@@ -154,8 +151,8 @@ class SceneContainer
 
       struct Link
       {
-         Link* next;
-         Link* prev;
+         Link* mNext;
+         Link* mPrev;
          Link();
          void unlink();
          void linkAfter(Link* ptr);
@@ -312,12 +309,8 @@ class SceneContainer
       void _findSpecialObjects( const Vector< SceneObject* >& vector, const Box3F &box, U32 mask, FindCallback callback, void *key = NULL );   
 
       static void getBinRange( const F32 min, const F32 max, U32& minBin, U32& maxBin );
-
-      // AFX CODE BLOCK (radius-search) <<
 public:
       Vector<SimObjectPtr<SceneObject>*>& getRadiusSearchList() { return mSearchList; }
-      // AFX CODE BLOCK (radius-search) >>
-
 };
 
 //-----------------------------------------------------------------------------

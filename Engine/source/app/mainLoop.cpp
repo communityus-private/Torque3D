@@ -45,6 +45,7 @@
 #include "console/debugOutputConsumer.h"
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
+#include "console/codeInterpreter.h"
 
 #include "gfx/bitmap/gBitmap.h"
 #include "gfx/gFont.h"
@@ -226,6 +227,9 @@ void StandardMainLoop::init()
    
    ManagedSingleton< ThreadManager >::createSingleton();
    FrameAllocator::init(TORQUE_FRAME_SIZE);      // See comments in torqueConfig.h
+
+   // Initialize the TorqueScript interpreter.
+   CodeInterpreter::init();
 
    // Yell if we can't initialize the network.
    if(!Net::init())
@@ -491,7 +495,7 @@ bool StandardMainLoop::handleCommandLine( S32 argc, const char **argv )
          S32 pathLen = dStrlen( fdd.mFile );
          FrameTemp<char> szPathCopy( pathLen + 1);
 
-         dStrcpy( szPathCopy, fdd.mFile );
+         dStrcpy( szPathCopy, fdd.mFile, pathLen + 1 );
          //forwardslash( szPathCopy );
 
          const char *path = dStrrchr(szPathCopy, '/');

@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        terrain-zodiacs -- Changes made for rendering zodiacs on regular terrain.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -64,10 +61,7 @@ TerrCell::TerrCell()
       mIsInteriorOnly( false )
 {
    dMemset( mChildren, 0, sizeof( mChildren ) );
-
-   // AFX CODE BLOCK (terrain-zodiacs) <<
    zode_vertexBuffer = 0;
-   // AFX CODE BLOCK (terrain-zodiacs) >>
 }
 
 TerrCell::~TerrCell()
@@ -76,10 +70,7 @@ TerrCell::~TerrCell()
 
    for ( U32 i=0; i < 4; i++ )
       SAFE_DELETE( mChildren[i] );
-
-   // AFX CODE BLOCK (terrain-zodiacs) <<
    deleteZodiacVertexBuffer();
-   // AFX CODE BLOCK (terrain-zodiacs) >>
 }
 
 void TerrCell::createPrimBuffer( GFXPrimitiveBufferHandle *primBuffer )
@@ -598,10 +589,7 @@ void TerrCell::_updateVertexBuffer()
 
    AssertFatal( vbcounter == smVBSize, "bad" );
    mVertexBuffer.unlock();
-
-   // AFX CODE BLOCK (terrain-zodiacs) <<
    deleteZodiacVertexBuffer();
-   // AFX CODE BLOCK (terrain-zodiacs) >>
 }
 
 void TerrCell::_updatePrimitiveBuffer()
@@ -1110,7 +1098,6 @@ void TerrCell::deleteMaterials()
          mChildren[i]->deleteMaterials();
 }
 
-// AFX CODE BLOCK (terrain-zodiacs) <<
 const Point3F* TerrCell::getZodiacVertexBuffer()
 {
    if (!zode_vertexBuffer)
@@ -1220,4 +1207,4 @@ void TerrCell::deleteZodiacVertexBuffer()
       zode_vertexBuffer = 0;
    }
 }
-// AFX CODE BLOCK (terrain-zodiacs) >>
+

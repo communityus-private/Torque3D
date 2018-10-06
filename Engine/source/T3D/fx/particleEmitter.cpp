@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        enhanced-emitter -- numerous enhancements to ParticleEmitter class.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -46,9 +43,9 @@
 #include "lighting/lightInfo.h"
 #include "console/engineAPI.h"
 
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
 #include "afx/util/afxParticlePool.h"
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif 
 
 Point3F ParticleEmitter::mWindVelocity( 0.0, 0.0, 0.0 );
 const F32 ParticleEmitter::AgedSpinToRadians = (1.0f/1000.0f) * (1.0f/360.0f) * M_PI_F * 2.0f;
@@ -161,23 +158,21 @@ ParticleEmitterData::ParticleEmitterData()
    
    alignParticles = false;
    alignDirection = Point3F(0.0f, 1.0f, 0.0f);
-
-   // AFX CODE BLOCK (enhanced-emitter) <<
+   
    ejectionInvert = false;
    fade_color    = false;
    fade_alpha    = false;
    fade_size     = false;
    parts_per_eject = 1;
    use_emitter_xfm = false;
-   // AFX CODE BLOCK (enhanced-emitter) >>
    
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
    pool_datablock = 0;
    pool_index = 0;
    pool_depth_fade = false;
    pool_radial_fade = false;
    do_pool_id_convert = false;
-#endif  // AFX CODE BLOCK (pooled-particles) >> 
+#endif
 }
 
 
@@ -322,7 +317,6 @@ void ParticleEmitterData::initPersistFields()
 
    endGroup( "ParticleEmitterData" );
 
-   // AFX CODE BLOCK (enhanced-emitter) <<
    addGroup("AFX");
    addField("ejectionInvert",       TypeBool,    Offset(ejectionInvert,     ParticleEmitterData));
    addField("fadeColor",            TypeBool,    Offset(fade_color,         ParticleEmitterData));
@@ -331,23 +325,18 @@ void ParticleEmitterData::initPersistFields()
    // useEmitterTransform currently does not work in TGEA or T3D
    addField("useEmitterTransform",  TypeBool,    Offset(use_emitter_xfm,    ParticleEmitterData));
    endGroup("AFX");
-   // AFX CODE BLOCK (enhanced-emitter) >>
 
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS)
    addGroup("AFX Pooled Particles");
    addField("poolData", TYPEID<afxParticlePoolData>(), Offset(pool_datablock, ParticleEmitterData));
    addField("poolIndex",            TypeS32,                      Offset(pool_index,        ParticleEmitterData));
    addField("poolDepthFade",        TypeBool,                     Offset(pool_depth_fade,   ParticleEmitterData));
    addField("poolRadialFade",       TypeBool,                     Offset(pool_radial_fade,  ParticleEmitterData));
    endGroup("AFX Pooled Particles");
-#endif // AFX CODE BLOCK (pooled-particles) >>
-
-   // AFX CODE BLOCK (substitutions) <<
+#endif
    // disallow some field substitutions
    disableFieldSubstitutions("particles");
    onlyKeepClearSubstitutions("poolData"); // subs resolving to "~~", or "~0" are OK
-   // AFX CODE BLOCK (substitutions) >>
-
    Parent::initPersistFields();
 }
 
@@ -414,23 +403,21 @@ void ParticleEmitterData::packData(BitStream* stream)
    stream->writeFlag(glow);
    stream->writeInt( blendStyle, 4 );
 
-   // AFX CODE BLOCK (enhanced-emitter) <<
    stream->writeFlag(ejectionInvert);
    stream->writeFlag(fade_color);
    stream->writeFlag(fade_alpha);
    stream->writeFlag(fade_size);
    stream->writeFlag(use_emitter_xfm);
-   // AFX CODE BLOCK (enhanced-emitter) >>
 
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
    if (stream->writeFlag(pool_datablock))
    {
-     stream->writeRangedU32(packed ? SimObjectId((uintptr_t)pool_datablock) : pool_datablock->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
+     stream->writeRangedU32(mPacked ? SimObjectId((uintptr_t)pool_datablock) : pool_datablock->getId(), DataBlockObjectIdFirst, DataBlockObjectIdLast);
      stream->write(pool_index);
      stream->writeFlag(pool_depth_fade);
      stream->writeFlag(pool_radial_fade);
    }
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif 
 }
 
 //-----------------------------------------------------------------------------
@@ -494,16 +481,13 @@ void ParticleEmitterData::unpackData(BitStream* stream)
    renderReflection = stream->readFlag();
    glow = stream->readFlag();
    blendStyle = stream->readInt( 4 );
-
-   // AFX CODE BLOCK (enhanced-emitter) <<
    ejectionInvert = stream->readFlag();
    fade_color = stream->readFlag();
    fade_alpha = stream->readFlag();
    fade_size = stream->readFlag();
    use_emitter_xfm = stream->readFlag();
-   // AFX CODE BLOCK (enhanced-emitter) >>
    
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
    if (stream->readFlag())
    {
       pool_datablock = (afxParticlePoolData*)stream->readRangedU32(DataBlockObjectIdFirst, DataBlockObjectIdLast);
@@ -512,7 +496,7 @@ void ParticleEmitterData::unpackData(BitStream* stream)
       pool_radial_fade = stream->readFlag();
       do_pool_id_convert = true;
    }
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif 
 }
 
 //-----------------------------------------------------------------------------
@@ -624,8 +608,9 @@ bool ParticleEmitterData::onAdd()
 
       // First we parse particleString into a list of particle name tokens 
       Vector<char*> dataBlocks(__FILE__, __LINE__);
-      char* tokCopy = new char[dStrlen(particleString) + 1];
-      dStrcpy(tokCopy, particleString);
+      dsize_t tokLen = dStrlen(particleString) + 1;
+      char* tokCopy = new char[tokLen];
+      dStrcpy(tokCopy, particleString, tokLen);
 
       char* currTok = dStrtok(tokCopy, " \t");
       while (currTok != NULL) 
@@ -692,7 +677,7 @@ bool ParticleEmitterData::preload(bool server, String &errorStr)
 
    if (!server)
    {
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS)
       if (do_pool_id_convert)
       {
         SimObjectId db_id = (SimObjectId)(uintptr_t)pool_datablock;
@@ -706,7 +691,7 @@ bool ParticleEmitterData::preload(bool server, String &errorStr)
         }
         do_pool_id_convert = false;
       }
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif
 
      // load emitter texture if specified
      if (textureName && textureName[0])
@@ -777,10 +762,8 @@ void ParticleEmitterData::allocPrimBuffer( S32 overrideSize )
 
    partListInitSize = maxPartLife / (ejectionPeriodMS - periodVarianceMS);
    partListInitSize += 8; // add 8 as "fudge factor" to make sure it doesn't realloc if it goes over by 1
-   // AFX CODE BLOCK (enhanced-emitter) <<
    if (parts_per_eject > 1)
      partListInitSize *= parts_per_eject;
-   // AFX CODE BLOCK (enhanced-emitter) >>
 
    // if override size is specified, then the emitter overran its buffer and needs a larger allocation
    if( overrideSize != -1 )
@@ -817,7 +800,6 @@ void ParticleEmitterData::allocPrimBuffer( S32 overrideSize )
    delete [] indices;
 }
 
-// AFX CODE BLOCK (datablock-temp-clone) <<
 //#define TRACK_PARTICLE_EMITTER_DATA_CLONES
 
 #ifdef TRACK_PARTICLE_EMITTER_DATA_CLONES
@@ -946,8 +928,6 @@ ParticleEmitterData* ParticleEmitterData::cloneAndPerformSubstitutions(const Sim
 
   return sub_emitter_db;
 }
-// AFX CODE BLOCK (datablock-temp-clone) >>
-
 
 //-----------------------------------------------------------------------------
 // ParticleEmitter
@@ -979,22 +959,16 @@ ParticleEmitter::ParticleEmitter()
 
    // ParticleEmitter should be allocated on the client only.
    mNetFlags.set( IsGhost );
-
-   // AFX CODE BLOCK (enhanced-emitter) <<
    fade_amt = 1.0f;
    forced_bbox = false;
    db_temp_clone = false;
    pos_pe.set(0,0,0);
    sort_priority = 0;
-   // AFX CODE BLOCK (enhanced-emitter) >>
-   
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    mDataBlock = 0;
-   // AFX CODE BLOCK (datablock-temp-clone) >>
    
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS)
    pool = 0;
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif 
 }
 
 //-----------------------------------------------------------------------------
@@ -1006,8 +980,6 @@ ParticleEmitter::~ParticleEmitter()
    {
       delete [] part_store[i];
    }
-
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    if (db_temp_clone && mDataBlock && mDataBlock->isTempClone())
    {
      for (S32 i = 0; i < mDataBlock->particleDataBlocks.size(); i++)
@@ -1021,7 +993,6 @@ ParticleEmitter::~ParticleEmitter()
      delete mDataBlock;
      mDataBlock = 0;
    }
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 }
 
 //-----------------------------------------------------------------------------
@@ -1046,10 +1017,10 @@ bool ParticleEmitter::onAdd()
    mObjBox.maxExtents = Point3F(radius, radius, radius);
    resetWorldBox();
 
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
    if (pool)
      pool->addParticleEmitter(this);
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif
 
    return true;
 }
@@ -1060,13 +1031,13 @@ bool ParticleEmitter::onAdd()
 //-----------------------------------------------------------------------------
 void ParticleEmitter::onRemove()
 {
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS) 
   if (pool)
   {
     pool->removeParticleEmitter(this);
     pool = 0;
   }
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif
 
    removeFromScene();
    Parent::onRemove();
@@ -1113,14 +1084,11 @@ bool ParticleEmitter::onNewDataBlock( GameBaseData *dptr, bool reload )
       part_list_head.next = NULL;
       n_parts = 0;
    }
-   
-   // AFX CODE BLOCK (datablock-temp-clone) <<
    if (mDataBlock->isTempClone())
    {
      db_temp_clone = true;
      return true;
    }
-   // AFX CODE BLOCK (datablock-temp-clone) >>
 
    scriptOnNewDataBlock();
    return true;
@@ -1157,10 +1125,10 @@ LinearColorF ParticleEmitter::getCollectiveColor()
 //-----------------------------------------------------------------------------
 void ParticleEmitter::prepRenderImage(SceneRenderState* state)
 {
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS)
    if (pool)
      return;
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif 
 
    if( state->isReflectPass() && !getDataBlock()->renderReflection )
       return;
@@ -1190,10 +1158,7 @@ void ParticleEmitter::prepRenderImage(SceneRenderState* state)
    ri->translucentSort = true;
    ri->type = RenderPassManager::RIT_Particle;
    ri->sortDistSq = getRenderWorldBox().getSqDistanceToPoint( camPos );
-
-   // AFX CODE BLOCK (enhanced-emitter) <<
    ri->defaultKey = (-sort_priority*100);
-   // AFX CODE BLOCK (enhanced-emitter) >>
 
    // Draw the system offscreen unless the highResOnly flag is set on the datablock
    ri->systemState = ( getDataBlock()->highResOnly ? PSS_AwaitingHighResDraw : PSS_AwaitingOffscreenDraw );
@@ -1297,10 +1262,7 @@ void ParticleEmitter::emitParticles(const Point3F& point,
       return;
    }
 
-   // AFX CODE BLOCK (enhanced-emitter) <<
    pos_pe = point;
-   // AFX CODE BLOCK (enhanced-emitter) >>
-
    Point3F realStart;
    if( useLastPosition && mHasLastPosition )
       realStart = mLastPosition;
@@ -1368,13 +1330,8 @@ void ParticleEmitter::emitParticles(const Point3F& start,
          // Create particle at the correct position
          Point3F pos;
          pos.interpolate(start, end, F32(currTime) / F32(numMilliseconds));
-
-         // AFX CODE BLOCK (enhanced-emitter) <<
          addParticle(pos, axis, velocity, axisx, numMilliseconds-currTime);
-         /* ORIGINAL CODE
-         addParticle(pos, axis, velocity, axisx);
-         */
-         // AFX CODE BLOCK (enhanced-emitter) >>
+
          particlesAdded = true;
          mNextParticleTime = 0;
       }
@@ -1404,13 +1361,7 @@ void ParticleEmitter::emitParticles(const Point3F& start,
       // Create particle at the correct position
       Point3F pos;
       pos.interpolate(start, end, F32(currTime) / F32(numMilliseconds));
-
-      // AFX CODE BLOCK (enhanced-emitter) <<
       addParticle(pos, axis, velocity, axisx, numMilliseconds-currTime);
-      /* ORIGINAL CODE
-      addParticle(pos, axis, velocity, axisx);
-      */
-      // AFX CODE BLOCK (enhanced-emitter) >>
       particlesAdded = true;
 
       //   This override-advance code is restored in order to correctly adjust
@@ -1433,14 +1384,13 @@ void ParticleEmitter::emitParticles(const Point3F& start,
          } 
          else 
          {
-            // AFX CODE BLOCK (enhanced-emitter) <<
             if (advanceMS != 0)
             {
                F32 t = F32(advanceMS) / 1000.0;
 
                Point3F a = last_part->acc;
                a -= last_part->vel * last_part->dataBlock->dragCoefficient;
-               a -= mWindVelocity * last_part->dataBlock->windCoefficient;
+               a += mWindVelocity * last_part->dataBlock->windCoefficient;
                //a += Point3F(0.0f, 0.0f, -9.81f) * last_part->dataBlock->gravityCoefficient;
                a.z += -9.81f*last_part->dataBlock->gravityCoefficient; // as long as gravity is a constant, this is faster
 
@@ -1458,23 +1408,6 @@ void ParticleEmitter::emitParticles(const Point3F& start,
 
                updateKeyData( last_part );
             }
-            /* ORIGNAL CODE
-            if (advanceMS != 0)
-            {
-              F32 t = F32(advanceMS) / 1000.0;
-
-              Point3F a = last_part->acc;
-              a -= last_part->vel * last_part->dataBlock->dragCoefficient;
-              a -= mWindVelocity * last_part->dataBlock->windCoefficient;
-              a += Point3F(0.0f, 0.0f, -9.81f) * last_part->dataBlock->gravityCoefficient;
-
-              last_part->vel += a * t;
-              last_part->pos += last_part->vel * t;
-
-              updateKeyData( last_part );
-            }
-            */
-            // AFX CODE BLOCK (enhanced-emitter) >>
          }
       }
    }
@@ -1545,12 +1478,7 @@ void ParticleEmitter::emitParticles(const Point3F& rCenter,
       axis.normalize();
       pos += rCenter;
 
-      // AFX CODE BLOCK (enhanced-emitter) <<
       addParticle(pos, axis, velocity, axisz, 0);
-      /* ORIGINAL CODE
-      addParticle(pos, axis, velocity, axisz);
-      */
-      // AFX CODE BLOCK (enhanced-emitter) >>
    }
 
    // Set world bounding box
@@ -1573,11 +1501,8 @@ void ParticleEmitter::emitParticles(const Point3F& rCenter,
 //-----------------------------------------------------------------------------
 void ParticleEmitter::updateBBox()
 {
-   // AFX CODE BLOCK (enhanced-emitter) <<
    if (forced_bbox)
      return;
-   // AFX CODE BLOCK (enhanced-emitter) >>
-
    Point3F minPt(1e10,   1e10,  1e10);
    Point3F maxPt(-1e10, -1e10, -1e10);
 
@@ -1599,25 +1524,17 @@ void ParticleEmitter::updateBBox()
    boxScale.z = getMax(boxScale.z, 1.0f);
    mBBObjToWorld.scale(boxScale);
 
-#if defined(AFX_CAP_PARTICLE_POOLS) // AFX CODE BLOCK (pooled-particles) <<
+#if defined(AFX_CAP_PARTICLE_POOLS)
    if (pool)
      pool->updatePoolBBox(this);
-#endif // AFX CODE BLOCK (pooled-particles) >>
+#endif
 }
 
 //-----------------------------------------------------------------------------
 // addParticle
 //-----------------------------------------------------------------------------
-// AFX CODE BLOCK (enhanced-emitter) <<
 void ParticleEmitter::addParticle(const Point3F& pos, const Point3F& axis, const Point3F& vel,
                                   const Point3F& axisx, const U32 age_offset)
-/* ORIGINAL CODE
-void ParticleEmitter::addParticle(const Point3F& pos,
-                                  const Point3F& axis,
-                                  const Point3F& vel,
-                                  const Point3F& axisx)
-*/
-// AFX CODE BLOCK (enhanced-emitter) >>
 {
    n_parts++;
    if (n_parts > n_part_capacity || n_parts > mDataBlock->partListInitSize)
@@ -1639,7 +1556,6 @@ void ParticleEmitter::addParticle(const Point3F& pos,
    pNew->next = part_list_head.next;
    part_list_head.next = pNew;
 
-   // AFX CODE BLOCK (enhanced-emitter) <<
    // for earlier access to constrain_pos, the ParticleData datablock is chosen here instead
    // of later in the method.
    U32 dBlockIndex = gRandGen.randI() % mDataBlock->particleDataBlocks.size();
@@ -1650,8 +1566,6 @@ void ParticleEmitter::addParticle(const Point3F& pos,
      pos_start.set(0,0,0);
    else
      pos_start = pos;
-   // AFX CODE BLOCK (enhanced-emitter) >>
-
    Point3F ejectionAxis = axis;
    F32 theta = (mDataBlock->thetaMax - mDataBlock->thetaMin) * gRandGen.randF() +
                mDataBlock->thetaMin;
@@ -1673,7 +1587,6 @@ void ParticleEmitter::addParticle(const Point3F& pos,
    F32 initialVel = mDataBlock->ejectionVelocity;
    initialVel    += (mDataBlock->velocityVariance * 2.0f * gRandGen.randF()) - mDataBlock->velocityVariance;
 
-   // AFX CODE BLOCK (enhanced-emitter) <<
    pNew->pos = pos_start + (ejectionAxis * (mDataBlock->ejectionOffset + mDataBlock->ejectionOffsetVariance* gRandGen.randF()) );
    pNew->pos_local = pNew->pos;
    pNew->vel = mDataBlock->ejectionInvert ? ejectionAxis * -initialVel : ejectionAxis * initialVel;
@@ -1685,17 +1598,6 @@ void ParticleEmitter::addParticle(const Point3F& pos,
    pNew->acc.set(0, 0, 0);
    pNew->currentAge = age_offset;
    pNew->t_last = 0.0f;
-   /* ORIGINAL CODE
-   pNew->pos = pos + (ejectionAxis * (mDataBlock->ejectionOffset + mDataBlock->ejectionOffsetVariance* gRandGen.randF()) );
-   pNew->vel = ejectionAxis * initialVel;
-   pNew->orientDir = ejectionAxis;
-   pNew->acc.set(0, 0, 0);
-   pNew->currentAge = 0;
-
-   // Choose a new particle datablack randomly from the list
-   U32 dBlockIndex = gRandGen.randI() % mDataBlock->particleDataBlocks.size();
-   */
-   // AFX CODE BLOCK (enhanced-emitter) >>
    mDataBlock->particleDataBlocks[dBlockIndex]->initializeParticle(pNew, vel);
    updateKeyData( pNew );
 
@@ -1777,15 +1679,10 @@ void ParticleEmitter::updateKeyData( Particle *part )
 	if( part->totalLifetime < 1 )
 		part->totalLifetime = 1;
 
-   // AFX CODE BLOCK (enhanced-emitter) <<
    if (part->currentAge > part->totalLifetime)
       part->currentAge = part->totalLifetime;
    F32 t = (F32)part->currentAge / (F32)part->totalLifetime;
-   /* ORIGINAL CODE
-   F32 t = F32(part->currentAge) / F32(part->totalLifetime);
-   AssertFatal(t <= 1.0f, "Out out bounds filter function for particle.");
-   */
-   // AFX CODE BLOCK (enhanced-emitter) >>
+  
 
    for( U32 i = 1; i < ParticleData::PDC_NUM_KEYS; i++ )
    {
@@ -1817,13 +1714,9 @@ void ParticleEmitter::updateKeyData( Particle *part )
          {
             part->size = (part->dataBlock->sizes[i-1] * (1.0 - firstPart)) +
                          (part->dataBlock->sizes[i]   * firstPart);
-                         
-            // AFX CODE BLOCK (enhanced-emitter) <<
             part->size *= part->dataBlock->sizeBias;
-            // AFX CODE BLOCK (enhanced-emitter) >>
          }
-
-         // AFX CODE BLOCK (particle-fade) <<
+		 
          if (mDataBlock->fade_color) 
          {
            if (mDataBlock->fade_alpha) 
@@ -1840,7 +1733,6 @@ void ParticleEmitter::updateKeyData( Particle *part )
 
          if (mDataBlock->fade_size)
            part->size *= fade_amt;
-         // AFX CODE BLOCK (particle-fade) >>
          break;
 
       }
@@ -1850,7 +1742,6 @@ void ParticleEmitter::updateKeyData( Particle *part )
 //-----------------------------------------------------------------------------
 // Update particles
 //-----------------------------------------------------------------------------
-// AFX CODE BLOCK (enhanced-emitter) <<
 void ParticleEmitter::update( U32 ms )
 {
    F32 t = F32(ms)/1000.0f; // AFX -- moved outside loop, no need to recalculate this for every particle
@@ -1859,7 +1750,7 @@ void ParticleEmitter::update( U32 ms )
    {
       Point3F a = part->acc;
       a -= part->vel * part->dataBlock->dragCoefficient;
-      a -= mWindVelocity * part->dataBlock->windCoefficient;
+      a += mWindVelocity * part->dataBlock->windCoefficient;
       a.z += -9.81f*part->dataBlock->gravityCoefficient; // AFX -- as long as gravity is a constant, this is faster
 
       part->vel += a * t;
@@ -1876,28 +1767,6 @@ void ParticleEmitter::update( U32 ms )
       updateKeyData( part );
    }
 }
-/* ORIGINAL CODE
-void ParticleEmitter::update( U32 ms )
-{
-   // TODO: Prefetch
-
-   for (Particle* part = part_list_head.next; part != NULL; part = part->next)
-   {
-      F32 t = F32(ms) / 1000.0;
-
-      Point3F a = part->acc;
-      a -= part->vel        * part->dataBlock->dragCoefficient;
-      a -= mWindVelocity * part->dataBlock->windCoefficient;
-      a += Point3F(0.0f, 0.0f, -9.81f) * part->dataBlock->gravityCoefficient;
-
-      part->vel += a * t;
-      part->pos += part->vel * t;
-
-      updateKeyData( part );
-   }
-}
-*/
-// AFX CODE BLOCK (enhanced-emitter) >>
 
 //-----------------------------------------------------------------------------
 // Copy particles to vertex buffer
@@ -2456,8 +2325,6 @@ DefineEngineMethod(ParticleEmitterData, reload, void,(),,
 {
    object->reload();
 }
-
-// AFX CODE BLOCK (enhanced-emitter) <<
 void ParticleEmitter::emitParticlesExt(const MatrixF& xfm, const Point3F& point, 
                                        const Point3F& velocity, const U32 numMilliseconds)
 {
@@ -2497,4 +2364,4 @@ void ParticleEmitter::setSortPriority(S8 priority)
     pool->setSortPriority(sort_priority);
 #endif
 }
-// AFX CODE BLOCK (enhanced-emitter) >>
+

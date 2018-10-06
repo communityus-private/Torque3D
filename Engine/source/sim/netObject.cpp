@@ -23,10 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        scope-tracking -- changes related to the tracking of AFX constraint objects as
-//            they move in and out of scope.
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -37,9 +33,9 @@
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 
-// AFX CODE BLOCK (scope-tracking) <<
+#ifdef TORQUE_AFX_ENABLED
 #include "afx/arcaneFX.h"
-// AFX CODE BLOCK (scope-tracking) >>
+#endif
 
 IMPLEMENT_CONOBJECT(NetObject);
 
@@ -59,11 +55,11 @@ NetObject::NetObject()
    mPrevDirtyList = NULL;
    mNextDirtyList = NULL;
    mDirtyMaskBits = 0;
-   // AFX CODE BLOCK (scope-tracking) <<
-   scope_id = 0;
-   scope_refs = 0;
-   scope_registered = false;
-   // AFX CODE BLOCK (scope-tracking) >>
+#ifdef TORQUE_AFX_ENABLED
+   mScope_id = 0;
+   mScope_refs = 0;
+   mScope_registered = false;
+#endif
 }
 
 NetObject::~NetObject()
@@ -479,27 +475,123 @@ DefineEngineMethod( NetObject, isServerObject, bool, (),,
 //   return object->isServerObject();
 //}
 
-// AFX CODE BLOCK (scope-tracking) <<
+#ifdef TORQUE_AFX_ENABLED
 U16 NetObject::addScopeRef() 
 { 
-   if (scope_refs == 0)
+   if (mScope_refs == 0)
    {
-      scope_id = arcaneFX::generateScopeId();
+      mScope_id = arcaneFX::generateScopeId();
       onScopeIdChange();
    }
-   scope_refs++;
-   return scope_id; 
+   mScope_refs++;
+   return mScope_id;
 }
 
 void NetObject::removeScopeRef() 
 { 
-   if (scope_refs == 0)
+   if (mScope_refs == 0)
       return;
-   scope_refs--;
-   if (scope_refs == 0)
+   mScope_refs--;
+   if (mScope_refs == 0)
    {
-      scope_id = 0;
+      mScope_id = 0;
       onScopeIdChange();
    }
 }
-// AFX CODE BLOCK (scope-tracking) >>
+#endif
+
+//Networked fields
+//------------------------------------------------------------------
+void NetObject::addNetworkedField(const char*  in_pFieldname,
+   const U32 in_fieldType,
+   const dsize_t in_fieldOffset,
+   const char* in_pFieldDocs,
+   U32 flags,
+   U32 networkMask)
+{
+   addNetworkedField(
+      in_pFieldname,
+      in_fieldType,
+      in_fieldOffset,
+      1,
+      in_pFieldDocs,
+      flags,
+      networkMask);
+}
+
+void NetObject::addNetworkedField(const char*  in_pFieldname,
+   const U32 in_fieldType,
+   const dsize_t in_fieldOffset,
+   AbstractClassRep::WriteDataNotify in_writeDataFn,
+   const char* in_pFieldDocs,
+   U32 flags,
+   U32 networkMask)
+{
+   addNetworkedField(
+      in_pFieldname,
+      in_fieldType,
+      in_fieldOffset,
+      in_writeDataFn,
+      1,
+      in_pFieldDocs,
+      flags,
+      networkMask);
+}
+
+void NetObject::addNetworkedField(const char*  in_pFieldname,
+   const U32 in_fieldType,
+   const dsize_t in_fieldOffset,
+   const U32 in_elementCount,
+   const char* in_pFieldDocs,
+   U32 flags,
+   U32 networkMask)
+{
+   addNetworkedField(in_pFieldname,
+      in_fieldType,
+      in_fieldOffset,
+      &defaultProtectedWriteFn,
+      in_elementCount,
+      in_pFieldDocs,
+      flags,
+      networkMask);
+}
+
+void NetObject::addNetworkedField(const char*  in_pFieldname,
+   const U32 in_fieldType,
+   const dsize_t in_fieldOffset,
+   AbstractClassRep::WriteDataNotify in_writeDataFn,
+   const U32 in_elementCount,
+   const char* in_pFieldDocs,
+   U32 flags,
+   U32 networkMask)
+{
+   AbstractClassRep::Field f;
+   f.pFieldname = StringTable->insert(in_pFieldname);
+
+   if (in_pFieldDocs)
+      f.pFieldDocs = in_pFieldDocs;
+
+   f.type = in_fieldType;
+   f.offset = in_fieldOffset;
+   f.elementCount = in_elementCount;
+   f.validator = NULL;
+   f.flag = flags;
+
+   f.setDataFn = &defaultProtectedSetFn;
+   f.getDataFn = &defaultProtectedGetFn;
+   f.writeDataFn = in_writeDataFn;
+
+   f.networkMask = networkMask;
+
+   ConsoleBaseType* conType = ConsoleBaseType::getType(in_fieldType);
+   AssertFatal(conType, "ConsoleObject::addField - invalid console type");
+   f.table = conType->getEnumTable();
+
+   sg_tempFieldList.push_back(f);
+}
+
+DefineEngineMethod(NetObject, clearScopeAlways, void, (), ,
+   "@brief Clears the scope always flag on this object.\n\n")
+{
+   object->clearScopeAlways();
+}

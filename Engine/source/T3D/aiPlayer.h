@@ -23,9 +23,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        anim-clip -- sequence selection by afx effects
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #ifndef _AIPLAYER_H_
@@ -233,7 +230,6 @@ public:
 
    /// @}
 #endif // TORQUE_NAVIGATION_ENABLED
-   // AFX CODE BLOCK (anim-clip) <<
    // New method, restartMove(), restores the AIPlayer to its normal move-state
    // following animation overrides from AFX. The tag argument is used to match
    // the latest override and prevents interruption of overlapping animation
@@ -246,7 +242,6 @@ private:
 public:
    void restartMove(U32 tag);
    void saveMoveState();
-   // AFX CODE BLOCK (anim-clip) >>
 };
 
 #endif

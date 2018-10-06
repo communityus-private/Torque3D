@@ -46,12 +46,6 @@
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 // Arcane-FX for MIT Licensed Open Source version of Torque 3D from GarageGames
 // Copyright (C) 2015 Faust Logic, Inc.
-//
-//    Changes:
-//        ground-cover -- Adds an ambient modulation bias to control how much the foliage
-//            images are modulated by the sun's ambient light setting.
-//                full modulation -- 1.0 (default)
-//                no modulation -- 0.0
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
 #include "platform/platform.h"
@@ -413,12 +407,9 @@ void fxFoliageReplicator::initPersistFields()
       addField( "AllowedTerrainSlope", TypeS32,       Offset( mFieldData.mAllowedTerrainSlope,  fxFoliageReplicator ), "Maximum surface angle allowed for foliage instances." );
    endGroup( "Restrictions" );	// MM: Added Group Footer.
 
-   // AFX CODE BLOCK (ground-cover) <<
    addGroup( "AFX" );
       addField( "AmbientModulationBias", TypeF32,     Offset( mFieldData.mAmbientModulationBias,fxFoliageReplicator ), "Multiplier controling amount foliage is modulated by sun's ambient." );
    endGroup( "AFX" );
-   // AFX CODE BLOCK (ground-cover) >>
-
    // Initialise parents' persistent fields.
    Parent::initPersistFields();
 }
@@ -1581,17 +1572,12 @@ void fxFoliageReplicator::renderObject(ObjectRenderInst *ri, SceneRenderState *s
             mFoliageShaderConsts->setSafe(mFoliageShaderGroundAlphaSC, Point4F(mFieldData.mGroundAlpha, mFieldData.mGroundAlpha, mFieldData.mGroundAlpha, mFieldData.mGroundAlpha));
 
             if (mFoliageShaderAmbientColorSC->isValid())
-            // AFX CODE BLOCK (ground-cover) <<
             {
                LinearColorF ambient = state->getAmbientLightColor();
-               LinearColorF ambient_inv(1.0f - ambient.red, 1.0f - ambient.green, 1.0f - ambient.blue, 0.0f);
+               LinearColorF ambient_inv(1.0f-ambient.red, 1.0f-ambient.green, 1.0f-ambient.blue, 0.0f);
                ambient += ambient_inv*(1.0f - mFieldData.mAmbientModulationBias);
                mFoliageShaderConsts->set(mFoliageShaderAmbientColorSC, ambient);
             }
-            /* ORIGINAL CODE
-               mFoliageShaderConsts->set(mFoliageShaderAmbientColorSC, state->getAmbientLightColor());
-            */
-            // AFX CODE BLOCK (ground-cover) >>
 
             GFX->setShaderConstBuffer(mFoliageShaderConsts);
 
@@ -1732,9 +1718,7 @@ U32 fxFoliageReplicator::packUpdate(NetConnection * con, U32 mask, BitStream * s
       stream->writeFlag(mFieldData.mShowPlacementArea);				// Show Placement Area Flag.
       stream->write(mFieldData.mPlacementBandHeight);					// Placement Area Height.
       stream->write(mFieldData.mPlaceAreaColour);						// Placement Area Colour.
-      // AFX CODE BLOCK (ground-cover) <<
       stream->write(mFieldData.mAmbientModulationBias);
-      // AFX CODE BLOCK (ground-cover) >>
    }
 
    // Were done ...
@@ -1812,10 +1796,7 @@ void fxFoliageReplicator::unpackUpdate(NetConnection * con, BitStream * stream)
       stream->read(&mFieldData.mPlacementBandHeight);					// Placement Area Height.
       stream->read(&mFieldData.mPlaceAreaColour);
 
-      // AFX CODE BLOCK (ground-cover) <<
       stream->read(&mFieldData.mAmbientModulationBias);
-      // AFX CODE BLOCK (ground-cover) >>
-
       // Calculate Fade-In/Out Gradients.
       mFadeInGradient		= 1.0f / mFieldData.mFadeInRegion;
       mFadeOutGradient	= 1.0f / mFieldData.mFadeOutRegion;

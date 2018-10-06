@@ -31,6 +31,7 @@
 #include "console/engineAPI.h"
 #include "sim/netConnection.h"
 #include "console/consoleInternal.h"
+#include "T3D/assets/MaterialAsset.h"
 
 #define DECLARE_NATIVE_COMPONENT( ComponentType )                   \
 	 Component* staticComponentTemplate = new ComponentType; \
@@ -42,16 +43,15 @@
 
 Component::Component()
 {
-   mFriendlyName = StringTable->lookup("");
-   mFromResource = StringTable->lookup("");
-   mComponentType = StringTable->lookup("");
-   mComponentGroup = StringTable->lookup("");
-   mNetworkType = StringTable->lookup("");
-   mTemplateName = StringTable->lookup("");
-   //mDependency = StringTable->lookup("");
+   mFriendlyName = StringTable->EmptyString();
+   mFromResource = StringTable->EmptyString();
+   mComponentType = StringTable->EmptyString();
+   mComponentGroup = StringTable->EmptyString();
+   mNetworkType = StringTable->EmptyString();
+   mTemplateName = StringTable->EmptyString();
+   //mDependency = StringTable->EmptyString();
 
    mNetworked = false;
-
 
    // [tom, 1/12/2007] We manage the memory for the description since it
    // could be loaded from a file and thus massive. This is accomplished with
@@ -64,7 +64,16 @@ Component::Component()
 
    mCanSaveFieldDictionary = false;
 
-   mNetFlags.set(Ghostable);
+   mOriginatingAssetId = StringTable->EmptyString();
+
+   mIsServerObject = true;
+
+   componentIdx = 0;
+
+   mHidden = false;
+   mEnabled = true;
+
+   mDirtyMaskBits = 0;
 }
 
 Component::~Component()
@@ -97,6 +106,10 @@ void Component::initPersistFields()
 
       //addField("hidden", TypeBool, Offset(mHidden, Component), "Flags if this behavior is shown in the editor or not", AbstractClassRep::FieldFlags::FIELD_HideInInspectors);
       addProtectedField("enabled", TypeBool, Offset(mEnabled, Component), &_setEnabled, &defaultProtectedGetFn, "");
+
+      addField("originatingAsset", TypeComponentAssetPtr, Offset(mOriginatingAsset, Component),
+         "Asset that spawned this component, used for tracking/housekeeping", AbstractClassRep::FieldFlags::FIELD_HideInInspectors);
+
    endGroup("Component");
 
    Parent::initPersistFields();
@@ -149,6 +162,7 @@ bool Component::onAdd()
       return false;
 
    setMaskBits(UpdateMask);
+   setMaskBits(NamespaceMask);
 
    return true;
 }
@@ -191,7 +205,6 @@ void Component::onComponentRemove()
    {
       mOwner->onComponentAdded.remove(this, &Component::componentAddedToOwner);
       mOwner->onComponentRemoved.remove(this, &Component::componentRemovedFromOwner);
-      mOwner->onTransformSet.remove(this, &Component::ownerTransformSet);
    }
 
    mOwner = NULL;
@@ -205,7 +218,6 @@ void Component::setOwner(Entity* owner)
    {
       mOwner->onComponentAdded.remove(this, &Component::componentAddedToOwner);
       mOwner->onComponentRemoved.remove(this, &Component::componentRemovedFromOwner);
-      mOwner->onTransformSet.remove(this, &Component::ownerTransformSet);
 
       mOwner->removeComponent(this, false);
    }
@@ -216,11 +228,18 @@ void Component::setOwner(Entity* owner)
    {
       mOwner->onComponentAdded.notify(this, &Component::componentAddedToOwner);
       mOwner->onComponentRemoved.notify(this, &Component::componentRemovedFromOwner);
-      mOwner->onTransformSet.notify(this, &Component::ownerTransformSet);
    }
 
    if (isServerObject())
+   {
       setMaskBits(OwnerMask);
+
+      //if we have any outstanding maskbits, push them along to have the network update happen on the entity
+      if (mDirtyMaskBits != 0 && mOwner)
+      {
+         mOwner->setMaskBits(Entity::ComponentsUpdateMask);
+      }
+   }
 }
 
 void Component::componentAddedToOwner(Component *comp)
@@ -233,16 +252,19 @@ void Component::componentRemovedFromOwner(Component *comp)
    return;
 }
 
-void Component::ownerTransformSet(MatrixF *mat)
+void Component::setMaskBits(U32 orMask)
 {
-   return;
+   AssertFatal(orMask != 0, "Invalid net mask bits set.");
+   
+   if (mOwner)
+      mOwner->setComponentNetMask(this, orMask);
 }
 
 U32 Component::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
 {
-   U32 retMask = Parent::packUpdate(con, mask, stream);
+   U32 retMask = 0;
 
-   if (mask & OwnerMask)
+   /*if (mask & OwnerMask)
    {
       if (mOwner != NULL)
       {
@@ -267,21 +289,32 @@ U32 Component::packUpdate(NetConnection *con, U32 mask, BitStream *stream)
       }
    }
    else
-      stream->writeFlag(false);
+      stream->writeFlag(false);*/
 
    if (stream->writeFlag(mask & EnableMask))
    {
       stream->writeFlag(mEnabled);
    }
 
+   /*if (stream->writeFlag(mask & NamespaceMask))
+   {
+      const char* name = getName();
+      if (stream->writeFlag(name && name[0]))
+         stream->writeString(String(name));
+
+      if (stream->writeFlag(mSuperClassName && mSuperClassName[0]))
+         stream->writeString(String(mSuperClassName));
+
+      if (stream->writeFlag(mClassName && mClassName[0]))
+         stream->writeString(String(mClassName));
+   }*/
+
    return retMask;
 }
 
 void Component::unpackUpdate(NetConnection *con, BitStream *stream)
 {
-   Parent::unpackUpdate(con, stream);
-
-   if (stream->readFlag())
+   /*if (stream->readFlag())
    {
       if (stream->readFlag())
       {
@@ -297,12 +330,38 @@ void Component::unpackUpdate(NetConnection *con, BitStream *stream)
          //it's being nulled out
          setOwner(NULL);
       }
-   }
+   }*/
 
    if (stream->readFlag())
    {
       mEnabled = stream->readFlag();
    }
+
+   /*if (stream->readFlag())
+   {
+      if (stream->readFlag())
+      {
+         char name[256];
+         stream->readString(name);
+         assignName(name);
+      }
+
+      if (stream->readFlag())
+      {
+         char superClassname[256];
+         stream->readString(superClassname);
+       mSuperClassName = superClassname;
+      }
+
+      if (stream->readFlag())
+      {
+         char classname[256];
+         stream->readString(classname);
+         mClassName = classname;
+      }
+
+      linkNamespaces();
+   }*/
 }
 
 void Component::packToStream(Stream &stream, U32 tabStop, S32 behaviorID, U32 flags /* = 0  */)
@@ -346,6 +405,10 @@ void Component::setDataField(StringTableEntry slotName, const char *array, const
    onDataSet.trigger(this, slotName, value);
 }
 
+StringTableEntry Component::getComponentName()
+{
+   return getNamespace()->getName();
+}
 
 //catch any behavior field updates
 void Component::onStaticModified(const char* slotName, const char* newValue)
@@ -417,7 +480,7 @@ void Component::addComponentField(const char *fieldName, const char *desc, const
    else if (fieldType == StringTable->insert("vector"))
       fieldTypeMask = TypePoint3F;
    else if (fieldType == StringTable->insert("material"))
-      fieldTypeMask = TypeMaterialName;
+      fieldTypeMask = TypeMaterialAssetPtr;
    else if (fieldType == StringTable->insert("image"))
       fieldTypeMask = TypeImageFilename;
    else if (fieldType == StringTable->insert("shape"))
@@ -426,8 +489,19 @@ void Component::addComponentField(const char *fieldName, const char *desc, const
       fieldTypeMask = TypeBool;
    else if (fieldType == StringTable->insert("object"))
       fieldTypeMask = TypeSimObjectPtr;
+   else if (fieldType == StringTable->insert("string"))
+      fieldTypeMask = TypeString;
+   else if (fieldType == StringTable->insert("colorI"))
+      fieldTypeMask = TypeColorI;
+   else if (fieldType == StringTable->insert("colorF"))
+      fieldTypeMask = TypeColorF;
+   else if (fieldType == StringTable->insert("ease"))
+      fieldTypeMask = TypeEaseF;
+   else if (fieldType == StringTable->insert("gameObject"))
+      fieldTypeMask = TypeGameObjectAssetPtr;
    else
       fieldTypeMask = TypeString;
+   field.mFieldTypeName = fieldType;
 
    field.mFieldType = fieldTypeMask;
 
@@ -468,13 +542,14 @@ const char * Component::getDescriptionText(const char *desc)
    if (desc == NULL)
       return NULL;
 
-   char *newDesc;
+   char *newDesc = "";
 
    // [tom, 1/12/2007] If it isn't a file, just do it the easy way
    if (!Platform::isFile(desc))
    {
-      newDesc = new char[dStrlen(desc) + 1];
-      dStrcpy(newDesc, desc);
+      dsize_t newDescLen = dStrlen(desc) + 1;
+      newDesc = new char[newDescLen];
+      dStrcpy(newDesc, desc, newDescLen);
 
       return newDesc;
    }
@@ -501,7 +576,7 @@ const char * Component::getDescriptionText(const char *desc)
    }
 
    str.close();
-   delete stream;
+   //delete stream;
 
    return newDesc;
 }
@@ -601,6 +676,17 @@ ConsoleMethod(Component, setComponentield, const char *, 3, 3, "(int index) - Ge
    dSprintf(buf, 1024, "%s\t%s\t%s", field->mFieldName, field->mFieldType, field->mDefaultValue);
 
    return buf;
+}
+
+DefineConsoleMethod(Component, getComponentFieldType, const char *, (String fieldName), ,
+   "Get the number of static fields on the object.\n"
+   "@return The number of static fields defined on the object.")
+{
+   ComponentField *field = object->getComponentField(fieldName);
+   if (field == NULL)
+      return "";
+
+   return field->mFieldTypeName;;
 }
 
 ConsoleMethod(Component, getBehaviorFieldUserData, const char *, 3, 3, "(int index) - Gets the UserData associated with a field by index in the field list\n"

@@ -44,8 +44,6 @@ public:
    S32              force_type;
    bool             orient_force;
    bool             exclude_cons_obj;
-   S8 mTeamId;
-   bool mIFF;
 
 public:
   /*C*/             afxPhysicalZoneData();

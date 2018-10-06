@@ -151,7 +151,6 @@ public:
 
 //----------------------------------------------------------------------------
 
-// AFX CODE BLOCK <<
 // As shipped, AITurretShape plus the chain of classes it inherits from, consumes
 // all 32 mask-bits. AFX uses one additional mask-bit in GameBase, which pushes
 // AITurretShape over the mask-bit limit which will cause runtime crashes. As 
@@ -165,15 +164,12 @@ public:
 //
 // Comment out this define if you want AITurretShape to define it's own bit-mask.
 #define AFX_REUSE_TURRETSHAPE_MASKBITS
-// AFX CODE BLOCK >>
-
 class AITurretShape: public TurretShape
 {
    typedef TurretShape Parent;
 
 protected:
 
-   // AFX CODE BLOCK (bug-fix) <<
 #ifdef AFX_REUSE_TURRETSHAPE_MASKBITS
    enum MaskBits {
       TurretStateMask   = Parent::TurretUpdateMask,
@@ -185,7 +181,6 @@ protected:
       NextFreeMask      = Parent::NextFreeMask << 1
    };
 #endif
-   // AFX CODE BLOCK >>
 
    struct TargetInfo
    {
