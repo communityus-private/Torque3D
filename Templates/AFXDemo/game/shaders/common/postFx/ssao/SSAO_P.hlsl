@@ -20,15 +20,15 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#include "shadergen:/autogenConditioners.h"
+#include "../../shaderModelAutoGen.hlsl"
 #include "./../postFx.hlsl"
 
 #define DOSMALL
 #define DOLARGE
 
-uniform sampler2D prepassMap : register(S0);
-uniform sampler2D randNormalTex : register(S1);
-uniform sampler1D powTable : register(S2);
+TORQUE_UNIFORM_SAMPLER2D(deferredMap,0);
+TORQUE_UNIFORM_SAMPLER2D(randNormalTex,1);
+TORQUE_UNIFORM_SAMPLER1D(powTable,2);
 
 uniform float2 nearFar;
 uniform float2 worldToScreenScale;
@@ -95,11 +95,11 @@ float getOcclusion( float depthDiff, float depthMin, float depthMax, float depth
       
    normalDiff *= 1.0 - ( dt * 0.5 + 0.5 );
         
-   return ( 1.0 - tex1D( powTable, delta ).r ) * normalDiff;
+   return ( 1.0 - TORQUE_TEX1D( powTable, delta ).r ) * normalDiff;
 }
 
 
-float4 main( PFXVertToPix IN ) : COLOR
+float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 {          
    float3 ptSphere[32] =
    {
@@ -140,12 +140,12 @@ float4 main( PFXVertToPix IN ) : COLOR
    // Sample a random normal for reflecting the 
    // sphere vector later in our loop.   
    float4 noiseMapUV = float4( ( IN.uv1 * ( targetSize / texSize1 ) ).xy, 0, 0 );
-   float3 reflectNormal = normalize( tex2Dlod( randNormalTex, noiseMapUV ).xyz * 2.0 - 1.0 );   
+   float3 reflectNormal = normalize( TORQUE_TEX2DLOD( randNormalTex, noiseMapUV ).xyz * 2.0 - 1.0 );   
    //return float4( reflectNormal, 1 );
    
-   float4 prepass = prepassUncondition( prepassMap, IN.uv0 );
-   float3 normal = prepass.xyz;
-   float depth = prepass.a;
+   float4 deferred = TORQUE_DEFERRED_UNCONDITION( deferredMap, IN.uv0 );
+   float3 normal = deferred.xyz;
+   float depth = deferred.a;
    //return float4( ( depth ).xxx, 1 );
       
    // Early out if too far away.
@@ -183,7 +183,7 @@ float4 main( PFXVertToPix IN ) : COLOR
    //if ( radiusDepth.x < 1.0 / targetSize.x )
    //   return color;      
    //radiusDepth.xyz = 0.0009;
-   
+   [unroll]
    for ( i = 0; i < sSampleCount; i++ )
    {
       baseRay = reflect( ptSphere[i], reflectNormal );
@@ -197,7 +197,7 @@ float4 main( PFXVertToPix IN ) : COLOR
        
       se = ep + ray;
             
-      occluderFragment = prepassUncondition( prepassMap, se.xy );                  
+      occluderFragment = TORQUE_DEFERRED_UNCONDITION( deferredMap, se.xy );                  
       
       depthDiff = se.z - occluderFragment.a; 
       
@@ -232,7 +232,7 @@ float4 main( PFXVertToPix IN ) : COLOR
    //if ( radiusDepth.x < 1.0 / targetSize.x )
    //   return color;      
    //radiusDepth.xyz = 0.0009;   
-   
+   [unroll]
    for ( i = sSampleCount; i < totalSampleCount; i++ )
    {
       baseRay = reflect( ptSphere[i], reflectNormal );
@@ -246,7 +246,7 @@ float4 main( PFXVertToPix IN ) : COLOR
        
       se = ep + ray;
             
-      occluderFragment = prepassUncondition( prepassMap, se.xy );                  
+      occluderFragment = TORQUE_DEFERRED_UNCONDITION( deferredMap, se.xy );                  
       
       depthDiff = se.z - occluderFragment.a;       
       

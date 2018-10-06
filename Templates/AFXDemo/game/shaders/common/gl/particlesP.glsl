@@ -34,9 +34,9 @@
    
    uniform float oneOverSoftness;
    uniform float oneOverFar;
-   uniform sampler2D prepassTex;   
+   uniform sampler2D deferredTex;   
    //uniform vec3 vEye;
-   uniform vec4 prePassTargetParams;
+   uniform vec4 deferredTargetParams;
 #endif
 
 #define CLIP_Z // TODO: Make this a proper macro
@@ -78,15 +78,17 @@ vec4 lmSample( vec3 nrm )
 uniform float alphaFactor;
 uniform float alphaScale;
 
+out vec4 OUT_col;
+
 void main()
 {
    float softBlend = 1;
    
    #ifdef SOFTPARTICLES
       vec2 tc = IN_pos.xy * vec2(1.0, -1.0) / IN_pos.w;
-      tc = viewportCoordToRenderTarget(saturate( ( tc + 1.0 ) * 0.5 ), prePassTargetParams); 
+      tc = viewportCoordToRenderTarget(saturate( ( tc + 1.0 ) * 0.5 ), deferredTargetParams); 
    
-   	float sceneDepth = prepassUncondition( prepassTex, tc ).w;   	   	   			
+   	float sceneDepth = deferredUncondition( deferredTex, tc ).w;   	   	   			
    	float depth = IN_pos.w * oneOverFar;   	
 	float diff = sceneDepth - depth;
 	#ifdef CLIP_Z
@@ -100,12 +102,12 @@ void main()
 	   
    vec4 diffuse = texture( diffuseMap, IN_uv0 );
    
-   //OUT_FragColor0 = vec4( lmSample(vec3(0, 0, -1)).rgb, IN_color.a * diffuse.a * softBlend * alphaScale);
+   //OUT_col = vec4( lmSample(vec3(0, 0, -1)).rgb, IN_color.a * diffuse.a * softBlend * alphaScale);
    
    // Scale output color by the alpha factor (turn LerpAlpha into pre-multiplied alpha)
    vec3 colorScale = ( alphaFactor < 0.0 ? IN_color.rgb * diffuse.rgb : vec3( alphaFactor > 0.0 ? IN_color.a * diffuse.a * alphaFactor * softBlend : softBlend ) );
    
-   OUT_FragColor0 = hdrEncode( vec4( IN_color.rgb * diffuse.rgb * colorScale,
+   OUT_col = hdrEncode( vec4( IN_color.rgb * diffuse.rgb * colorScale,
                   IN_color.a * diffuse.a * softBlend * alphaScale ) );
 }
 
