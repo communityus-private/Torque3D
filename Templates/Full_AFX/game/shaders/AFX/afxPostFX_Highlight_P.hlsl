@@ -4,18 +4,16 @@
 // http://www.garagegames.com/community/resources/view/17821
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
-#include "../common/shaderModel.hlsl"
-#include "../common/shaderModelAutoGen.hlsl"
 #include "shaders/common/postFX/postFx.hlsl"  
+#include "shadergen:/autogenConditioners.h"  
   
-TORQUE_UNIFORM_SAMPLER2D(highlightBuffer,0);
-TORQUE_UNIFORM_SAMPLER2D(backBuffer,1);
-uniform float2 targetSize;
-
-float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
+float4 main( PFXVertToPix IN,   
+             uniform sampler2D highlightBuffer :register(S0), 
+				 uniform sampler2D backBuffer : register(S1),
+				 uniform float2 targetSize : register(C0) ) : COLOR0  
 {  
-	float4 bufferColor = TORQUE_TEX2D(backBuffer, IN.uv0);
-	float4 highlightColor = TORQUE_TEX2D(highlightBuffer, IN.uv0);
+	float4 bufferColor = tex2D(backBuffer, IN.uv0);
+	float4 highlightColor = tex2D(highlightBuffer, IN.uv0);
 
    if (highlightColor.a > 0.0)
       bufferColor.rgb = clamp(highlightColor.a*(bufferColor.rgb*1.4 + 0.05), 0, 1);

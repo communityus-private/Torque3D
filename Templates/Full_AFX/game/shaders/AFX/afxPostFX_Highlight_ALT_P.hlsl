@@ -5,15 +5,13 @@
 // (currently not used for default AFX selection-highlighting)
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
 
-#include "../common/shaderModel.hlsl"
-#include "../common/shaderModelAutoGen.hlsl"
 #include "shaders/common/postFX/postFx.hlsl"  
+#include "shadergen:/autogenConditioners.h"  
   
-TORQUE_UNIFORM_SAMPLER2D(highlightBuffer,0);
-TORQUE_UNIFORM_SAMPLER2D(backBuffer,1);
-uniform float2 targetSize;
-				 
-float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
+float4 main( PFXVertToPix IN,   
+             uniform sampler2D highlightBuffer :register(S0), 
+				 uniform sampler2D backBuffer : register(S1),
+				 uniform float2 targetSize : register(C0) ) : COLOR0  
 {  
    float2 offsets[9] = {  
       float2( 0.0,  0.0),  
@@ -34,7 +32,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
    for(int i = 0; i < 9; i++)  
    {  
       float2 uv = IN.uv0 + offsets[i] * PixelSize;  
-      float4 cpix = float4( TORQUE_TEX2D( highlightBuffer, uv ).rrr, 1.0 );
+      float4 cpix = float4( tex2D( highlightBuffer, uv ).rrr, 1.0 );
 		avgval += clamp(cpix.r*256, 0, 1);
 	}
 	
@@ -42,7 +40,7 @@ float4 main( PFXVertToPix IN ) : TORQUE_TARGET0
 
 	float vis = round(1.0-(abs(frac(avgval)-0.5)*2));
 
-	float4 bb = TORQUE_TEX2D(backBuffer, IN.uv0);
+	float4 bb = tex2D(backBuffer, IN.uv0);
 	float4 outlineColor = float4(vis, 0, 0, vis);
 	float4 overlayColor = float4(avgval, 0, 0, avgval);
 	//float4 outlineColor = float4(vis*0.5, vis*0.5, vis*0.5, vis*0.5);

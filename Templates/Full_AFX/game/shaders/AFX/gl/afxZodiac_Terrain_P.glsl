@@ -11,15 +11,14 @@
 uniform sampler2D zodiacMap;
 uniform vec4 zodiacColor;
 
-in vec4 hpos;
-in vec2 texCoord;
+varying vec4 hpos;
+varying vec2 texCoord;
 
-out vec4 OUT_FragColor0;
 //~~~~~~~~~~~~~~~~~~~~//
 
 void main()
 {
-   OUT_FragColor0 = zodiacColor*texture(zodiacMap, texCoord);
+   gl_FragColor = zodiacColor*texture2D(zodiacMap, texCoord);
 }
 
 //~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~//~~~~~~~~~~~~~~~~~~~~~//
