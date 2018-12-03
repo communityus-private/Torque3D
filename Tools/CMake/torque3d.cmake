@@ -151,8 +151,12 @@ if(WIN32)
 	option(TORQUE_D3D11 "Allow Direct3D 11 render" ON)
 endif()
 
+option(renderDoc "renderDoc" OFF)
+mark_as_advanced(renderDoc)
+
 option(TORQUE_DEDICATED "Torque dedicated" OFF)
 mark_as_advanced(TORQUE_DEDICATED)
+
 
 ###############################################################################
 # options
@@ -804,6 +808,11 @@ if(TORQUE_SDL)
 endif()
 if(TORQUE_OPENGL)
 	addInclude("${libDir}/glad/include")
+endif()
+
+if(renderDoc)
+	addDef(renderDoc_ON)
+	addInclude("${libDir}/renderDoc") 
 endif()
 
 if(UNIX AND NOT APPLE)

@@ -51,6 +51,8 @@
 #include "gfx/gfxTextureManager.h"
 #include "T3D/lighting/IBLUtilities.h"
 
+#include "gfx/gfxRenderDoc.h"
+
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool ReflectionProbe::smRenderPreviewProbes = true;
@@ -982,7 +984,9 @@ void ReflectionProbe::bake(String outputPath, S32 resolution, bool renderWithPro
 
 	  F32 detailAdjustBackup = TSShapeInstance::smDetailAdjust;
 	  TSShapeInstance::smDetailAdjust *= getNextPow2(resolution);
+	  GFXRenderDoc::startFrameCapture();
       renderFrame(&baseTarget, matView, frustum, mCaptureMask & EDITOR_RENDER_TYPEMASK, gCanvasClearColor);
+	  GFXRenderDoc::endFrameCapture();
 	  TSShapeInstance::smDetailAdjust = detailAdjustBackup;
       baseTarget->resolve();
    }

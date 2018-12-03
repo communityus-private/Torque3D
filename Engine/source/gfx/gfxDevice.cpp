@@ -45,6 +45,10 @@
 #include "console/consoleTypes.h"
 #include "console/engineAPI.h"
 
+#if defined (renderDoc_ON)
+#include "gfx/gfxRenderDoc.h"
+#endif
+
 GFXDevice * GFXDevice::smGFXDevice = NULL;
 bool GFXDevice::smWireframe = false;
 bool GFXDevice::smDisableVSync = true;
@@ -196,6 +200,9 @@ GFXDevice::GFXDevice()
 
    mStereoTargets[0] = NULL;
    mStereoTargets[1] = NULL;
+#if defined (renderDoc_ON)
+   GFXRenderDoc::init();
+#endif
 }
 
 GFXDrawUtil* GFXDevice::getDrawUtil()
@@ -303,6 +310,9 @@ GFXDevice::~GFXDevice()
       head->mNextResource = NULL;
       head->mOwningDevice = NULL;
    }
+#if defined (renderDoc_ON)
+   GFXRenderDoc::shutdown();
+#endif
 }
 
 GFXStateBlockRef GFXDevice::createStateBlock(const GFXStateBlockDesc& desc)
