@@ -57,13 +57,13 @@ function initRenderManager()
    // Normal mesh rendering.
    DiffuseRenderPassManager.addManager( new RenderTerrainMgr(TerrainBin)   { renderOrder = 0.4; processAddOrder = 0.4; basicOnly = true; } );
    DiffuseRenderPassManager.addManager( new RenderMeshMgr(MeshBin)         { bintype = "Mesh"; renderOrder = 0.5; processAddOrder = 0.5; basicOnly = true; } );
-   DiffuseRenderPassManager.addManager( new RenderImposterMgr(ImposterBin) { renderOrder = 0.56; processAddOrder = 0.56; } );
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(ObjectBin)     { bintype = "Object"; renderOrder = 0.6; processAddOrder = 0.6; } );
 
    DiffuseRenderPassManager.addManager( new RenderObjectMgr(ShadowBin)     { bintype = "Shadow"; renderOrder = 0.7; processAddOrder = 0.7; } );
    DiffuseRenderPassManager.addManager( new RenderMeshMgr(DecalRoadBin)    { bintype = "DecalRoad"; renderOrder = 0.8; processAddOrder = 0.8; } );
    DiffuseRenderPassManager.addManager( new RenderMeshMgr(DecalBin)        { bintype = "Decal"; renderOrder = 0.81; processAddOrder = 0.81; } );
    DiffuseRenderPassManager.addManager( new RenderOcclusionMgr(OccluderBin){ bintype = "Occluder"; renderOrder = 0.9; processAddOrder = 0.9; } );
+   DiffuseRenderPassManager.addManager( new RenderImposterMgr(ImposterBin) { renderOrder = 0.96; processAddOrder = 0.96; basicOnly = true; } );
      
    // We now render translucent objects that should handle
    // their own fogging and lighting.
@@ -87,6 +87,11 @@ function initRenderManager()
                
    // Resolve format change token last.
    DiffuseRenderPassManager.addManager( new RenderPassStateBin(FinalBin)       { renderOrder = 1.7; stateToken = AL_FormatToken; } );
+   DiffuseRenderPassManager.addManager( new afxZodiacTerrainRenderer() { bintype = "TerrainZodiac"; renderOrder = 1.41; processAddOrder = 1.41; } );
+   DiffuseRenderPassManager.addManager( new afxZodiacPolysoupRenderer() { bintype = "PolysoupZodiac"; renderOrder = 1.42; processAddOrder = 1.42; } );
+   DiffuseRenderPassManager.addManager( new afxZodiacGroundPlaneRenderer() { bintype = "GroundPlaneZodiac"; renderOrder = 1.43; processAddOrder = 1.43; } );
+   DiffuseRenderPassManager.addManager( new afxZodiacMeshRoadRenderer() { bintype = "MeshRoadZodiac"; renderOrder = 1.44; processAddOrder = 1.44; } );
+   DiffuseRenderPassManager.addManager( new afxRenderHighlightMgr() { renderOrder = 1.55; processAddOrder = 1.55; } );  // for selection-highlighting
 }
 
 /// This post effect is used to copy data from the non-MSAA back-buffer to the
