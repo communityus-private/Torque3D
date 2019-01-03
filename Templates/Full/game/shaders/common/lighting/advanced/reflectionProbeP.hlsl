@@ -55,12 +55,23 @@ float3 boxProject(float3 wsPosition, float3 reflectDir, float3 boxWSPos, float3 
    return posonbox - boxWSPos;
 }
 
+float3 iblBoxDiffuse( Surface     surface, 
+                     TORQUE_SAMPLERCUBE(irradianceCube), 
+                     float3        boxPos,
+                     float3        boxMin,
+                     float3        boxMax)
+{
+    float3 cubeN = boxProject(surface.P, surface.N, boxPos, boxMin, boxMax);
+	cubeN.z *=-1;
+    return TORQUE_TEXCUBELOD(irradianceCube, float4(cubeN,0)).xyz;
+}
+
 float3 iblBoxSpecular(float3 normal, float3 wsPos, float roughness, float3 surfToEye,
                      TORQUE_SAMPLER2D(brdfTexture), 
-                    TORQUE_SAMPLERCUBE(radianceCube),
-                    float3 boxPos,
-                    float3 boxMin,
-                    float3 boxMax)
+                     TORQUE_SAMPLERCUBE(radianceCube),
+                     float3 boxPos,
+                     float3 boxMin,
+                     float3 boxMax)
 {
    float ndotv = clamp(dot(normal, surfToEye), 0.0, 1.0);
 
@@ -112,6 +123,11 @@ float4 main( ConvexConnectP IN ) : SV_TARGET
    Surface surface = createSurface( normDepth, TORQUE_SAMPLER2D_MAKEARG(colorBuffer),TORQUE_SAMPLER2D_MAKEARG(matInfoBuffer),
                                     uvScene, eyePosWorld, wsEyeRay, cameraToWorld);		  
 	float blendVal = 1.0;
+	//early out if emissive
+    if (getFlag(surface.matFlag, 0))
+    {   
+      discard;
+	}
 	if(useSphereMode)
 	{
 		float3 L = probeWSPos - surface.P;
@@ -123,20 +139,20 @@ float4 main( ConvexConnectP IN ) : SV_TARGET
 		float tempAttenVal = 3.5;
 		blendVal = defineBoxSpaceInfluence(surface.P, probeWSPos, radius, tempAttenVal);
 		clip(blendVal);
-		float compression = 0.05;
-		blendVal=(1.0-compression)+blendVal*compression;
+		float blendBias = 0.001;
+		blendVal=lerp(blendVal,1,blendBias);
 	}
 	//render into the bound space defined above
 	float3 surfToEye = normalize(surface.P - eyePosWorld);
-	float3 irradiance = TORQUE_TEXCUBELOD(irradianceCubemap, float4(surface.N,0)).xyz;
+	float3 irradiance = iblBoxDiffuse(surface,TORQUE_SAMPLERCUBE_MAKEARG(irradianceCubemap), probeWSPos, bbMin, bbMax);
 	float3 specular = iblBoxSpecular(surface.N, surface.P, surface.roughness, surfToEye, TORQUE_SAMPLER2D_MAKEARG(BRDFTexture), TORQUE_SAMPLERCUBE_MAKEARG(cubeMap), probeWSPos, bbMin, bbMax);
-   float3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
-   specular *= F;
-   //energy conservation
+    float3 F = FresnelSchlickRoughness(surface.NdotV, surface.f0, surface.roughness);
+    specular *= F;
+    //energy conservation
 	float3 kD = 1.0.xxx - F;
 	kD *= 1.0 - surface.metalness;
-   //final diffuse color
-   float3 diffuse = kD * irradiance * surface.baseColor.rgb;
+    //final diffuse color
+    float3 diffuse = kD * irradiance * surface.baseColor.rgb;
     float nDL = abs(dot(surface.N,probeWSPos-surface.P));
     return float4(diffuse + specular * surface.ao, blendVal*nDL);
 }
