@@ -92,10 +92,10 @@ void BTDeleteUndoAction::deleteObject( SimObject *object )
    object->deleteObject();
 }
 
-ConsoleMethod( BTDeleteUndoAction, deleteObject, void, 3, 3, "( SimObject obj )")
+DefineEngineMethod( BTDeleteUndoAction, deleteObject, void, (SimObjectId ID),, "( SimObject obj )")
 {
    SimObject *obj = NULL;
-   if ( Sim::findObject( argv[2], obj ) && obj )
+   if ( Sim::findObject( ID, obj ) && obj )
    	object->deleteObject( obj );
 }
 
