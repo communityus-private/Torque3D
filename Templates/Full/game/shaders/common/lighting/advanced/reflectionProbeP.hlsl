@@ -137,6 +137,6 @@ float4 main( ConvexConnectP IN ) : SV_TARGET
 	kD *= 1.0 - surface.metalness;
    //final diffuse color
    float3 diffuse = kD * irradiance * surface.baseColor.rgb;
-
-   return float4(diffuse + specular * surface.ao, blendVal);
+    float nDL = abs(dot(surface.N,probeWSPos-surface.P));
+    return float4(diffuse + specular * surface.ao, blendVal*nDL);
 }
