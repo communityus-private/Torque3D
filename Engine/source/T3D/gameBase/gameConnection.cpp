@@ -2461,6 +2461,16 @@ DefineEngineMethod(GameConnection, setSelectedObj, bool, (SceneObject* obj, bool
    return true;
 }
 
+DefineEngineMethod(GameConnection, highlightObj, bool, (SceneObject* obj, bool select, bool propagate_to_client), (false), "")
+{
+	if (!obj)
+		return false;
+
+	object->highlightObj(obj, select, propagate_to_client);
+
+	return true;
+}
+
 DefineEngineMethod(GameConnection, getSelectedObj, SimObject*, (),, "")
 {
    return object->getSelectedObj();
@@ -2532,6 +2542,15 @@ void GameConnection::setSelectedObj(SceneObject* so, bool propagate_to_client)
    // notify appropriate script of the change
    if (mSelectedObj)
       Con::executef(this, "onObjectSelected", mSelectedObj->getIdString());
+}
+
+void GameConnection::highlightObj(SceneObject* so, bool select, bool propagate_to_client)
+{
+	if (select)
+		so->setSelectionFlags(so->getSelectionFlags() | SceneObject::SELECTED);
+	else
+		so->setSelectionFlags(so->getSelectionFlags() & ~SceneObject::SELECTED);
+	so->setMaskBits(SceneObject::SceneObjectMasks::HighlightMask);
 }
 
 void GameConnection::setRolloverObj(SceneObject* so) 
