@@ -873,7 +873,10 @@ U32 SceneObject::packUpdate( NetConnection* conn, U32 mask, BitStream* stream )
    }
    else
       stream->writeFlag( false );
-   
+
+   if (stream->writeFlag(mask & HighlightMask))
+	   stream->write(getSelectionFlags());
+
    return retMask;
 }
 
@@ -908,6 +911,13 @@ void SceneObject::unpackUpdate( NetConnection* conn, BitStream* stream )
       }
       else
          unmount();
+   }
+
+   if (stream->readFlag())
+   {
+	   U8 flags;
+	   stream->read(&flags);
+	   setSelectionFlags(flags);
    }
 }
 
