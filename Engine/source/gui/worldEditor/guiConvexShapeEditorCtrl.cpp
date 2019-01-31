@@ -178,7 +178,7 @@ void GuiConvexEditorCtrl::setVisible( bool val )
                AbstractClassRep* classRep = AbstractClassRep::findClassRep(mProxyObjects[i].targetObjectClass);
                if (!classRep)
                {
-                  Con::errorf("WorldEditor::createPolyhedralObject - No such class: %s", mProxyObjects[i].targetObjectClass);
+                  Con::errorf("WorldEditor::createPolyhedralObject - No such class: %s", mProxyObjects[i].targetObjectClass.c_str());
                   continue;
                }
 
@@ -812,7 +812,7 @@ void GuiConvexEditorCtrl::updateGizmo()
    S32 &flags = mGizmoProfile->flags;
    GizmoAlignment &align = mGizmoProfile->alignment;
 
-   U16 keys = Input::getModifierKeys();
+   U8 keys = Input::getModifierKeys();
 
    mCtrlDown = keys & ( SI_LCTRL | SI_LSHIFT );
 

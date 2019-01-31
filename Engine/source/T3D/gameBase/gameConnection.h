@@ -403,7 +403,8 @@ protected:
 public:   
    void          setRolloverObj(SceneObject*);   
    SceneObject*  getRolloverObj() { return  mRolloverObj; }   
-   void          setSelectedObj(SceneObject*, bool propagate_to_client=false);   
+   void          setSelectedObj(SceneObject*, bool propagate_to_client=false);
+   void          highlightObj(SceneObject*, bool select, bool propagate_to_client = false);
    SceneObject*  getSelectedObj() { return  mSelectedObj; }  
    void          setPreSelectedObjFromRollover();
    void          clearPreSelectedObj();

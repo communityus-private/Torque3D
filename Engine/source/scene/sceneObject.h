@@ -130,7 +130,8 @@ class SceneObject : public NetObject, private SceneContainer::Link, public Proce
          ScaleMask         = BIT( 1 ),
          FlagMask          = BIT( 2 ),
          MountedMask       = BIT( 3 ),
-         NextFreeMask      = BIT( 4 )
+		 HighlightMask     = BIT( 4 ),
+		 NextFreeMask      = BIT( 5 )
       };
       
       /// Bit-flags stored in mObjectFlags.

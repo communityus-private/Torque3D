@@ -26,6 +26,7 @@
 #include "platform/input/IProcessInput.h"
 
 
+extern InputModifiers convertModifierBits(const U32 in);
 //-----------------------------------------------------------------------------
 // Constructor/Destructor
 //-----------------------------------------------------------------------------
@@ -138,7 +139,11 @@ void WindowInputGenerator::handleMouseMove( WindowId did, U32 modifier, S32 x, S
    event.deviceType = MouseDeviceType;
    event.deviceInst = 0;
    event.objType    = SI_AXIS;
+#ifdef TORQUE_SDL
    event.modifier = modifier;
+#else
+   event.modifier = convertModifierBits(modifier);
+#endif
    event.ascii      = 0;
 
    // Generate delta movement along each axis
@@ -224,7 +229,11 @@ void WindowInputGenerator::handleMouseButton( WindowId did, U32 modifiers, U32 a
    event.deviceInst = 0;
    event.objType    = SI_BUTTON;
    event.objInst    = (InputObjectInstances)(KEY_BUTTON0 + button);
+#ifdef TORQUE_SDL
    event.modifier = modifiers;
+#else
+   event.modifier = convertModifierBits(modifiers);
+#endif
    event.ascii      = 0;
    event.action     = (action==IA_MAKE) ? SI_MAKE : SI_BREAK;
    event.fValue     = (action==IA_MAKE) ? 1.0 : 0.0;
@@ -241,7 +250,11 @@ void WindowInputGenerator::handleMouseWheel( WindowId did, U32 modifiers, S32 wh
    event.deviceType = MouseDeviceType;
    event.deviceInst = 0;
    event.objType    = SI_AXIS;
+#ifdef TORQUE_SDL
    event.modifier = modifiers;
+#else
+   event.modifier = convertModifierBits(modifiers);
+#endif
    event.ascii      = 0;
    event.action     = SI_MOVE;
 
@@ -274,7 +287,11 @@ void WindowInputGenerator::handleCharInput( WindowId did, U32 modifier, U16 key 
    event.deviceInst  = 0;
    event.objType     = SI_KEY;
    event.objInst     = KEY_NULL;
+#ifdef TORQUE_SDL
    event.modifier = modifier;
+#else
+   event.modifier = convertModifierBits(modifier);
+#endif
    event.ascii       = key;
    event.action      = SI_MAKE;
    event.fValue      = 1.0;
@@ -286,7 +303,7 @@ void WindowInputGenerator::handleCharInput( WindowId did, U32 modifier, U16 key 
 }
 
 
-void WindowInputGenerator::handleKeyboard( WindowId did, U32 modifier, U32 action, S32 keySym, U16 key )
+void WindowInputGenerator::handleKeyboard( WindowId did, U32 modifier, U32 action, U16 key )
 {
    if( !mInputController || !mFocused )
       return;
@@ -295,9 +312,12 @@ void WindowInputGenerator::handleKeyboard( WindowId did, U32 modifier, U32 actio
    event.deviceType  = KeyboardDeviceType;
    event.deviceInst  = 0;
    event.objType     = SI_KEY;
-   event.objInst     = (U32)key;
+   event.objInst     = (InputObjectInstances)key;
+#ifdef TORQUE_SDL
    event.modifier    = modifier;
-   event.iValue      = keySym;
+#else
+   event.modifier = convertModifierBits(modifier);
+#endif
    event.ascii       = 0;
 
    switch(action)
