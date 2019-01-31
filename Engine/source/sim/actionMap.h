@@ -41,7 +41,7 @@ struct InputEventInfo;
 
 struct EventDescriptor
 {
-   U16 flags;      ///< Combination of any modifier flags.
+   U8  flags;      ///< Combination of any modifier flags.
    U8  eventType;  ///< SI_KEY, etc.
    U16 eventCode;  ///< From event.h
 };
@@ -185,6 +185,7 @@ class ActionMap : public SimObject
    /// table.
    static void clearAllBreaks();
 
+   static bool checkAsciiGlobal(U16 key, U32 modifiers);
    static bool getDeviceTypeAndInstance(const char *device, U32 &deviceType, U32 &deviceInstance);
 
    DECLARE_CONOBJECT(ActionMap);

@@ -20,7 +20,6 @@
 // IN THE SOFTWARE.
 //-----------------------------------------------------------------------------
 
-#ifndef TORQUE_SDL
 #ifndef _WINDIRECTINPUT_H_
 #define _WINDIRECTINPUT_H_
 
@@ -131,4 +130,3 @@ class DInputManager : public InputManager
 };
 
 #endif  // _H_WINDIRECTINPUT_
-#endif //!TORQUE_SDL

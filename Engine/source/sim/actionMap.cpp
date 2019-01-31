@@ -170,6 +170,16 @@ ConsoleDocClass( ActionMap,
    
 );
 
+static inline bool dIsDecentChar(U8 c)
+{
+   return ((U8(0xa0) <= c) || (( U8(0x21) <= c) && (c <= U8(0x7e))) || ((U8(0x91) <= c) && (c <= U8(0x92))));
+}
+struct AsciiMapping
+{
+   const char* pDescription;
+   U16         asciiCode;
+};
+extern AsciiMapping gAsciiMap[];
 //------------------------------------------------------------------------------
 //-------------------------------------- Action maps
 //
@@ -477,16 +487,64 @@ bool ActionMap::createEventDescriptor(const char* pEventString, EventDescriptor*
    //
    AssertFatal(dStrlen(pObjectString) != 0, "Error, no key was specified!");
 
-   InputEventManager::VirtualMapData* data = INPUTMGR->findKeyboardMap(pObjectString);
-   if (data == NULL)
-      data = INPUTMGR->findVirtualMap(pObjectString);
+   if (dStrlen(pObjectString) == 1)
+   {
+      if (dIsDecentChar(*pObjectString)) // includes foreign chars
+      {
+         U16 asciiCode = (*pObjectString);
+         asciiCode &= 0xFF;
+         U16 keyCode = Input::getKeyCode(asciiCode);
+         if ( keyCode >= KEY_0 )
+         {
+            pDescriptor->eventType = SI_KEY;
+            pDescriptor->eventCode = keyCode;
+            return true;
+         }
+         else if (dIsalpha(*pObjectString) == true)
+         {
+            pDescriptor->eventType = SI_KEY;
+            pDescriptor->eventCode = KEY_A+dTolower(*pObjectString)-'a';
+            return true;
+         }
+         else if (dIsdigit(*pObjectString) == true)
+         {
+            pDescriptor->eventType = SI_KEY;
+            pDescriptor->eventCode = KEY_0+(*pObjectString)-'0';
+            return true;
+         }
+      }
+      return false;
+   }
+   else
+   {
+      pDescriptor->eventCode = 0;
+      for (U16 i = 0; gAsciiMap[i].asciiCode != 0xFFFF; i++)
+      {
+         if (dStricmp(pObjectString, gAsciiMap[i].pDescription) == 0)
+         {
+            U16 asciiCode = gAsciiMap[i].asciiCode;
+            U16 keyCode   = Input::getKeyCode(asciiCode);
+            if ( keyCode >= KEY_0 )
+            {
+               pDescriptor->eventType = SI_KEY;
+               pDescriptor->eventCode = keyCode;
+               return(true);
+
+            }
+            else
+            {
+               break;
+            }
+         }
+      }
+      InputEventManager::VirtualMapData* data = INPUTMGR->findVirtualMap(pObjectString);
    if(data)
    {
       pDescriptor->eventType = data->type;
       pDescriptor->eventCode = data->code;
       return true;
    }
-
+   }
    return false;
 }
 
@@ -623,7 +681,8 @@ const ActionMap::Node* ActionMap::findNode(const U32 inDeviceType, const U32 inD
       // Special case for an ANYKEY bind...
       if (pDeviceMap->nodeMap[i].action == KEY_ANYKEY 
          && pDeviceMap->nodeMap[i].modifiers == realMods 
-         && inAction <= SI_ANY)
+         && dIsDecentChar(inAction)
+         && inAction <= U8_MAX)
          return &pDeviceMap->nodeMap[i];
 
       if (pDeviceMap->nodeMap[i].modifiers == realMods 
@@ -1041,16 +1100,44 @@ const char* ActionMap::getModifierString(const U32 modifiers)
 //------------------------------------------------------------------------------
 bool ActionMap::getKeyString(const U32 action, char* buffer)
 {
-   const char* desc;
-   if (action <= SI_ANY)
-      desc = INPUTMGR->findKeyboardMapDescFromCode(action);
+   U16 asciiCode = 0;
+
+   if ( !( KEY_NUMPAD0 <= action && action <= KEY_NUMPAD9 ) )
+      asciiCode = Input::getAscii( action, STATE_LOWER );
+
+   if ( (asciiCode != 0) && dIsDecentChar((char)asciiCode))
+   {
+      for (U32 i = 0; gAsciiMap[i].asciiCode != 0xFFFF; i++) {
+         if (gAsciiMap[i].asciiCode == asciiCode)
+         {
+            dStrcpy(buffer, gAsciiMap[i].pDescription, 16);
+            return true;
+         }
+      }
+      buffer[0] = char(asciiCode);
+      buffer[1] = '\0';
+      return true;
+   }
    else
-      desc = INPUTMGR->findVirtualMapDescFromCode(action);
+   {
+      if (action >= KEY_A && action <= KEY_Z)
+      {
+         buffer[0] = char(action - KEY_A + 'a');
+         buffer[1] = '\0';
+         return true;
+      }
+      else if (action >= KEY_0 && action <= KEY_9) {
+         buffer[0] = char(action - KEY_0 + '0');
+         buffer[1] = '\0';
+         return true;
+      }
+      const char* desc = INPUTMGR->findVirtualMapDescFromCode(action);
 
    if(desc)
    {
       dStrcpy(buffer, desc, 16);
       return true;
+      }
    }
 
    Con::errorf( "ActionMap::getKeyString: no string for action %d", action );
@@ -1085,7 +1172,11 @@ bool ActionMap::processBindCmd(const char *device, const char *action, const cha
        ( eventDescriptor.eventCode == SI_RXAXIS ) ||
        ( eventDescriptor.eventCode == SI_RYAXIS ) ||
        ( eventDescriptor.eventCode == SI_RZAXIS ) ||
-       ( eventDescriptor.eventCode == SI_SLIDER ) )
+       ( eventDescriptor.eventCode == SI_SLIDER ) ||
+       ( eventDescriptor.eventCode == SI_XPOV ) ||
+       ( eventDescriptor.eventCode == SI_YPOV ) ||
+       ( eventDescriptor.eventCode == SI_XPOV2 ) ||
+       ( eventDescriptor.eventCode == SI_YPOV2 ) )
    {
       Con::warnf( "ActionMap::processBindCmd - Cannot use 'bindCmd' with a move event type. Use 'bind' instead." );
       return false;
@@ -1257,7 +1348,11 @@ bool ActionMap::processHoldBind(const char *device, const char *action, const ch
       (eventDescriptor.eventCode == SI_RXAXIS) ||
       (eventDescriptor.eventCode == SI_RYAXIS) ||
       (eventDescriptor.eventCode == SI_RZAXIS) ||
-      (eventDescriptor.eventCode == SI_SLIDER))
+      (eventDescriptor.eventCode == SI_SLIDER) ||
+      (eventDescriptor.eventCode == SI_XPOV) ||
+      (eventDescriptor.eventCode == SI_YPOV) ||
+      (eventDescriptor.eventCode == SI_XPOV2) ||
+      (eventDescriptor.eventCode == SI_YPOV2))
    {
       Con::warnf("ActionMap::processBindCmd - Cannot use 'bindCmd' with a move event type. Use 'bind' instead.");
       return false;
@@ -1702,6 +1797,43 @@ bool ActionMap::handleEventGlobal(const InputEventInfo* pEvent)
    return getGlobalMap()->processAction( pEvent );
 }
 
+bool ActionMap::checkAsciiGlobal( U16 key, U32 modifiers )
+{
+   U16 keyCode = Input::getKeyCode(key);
+   if(keyCode == 0)
+      return false;
+   SimSet* pActionMapSet = Sim::getActiveActionMapSet();
+   AssertFatal(pActionMapSet && pActionMapSet->size() != 0,
+      "error, no ActiveMapSet or no global action map...");
+   Vector<DeviceMap*> &maps = ((ActionMap*)pActionMapSet->first())->mDeviceMaps;
+   DeviceMap *keyMap = NULL;
+   for(S32 i=0; i<maps.size(); i++)
+   {
+      if(maps[i]->deviceType == KeyboardDeviceType)
+      {
+         keyMap = maps[i];
+         break;
+      }
+   }
+   if(!keyMap)
+      return false;
+   U32 realMods = modifiers;
+   if (realMods & SI_SHIFT)
+      realMods |= SI_SHIFT;
+   if (realMods & SI_CTRL)
+      realMods |= SI_CTRL;
+   if (realMods & SI_ALT)
+      realMods |= SI_ALT;
+   if (realMods & SI_MAC_OPT)
+      realMods |= SI_MAC_OPT;
+   for(S32 i=0; i<keyMap->nodeMap.size(); i++)
+   {
+      Node &n = keyMap->nodeMap[i];
+      if(n.action == keyCode && (n.modifiers == modifiers))
+         return true;
+   }
+   return false;
+}
 void ActionMap::clearAllBreaks()
 {
    while(smBreakTable.size())
@@ -2163,3 +2295,18 @@ DefineEngineMethod( ActionMap, getDeadZone, const char*, ( const char* device, c
 {
    return object->getDeadZone( device, action );   
 }
+AsciiMapping gAsciiMap[] =
+{
+   { "space",           0x0020 },
+   { "doublequote",     0x0022 },
+   { "apostrophe",      0x0027 },
+   { "comma",           0x002c },
+   { "minus",           0x002d },
+   { "period",          0x002e },
+   { "backslash",       0x005c },
+   { "grave",           0x0060 },
+   { "super2",          0x00b2 },
+   { "super3",          0x00b3 },
+   { "acute",           0x00b4 },
+   { "nomatch",         0xFFFF }
+};
