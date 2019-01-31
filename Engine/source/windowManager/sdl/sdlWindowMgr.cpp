@@ -366,7 +366,7 @@ void PlatformWindowManagerSDL::_process()
          {
             if (Con::isFunction("onDropEnd"))
                Con::executef("onDropEnd");
-               break;
+            break;
          }
 
          default:
