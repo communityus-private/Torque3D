@@ -48,6 +48,10 @@
 #include "postFx/postEffectCommon.h"
 #endif
 
+#ifndef _REFLECTOR_H_
+#include "scene/reflector.h"
+#endif
+
 static U32 MAXPROBECOUNT = 50;
 
 class PostEffect;

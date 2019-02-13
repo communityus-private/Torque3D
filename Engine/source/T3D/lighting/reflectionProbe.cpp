@@ -53,6 +53,8 @@
 
 #include "scene/reflector.h"
 
+#include "T3D/gameTSCtrl.h"
+
 extern bool gEditingMission;
 extern ColorI gCanvasClearColor;
 bool ReflectionProbe::smRenderPreviewProbes = true;

@@ -367,7 +367,7 @@ void RenderProbeMgr::_setupStaticParameters()
       if (!curEntry->mCubemap->isInitialised())
          continue;
 
-      if (!curEntry->irradMaps->isInitialised())
+      if (!curEntry->mIrradianceCubemap->isInitialised())
          continue;
 
       if (curEntry->mIsSkylight)
