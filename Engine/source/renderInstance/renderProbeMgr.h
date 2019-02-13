@@ -50,6 +50,8 @@
 
 static U32 MAXPROBECOUNT = 50;
 
+class PostEffect;
+
 struct ProbeRenderInst : public SystemInterface<ProbeRenderInst>
 {
    LinearColorF mAmbient;
@@ -65,8 +67,9 @@ struct ProbeRenderInst : public SystemInterface<ProbeRenderInst>
    Point3F mProbePosOffset;
 
    GFXCubemapHandle mCubemap;
-
    GFXCubemapHandle mIrradianceCubemap;
+
+   CubeReflector mCubeReflector;
 
    GFXTexHandle *mBRDFTexture;
 
@@ -255,12 +258,29 @@ class RenderProbeMgr : public RenderBinManager
 
    ReflectProbeMaterialInfo* mReflectProbeMaterial;
 
+   GFXShaderConstHandle *numProbesSC;
+   GFXShaderConstHandle *probePositionSC;
+   GFXShaderConstHandle *probeWorldToObjSC;
+   GFXShaderConstHandle *probeBBMinSC;
+   GFXShaderConstHandle *probeBBMaxSC;
+   GFXShaderConstHandle *probeUseSphereModeSC;
+   GFXShaderConstHandle *probeRadiusSC;
+   GFXShaderConstHandle *probeAttenuationSC;
+
    /// The scene graph the light manager is associated with.
-   SceneManager *mSceneManager;
+   //SceneManager *mSceneManager;
 
    ProbeConstantMap mConstantLookup;
    GFXShaderRef mLastShader;
-   ProbeShaderConstants* mLastConstants;
+   GFXShaderConstBufferRef mLastConstants;
+   ProbeShaderConstants* mLastForwardConstants;
+
+   //
+   //
+   PostEffect* getProbeArrayEffect();
+
+   //
+   SimObjectPtr<PostEffect> mProbeArrayEffect;
 
 protected:
 
@@ -286,16 +306,23 @@ protected:
       GFXTextureObject * mBrdfTexture;
 
       //Array rendering
-
-      Vector<Point3F> probePositions;
+      U32 mEffectiveProbeCount;
+      Vector<Point4F> probePositions;
       Vector<MatrixF> probeWorldToObj;
-      Vector<Point3F> probeBBMin;
-      Vector<Point3F> probeBBMax;
-      Vector<float> probeUseSphereMode;
-      Vector<float> probeRadius;
-      Vector<float> probeAttenuation;
+      Vector<Point4F> probeBBMin;
+      Vector<Point4F> probeBBMax;
+      Vector<Point4F> probeUseSphereMode;
+      Vector<Point4F> probeRadius;
+      Vector<Point4F> probeAttenuation;
       Vector<GFXCubemapHandle> cubeMaps;
       Vector<GFXCubemapHandle> irradMaps;
+
+      AlignedArray<Point4F> mProbePositions;
+      AlignedArray<Point4F> mProbeBBMin;
+      AlignedArray<Point4F> mProbeBBMax;
+      AlignedArray<float> mProbeUseSphereMode;
+      AlignedArray<float> mProbeRadius;
+      AlignedArray<float> mProbeAttenuation;
 
       GFXCubemapArrayHandle mCubemapArray;
       GFXCubemapArrayHandle mIrradArray;
@@ -304,6 +331,7 @@ public:
    RenderProbeMgr(RenderInstType riType, F32 renderOrder, F32 processAddOrder);
 
    // RenderBinMgr
+   void _setupStaticParameters();
    void _setupPerFrameParameters(const SceneRenderState *state);
    virtual void addElement(RenderInst *inst);
    virtual void render(SceneRenderState * state);
@@ -327,10 +355,7 @@ public:
 
    void registerProbe(U32 probeIdx);
 
-   // Returns the scene manager passed at activation.
-   SceneManager* getSceneManager() { return mSceneManager; }
-
-   void setSceneManager(SceneManager* sceneManager) { mSceneManager = sceneManager; }
+   void unregisterProbe(U32 probeIdx);
 
    /// Debug rendering
    static bool smRenderReflectionProbes;
@@ -342,15 +367,7 @@ RenderProbeMgr* RenderProbeMgr::getProbeManager()
    {
       RenderProbeMgr* probeManager = new RenderProbeMgr();
 
-      if (gClientSceneGraph != nullptr)
-      {
-         probeManager->setSceneManager(gClientSceneGraph);
-         smProbeManager = probeManager;
-      }
-      else
-      {
-         delete probeManager;
-      }
+      smProbeManager = probeManager;
    }
 
    return smProbeManager;

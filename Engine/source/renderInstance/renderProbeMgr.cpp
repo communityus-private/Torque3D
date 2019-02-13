@@ -36,6 +36,9 @@
 #include "materials/shaderData.h"
 
 #include "gfx/gfxTextureManager.h"
+
+#include "postFx/postEffect.h"
+
 IMPLEMENT_CONOBJECT(RenderProbeMgr);
 
 ConsoleDocClass( RenderProbeMgr, 
@@ -240,33 +243,17 @@ bool ReflectProbeMatInstance::setupPass(SceneRenderState *state, const SceneData
 RenderProbeMgr::RenderProbeMgr()
 : RenderBinManager(RenderPassManager::RIT_Probes, 1.0f, 1.0f),
    mReflectProbeMaterial(nullptr),
-   mSceneManager(nullptr),
    mLastShader(nullptr),
    mLastConstants(nullptr)
 {
    String brdfPath = Con::getVariable("$Core::BRDFTexture", "core/art/pbr/brdfTexture.dds");
    mBrdfTexture = TEXMGR->createTexture(brdfPath, &GFXTexturePersistentProfile);
 
-   probePositions.setSize(MAXPROBECOUNT);
-   probePositions.fill(Point3F::Zero);
+   mEffectiveProbeCount = 0;
 
-   probeWorldToObj.setSize(MAXPROBECOUNT);
-   probeWorldToObj.fill(MatrixF::Identity);
+   mProbeArrayEffect = nullptr;
 
-   probeBBMin.setSize(MAXPROBECOUNT);
-   probeBBMin.fill(Point3F::Zero);
-
-   probeBBMax.setSize(MAXPROBECOUNT);
-   probeBBMax.fill(Point3F::Zero);
-
-   probeUseSphereMode.setSize(MAXPROBECOUNT);
-   probeUseSphereMode.fill(0.0f);
-
-   probeRadius.setSize(MAXPROBECOUNT);
-   probeRadius.fill(0.0f);
-
-   probeAttenuation.setSize(MAXPROBECOUNT);
-   probeAttenuation.fill(0.0f);
+   numProbesSC = nullptr;
 }
 
 RenderProbeMgr::RenderProbeMgr(RenderInstType riType, F32 renderOrder, F32 processAddOrder)
@@ -311,12 +298,113 @@ void RenderProbeMgr::registerProbe(U32 probeIdx)
       return;
 
    mRegisteredProbes.push_back_unique(probeIdx);
+
+   //rebuild our probe data
+   //_setupStaticParameters();
+}
+
+void RenderProbeMgr::unregisterProbe(U32 probeIdx)
+{
+   //Mostly for consolidation, but also lets us sanity check or prep any other data we need for rendering this in one place at time of flagging for render
+   if (probeIdx >= ProbeRenderInst::all.size())
+      return;
+
+   mRegisteredProbes.remove(probeIdx);
+
+   //rebuild our probe data
+   //_setupStaticParameters();
+}
+
+//
+//
+PostEffect* RenderProbeMgr::getProbeArrayEffect()
+{
+   if (!mProbeArrayEffect)
+   {
+      mProbeArrayEffect = dynamic_cast<PostEffect*>(Sim::findObject("reflectionProbeArrayPostFX"));
+
+      if (!mProbeArrayEffect)
+         return nullptr;
+   }
+   return mProbeArrayEffect;
 }
 
 //remove
 //Con::setIntVariable("lightMetrics::activeReflectionProbes", mReflectProbeBin.size());
 //Con::setIntVariable("lightMetrics::culledReflectProbes", 0/*mNumLightsCulled*/);
 //
+
+void RenderProbeMgr::_setupStaticParameters()
+{
+   //Array rendering
+   U32 probeCount = ProbeRenderInst::all.size();
+
+   mEffectiveProbeCount = 0;
+
+   probePositions.setSize(MAXPROBECOUNT);
+   probeWorldToObj.setSize(MAXPROBECOUNT);
+   probeBBMin.setSize(MAXPROBECOUNT);
+   probeBBMax.setSize(MAXPROBECOUNT);
+   probeUseSphereMode.setSize(MAXPROBECOUNT);
+   probeRadius.setSize(MAXPROBECOUNT);
+   probeAttenuation.setSize(MAXPROBECOUNT);
+
+   cubeMaps.clear();
+   irradMaps.clear();
+
+   for (U32 i = 0; i < probeCount; i++)
+   {
+      if (mEffectiveProbeCount >= MAXPROBECOUNT)
+         break;
+
+      ProbeRenderInst* curEntry = ProbeRenderInst::all[i];
+      if (!curEntry->mIsEnabled)
+         continue;
+
+      if (curEntry->mCubemap.isNull() || curEntry->mIrradianceCubemap.isNull())
+         continue;
+
+      if (!curEntry->mCubemap->isInitialised())
+         continue;
+
+      if (!curEntry->irradMaps->isInitialised())
+         continue;
+
+      if (curEntry->mIsSkylight)
+         continue;
+
+      //Setup
+      const Point3F &probePos = curEntry->getPosition();
+      probePositions[i] = probePos + curEntry->mProbePosOffset;
+
+      MatrixF trans = curEntry->getTransform();
+      trans.inverse();
+
+      probeWorldToObj[i] = trans;
+
+      probeBBMin[i] = curEntry->mBounds.minExtents;
+      probeBBMax[i] = curEntry->mBounds.maxExtents;
+
+      probeUseSphereMode[i] = Point4F(curEntry->mProbeShapeType == ProbeRenderInst::Sphere ? 1 : 0, 0,0,0);
+
+      probeRadius[i] = Point4F(curEntry->mRadius,0,0,0);
+      probeAttenuation[i] = Point4F(1, 0, 0, 0);
+
+      cubeMaps.push_back(curEntry->mCubemap);
+      irradMaps.push_back(curEntry->mIrradianceCubemap);
+
+      mEffectiveProbeCount++;
+   }
+
+   if (mEffectiveProbeCount != 0)
+   {
+      mCubemapArray = GFXCubemapArrayHandle(GFX->createCubemapArray());
+      mIrradArray = GFXCubemapArrayHandle(GFX->createCubemapArray());
+
+      mCubemapArray->initStatic(cubeMaps.address(), cubeMaps.size());
+      mIrradArray->initStatic(irradMaps.address(), irradMaps.size());
+   }
+}
 
 void RenderProbeMgr::_setupPerFrameParameters(const SceneRenderState *state)
 {
@@ -408,27 +496,27 @@ ProbeShaderConstants* RenderProbeMgr::getProbeShaderConstants(GFXShaderConstBuff
       ProbeConstantMap::Iterator iter = mConstantLookup.find(shader);
       if (iter != mConstantLookup.end())
       {
-         mLastConstants = iter->value;
+         mLastForwardConstants = iter->value;
       }
       else
       {
          ProbeShaderConstants* psc = new ProbeShaderConstants();
          mConstantLookup[shader] = psc;
 
-         mLastConstants = psc;
+         mLastForwardConstants = psc;
       }
 
       // Set our new shader
       mLastShader = shader;
    }
 
-   mLastConstants = new ProbeShaderConstants();
+   mLastForwardConstants = new ProbeShaderConstants();
 
    // Make sure that our current lighting constants are initialized
-   if (!mLastConstants->mInit)
-      mLastConstants->init(shader);
+   if (!mLastForwardConstants->mInit)
+      mLastForwardConstants->init(shader);
 
-   return mLastConstants;
+   return mLastForwardConstants;
 }
 
 void RenderProbeMgr::_update4ProbeConsts(const SceneData &sgData,
@@ -605,7 +693,9 @@ void RenderProbeMgr::setProbeInfo(ProcessedMaterial *pmat,
 //-----------------------------------------------------------------------------
 void RenderProbeMgr::render( SceneRenderState *state )
 {
-   PROFILE_SCOPE(RenderProbeMgr_render);
+   //PROFILE_SCOPE(RenderProbeMgr_render);
+   if (getProbeArrayEffect() == nullptr)
+      return;
 
    // Early out if nothing to draw.
    if (!ProbeRenderInst::all.size())
@@ -614,131 +704,38 @@ void RenderProbeMgr::render( SceneRenderState *state )
    if (!RenderProbeMgr::smRenderReflectionProbes)
       return;
 
+   if (mEffectiveProbeCount == 0)
+      _setupStaticParameters(); //return;
+
    GFXTransformSaver saver;
 
    GFXDEBUGEVENT_SCOPE(RenderProbeMgr_render, ColorI::WHITE);
 
-   NamedTexTargetRef sceneColorTargetRef = NamedTexTarget::find("AL_FormatToken");
-   if (sceneColorTargetRef.isNull())
-      return;
-
-   GFXTextureTargetRef probeLightingTargetRef = GFX->allocRenderToTextureTarget();
-
-   if (probeLightingTargetRef.isNull())
-      return;
-
-   //Do a quick pass to update our probes if they're dirty
-   //PROBEMGR->updateDirtyProbes();
-
-   probeLightingTargetRef->attachTexture(GFXTextureTarget::Color0, sceneColorTargetRef->getTexture(0));
-
-   GFX->pushActiveRenderTarget();
-   GFX->setActiveRenderTarget(probeLightingTargetRef);
-
-   GFX->setViewport(sceneColorTargetRef->getViewport());
-    
-   // Restore transforms
-   MatrixSet &matrixSet = getRenderPass()->getMatrixSet();
-   matrixSet.restoreSceneViewProjection();
-
-   const MatrixF &worldToCameraXfm = matrixSet.getWorldToCamera();
-
-   // Set up the SG Data
-   SceneData sgData;
-   sgData.init(state);
-
    // Initialize and set the per-frame parameters after getting
    // the vector light material as we use lazy creation.
-   _setupPerFrameParameters(state);
-
-   //Order the probes by size, biggest to smallest
-   //dQsort(ProbeRenderInst::all.address(), ProbeRenderInst::all.size(), sizeof(const ProbeRenderInst*), AscendingReflectProbeInfluence);
+   //_setupPerFrameParameters(state);
 
    //Specular
-   PROFILE_START(RenderProbeManager_ReflectProbeRender);
+   //PROFILE_START(RenderProbeManager_ReflectProbeRender);
 
-   ReflectProbeMaterialInfo* reflProbeMat = getReflectProbeMaterial();
-
-   if (reflProbeMat == nullptr || reflProbeMat->matInstance == nullptr)
+   // If this is a non-diffuse pass or we have no objects to
+   // render then tell the effect to skip rendering.
+   if (!state->isDiffusePass()/* || binSize == 0*/)
+   {
+      getProbeArrayEffect()->setSkip(true);
       return;
-
-   MaterialParameters *matParams = reflProbeMat->matInstance->getMaterialParameters();
-
-   MaterialParameterHandle *numProbesSC = reflProbeMat->matInstance->getMaterialParameterHandle("$numProbes");
-
-   MaterialParameterHandle *probePositionSC = reflProbeMat->matInstance->getMaterialParameterHandle("$inProbePosArray");
-   MaterialParameterHandle *probeWorldToObjSC = reflProbeMat->matInstance->getMaterialParameterHandle("$worldToObjArray");
-   MaterialParameterHandle *probeBBMinSC = reflProbeMat->matInstance->getMaterialParameterHandle("$bbMinArray");
-   MaterialParameterHandle *probeBBMaxSC = reflProbeMat->matInstance->getMaterialParameterHandle("$bbMaxArray");
-   MaterialParameterHandle *probeUseSphereModeSC = reflProbeMat->matInstance->getMaterialParameterHandle("$useSphereMode");
-   MaterialParameterHandle *probeRadiusSC = reflProbeMat->matInstance->getMaterialParameterHandle("$radius");
-   MaterialParameterHandle *probeAttenuationSC = reflProbeMat->matInstance->getMaterialParameterHandle("$attenuation");
+   }
 
    //Array rendering
    U32 probeCount = ProbeRenderInst::all.size();
 
    if (probeCount == 0)
       return;
-   MatrixF trans = MatrixF::Identity;
-   sgData.objTrans = &trans;
-   
-   U32 effectiveProbeCount = 0;
 
-   for (U32 i = 0; i < probeCount; i++)
+   if (mEffectiveProbeCount != 0)
    {
-      if (effectiveProbeCount >= MAXPROBECOUNT)
-         break;
-
-      ProbeRenderInst* curEntry = ProbeRenderInst::all[i];
-      if (!curEntry->mIsEnabled)
-         continue;
-
-      if (curEntry->mCubemap.isNull() || curEntry->mIrradianceCubemap.isNull())
-         continue;
-
-      if (!curEntry->mCubemap->isInitialised())
-         continue;
-
-      if (!curEntry->mIrradianceCubemap->isInitialised())
-         continue;
-
-      if (curEntry->mIsSkylight)
-         continue;
-
-      //Setup
-      const Point3F &probePos = curEntry->getPosition();
-      probePositions[i] = probePos + curEntry->mProbePosOffset;
-
-      MatrixF trans = curEntry->getTransform();
-      trans.inverse();
-
-      probeWorldToObj[i]=trans;
-
-      probeBBMin[i] = curEntry->mBounds.minExtents;
-      probeBBMax[i] = curEntry->mBounds.maxExtents;
-
-      probeUseSphereMode[i] = curEntry->mProbeShapeType == ProbeRenderInst::Sphere ? 1 : 0;
-
-      probeRadius[i] = curEntry->mRadius;
-      probeAttenuation[i] = 1;
-
-      cubeMaps.push_back(curEntry->mCubemap);
-      irradMaps.push_back(curEntry->mIrradianceCubemap);
-
-      effectiveProbeCount++;
-   }
-
-   if (effectiveProbeCount != 0)
-   {
-      matParams->setSafe(numProbesSC, (float)effectiveProbeCount);
-
-      mCubemapArray = GFXCubemapArrayHandle(GFX->createCubemapArray());
-      mIrradArray = GFXCubemapArrayHandle(GFX->createCubemapArray());
-
-      mCubemapArray->initStatic(cubeMaps.address(), cubeMaps.size());
-      mIrradArray->initStatic(irradMaps.address(), irradMaps.size());
-
-      NamedTexTarget *deferredTarget = NamedTexTarget::find(RenderDeferredMgr::BufferName);
+      //These will in theory be set by the postFX
+      /*NamedTexTarget *deferredTarget = NamedTexTarget::find(RenderDeferredMgr::BufferName);
       if (deferredTarget)
          GFX->setTexture(0, deferredTarget->getTexture());
       else
@@ -754,61 +751,41 @@ void RenderProbeMgr::render( SceneRenderState *state )
       if (matinfoTarget)
          GFX->setTexture(2, matinfoTarget->getTexture());
       else
-         GFX->setTexture(2, NULL);
+         GFX->setTexture(2, NULL);*/
 
-      if (mBrdfTexture)
+      /*if (mBrdfTexture)
       {
          GFX->setTexture(3, mBrdfTexture);
       }
       else
-         GFX->setTexture(3, NULL);
+         GFX->setTexture(3, NULL);*/
 
+      //GFX->setCubeArrayTexture(4, mCubemapArray);
+      //GFX->setCubeArrayTexture(5, mIrradArray);
+      mProbeArrayEffect->setCubemapArrayTexture(4, mCubemapArray);
+      mProbeArrayEffect->setCubemapArrayTexture(5, mIrradArray);
 
-      GFX->setCubeArrayTexture(4, mCubemapArray);
-      GFX->setCubeArrayTexture(5, mIrradArray);
-      //Final packing
-      AlignedArray<Point4F> _probePositions(MAXPROBECOUNT, sizeof(Point4F), (U8*)probePositions.address(), false);
-      AlignedArray<Point4F> _probeBBMin(MAXPROBECOUNT, sizeof(Point4F), (U8*)probeBBMin.address(), false);
-      AlignedArray<Point4F> _probeBBMax(MAXPROBECOUNT, sizeof(Point4F), (U8*)probeBBMax.address(), false);
-      AlignedArray<float> _probeUseSphereMode(MAXPROBECOUNT, sizeof(float), (U8*)probeUseSphereMode.address(), false);
-      AlignedArray<float> _probeRadius(MAXPROBECOUNT, sizeof(float), (U8*)probeRadius.address(), false);
-      AlignedArray<float> _probeAttenuation(MAXPROBECOUNT, sizeof(float), (U8*)probeAttenuation.address(), false);
-
-      matParams->set(probePositionSC, _probePositions);
-      matParams->set(probeWorldToObjSC, probeWorldToObj.address(), MAXPROBECOUNT);
-      matParams->set(probeBBMinSC, _probeBBMin);
-      matParams->set(probeBBMaxSC, _probeBBMax);
-      matParams->set(probeUseSphereModeSC, _probeUseSphereMode);
-      matParams->set(probeRadiusSC, _probeRadius);
-      matParams->set(probeAttenuationSC, _probeAttenuation);
-
-      // Set geometry
-      GFX->setVertexBuffer(mFarFrustumQuadVerts);
-      GFX->setPrimitiveBuffer(NULL);
-
-      while (reflProbeMat->matInstance->setupPass(state, sgData))
-      {
-         // Set transforms
-         matrixSet.setWorld(*sgData.objTrans);
-         reflProbeMat->matInstance->setTransforms(matrixSet, state);
-         reflProbeMat->matInstance->setSceneInfo(state, sgData);
-
-          GFX->drawPrimitive(GFXTriangleStrip, 0, 2);
-      }
+      U32 mips = ProbeRenderInst::all[0]->mCubemap.getPointer()->getMipMapLevels();
+      mProbeArrayEffect->setShaderConst("$cubeMips", (float)mips);
+      
+      mProbeArrayEffect->setShaderConst("$numProbes", (float)mEffectiveProbeCount);
+      mProbeArrayEffect->setShaderConst("$inProbePosArray", probePositions);
+      mProbeArrayEffect->setShaderConst("$worldToObjArray", probeWorldToObj);
+      mProbeArrayEffect->setShaderConst("$bbMinArray", probeBBMin);
+      mProbeArrayEffect->setShaderConst("$bbMaxArray", probeBBMax);
+      mProbeArrayEffect->setShaderConst("$useSphereMode", probeUseSphereMode);
+      mProbeArrayEffect->setShaderConst("$radius", probeRadius);
+      mProbeArrayEffect->setShaderConst("$attenuation", probeAttenuation);
    }
 
-   GFX->popActiveRenderTarget();
+   // Finish up.
+   //if (isRenderingToTarget)
+   //   _onPostRender();
 
-   //PROBEMGR->unregisterAllProbes();
-   //PROBEMGR->mRegisteredProbes.clear();
+   // Make sure the effect is gonna render.
+   getProbeArrayEffect()->setSkip(false);
 
-   PROFILE_END();
-
-   GFX->setVertexBuffer(NULL);
-   GFX->setPrimitiveBuffer(NULL);
-
-   // Fire off a signal to let others know that light-bin rendering is ending now
-   //getRenderSignal().trigger(state, this);
+   //PROFILE_END();
 }
 
 //
