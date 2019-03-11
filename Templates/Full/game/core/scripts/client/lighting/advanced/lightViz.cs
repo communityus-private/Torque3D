@@ -293,3 +293,80 @@ function toggleBackbufferViz( %enable )
       AL_DeferredShading.enable();    
 }
 
+function toggleColorBlindnessViz( %enable )
+{   
+   if ( %enable $= "" )
+   {
+      $CBV_Protanopia = ColorBlindnessVisualize.isEnabled() ? false : true;
+      ColorBlindnessVisualize.toggle();
+   }
+   else if ( %enable )
+      ColorBlindnessVisualize.enable();
+   else if ( !%enable )
+      ColorBlindnessVisualize.disable();    
+}
+
+new ShaderData( ColorBlindnessVisualizeShader )
+{
+   DXVertexShaderFile = "shaders/common/postFx/postFxV.hlsl";
+   DXPixelShaderFile  = "shaders/common/lighting/advanced/dbgColorBlindnessVisualizeP.hlsl";
+
+   OGLVertexShaderFile = "shaders/common/postFx/gl/postFxV.glsl";
+   OGLPixelShaderFile  = "shaders/common/lighting/advanced/gl/dbgColorBlindnessVisualizeP.glsl";
+   
+   samplerNames[0] = "$backBuffer";
+   
+   pixVersion = 2.0;
+};
+
+singleton PostEffect( ColorBlindnessVisualize )
+{   
+   isEnabled         = false;
+   allowReflectPass  = false;
+   renderTime        = "PFXAfterBin";
+   renderBin         = "GlowBin";
+   
+   shader = ColorBlindnessVisualizeShader;
+   stateBlock = PFX_DefaultStateBlock;
+   texture[0] = "$backBuffer";
+   target = "$backBuffer";
+   renderPriority    = 10;
+};
+
+function ColorBlindnessVisualize::setShaderConsts(%this)
+{
+   %mode = 0;
+   
+   if($CBV_Protanopia)
+      %mode = 1;
+   else if($CBV_Protanomaly)
+      %mode = 2;
+   else if($CBV_Deuteranopia)
+      %mode = 3;
+   else if($CBV_Deuteranomaly)
+      %mode = 4;
+   else if($CBV_Tritanopia)
+      %mode = 5;
+   else if($CBV_Tritanomaly)
+      %mode = 6;
+   else if($CBV_Achromatopsia)
+      %mode = 7;
+   else if($CBV_Achromatomaly)
+      %mode = 8;
+      
+   %this.setShaderConst("$mode", %mode);
+}
+
+function ColorBlindnessVisualize::onEnabled( %this )
+{
+   AL_NormalsVisualize.disable();
+   AL_DepthVisualize.disable();
+   AL_LightSpecularVisualize.disable();
+   AL_LightColorVisualize.disable();
+   $AL_NormalsVisualizeVar = false;
+   $AL_DepthVisualizeVar = false;
+   $AL_LightSpecularVisualizeVar = false;   
+   $AL_LightColorVisualizeVar = false;   
+   
+   return true;
+}
