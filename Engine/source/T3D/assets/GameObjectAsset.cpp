@@ -198,6 +198,8 @@ void GuiInspectorTypeGameObjectAssetPtr::consoleInit()
 
 GuiControl* GuiInspectorTypeGameObjectAssetPtr::constructEditControl()
 {
+
+   // Create base filename edit controls
    // Create "Open in ShapeEditor" button
    mGameObjectEditButton = new GuiButtonCtrl();
 
