@@ -48,6 +48,78 @@ struct ProbeData
    float3 pad;
 };
 
+// Crude raystep count
+static const int	g_iMaxSteps = 64;
+// Crude raystep scaling
+static const float	g_fRayStep = 1.18f;
+// Fine raystep count
+static const int	g_iNumBinarySearchSteps = 16;
+// Approximate the precision of the search (smaller is more precise)
+static const float  g_fRayhitThreshold = 0.9f;
+
+inline float4 reconstruct3DPos(in float2 inUV, in float depth, in float4x4 spaceMat)
+{
+	float4 positionSS = float4(float3(inUV.x*2-1, inUV.y*2-1, depth*2-1), 1.0f);
+   
+	float4 position3D = mul(spaceMat,positionSS);
+	return position3D/position3D.w;
+}
+
+inline float2 deconstruct3DPos(in float3 pos, in float4x4 invSpaceMat)
+{
+		float4 vProjectedCoord = mul(invSpaceMat,float4(pos, 1.0f));
+		vProjectedCoord.xy /= vProjectedCoord.w;
+		vProjectedCoord.xy = (vProjectedCoord.xy + float2(1,1))/2;
+		return vProjectedCoord.xy;
+}
+
+float4 BinarySearch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat)
+{
+	float fDepth;
+   float2 hitUV;
+   float fDepthDiff;
+	for (int i = 0; i < g_iNumBinarySearchSteps; i++)
+	{
+		hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
+      
+		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredBuffer, hitUV ).w;
+		fDepthDiff = (hitCoord.z - fDepth);
+
+		if (fDepthDiff <= 0.0f)
+			hitCoord += vDir;
+		vDir *= 0.5;
+		hitCoord -= vDir;
+	}
+
+	hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
+
+	fDepth = TORQUE_DEFERRED_UNCONDITION( deferredBuffer,hitUV).w;
+	fDepthDiff = (hitCoord.z - fDepth);
+   
+	return float4(hitUV, fDepth, abs(fDepthDiff) < g_fRayhitThreshold ? 1.0f : 0.0f);
+}
+
+float4 RayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, float steplen)
+{
+	float fDepth;
+   float fDepthDiff = 0;
+	for (int i = 0; i < g_iMaxSteps; i++)
+	{
+		hitCoord += vDir;
+		float2 hitUV = deconstruct3DPos(hitCoord, invSpaceMat);
+
+		fDepth = TORQUE_DEFERRED_UNCONDITION( deferredBuffer,hitUV).w;
+		fDepthDiff = (hitCoord.z - fDepth);
+		[branch]
+		if (fDepthDiff > 0.0f)
+			return BinarySearch(vDir, hitCoord,invSpaceMat);
+
+		vDir *= steplen;
+	}
+
+	return float4(0.0f, 0.0f, 0.0f, 0.0f);
+}
+
 float defineSkylightInfluence(Surface surface, ProbeData probe, float3 wsEyeRay)
 {
    //Ultimately this should be done to prioritize lastmost, and only contribute if nothing else has doneso yet
@@ -167,8 +239,29 @@ float4 main( PFXVertToPix IN ) : SV_TARGET
    if (getFlag(surface.matFlag, 0))
    {   
       discard;
-   }     
+   }   
+   //SSR
+   //float4 RayMarch(float3 vDir, inout float3 hitCoord, in float4x4 invSpaceMat, float steplen)
+   
+   float3 posVS = reconstruct3DPos(IN.uv0,normDepth.a,cameraToWorld).xyz;
+   float4 vCoords = RayMarch(surface.R, posVS, cameraToWorld, g_fRayStep);   
 
+	float2 vCoordsEdgeFact = float2(1, 1) - pow(saturate(abs(vCoords.xy - float2(0.5f, 0.5f)) * 2), 8);
+	float fScreenEdgeFactor = saturate(min(vCoordsEdgeFact.x, vCoordsEdgeFact.y));
+
+	//Color
+	float reflectionIntensity =
+		saturate(
+			fScreenEdgeFactor *  // screen fade
+			surface.NdotV	      // camera facing fade
+			* vCoords.w				// rayhit binary fade
+			);
+   float2 brdf = TORQUE_TEX2DLOD(BRDFTexture, float4(surface.roughness, surface.NdotV, 0.0, 0.0)).xy;
+	float4 ssrColor = TORQUE_TEX2DLOD( colorBuffer, float4(vCoords.xy, 0, surface.roughness*cubeMips)); 
+   ssrColor.rgb *= (brdf.x + brdf.y);
+   if (ssrColor.a>0.9999)
+      return float4(ssrColor.xyz,1.0);
+   
    int i = 0;
    float blendFactor[MAX_PROBES];
    float blendSum = 0;
@@ -303,11 +396,13 @@ float4 main( PFXVertToPix IN ) : SV_TARGET
    contrib = saturate(contrib);
    irradiance = lerp(iblSkylightDiffuse(surface, probes[skyID]),irradiance,contrib);
    specular = lerp(F*iblSkylightSpecular(surface, probes[skyID]),specular,contrib);
+   
+   irradiance.rgb = lerp(irradiance.rgb,ssrColor.rgb,ssrColor.a);
+   specular.rgb = lerp(specular.rgb,F*ssrColor.rgb,ssrColor.a);
 
    //final diffuse color
    float3 diffuse = kD * irradiance * surface.baseColor.rgb;
-   float4 finalColor = float4(diffuse + specular * surface.ao, blendFacSum);
-
+   float4 finalColor = float4(diffuse + specular * surface.ao, 1.0);
    return finalColor;
 
 #elif DEBUGVIZ_SPECCUBEMAP == 1 && DEBUGVIZ_DIFFCUBEMAP == 0
