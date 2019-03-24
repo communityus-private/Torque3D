@@ -237,17 +237,9 @@ void blendProbes(ProbeData probes[MAX_PROBES], float blendSum, float probehits)
    
    for (i = 0; i < numProbes; i++)
    {
-      if (probehits>1.0)
-      {
-         blendFactor[i] = ((probes[i].contribution / blendSum)) / (probehits - 1);
-         blendFactor[i] *= ((probes[i].contribution) / (1.0-blendSum));
-         blendFacSum += blendFactor[i];
-      }
-      else
-      {
-         blendFactor[i] = probes[i].contribution;
-         blendFacSum = probes[i].contribution;
-      }
+      blendFactor[i] = ((probes[i].contribution / blendSum)) / (probehits - 1);
+      blendFactor[i] *= ((probes[i].contribution) / (1.0-blendSum));
+      blendFacSum += blendFactor[i];
    }
 
    // Normalize blendVal
@@ -349,7 +341,9 @@ float4 main( PFXVertToPix IN ) : SV_TARGET
 
       blendSum += probes[i].contribution;
    }
-   blendProbes(probes, blendSum, probehits);
+   
+   if (probehits>1.0)
+      blendProbes(probes, blendSum, probehits);
    
 #if DEBUGVIZ_ATTENUATION == 1
    float attenVis = 0;
