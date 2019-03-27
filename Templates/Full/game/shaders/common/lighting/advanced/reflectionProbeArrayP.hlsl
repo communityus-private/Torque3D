@@ -251,12 +251,12 @@ float4 main(PFXVertToPix IN) : SV_TARGET
 			* vCoords.w				// rayhit binary fade
 			);
    float2 brdf = TORQUE_TEX2DLOD(BRDFTexture, float4(surface.roughness, surface.NdotV, 0.0, 0.0)).xy;
-	float4 ssrColor = TORQUE_TEX2DLOD( colorBuffer, float4(vCoords.xy, 0, surface.roughness*cubeMips)); 
+	float4 ssrColor = TORQUE_TEX2DLOD( colorBuffer, float4(vCoords.xy, 0, surface.roughness*11.0)); 
    ssrColor.rgb *= (brdf.x + brdf.y);
-   if (ssrColor.a>0.9999)
+   if (reflectionIntensity>0.9999)
       return float4(ssrColor.xyz,1.0);
 
-   float alpha = 1;
+   float alpha = reflectionIntensity;
 
    int i = 0;
    float blendSum = 0;
