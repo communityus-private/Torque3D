@@ -178,6 +178,10 @@ function GameConnection::onConnectRequestTimedOut(%this)
 
 function disconnect()
 {
+   // AFX MOD <<
+   afxEndMissionNotify();
+   // AFX MOD >>
+
    // We need to stop the client side simulation
    // else physics resources will not cleanup properly.
    physicsStopSimulation( "client" );
@@ -206,11 +210,14 @@ function disconnectedCleanup()
    $sceneLighting::terminateLighting = true;
    
    // Clear misc script stuff
-   HudMessageVector.clear();
+   if (isObject(HudMessageVector))
+      HudMessageVector.clear();
    
    //
-   LagIcon.setVisible(false);
-   PlayerListGui.clear();
+   if (isObject(LagIcon))
+      LagIcon.setVisible(false);
+   if (isObject(PlayerListGui))
+      PlayerListGui.clear();
    
    // Clear all print messages
    clientCmdclearBottomPrint();

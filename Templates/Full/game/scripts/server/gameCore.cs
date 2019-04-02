@@ -657,6 +657,13 @@ function GameCore::loadOut(%game, %player)
 
    %player.setInventory(DeployableTurret, %player.maxInventory(DeployableTurret));
    %player.addToWeaponCycle(DeployableTurret);
+
+   // AFX DEMO MOD <<
+   // A deployable Mage Turret is added to the weapon choices. It will cast the spell
+   // "Great Ball of Fire" at selected targets.
+   %player.setInventory(DeployableTurret_AFX, %player.maxInventory(DeployableTurret_AFX));
+   %player.addToWeaponCycle(DeployableTurret_AFX);
+   // AFX DEMO MOD >>
    
    if (%player.getDatablock().mainWeapon.image !$= "")
    {

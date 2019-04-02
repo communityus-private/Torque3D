@@ -72,10 +72,9 @@ function initClient()
    configureCanvas();
 
    // Load up the Game GUIs
-   exec("art/gui/playGui.gui");
-   exec("art/gui/chatHud.gui");
-   exec("art/gui/playerList.gui");
-   exec("art/gui/hudlessGui.gui");
+
+   exec("art/afx/gui/playGui_AFX.gui"); // AFX MOD
+   exec("art/afx/gui/editFXFilteringGui.gui"); // AFX MOD
 
    // Load up the shell GUIs
    exec("art/gui/mainMenuGui.gui");
@@ -88,10 +87,8 @@ function initClient()
    exec("art/gui/remapDlg.gui");
    
    // Gui scripts
-   exec("./playerList.cs");
-   exec("./chatHud.cs");
-   exec("./messageHud.cs");
-   exec("scripts/gui/playGui.cs");
+
+   exec("scripts/gui/afx/playGui_AFX.cs"); // AFX MOD
    exec("scripts/gui/startupGui.cs");
    exec("scripts/gui/chooseLevelDlg.cs");
    exec("scripts/gui/loadingGui.cs");
@@ -103,16 +100,23 @@ function initClient()
    exec("./missionDownload.cs");
    exec("./serverConnection.cs");
 
+   // AFX MOD <<
+   // Include some client scripting functionality for AFX
+   exec("./afx/afxScreenMessages.cs");   
+   exec("./afx/afxCastingBar.cs");   
+   exec("./afx/afxSelectionMgr.cs");
+   exec("./afx/afxClientUtil.cs");
+   // AFX MOD >>
+
    // Load useful Materials
    exec("./shaders.cs");
 
    // Default player key bindings
-   exec("./default.bind.cs");
+   exec("./afx/default.bind_AFX.cs"); // AFX MOD
 
    if (isFile("./config.cs"))
       exec("./config.cs");
-   if (isFile("./config_vehicle.cs"))
-      exec("./config_vehicle.cs");
+
    loadMaterials();
 
    // Really shouldn't be starting the networking unless we are

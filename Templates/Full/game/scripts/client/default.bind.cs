@@ -487,6 +487,7 @@ moveMap.bindCmd(keyboard, "2", "commandToServer('use',\"Lurker\");", "");
 moveMap.bindCmd(keyboard, "3", "commandToServer('use',\"LurkerGrenadeLauncher\");", "");
 moveMap.bindCmd(keyboard, "4", "commandToServer('use',\"ProxMine\");", "");
 moveMap.bindCmd(keyboard, "5", "commandToServer('use',\"DeployableTurret\");", "");
+moveMap.bindCmd(keyboard, "6", "commandToServer('use',\"DeployableTurret_AFX\");", ""); // AFX DEMO MOD: adds mage turret key
 
 moveMap.bindCmd(keyboard, "r", "commandToServer('reloadWeapon');", "");
 
@@ -663,7 +664,7 @@ function showMetrics(%val)
    if(%val)
    {
       if(!Canvas.isMember(FrameOverlayGui))
-         metrics("fps gfx shadow sfx terrain groundcover forest net");
+      metrics("fps gfx shadow sfx terrain groundcover forest net");
       else
          metrics("");
    }
@@ -796,6 +797,61 @@ vehicleMap.bind( gamepad, btn_x, movebackward );
 // bind exiting the vehicle to a button
 vehicleMap.bindCmd(gamepad, btn_y,"getout();","");
 
+// AFX DEMO MOD <<
+// This code adds some keyboard commands to help demonstrates AFX features.
+//     [g] - cast Great Ball of Fire at a selected target
+//     [t] - select a nearby target
+//     [y] - cycle selectron styles (used on selected objects)
+
+// PRESS [g] TO CAST "Great Ball of Fire" SPELL
+moveMap.bind(keyboard, g, castGreatBall);
+
+function castGreatBall(%val)
+{
+  if (%val)
+  {
+    echo("castGreatBall");
+    // get selected object's ghost index
+    %sel_obj = ServerConnection.getSelectedObj();
+    if (%sel_obj != -1)
+      %sel_obj_ghost = ServerConnection.GetGhostIndex(%sel_obj);
+    else
+      %sel_obj_ghost = -1;
+
+    // call to cast spell on server
+    echo("commandToServer('DoGreatBallCast', %sel_obj_ghost)");
+    commandToServer('DoGreatBallCast', %sel_obj_ghost);
+  }
+}
+
+// PRESS [t] TO AUTO-SELECT NEARBY TARGET 
+moveMap.bind(keyboard, t, keyTargetSelect);
+
+function keyTargetSelect(%val)
+{
+   if (%val)
+   {
+      commandToServer('DoKeyTargetSelection');
+   }
+}
+
+// PRESS [y] TO CYCLE SELECTRON STYLES 
+moveMap.bind(keyboard,  y,          nextSeleStyle);
+moveMap.bind(keyboard,  "shift y",  prevSeleStyle);
+
+function nextSeleStyle(%val)
+{
+  if (%val)
+    gotoNextSelectronStyle();
+}
+
+function prevSeleStyle(%val)
+{
+  if (%val)
+    gotoPreviousSelectronStyle();
+}
+
+// AFX DEMO MOD >>
 
 // ----------------------------------------------------------------------------
 // Oculus Rift

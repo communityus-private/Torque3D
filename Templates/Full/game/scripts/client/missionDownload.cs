@@ -37,7 +37,14 @@
 // Phase 1
 //----------------------------------------------------------------------------
 
+// DATABLOCK CACHE MOD <<
+// Adds parameter %alt_msg for optionally providing an alternative message to 
+// the loading progress bar. 
+function onMissionDownloadPhase1(%missionName, %musicTrack, %alt_msg)
+/* ORIGINAL CODE
 function onMissionDownloadPhase1(%missionName, %musicTrack)
+*/
+// DATABLOCK CACHE MOD >>
 {   
    // Load the post effect presets for this mission.
    %path = "levels/" @ fileBase( %missionName ) @ $PostFXManager::fileExtension;
@@ -55,7 +62,14 @@ function onMissionDownloadPhase1(%missionName, %musicTrack)
       return;
 	  
    LoadingProgress.setValue(0);
+   // DATABLOCK CACHE MOD <<
+   // If a value for %alt_msg is specified, it will replace the default value
+   // of "LOADING DATABLOCKS". 
+   LoadingProgressTxt.setValue((%alt_msg $= "") ? "LOADING DATABLOCKS" : %alt_msg);
+   /* ORIGINAL CODE
    LoadingProgressTxt.setValue("LOADING DATABLOCKS");
+   */
+   // DATABLOCK CACHE MOD >>
    Canvas.repaint();
 }
 
@@ -219,3 +233,121 @@ function handleLoadFailedMessage( %msgType, %msgString )
 {
    MessageBoxOK( "Mission Load Failed", %msgString NL "Press OK to return to the Main Menu", "disconnect();" );
 }
+
+// DATABLOCK CACHE MOD <<
+
+$loadFromDatablockCache = false;
+
+//
+// This function overrides a function with the same name found in
+// core/scripts/client/missionDownload.cs. This replacement decides if the
+// client can use a datablock cache instead of requiring transmission
+// of datablocks form the server.
+// 
+function clientCmdMissionStartPhase1(%seq, %missionName, %musicTrack, %cache_crc)
+{
+  // These need to come after the cls.
+  echo ("*** New Mission: " @ %missionName);
+  echo ("*** Phase 1: Download Datablocks & Targets");
+
+  $loadFromDatablockCache = false;
+  if ($pref::Client::EnableDatablockCache)
+  {
+    %cache_filename = $pref::Client::DatablockCacheFilename;
+
+    // if cache CRC is provided, check for validity
+    if (%cache_crc !$= "")
+    {
+      // check for existence of cache file
+      if (isFile(%cache_filename))
+      { 
+        // here we are not comparing the CRC of the cache itself, but the CRC of
+        // the server cache (stored in the header) when these datablocks were
+        // transmitted.
+        %my_cache_crc = extractDatablockCacheCRC(%cache_filename);
+        echo("<<<< client cache CRC:" SPC %my_cache_crc SPC ">>>>");
+        echo("<<<< comparing CRC codes:" SPC "s:" @ %cache_crc SPC "c:" @ %my_cache_crc SPC ">>>>");
+        if (%my_cache_crc == %cache_crc)
+        {
+          echo("<<<< cache CRC codes match, datablocks will be loaded from local cache. >>>>");
+          $loadFromDatablockCache = true;
+        }
+        else
+        {
+          echo("<<<< cache CRC codes differ, datablocks will be transmitted and cached. >>>>" SPC %cache_crc);
+          setDatablockCacheCRC(%cache_crc);
+        }
+      }
+      else
+      {
+        echo("<<<< client datablock cache does not exist, datablocks will be transmitted and cached. >>>>");
+        setDatablockCacheCRC(%cache_crc);
+      }
+    }
+    else
+    {
+      echo("<<<< server datablock caching is disabled, datablocks will be transmitted. >>>>");
+    }
+    if ($loadFromDatablockCache)
+    {
+      // skip datablock transmission and initiate a cache load
+      onMissionDownloadPhase1(%missionName, %musicTrack, "LOADING CACHED DATABLOCKS");
+      commandToServer('MissionStartPhase1Ack_UseCache', %seq);
+      return;
+    }
+  }
+  else if (%cache_crc !$= "")
+  {
+    echo("<<<< client datablock caching is disabled, datablocks will be transmitted. >>>>");
+  }
+
+  // initiate a datablock transmission
+  onMissionDownloadPhase1(%missionName, %musicTrack);
+  commandToServer('MissionStartPhase1Ack', %seq);
+}
+
+$AFX_tempDisableVSync = false;
+
+function clientCmdMissionStartPhase1_LoadCache(%seq, %missionName)
+{
+  if ($pref::Client::EnableDatablockCache && $loadFromDatablockCache)
+  {
+    if (!$pref::Video::disableVerticalSync)
+    {
+      warn("Disabling Vertical Sync during datablock cache load to avoid significant slowdown.");
+      $AFX_tempDisableVSync = true;
+
+      $pref::Video::disableVerticalSync = true;
+      Canvas.resetVideoMode();
+    }
+
+    echo("<<<< Loading Datablocks From Cache >>>>");
+    if (ServerConnection.loadDatablockCache_Begin())
+    {
+      schedule(10, 0, "updateLoadDatablockCacheProgress", %seq, %missionName);
+    }
+  }
+}
+
+function updateLoadDatablockCacheProgress(%seq, %missionName)
+{
+   if (ServerConnection.loadDatablockCache_Continue())
+   {
+      $loadDatablockCacheProgressThread = schedule(10, 0, "updateLoadDatablockCacheProgress", %seq, %missionName);
+      return;
+   }
+ 
+   if ($AFX_tempDisableVSync)
+   {
+     warn("Restoring Vertical Sync setting.");
+     $AFX_tempDisableVSync = false;
+
+     $pref::Video::disableVerticalSync = false;
+     Canvas.resetVideoMode();
+   }
+
+   echo("<<<< Finished Loading Datablocks From Cache >>>>");
+   clientCmdMissionStartPhase2(%seq,%missionName);
+}
+// DATABLOCK CACHE MOD >>
+

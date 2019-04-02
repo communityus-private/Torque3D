@@ -29,6 +29,11 @@ exec( "core/scripts/server/defaults.cs" );
 
 
 
+// DATABLOCK CACHE MOD <<
+// These are server-side preferences for the Datablock Cache system.
+$Pref::Server::EnableDatablockCache = false;
+$Pref::Server::DatablockCacheFilename = "scripts/server/cache/datablock_cache.dbc";
+// DATABLOCK CACHE MOD >>
 
 // Finally load the preferences saved from the last
 // game execution if they exist.

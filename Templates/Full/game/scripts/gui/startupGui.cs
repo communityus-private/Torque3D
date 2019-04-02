@@ -37,6 +37,8 @@ function loadStartup()
    StartupGui.logoPos0    = "178 251";
    StartupGui.logoExtent0 = "443 139";
 
+   StartupGui.bitmap1 = "art/afx/gui/images/faustlogic"; // AFX DEMO MOD: adds Faust Logic splash screen
+   
    // Call the next() function to set our firt
    // splash screen
    StartupGui.next();

@@ -41,3 +41,40 @@ else
 {
    echo( "Not loading client prefs.cs on Xbox360" );
 }
+
+// AFX MOD <<
+$pref::Player::corpsesHiddenFromRayCast = false;
+$pref::Audio::usePlayerCentricListener = true;
+$pref::AFX::enableFXLoadFiltering = false;
+$pref::AFX::fxLevelOfDetail = "2";
+$pref::AFX::clickToTargetSelf = false;
+
+$pref::AFX::targetSelectionMask = $TypeMasks::PlayerObjectType | 
+                                  $TypeMasks::CorpseObjectType |
+                                  $TypeMasks::VehicleObjectType;
+
+$pref::AFX::freeTargetSelectionMask = $TypeMasks::TerrainObjectType | 
+                                      $TypeMasks::TerrainLikeObjectType |
+                                      $TypeMasks::PolysoupObjectType;
+
+$pref::AFX::missileCollisionMask = $TypeMasks::PlayerObjectType | 
+                                   $TypeMasks::CorpseObjectType | 
+                                   $TypeMasks::StaticObjectType |
+                                   $TypeMasks::DamagableItemObjectType |
+                                   $TypeMasks::VehicleObjectType;
+
+$pref::Net::PacketRateToClient = "32";
+$pref::Net::PacketRateToServer = "32";
+$pref::Net::PacketSize = "450";
+
+$pref::Player::Name = "Orc Shaman";
+$pref::afxSpellButton::unknownSpellBitmap = "art/afx/gui/images/unknown";
+$pref::afxSpellButton::spellCooldownBitmaps = "art/afx/gui/images/cooldown/cooldown";
+// AFX MOD >>
+
+// DATABLOCK CACHE MOD <<
+// These are client-side preferences for the Datablock Cache system.
+$pref::Client::EnableDatablockCache = false;
+$pref::Client::DatablockCacheFilename = "scripts/client/cache/datablock_cache_c.dbc";
+// DATABLOCK CACHE MOD >>
+

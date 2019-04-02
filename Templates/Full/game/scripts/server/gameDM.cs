@@ -80,6 +80,13 @@ function DeathMatchGame::startGame(%game)
    //echo (%game @"\c4 -> "@ %game.class @" -> DeathMatchGame::startGame");
 
    parent::startGame(%game);
+   
+   // AFX DEMO MOD <<
+   // This spawns an AI that runs around and functions as a moving target.
+   %path_group = "MissionGroup/NPCPaths";
+   if (isObject(%path_group))
+      AIPlayer::spawn(%path_group.getObject(0));
+   // AFX DEMO MOD >>
 }
 
 function DeathMatchGame::endGame(%game)

@@ -222,6 +222,15 @@ function PlayerData::damage(%this, %obj, %sourceObject, %position, %damage, %dam
 
 function PlayerData::onDamage(%this, %obj, %delta)
 {
+   // AFX DEMO MOD <<
+   // If flying_damage_text.cs is loaded, displayFlyingDamageText() exists
+   // and we call it to have the damage amount shown as an effect.
+   if (%delta >= 1 && isFunction(displayFlyingDamageText))
+   {
+      displayFlyingDamageText(%obj, mFloor(%delta));
+   }
+   // AFX DEMO MOD >>
+
    // This method is invoked by the ShapeBase code whenever the
    // object's damage level changes.
    if (%delta > 0 && %obj.getState() !$= "Dead")

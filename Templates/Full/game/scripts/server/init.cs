@@ -62,7 +62,7 @@ function initServer()
    $Server::Status = "Unknown";
 
    // Turn on testing/debug script functions
-   $Server::TestCheats = false;
+   $Server::TestCheats = true; // AFX MOD
 
    // Specify where the mission files are.
    $Server::MissionFileSpec = "levels/*.mis";
@@ -73,6 +73,14 @@ function initServer()
    // Load up game server support scripts
    exec("./commands.cs");
    exec("./game.cs");
+
+   // AFX MOD <<
+   exec("./afx/afxInit.cs");
+   // AFX MOD >>
+
+   // DATABLOCK CACHE MOD <<
+   exec("./afx/afxDatablockCache.cs");
+   // DATABLOCK CACHE MOD >>
 }
 
 

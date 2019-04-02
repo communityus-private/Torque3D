@@ -40,13 +40,14 @@ exec("./weapon.cs");
 // Load our weapon scripts
 // We only need weapon scripts for those weapons that work differently from the
 // class methods defined in weapon.cs
+exec("./crossbow.cs"); // AFX MOD: added as orc weapon
 exec("./proximityMine.cs");
 
 // Load our default player script
 exec("./player.cs");
 
 // Load our player scripts
-exec("./aiPlayer.cs");
+// exec("./aiPlayer.cs"); // AFX MOD: functionality replaced with afxNonPlayer.cs
 
 exec("./vehicle.cs");
 exec("./vehicleWheeled.cs");
@@ -58,3 +59,4 @@ exec("./turret.cs");
 // Load our gametypes
 exec("./gameCore.cs"); // This is the 'core' of the gametype functionality.
 exec("./gameDM.cs"); // Overrides GameCore with DeathMatch functionality.
+exec("./afx/gameAFXDemo.cs"); // AFX MODE: Overrides GameCore with AFXDemo functionality.

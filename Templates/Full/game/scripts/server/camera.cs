@@ -38,6 +38,7 @@ function Observer::onTrigger(%this,%obj,%trigger,%state)
          // Do something interesting.
 
       case "Corpse":
+         /*
          // Fade out the corpse
          if (isObject(%obj.orbitObj))
          {
@@ -45,7 +46,7 @@ function Observer::onTrigger(%this,%obj,%trigger,%state)
             %obj.orbitObj.schedule(0, "startFade", 1000, 0, true);
             %obj.orbitObj.schedule(1000, "delete");
          }
-
+		 */
          // Viewing dead corpse, so we probably want to respawn.
          game.preparePlayer(%client);
 

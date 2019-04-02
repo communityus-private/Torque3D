@@ -136,6 +136,16 @@ function TurretShapeData::onDamage(%this, %obj, %delta)
 {
    // This method is invoked by the ShapeBase code whenever the
    // object's damage level changes.
+
+   // AFX DEMO MOD <<
+   // If flying_damage_text.cs is loaded, displayFlyingDamageText() exists
+   // and we call it to have the damage amount shown as an effect whenever
+   // a turret takes damage.
+   if (%delta >= 1 && isFunction(displayFlyingDamageText))
+   {
+      displayFlyingDamageText(%obj, mFloor(%delta));
+   }
+   // AFX DEMO MOD >>
 }
 
 function TurretShapeData::onDestroyed(%this, %obj, %lastState)
@@ -368,7 +378,7 @@ function AITurretShapeData::onDestroyed(%this, %turret, %lastState)
    // This method is invoked by the ShapeBase code whenever the
    // object's damage state changes.
 
-   %turret.playAudio(0, TurretDestroyed);
+   //%turret.playAudio(0, TurretDestroyed); // AFX DEMO MOD
    %turret.setAllGunsFiring(false);
    %turret.resetTarget();
    %turret.setTurretState( "Destroyed", true );
@@ -395,7 +405,7 @@ function AITurretShapeData::OnTarget(%this, %turret)
    //echo("AITurretShapeData::OnTarget: " SPC %this SPC %turret);
 
    %turret.startTrackingTarget();
-   %turret.playAudio(0, TargetAquiredSound);
+   //%turret.playAudio(0, TargetAquiredSound); // AFX DEMO MOD
 }
 
 function AITurretShapeData::OnNoTarget(%this, %turret)
@@ -404,7 +414,7 @@ function AITurretShapeData::OnNoTarget(%this, %turret)
 
    %turret.setAllGunsFiring(false);
    %turret.recenterTurret();
-   %turret.playAudio(0, TargetLostSound);
+   //%turret.playAudio(0, TargetLostSound);
 }
 
 function AITurretShapeData::OnFiring(%this, %turret)
@@ -418,7 +428,7 @@ function AITurretShapeData::OnThrown(%this, %turret)
 {
    //echo("AITurretShapeData::OnThrown: " SPC %this SPC %turret);
 
-   %turret.playAudio(0, TurretThrown);
+   //%turret.playAudio(0, TurretThrown); // AFX DEMO MOD
 }
 
 function AITurretShapeData::OnDeploy(%this, %turret)
@@ -490,3 +500,12 @@ function DeployableTurretWeaponImage::onFire(%this, %obj, %slot)
    // is still being processed.
    %obj.schedule(0, "throw", %this.item);
 }
+
+// AFX DEMO MOD <<
+// Casts "Great Ball of Fire" spell at the acquired target.
+function DeployableTurret_AFX::OnFiring(%this, %turret)
+{
+   GreatBallSpell.turret = %turret;
+   castSpell(GreatBallSpell, %turret, %turret.getTarget(), GreatBallSpell_RPG);
+}
+// AFX DEMO MOD >>

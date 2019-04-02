@@ -171,7 +171,7 @@ singleton ShaderData( HDR_CombineShader )
    samplerNames[1] = "$luminanceTex";
    samplerNames[2] = "$bloomTex";
    samplerNames[3] = "$colorCorrectionTex";
-
+   
    pixVersion = 3.0;
 };
 
@@ -288,7 +288,7 @@ function HDRPostFX::onEnabled( %this )
    // Set the right global shader define for HDR.
    if ( %format $= "GFXFormatR10G10B10A2" )
       addGlobalShaderMacro( "TORQUE_HDR_RGB10" );
-
+                        
    echo( "HDR FORMAT: " @ %format );
    
    // Change the format of the offscreen surface
@@ -316,7 +316,7 @@ function HDRPostFX::onDisabled( %this )
    setReflectFormat( %format );
    
    removeGlobalShaderMacro( "TORQUE_HDR_RGB10" );
-
+            
    // Reset the light manager which will ensure the new
    // hdr encoding takes effect in all the shaders.
    resetLightManager();

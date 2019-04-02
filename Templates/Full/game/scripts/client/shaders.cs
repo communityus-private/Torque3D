@@ -23,3 +23,27 @@
 //*****************************************************************************
 // Shaders  ( For Custom Materials )
 //*****************************************************************************
+
+// AFX MOD <<
+// Zodiac Shaders
+new ShaderData(afxZodiacTerrainShader)
+{
+   DXVertexShaderFile = "shaders/AFX/afxZodiac_Terrain_V.hlsl";
+   DXPixelShaderFile = "shaders/AFX/afxZodiac_Terrain_P.hlsl";
+   OGLVertexShaderFile = "shaders/AFX/gl/afxZodiac_Terrain_V.glsl";
+   OGLPixelShaderFile = "shaders/AFX/gl/afxZodiac_Terrain_P.glsl";
+   samplerNames[0] = "$zodiacMap";
+   pixVersion = 1.1;
+};
+
+new ShaderData(afxZodiacPolysoupShader)
+{
+   DXVertexShaderFile = "shaders/AFX/afxZodiac_Polysoup_V.hlsl";
+   DXPixelShaderFile = "shaders/AFX/afxZodiac_Polysoup_P.hlsl";
+   OGLVertexShaderFile = "shaders/AFX/gl/afxZodiac_Polysoup_V.glsl";
+   OGLPixelShaderFile = "shaders/AFX/gl/afxZodiac_Polysoup_P.glsl";
+   samplerNames[0] = "$zodiacMap";
+   pixVersion = 1.1;
+};
+// AFX MOD >>
+

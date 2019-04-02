@@ -22,6 +22,9 @@
 
 function StartLevel( %mission, %hostingType )
 {
+   if (isObject(EFF_fxFilteringGui))
+      EFF_fxFilteringGui::loadFilters();
+
    if( %mission $= "" )
    {
       %id = CL_levelList.getSelectedId();
@@ -196,6 +199,8 @@ function ChooseLevelDlg::onWake( %this )
 
       ChooseLevelWIndow.setExtent(%extentX, %extentY);
    }
+
+   ChooseLevel_EditFilters_CTRL.setActive(ChooseLevel_EnableFiltering_CTRL.getValue());
 }
 
 function ChooseLevelDlg::addMissionFile( %this, %file )
@@ -348,3 +353,17 @@ function getLevelInfo( %missionFile )
 	// Didn't find our LevelInfo
    return 0; 
 }
+
+function ChooseLevel_EnableFiltering_CTRL::toggle(%this)
+{
+   ChooseLevel_EditFilters_CTRL.setActive(%this.getValue());
+}
+
+// DATABLOCK CACHE MOD <<
+// A toggle action used by the "Enable Datablock Cache" checkbox added to
+//     art/gui/chooseLevelDlg.gui
+function ChooseLevel_useDatablockCache::toggle(%this)
+{
+   $pref::Client::EnableDatablockCache = %this.getValue();
+}
+// DATABLOCK CACHE MOD >>

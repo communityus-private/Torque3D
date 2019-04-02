@@ -322,6 +322,11 @@ function AIPlayer::spawn(%path)
       // slow this sucker down, I'm tired of chasing him!
       %player.setMoveSpeed(0.5);
 
+      // AFX DEMO MOD <<
+      // Roaming AI should wield a weapon.
+      %player.mountImage(Lurker.image, 0);
+      // AFX DEMO MOD >>
+   
       //%player.mountImage(xxxImage, 0);
       //%player.setInventory(xxxAmmo, 1000);
       //%player.think();

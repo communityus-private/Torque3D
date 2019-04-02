@@ -24,16 +24,21 @@
 // some effect, usually an explosion.  This function will also optionally
 // apply an impulse to each object.
 
-function radiusDamage(%sourceObject, %position, %radius, %damage, %damageType, %impulse)
+function radiusDamage(%sourceObject, %position, %radius, %damage, %damageType, %impulse, %excluded) // AFX MOD: %excluded
 {
    // Use the container system to iterate through all the objects
    // within our explosion radius.  We'll apply damage to all ShapeBase
    // objects.
-   InitContainerRadiusSearch(%position, %radius, $TypeMasks::ShapeBaseObjectType | $TypeMasks::DynamicShapeObjectType);
+   InitContainerRadiusSearch(%position, %radius, $TypeMasks::ShapeBaseObjectType);
 
    %halfRadius = %radius / 2;
    while ((%targetObject = containerSearchNext()) != 0)
    {
+      // AFX MOD <<
+      if (%targetObject == %excluded)
+        continue;
+      // AFX MOD >>
+
       // Calculate how much exposure the current object has to
       // the explosive force.  The object types listed are objects
       // that will block an explosion.  If the object is totally blocked,
@@ -57,9 +62,14 @@ function radiusDamage(%sourceObject, %position, %radius, %damage, %damageType, %
       // linear scale from there.
       %distScale = (%dist < %halfRadius)? 1.0 : 1.0 - ((%dist - %halfRadius) / %halfRadius);
       %distScale = mClamp(%distScale,0.0,1.0);
-      
+
       // Apply the damage
       %targetObject.damage(%sourceObject, %position, %damage * %coverage * %distScale, %damageType);
+
+      // AFX MOD <<
+      if (isObject(%sourceObject) && %sourceObject.isMethod(onInflictedAreaDamage))
+         %sourceObject.onInflictedAreaDamage(%targetObject, %damage, %damageType, %position);
+      // AFX MOD >>
 
       // Apply the impulse
       if (%impulse)
