@@ -255,10 +255,6 @@ void MatInstance::construct()
    mIsHardwareSkinned = false;
    needsHighlighting = false;
 
-   // AFX CODE BLOCK (selection-highlight) <<
-   needsHighlighting = false;
-   // AFX CODE BLOCK (selection-highlight) >>
-
    MATMGR->_track(this);
 }
 

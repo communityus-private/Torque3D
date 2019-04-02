@@ -215,7 +215,7 @@ void PlatformWindowSDL::_setFullscreen(const bool fullscreen)
    if(fullscreen && !mOffscreenRender)
    {
       Con::printf("PlatformWindowSDL::setFullscreen (full) enter");
-      SDL_SetWindowFullscreen( mWindowHandle, SDL_WINDOW_FULLSCREEN);
+      SDL_SetWindowFullscreen( mWindowHandle, SDL_WINDOW_FULLSCREEN_DESKTOP);
    }
    else
    {
@@ -244,7 +244,7 @@ const char * PlatformWindowSDL::getCaption()
 
 void PlatformWindowSDL::setFocus()
 {
-   SDL_SetWindowGrab( mWindowHandle, SDL_TRUE );
+   SDL_SetWindowInputFocus(mWindowHandle);
 }
 
 void PlatformWindowSDL::setClientExtent( const Point2I newExtent )
@@ -577,9 +577,7 @@ void PlatformWindowSDL::_processSDLEvent(SDL_Event &evt)
       case SDL_MOUSEBUTTONDOWN:
       case SDL_MOUSEBUTTONUP:
       {
-         appEvent.trigger(getWindowId(), GainFocus);
          _triggerMouseButtonNotify(evt);
-         
          break;
       }
 
@@ -587,6 +585,12 @@ void PlatformWindowSDL::_processSDLEvent(SDL_Event &evt)
       {
          switch( evt.window.event )
          {
+            case SDL_WINDOWEVENT_FOCUS_GAINED:
+               appEvent.trigger(getWindowId(), GainFocus);
+               break;
+            case SDL_WINDOWEVENT_FOCUS_LOST:
+               appEvent.trigger(getWindowId(), LoseFocus);
+               break;
             case SDL_WINDOWEVENT_MAXIMIZED:
             case SDL_WINDOWEVENT_RESIZED:
             {

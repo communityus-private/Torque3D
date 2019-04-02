@@ -26,6 +26,7 @@
 const String ShaderGenVars::modelview("$modelview");
 const String ShaderGenVars::worldViewOnly("$worldViewOnly");
 const String ShaderGenVars::worldToCamera("$worldToCamera");
+const String ShaderGenVars::cameraToWorld("$cameraToWorld");
 const String ShaderGenVars::worldToObj("$worldToObj");
 const String ShaderGenVars::viewToObj("$viewToObj");
 const String ShaderGenVars::cubeTrans("$cubeTrans");
@@ -65,8 +66,18 @@ const String ShaderGenVars::lightSpotDir("$inLightSpotDir");
 const String ShaderGenVars::lightSpotAngle("$inLightSpotAngle");
 const String ShaderGenVars::lightSpotFalloff("$inLightSpotFalloff");
 const String ShaderGenVars::specularColor("$specularColor");
-const String ShaderGenVars::specularPower("$specularPower");
-const String ShaderGenVars::specularStrength("$specularStrength");
+const String ShaderGenVars::smoothness("$smoothness");
+const String ShaderGenVars::metalness("$metalness");
+
+//Reflection Probes
+const String ShaderGenVars::probePosition("$inProbePos");
+const String ShaderGenVars::probeRadius("$inProbeRadius");
+const String ShaderGenVars::probeBoxMin("$inProbeBoxMin");
+const String ShaderGenVars::probeBoxMax("$inProbeBoxMax");
+const String ShaderGenVars::probeLocalPos("$inProbeLocalPos");
+const String ShaderGenVars::probeIsSphere("$inProbeIsSphere");
+const String ShaderGenVars::probeCubemap("$inProbeCubemap");
+const String ShaderGenVars::probeCount("$numProbes");
 
 // These are ignored by the D3D layers.
 const String ShaderGenVars::fogMap("$fogMap");
