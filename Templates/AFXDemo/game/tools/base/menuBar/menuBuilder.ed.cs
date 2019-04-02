@@ -132,7 +132,7 @@ function MenuBuilder::addItem(%this, %pos, %item)
    }
    else
    {
-      %this.insertItem(%pos, %name !$= "-" ? %name : "", %accel);
+      %this.insertItem(%pos, %name !$= "-" ? %name : "", %accel, %cmd);
    }
 }
 
@@ -152,9 +152,20 @@ function MenuBuilder::onAdd(%this)
    }
 }
 
+function MenuBuilder::reloadItems(%this)
+{
+   %this.clearItems();
+   
+   for(%i = 0;%this.item[%i] !$= "";%i++)
+   {
+      %this.addItem(%i);
+   }
+}
+
 function MenuBuilder::onRemove(%this)
 {
-   %this.removeFromMenuBar();
+   if(%this.isMethod("removeFromMenuBar"))
+      %this.removeFromMenuBar();
 }
 
 //////////////////////////////////////////////////////////////////////////
