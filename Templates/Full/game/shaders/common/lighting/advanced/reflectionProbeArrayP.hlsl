@@ -126,6 +126,20 @@ float3 iblSkylightSpecular(Surface surface)
    return color;
 }
 
+void dampen(inout Surface surface, float degree)
+{
+   float2 wetUV = float2((surface.R.x/surface.R.z),(surface.R.y/surface.R.z)+accumTime*(1.2-surface.roughness));
+   wetUV = lerp(float2((surface.R.x/surface.R.y),(surface.R.z/abs(surface.R.y))+accumTime*(1.2-surface.roughness)),wetUV,abs(surface.N.z)); 
+      
+   wetUV += surface.P.xy;
+   
+   float wetness = pow(TORQUE_TEX2D(wetMap, wetUV*0.2).b,3);
+   
+   surface.roughness = lerp(surface.roughness,min(surface.roughness,1.0-wetness),degree);
+   surface.baseColor = lerp(surface.baseColor,saturate(surface.baseColor+(1.0-wetness).xxxx),degree);
+   surface.Update();
+}
+
 float4 main(PFXVertToPix IN) : SV_TARGET
 {
    //unpack normal and linear depth 
@@ -249,20 +263,10 @@ float4 main(PFXVertToPix IN) : SV_TARGET
       contrib +=contribution[i];
    }
       
-   float2 wetUV = float2((surface.R.x/surface.R.z),(surface.R.y/surface.R.z)+accumTime*(1.2-surface.roughness));
-   if (abs(surface.N.z)<0.5)
-      wetUV = float2((surface.R.x/surface.R.y),(surface.R.z/abs(surface.R.y))+accumTime*(1.2-surface.roughness)); 
-      
-   wetUV += surface.P.xy;
-   
-   float wetness = pow(TORQUE_TEX2D(wetMap, wetUV*0.2).b,3);
-   
-   surface.roughness = min(surface.roughness,1.0-wetness);
-   surface.baseColor = saturate(surface.baseColor+(1.0-wetness).xxxx);
-   surface.Update();
       
    if (hasSkylight && alpha != 0)
-   {
+   {      
+      dampen(surface, alpha);
       irradiance = lerp(irradiance, iblSkylightDiffuse(surface), alpha);
       specular = lerp(specular, iblSkylightSpecular(surface), alpha);
    }
