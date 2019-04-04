@@ -7,19 +7,21 @@ TORQUE_UNIFORM_SAMPLER2D(deferredBuffer, 0);
 TORQUE_UNIFORM_SAMPLER2D(colorBuffer, 1);
 TORQUE_UNIFORM_SAMPLER2D(matInfoBuffer, 2);
 TORQUE_UNIFORM_SAMPLER2D(BRDFTexture, 3);
+TORQUE_UNIFORM_SAMPLER2D(wetMap, 4);
 
 uniform float4 rtParams0;
 uniform float4 vsFarPlane;
 uniform float4x4 cameraToWorld;
 uniform float3 eyePosWorld;
+uniform float accumTime;
 
 //cubemap arrays require all the same size. so shared mips# value
 uniform float cubeMips;
 #define MAX_PROBES 50
 
 uniform float numProbes;
-TORQUE_UNIFORM_SAMPLERCUBEARRAY(cubeMapAR, 4);
-TORQUE_UNIFORM_SAMPLERCUBEARRAY(irradianceCubemapAR, 5);
+TORQUE_UNIFORM_SAMPLERCUBEARRAY(cubeMapAR, 5);
+TORQUE_UNIFORM_SAMPLERCUBEARRAY(irradianceCubemapAR, 6);
 
 uniform float4    inProbePosArray[MAX_PROBES];
 uniform float4    inRefPosArray[MAX_PROBES];
@@ -32,11 +34,10 @@ uniform float4    probeConfigData[MAX_PROBES];   //r,g,b/mode,radius,atten
 uniform float4    probeContribColors[MAX_PROBES];
 #endif
 
-TORQUE_UNIFORM_SAMPLERCUBE(skylightPrefilterMap, 6);
-TORQUE_UNIFORM_SAMPLERCUBE(skylightIrradMap, 7);
+TORQUE_UNIFORM_SAMPLERCUBE(skylightPrefilterMap, 7);
+TORQUE_UNIFORM_SAMPLERCUBE(skylightIrradMap, 8);
 uniform float hasSkylight;
 
-//Probe IBL stuff
 float defineSphereSpaceInfluence(Surface surface, int ID)
 {
    float3 L = inProbePosArray[ID].xyz.xyz - surface.P;
@@ -247,7 +248,16 @@ float4 main(PFXVertToPix IN) : SV_TARGET
       specular += iblBoxSpecular(surface, i) * contribution[i];
       contrib +=contribution[i];
    }
+      
+   float2 wetUV = float2((surface.R.x/surface.R.y),abs(surface.R.z/surface.R.y)+accumTime*0.2);
+   if (abs(surface.N.y)<0.5)
+      wetUV = float2((surface.R.x/surface.R.z),(surface.R.y/surface.R.z)+accumTime*0.2);
+   float wetness = pow(TORQUE_TEX2D(wetMap, wetUV*0.2).b,3);
    
+   surface.roughness = min(surface.roughness,1.0-wetness);
+   surface.baseColor = saturate(surface.baseColor+(1.0-wetness).xxxx);
+   surface.Update();
+      
    if (hasSkylight && alpha != 0)
    {
       irradiance = lerp(irradiance, iblSkylightDiffuse(surface), alpha);

@@ -762,14 +762,14 @@ void RenderProbeMgr::render( SceneRenderState *state )
    mProbeArrayEffect->setShaderConst("$hasSkylight", (float)hasSkylight);
    if (hasSkylight)
    {
-      mProbeArrayEffect->setCubemapTexture(6, skylightPrefilterMap);
-      mProbeArrayEffect->setCubemapTexture(7, skylightIrradMap);
+      mProbeArrayEffect->setCubemapTexture(7, skylightPrefilterMap);
+      mProbeArrayEffect->setCubemapTexture(8, skylightIrradMap);
    }
 
    if (mEffectiveProbeCount != 0)
    {
-      mProbeArrayEffect->setCubemapArrayTexture(4, mPrefilterArray);
-      mProbeArrayEffect->setCubemapArrayTexture(5, mIrradianceArray);
+      mProbeArrayEffect->setCubemapArrayTexture(5, mPrefilterArray);
+      mProbeArrayEffect->setCubemapArrayTexture(6, mIrradianceArray);
 
       String useDebugAtten = Con::getVariable("$Probes::showAttenuation", "0");
       mProbeArrayEffect->setShaderMacro("DEBUGVIZ_ATTENUATION", useDebugAtten);

@@ -317,8 +317,9 @@ singleton ShaderData( PFX_ReflectionProbeArray )
    samplerNames[1] = "$colorBuffer";
    samplerNames[2] = "$matInfoBuffer";
    samplerNames[3] = "$BRDFTexture";
-   samplerNames[4] = "$cubeMap";
-   samplerNames[5] = "$irradianceCubemap";
+   samplerNames[4] = "$wetMap";
+   samplerNames[5] = "$cubeMap";
+   samplerNames[6] = "$irradianceCubemap";
 
    pixVersion = 2.0;
 };  
@@ -358,5 +359,6 @@ singleton PostEffect( reflectionProbeArrayPostFX )
    texture[0] = "#deferred";
    texture[1] = "#color";
    texture[2] = "#matinfo";
-   texture[3] = "core/art/pbr/brdfTexture.dds";   
+   texture[3] = "core/art/pbr/brdfTexture.dds";
+   texture[4] = "core/art/pbr/wetMap.png";   
 };
