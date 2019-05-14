@@ -2149,93 +2149,71 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       // precision for normals and performs much better
       // on older Geforce cards.
       //
-      meta->addStatement( new GenOp( "   @ = normalize( half3( @ ) );\r\n", wsNormal, wsNormal ) );
+      meta->addStatement(new GenOp("   @ = normalize( half3( @ ) );\r\n", wsNormal, wsNormal));
    }
 
    // Now the wsPosition and wsView.
-   Var *wsPosition = getInWsPosition( componentList );
-   Var *wsView = getWsView( wsPosition, meta );
+   Var* wsPosition = getInWsPosition(componentList);
+   Var* wsView = getWsView(wsPosition, meta);
 
    // Create temporaries to hold results of lighting.
-   Var *rtShading = new Var( "rtShading", "float4" );
-   Var *specular = new Var( "specular", "float4" );
-   meta->addStatement( new GenOp( "   @; @;\r\n", 
-      new DecOp( rtShading ), new DecOp( specular ) ) );   
+   Var* rtShading = new Var("rtShading", "float4");
+   Var* specular = new Var("specular", "float4");
+   meta->addStatement(new GenOp("   @; @;\r\n",
+      new DecOp(rtShading), new DecOp(specular)));
 
    // Look for a light mask generated from a previous
    // feature (this is done for BL terrain lightmaps).
-   LangElement *lightMask = LangElement::find( "lightMask" );
-   if ( !lightMask )
-      lightMask = new GenOp( "float4( 1, 1, 1, 1 )" );
+   LangElement* lightMask = LangElement::find("lightMask");
+   if (!lightMask)
+      lightMask = new GenOp("float4( 1, 1, 1, 1 )");
 
    // Get all the light constants.
-   Var *inLightPos  = new Var( "inLightPos", "float4" );
+   Var* inLightPos = new Var("inLightPos", "float4");
    inLightPos->uniform = true;
    inLightPos->arraySize = 3;
    inLightPos->constSortPos = cspPotentialPrimitive;
 
-   Var *inLightInvRadiusSq  = new Var( "inLightInvRadiusSq", "float4" );
+   Var* inLightInvRadiusSq = new Var("inLightInvRadiusSq", "float4");
    inLightInvRadiusSq->uniform = true;
    inLightInvRadiusSq->constSortPos = cspPotentialPrimitive;
 
-   Var *inLightColor  = new Var( "inLightColor", "float4" );
+   Var* inLightColor = new Var("inLightColor", "float4");
    inLightColor->uniform = true;
    inLightColor->arraySize = 4;
    inLightColor->constSortPos = cspPotentialPrimitive;
 
-   Var *inLightSpotDir  = new Var( "inLightSpotDir", "float4" );
+   Var* inLightSpotDir = new Var("inLightSpotDir", "float4");
    inLightSpotDir->uniform = true;
    inLightSpotDir->arraySize = 3;
    inLightSpotDir->constSortPos = cspPotentialPrimitive;
 
-   Var *inLightSpotAngle  = new Var( "inLightSpotAngle", "float4" );
+   Var* inLightSpotAngle = new Var("inLightSpotAngle", "float4");
    inLightSpotAngle->uniform = true;
    inLightSpotAngle->constSortPos = cspPotentialPrimitive;
 
-   Var *lightSpotFalloff  = new Var( "inLightSpotFalloff", "float4" );
+   Var* lightSpotFalloff = new Var("inLightSpotFalloff", "float4");
    lightSpotFalloff->uniform = true;
    lightSpotFalloff->constSortPos = cspPotentialPrimitive;
    
-   Var *smoothness = (Var*)LangElement::find("smoothness");
-   if (!fd.features[MFT_SpecularMap])
-   {
-      if (!smoothness)
-      {
-         smoothness = new Var("smoothness", "float");
-         smoothness->uniform = true;
-         smoothness->constSortPos = cspPotentialPrimitive;
-      }
-   }
+   Var* curColor = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
 
-   Var *metalness = (Var*)LangElement::find("metalness");
-   if (!fd.features[MFT_SpecularMap])
-   {
-      if (!metalness)
-      {
-         metalness = new Var("metalness", "float");
-         metalness->uniform = true;
-         metalness->constSortPos = cspPotentialPrimitive;
-      }
-   }
-
-   Var *albedo = (Var*)LangElement::find(getOutputTargetVarName(ShaderFeature::DefaultTarget));
-
-   Var *ambient  = new Var( "ambient", "float4" );
+   Var* ambient = new Var("ambient", "float4");
    ambient->uniform = true;
    ambient->constSortPos = cspPass;
 
    // Calculate the diffuse shading and specular powers.
-   meta->addStatement( new GenOp( "   compute4Lights( @, @, @, @,\r\n"
-                                  "      @, @, @, @, @, @, @, @, @,\r\n"
-                                  "      @, @ );\r\n", 
+   meta->addStatement(new GenOp("   compute4Lights( @, @, @, @,\r\n"
+      "      @, @, @, @, @, @, @,\r\n"
+      "      @, @ );\r\n",
       wsView, wsPosition, wsNormal, lightMask,
-      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, smoothness, metalness, albedo,
-      rtShading, specular ) );
+      inLightPos, inLightInvRadiusSq, inLightColor, inLightSpotDir, inLightSpotAngle, lightSpotFalloff, curColor,
+      rtShading, specular));
 
    // Apply the lighting to the diffuse color.
-   LangElement *lighting = new GenOp( "float4( @.rgb + @.rgb, 1 )", rtShading, ambient );
-   meta->addStatement( new GenOp( "   @;\r\n", assignColor( lighting, Material::Mul ) ) );
-   output = meta;  
+   LangElement* lighting = new GenOp("float4( @.rgb + @.rgb, @.a )", rtShading, specular, curColor);
+   meta->addStatement(new GenOp("   @;\r\n", assignColor(lighting, Material::None)));
+   output = meta;
 }
 
 ShaderFeature::Resources RTLightingFeatHLSL::getResources( const MaterialFeatureData &fd )
