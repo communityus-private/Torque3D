@@ -2211,8 +2211,8 @@ void RTLightingFeatHLSL::processPix(   Vector<ShaderComponent*> &componentList,
       rtShading, specular));
 
    // Apply the lighting to the diffuse color.
-   LangElement* lighting = new GenOp("float4( @.rgb + @.rgb, @.a )", rtShading, specular, curColor);
-   meta->addStatement(new GenOp("   @;\r\n", assignColor(lighting, Material::None)));
+   LangElement* lighting = new GenOp("float4( @.rgb + @.rgb, 1.0 )", rtShading, specular);
+   meta->addStatement(new GenOp("   @;\r\n", assignColor(lighting, Material::Mul)));
    output = meta;
 }
 
