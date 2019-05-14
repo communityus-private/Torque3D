@@ -3101,7 +3101,8 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
       //
       wsNormal = new Var("wsNormal", "float3");
       LangElement* normDec = new DecOp(wsNormal);
-      meta->addStatement(new GenOp("   @ = normalize( half3( @ ) );\r\n", normDec, wsNormalIN));
+      meta->addStatement(new GenOp("   @ = normalize( mul(@,float3(0,0,1.0)) );\r\n", normDec, worldToTangent));
+      
    }
 
    //Reflection vec
