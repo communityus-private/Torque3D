@@ -3086,10 +3086,10 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
    Var* wsNormal = (Var*)LangElement::find("wsNormal");
    if (!wsNormal)
    {
-      wsNormal = connectComp->getElement(RT_TEXCOORD);
-      wsNormal->setName("wsNormal");
-      wsNormal->setStructName("IN");
-      wsNormal->setType("float3");
+      Var* wsNormalIN = connectComp->getElement(RT_TEXCOORD);
+      wsNormalIN->setName("wsNormal");
+      wsNormalIN->setStructName("IN");
+      wsNormalIN->setType("float3");
 
       // If we loaded the normal its our responsibility
       // to normalize it... the interpolators won't.
@@ -3099,7 +3099,9 @@ void ReflectionProbeFeatHLSL::processPix(Vector<ShaderComponent*> &componentList
       // precision for normals and performs much better
       // on older Geforce cards.
       //
-      meta->addStatement(new GenOp("   @ = normalize( half3( @ ) );\r\n", wsNormal, wsNormal));
+      wsNormal = new Var("wsNormal", "float3");
+      LangElement* normDec = new DecOp(wsNormal);
+      meta->addStatement(new GenOp("   @ = normalize( half3( @ ) );\r\n", normDec, wsNormalIN));
    }
 
    //Reflection vec
